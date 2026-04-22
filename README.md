@@ -1,5 +1,7 @@
 # sde-ai-app
 
+[![GitHub Repo](https://img.shields.io/badge/github-ogs--tech%2Fsde--ai--app-blue)](https://github.com/ogs-tech/sde-ai-app)
+
 > **Spike descartável de validação** — GUI local para centralizar artefatos de IA (skills, references, agent profiles) em Markdown+YAML, versionados em git manual, sincronizados via **symlink** para Claude Code e Copilot.
 >
 > **Status:** Discovery — sem código ainda. Toda a documentação vive em [docs/](docs/).
