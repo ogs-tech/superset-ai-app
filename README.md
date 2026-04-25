@@ -2,53 +2,53 @@
 
 [![GitHub Repo](https://img.shields.io/badge/github-ogs--tech%2Fsde--ai--app-blue)](https://github.com/ogs-tech/sde-ai-app)
 
-> **Spike descartável de validação** — GUI local para centralizar artefatos de IA (skills, references, agent profiles) em Markdown+YAML, versionados em git manual, sincronizados via **symlink** para Claude Code e Copilot.
+> **Throwaway validation spike** — local GUI to centralize AI artifacts (skills, references, agent profiles) in Markdown+YAML, versioned in manual git, synced via **symlink** to Claude Code and Copilot.
 >
-> **Status:** Discovery — sem código ainda. Toda a documentação vive em [docs/](docs/).
+> **Status:** Discovery — no code yet. All documentation lives in [docs/](docs/).
 
-## Objetivo
+## Goal
 
-Validar em **4 semanas** (1 dev solo, macOS) se faz sentido centralizar contexto de IA em um app local com sync via symlink — fonte única no workspace, cópias vivas em `~/.claude/`, `~/.copilot/`, `<repo>/.claude/` e `<repo>/.github/`.
+Validate in **4 weeks** (1 solo dev, macOS) whether it makes sense to centralize AI context in a local app with symlink-based sync — single source in the workspace, live copies in `~/.claude/`, `~/.copilot/`, `<repo>/.claude/` and `<repo>/.github/`.
 
-Sucesso = o autor usa o app diariamente por ≥ 2 semanas consecutivas sem voltar ao método antigo (notas soltas, pastas ad-hoc).
+Success = the author uses the app daily for ≥ 2 consecutive weeks without falling back to the old method (loose notes, ad-hoc folders).
 
 ## Stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 |---|---|
-| Shell | Electron (última LTS) |
+| Shell | Electron (latest LTS) |
 | UI | React + TypeScript |
-| Core | Go (subprocess via JSON-RPC 2.0 sobre stdin/stdout) |
-| Segredos | Keychain via `keytar` |
-| Git | Leitura direta de `.git/HEAD` (sem libgit2) |
+| Core | Go (subprocess via JSON-RPC 2.0 over stdin/stdout) |
+| Secrets | Keychain via `keytar` |
+| Git | Direct read of `.git/HEAD` (no libgit2) |
 
-Sem backend, API, banco, auth ou telemetria.
+No backend, API, database, auth or telemetry.
 
-## Escopo
+## Scope
 
-### Entra (must-have)
-- CRUD de skills, references e agent profiles em `.md` com frontmatter YAML.
-- Preview de Markdown ao lado do editor.
-- Templates por tipo.
-- Adapters com symlink para Claude Code e Copilot (pessoal e projeto).
-- Config de adapters + gestão de repos vinculados em Settings.
+### In (must-have)
+- CRUD of skills, references and agent profiles in `.md` with YAML frontmatter.
+- Markdown preview alongside the editor.
+- Templates by type.
+- Adapters with symlinks to Claude Code and Copilot (personal and project).
+- Adapter configuration + management of linked repos in Settings.
 
-### Pode entrar (should-have)
-- Validação de schema completa.
-- Busca textual.
-- Consumo de tokens (Claude via JSONL; Copilot via GitHub Usage API).
+### Maybe in (should-have)
+- Full schema validation.
+- Text search.
+- Token consumption (Claude via JSONL; Copilot via GitHub Usage API).
 
-### Não entra
-- Colaboração, múltiplos usuários, git write automático.
-- Linux/Windows, i18n, acessibilidade, polimento visual.
-- Outras ferramentas além de Claude e Copilot.
-- Custo em dólar dos tokens.
+### Not in
+- Collaboration, multiple users, automatic git write.
+- Linux/Windows, i18n, accessibility, visual polish.
+- Tools other than Claude and Copilot.
+- Token cost in dollars.
 
-## Documentação
+## Documentation
 
-- [docs/PRD.md](docs/PRD.md) — requisitos de produto, escopo e critérios de sucesso.
-- [docs/ARCH.md](docs/ARCH.md) — decisões arquiteturais, contratos entre componentes e ADRs.
+- [docs/PRD.md](docs/PRD.md) — product requirements, scope and success criteria.
+- [docs/ARCH.md](docs/ARCH.md) — architectural decisions, contracts between components and ADRs.
 
-## Como rodar
+## How to run
 
-_Ainda não há código._ Próximo passo do spike: stack rodando (Electron + React + Go via IPC) na semana 1 — ver roadmap em [docs/PRD.md](docs/PRD.md).
+_No code yet._ Next step of the spike: stack running (Electron + React + Go via IPC) in week 1 — see roadmap in [docs/PRD.md](docs/PRD.md).
