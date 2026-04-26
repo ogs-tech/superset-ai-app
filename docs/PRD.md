@@ -3,7 +3,7 @@ title: "PRD — Skillforge (sde-ai-app)"
 internal_name: sde-ai-app
 codename: forge
 public_name: Skillforge
-status: Draft
+status: Ready
 created_at: 2026-04-19
 updated_at: 2026-04-25
 ---

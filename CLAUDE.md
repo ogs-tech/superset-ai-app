@@ -32,17 +32,22 @@ docs/specs/<id>-<slug>/
 └─ tasks.md  # - [ ] checkboxes
 ```
 
-### `spec.md` frontmatter (minimum)
+### `spec.md` frontmatter
+
+Schema: [docs/specs/.spec-schema.json](docs/specs/.spec-schema.json). Add `# yaml-language-server: $schema=../.spec-schema.json` at the top of `spec.md` for inline VS Code validation.
 
 ```yaml
 ---
-id: 001
+id: "001"
 title: Symlink sync
-status: draft        # draft | active | done | dropped
+status: draft                # draft | active | done | dropped
+priority: now                # now | next | later
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
-related_prd: "§4.1"  # optional, PRD section reference
-related_arch: "§6.1" # optional, ARCH section reference
+depends_on: []               # optional, list of spec ids (e.g. ["002", "003"])
+labels: [must-have]          # optional: must-have | should-have | nice-to-have | infra | ui | core | adapter | debt
+related_prd: "§4.1"          # optional, PRD section reference
+related_arch: "§6.1"         # optional, ARCH section reference
 ---
 ```
 
@@ -56,8 +61,13 @@ related_arch: "§6.1" # optional, ARCH section reference
 - Spec produces an architectural decision → add ADR in ARCH §9 and reference the spec.
 - Cross-link via `related_prd` / `related_arch`.
 
+### Roadmap
+
+[docs/ROADMAP.md](docs/ROADMAP.md) holds the Now/Next/Later narrative and retro log. Updated **only at biweekly retros** (PRD §6). The `priority:` field in spec frontmatter is the queryable source of truth; ROADMAP is the human-readable snapshot.
+
 ### Discovery (no manual index)
 
 - List specs: `ls docs/specs/`
 - Status overview: `grep -h "^status:" docs/specs/*/spec.md`
+- Now-bucket: `grep -l "^priority: now" docs/specs/*/spec.md`
 - Pending tasks: `grep -rc "^- \[ \]" docs/specs/*/tasks.md`

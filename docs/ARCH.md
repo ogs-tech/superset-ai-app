@@ -3,13 +3,9 @@ title: "ARCH — Skillforge (sde-ai-app)"
 internal_name: sde-ai-app
 codename: forge
 public_name: Skillforge
-status: Draft
+status: Ready
 created_at: 2026-04-19
 updated_at: 2026-04-25
-changelog:
-  - 2026-04-25: Reclassified ClaudeTokenParser and CopilotUsageClient from should-have to nice-to-have (§5.3), tracking PRD §4 split.
-  - 2026-04-25: Inlined risk mitigations from §11.1 into the operational sections that own them (§4.1, §5.3, §6.4, §6.6, §8.2, §8.4); removed the §11.1 risks table and renumbered §11.2 → §11.
-  - 2026-04-25: Inlined §11 open questions into §6.2, §6.5, §7.2, §8.5, §8.6, §10; removed §11 and renumbered Glossary to §11.
 ---
 
 > [!NOTE]
@@ -281,7 +277,7 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 ### 7.4 Symlink destinations
 
 - **Source:** `<workspace>/skills/<slug>/SKILL.md` (skills are a directory, mirroring Claude), `<workspace>/references/<slug>.md`, `<workspace>/agents/<slug>.md`.
-- **Targets (symlink destinations):** see PRD section 5.1.
+- **Targets (symlink destinations):** by scope — `personal` → `~/.claude/`, `~/.copilot/`; `project` → `<linked-repo>/.claude/`, `<linked-repo>/.github/` (one symlink per linked repo).
 - **Generation:** `<workspace>/_generated/copilot-instructions.md` is the source of the Copilot symlink; `chmod 444` after each generation.
 
 ---
