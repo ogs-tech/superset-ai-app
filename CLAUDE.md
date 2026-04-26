@@ -34,15 +34,13 @@ docs/specs/<id>-<slug>/
 └─ tasks.md  # - [ ] checkboxes
 ```
 
-### `spec.md` frontmatter
-
-Schema: [docs/specs/.spec-schema.json](docs/specs/.spec-schema.json). Add `# yaml-language-server: $schema=../.spec-schema.json` at the top of `spec.md` for inline VS Code validation.
+### `SPEC.md` frontmatter
 
 ```yaml
 ---
 id: "001"
 title: Symlink sync
-status: draft                # draft | active | done | dropped
+status: draft                # draft | active | done | dropped | superseded
 priority: now                # now | next | later
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
@@ -50,12 +48,45 @@ depends_on: []               # optional, list of spec ids (e.g. ["002", "003"])
 labels: [must-have]          # optional: must-have | should-have | nice-to-have | infra | ui | core | adapter | debt
 related_prd: "§4.1"          # optional, PRD section reference
 related_arch: "§6.1"         # optional, ARCH section reference
+branch: "001-symlink-sync"   # optional, git branch where the spec is being implemented
+superseded_by: "042"         # required when status is `superseded`
 ---
 ```
 
+### Required sections
+
+Canonical structure for `spec.md` (omit only when truly N/A):
+
+- **What** — one-paragraph summary of what is being built.
+- **Why** — motivation, problem, link to PRD/ARCH context.
+- **Non-goals** — decisions to **not** do something (different from "Out of scope", which defers to a future spec).
+- **In scope** — what this spec delivers.
+- **Out of scope** — explicitly deferred to a future spec id.
+- **Considered alternatives** — options weighed and rejected, with reasons (Google design doc / MADR convention).
+- **Acceptance criteria** — numbered, verifiable. Each item must be testable by reading code or running a command.
+- **Risks & assumptions** — labeled `ASSUMPTION`, `RISCO`, or `DEBT`.
+- **References** — PRD/ARCH/ROADMAP/external links.
+
+Use `[NEEDS CLARIFICATION]` markers inline when a decision is pending; resolve all of them before transitioning `draft` → `active`.
+
+### `tasks.md` format
+
+Each task line follows:
+
+```
+- [ ] T<nnn> [P?] <description, file path when applicable> → AC#<n>[, AC#<n>...]
+```
+
+- **`T<nnn>`** — stable, sequential id (`T001`, `T002`, ...). Never reused, never renumbered. Cite in commits, PRs, and reviews.
+- **`[P]`** — optional. Marks tasks that can run in parallel with adjacent `[P]` tasks (different files, no dependency on the immediately preceding task).
+- **File path** — embed in the description when the task creates or modifies a specific file (e.g. ``T012 GREEN `src/main/ipc/dispatcher.ts` ``).
+- **`→ AC#N`** — references the Acceptance criteria item satisfied by the task. Omit only for refactor/bookkeeping tasks that produce no new observable behavior.
+
+Group tasks under `## Phase N — <name>` sections (e.g. `Setup`, `Foundational`, layer name, `Verification`, `Bookkeeping`). Phases imply ordering; `[P]` only applies *within* a phase. For TDD tasks, prefix the description with `RED`, `GREEN`, or `REFACTOR`.
+
 ### Status lifecycle
 
-`draft` → `active` → `done` (or `dropped`). Update `updated_at` on each transition.
+`draft` → `active` → `done` (or `dropped` / `superseded`). Update `updated_at` on each transition. When `status: superseded`, set `superseded_by` to the new spec id.
 
 ### Sync with PRD/ARCH
 

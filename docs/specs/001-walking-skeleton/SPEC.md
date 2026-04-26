@@ -1,5 +1,4 @@
 ---
-# yaml-language-server: $schema=../.spec-schema.json
 id: "001"
 title: Walking skeleton
 status: draft
@@ -35,6 +34,23 @@ Todos os specs seguintes (002+) dependem da mesma estrutura: como o Renderer cha
 Main, como erros viajam, onde um service mora, onde um adapter de I/O mora, e onde um
 método novo é registrado. Provar isso uma vez com um caminho real (e não um `ping/pong`
 descartável) evita retrabalho em cada spec novo. Ver ARCH §3.1, §5.3, §8.1, §8.2.
+
+## Non-goals
+
+Decisões deliberadas de **não fazer** — diferente de "Out of scope" (que defere para
+specs futuros):
+
+- **Sem DI container:** composition root manual em `main/ipc/` é suficiente para o
+  tamanho do projeto.
+- **Sem runtime validation no IPC:** `IpcResult<T>` discriminated union + TS strict
+  cobrem o contrato; sem `zod`/`io-ts` no payload.
+- **Sem framework de state management no Renderer:** o Renderer é mínimo e acessa
+  estado via `window.api.call`. Redux/Zustand/Jotai ficam fora até existir UI de
+  domínio real.
+- **Sem multi-window:** uma `BrowserWindow` por instância. Multi-window não está
+  no roadmap.
+- **Sem abstração sobre Electron `ipcRenderer`/`ipcMain`:** evitar wrappers tipo
+  `tRPC`/`electron-trpc` enquanto o contrato `call(method, params)` for suficiente.
 
 ## In scope
 
@@ -106,6 +122,14 @@ descartável) evita retrabalho em cada spec novo. Ver ARCH §3.1, §5.3, §8.1, 
   houver UI de domínio (provavelmente spec 003).
 - `dependency-cruiser` ou outro lint de camada → debt; entra se a fricção aparecer
   com a 2ª service.
+
+## Considered alternatives
+
+| Decisão | Escolhida | Alternativas descartadas | Motivo |
+|---|---|---|---|
+| Build/bundle | `electron-vite` | Vite cru + `tsc` no Main; `electron-forge` | LTS suporta os 3 entry points + HMR sem config significativa. Forge agrega packaging mas é overhead pré-spike. Vite + `tsc` fica como fallback se `electron-vite` der fricção. |
+| Layering no Main | Hexagonal leve (`domain`/`application`/`infrastructure`/`ipc`) | Clean Architecture completa; flat | Hexagonal leve dá clareza de fronteiras sem cerimônia. Clean cheio (entities/use-cases/interfaces/frameworks) é overkill para um app desktop solo. Flat dificulta substituir adapter (ex.: `InMemorySettingsRepository` → `JsonFileSettingsRepository` no spec 002). |
+| Contrato IPC | Single `call(method, params)` + dispatcher | Um `ipcMain.handle` por operação; `tRPC`/`electron-trpc` | Single channel reduz superfície exposta via `contextBridge` e centraliza o error envelope (ARCH §8.2). Multi-channel duplica boilerplate. tRPC adiciona dependência runtime + schemas — colide com os non-goals desta spec. |
 
 ## Acceptance criteria
 
