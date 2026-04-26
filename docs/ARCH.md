@@ -6,6 +6,10 @@ public_name: Skillforge
 status: Draft
 created_at: 2026-04-19
 updated_at: 2026-04-25
+changelog:
+  - 2026-04-25: Reclassified ClaudeTokenParser and CopilotUsageClient from should-have to nice-to-have (§5.3), tracking PRD §4 split.
+  - 2026-04-25: Inlined risk mitigations from §11.1 into the operational sections that own them (§4.1, §5.3, §6.4, §6.6, §8.2, §8.4); removed the §11.1 risks table and renumbered §11.2 → §11.
+  - 2026-04-25: Inlined §11 open questions into §6.2, §6.5, §7.2, §8.5, §8.6, §10; removed §11 and renumbered Glossary to §11.
 ---
 
 > [!NOTE]
@@ -16,13 +20,13 @@ updated_at: 2026-04-25
 
 ### 1.1 System goal (1 sentence)
 
-Local GUI for a solo dev to create/edit AI artifacts (skills, references, agent profiles) in Markdown+YAML, versioned in manual git, and sync them via **symlink** to Claude Code and Copilot in personal and project scopes — validating in 4 weeks whether centralizing this context is worthwhile.
+Local GUI for a solo dev to create/edit AI artifacts (skills, references, agent profiles) in Markdown+YAML, versioned in manual git, and sync them via **symlink** to Claude Code and Copilot in personal and project scopes — validating whether centralizing this context is worthwhile (spike with no hard deadline; stop rule in PRD §6).
 
 ### 1.2 Stakeholders
 
 | Role | Expectation |
 |---|---|
-| Solo dev (author) | Validate in 4 weeks whether centralizing context is worthwhile; personal use on macOS. |
+| Solo dev (author) | Validate whether centralizing context is worthwhile (no hard deadline; stop rule in PRD §6); personal use on macOS. |
 
 ### 1.3 Essential goals
 
@@ -42,7 +46,7 @@ Non-negotiable constraints inherited from the PRD:
 - Sync: **symlink** (single source), no copy. Save is the only action.
 - Git: **read-only** (detect repo, branch). Manual commit.
 - Target tools: **Claude Code and Copilot only**. Others are out.
-- Deadline: 4 weeks, 1 dev.
+- Time-box: 1 dev, no hard deadline; stop rule in PRD §6 (8-week soft cap).
 
 ---
 
@@ -123,7 +127,7 @@ This doc **does not cover**:
 
 | Layer     | Technology                         | Note                                                 |
 | --------- | ---------------------------------- | ---------------------------------------------------- |
-| Shell     | Electron (latest LTS at the start) | `contextIsolation: true`, `nodeIntegration: false`.  |
+| Shell     | Electron (latest LTS at the start) | `contextIsolation: true`, `nodeIntegration: false`. Version pinned; `electron-rebuild` runs in `postinstall` to rebuild keytar's native module. |
 | UI        | React + TypeScript                 | No SSR. Bundler at the dev's choice (Vite recommended).|
 | Core      | Go (stdlib + `yaml.v3`)            | Binary embedded in `resources/`.                     |
 | IPC       | JSON-RPC 2.0 over stdin/stdout     | See ADR-2 in section 9.                              |
@@ -166,14 +170,14 @@ Monolithic module in a single binary with internal services:
 | `AdapterManager`                | Orchestrates active adapters; requests sync from the right one(s) after Save. | Per-tool logic.                               |
 | `ClaudeAdapter`                 | Maps artifact → Claude paths (personal and project); delegates to SymlinkManager. | HTTP, API, tokens.                         |
 | `CopilotAdapter`                | Maps artifact → Copilot paths; triggers `copilot-instructions` generator.     | Tokens.                                       |
-| `SymlinkManager`                | Creates, removes and validates symlinks; detects conflicts (real file at destination). | Content copy, git.                   |
+| `SymlinkManager`                | Creates, removes and validates symlinks; detects conflicts (real file at destination). Normalizes paths via `filepath.Abs` to handle spaces and special characters. | Content copy, git.                   |
 | `TemplateService`               | Provides templates by type (skill/reference/agent).                           | Rendering.                                    |
 | `RepoService`                   | Detects `.git/`, reads current branch; lists linked repos.                    | Git write, commit, push.                      |
 | `SettingsService`               | Loads/persists `settings.json`; merges defaults.                              | Secrets (PAT lives in Keychain).              |
 | `SchemaValidator` (should-have) | Validates frontmatter against per-type schema.                                | Automatic sanitization.                       |
 | `SearchService` (should-have)   | In-memory text search (name + content).                                       | Persistent indexing.                          |
-| `ClaudeTokenParser` (should-have)   | Reads JSONL from `~/.claude/projects/*/`, aggregates tokens by skill and project. | Dollar cost, UI.                       |
-| `CopilotUsageClient` (should-have)  | HTTP GET against GitHub Usage API with PAT (received via IPC on the call). | Storing PAT, UI.                          |
+| `ClaudeTokenParser` (nice-to-have)   | Reads JSONL from `~/.claude/projects/*/`, aggregates tokens by skill and project. Isolated module: silent failure with log if JSONL format changes. | Dollar cost, UI.                       |
+| `CopilotUsageClient` (nice-to-have)  | HTTP GET against GitHub Usage API with PAT (received via IPC on the call). | Storing PAT, UI.                          |
 | `CopilotInstructionsGen`        | Aggregates flagged references (frontmatter flag) into generated `copilot-instructions.md`; applies `chmod 444`. | Editing the file; symlink (delegates). |
 
 ---
@@ -199,6 +203,8 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 - Destination exists and **is not a symlink** (real file): **overwrite** the file, but emit `SyncResult.status = conflict` with `action: overwritten` and the path of the backup saved at `<workspace>/_backups/<timestamp>/`.
 - Renderer shows a post-save modal listing each conflict; user can restore from backup manually.
 
+> **Backup retention:** not defined in the spike — `_backups/` is never auto-cleaned. Revisit (time/size cap) post-spike if volume grows.
+
 > **Rollback:** the source save is already done. If sync fails on some destinations, those that worked stay. There is no atomic cross-destination transaction — it's listed in the report.
 
 ### 6.3 Disable adapter
@@ -211,7 +217,7 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 ### 6.4 Regenerate `copilot-instructions.md`
 
 1. Triggered by: save of a flagged reference; toggle of the flag; "Sync all"; manual button in Settings.
-2. `CopilotInstructionsGen` lists references with `includeInCopilotInstructions: true`, concatenates them in alphabetical order by `name`, writes to `_generated/copilot-instructions.md` with header `<!-- GENERATED — edit references in the app -->`, applies `chmod 444`.
+2. `CopilotInstructionsGen` lists references with `includeInCopilotInstructions: true`, concatenates them in alphabetical order by `name`, writes to `_generated/copilot-instructions.md` with header `<!-- GENERATED — edit references in the app -->`, applies `chmod 444`. The header + `chmod 444` are friction only, not security: a "force save" editor can still overwrite, and that's accepted.
 3. `CopilotAdapter` ensures symlinks to active destinations (personal and each linked repo with the flag).
 
 ### 6.5 Passive token reading (Claude)
@@ -221,7 +227,9 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 3. Aggregates `input_tokens`/`output_tokens` per skill and per project (parent folder of the JSONL).
 4. Returns the aggregated series. No persistent cache in the spike — re-reads on each request.
 
-> **ASSUMPTION:** the JSONL format follows what Claude Code currently exposes in `~/.claude/projects/`. Format breakage is an accepted risk (PRD §8).
+> **ASSUMPTION:** the JSONL format follows what Claude Code currently exposes in `~/.claude/projects/`. Format breakage is an accepted risk (PRD §8). The matching strategy (tool name `Skill` + `input.skill`) is to be **validated in week 4 with real data**; if it breaks, `ClaudeTokenParser` fails silently with a log entry (see §5.3) and the dashboard returns empty.
+
+> **Dashboard UI debt:** filters by date and grouping by skill/project are intentionally simple in the spike. Period/session aggregation and richer slicing are to be refined in the UI design post-spike.
 
 ### 6.6 First use
 
@@ -229,6 +237,8 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 2. User picks the workspace folder (default `~/sde-ai-app`).
 3. Settings creates the workspace (`mkdir -p` + subfolders), writes the initial `settings.json`.
 4. User enables adapters, optionally links repos, creates the first artifact via template.
+
+> **Repo linking warning:** when the user links a repo, the UI shows an explicit warning that artifact symlinks created inside the repo may be committed as links by `git add` (per PRD §6); the dev decides whether to add them to `.gitignore`.
 
 ---
 
@@ -258,6 +268,8 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
    └─ templates/          # custom templates (optional)
 ```
 
+> **Custom templates:** PRD §4 requires `≥1 template per type` (built-in). The `.sde/templates/` folder leaves the door open for the user to drop their own — not a must-have, but the layout supports it cheaply.
+
 ### 7.3 Config and log locations (on the host)
 
 | File | Path |
@@ -286,6 +298,7 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 
 - Transport: subprocess **stdin/stdout**.
 - Protocol: **JSON-RPC 2.0**, one message per line (`\n` delimiter).
+- Max payload: 1 MB per message to avoid stdin/stdout deadlock with large messages; planned stress test in week 1.
 - Per-request timeout: 10s (configurable); Go crash → Main respawns and notifies Renderer.
 - Go stderr → log file at `<userData>/logs/core.log`.
 
@@ -320,6 +333,7 @@ Every error follows JSON-RPC shape:
 - Endpoint: `GET https://api.github.com/user/copilot/usage` (fallback `/orgs/{org}/copilot/usage` if organizational PAT).
 - Auth: `Authorization: Bearer <PAT>`.
 - Handled errors: 401 → `unauthorized`; 404 → `not_found` (plan without Copilot); ≥500 → `external_api` with exponential retry (max 3).
+- **Fallback:** if the endpoint is unavailable, the plan does not include Copilot, or the schema changes, the app estimates token cost via a local tokenizer over the artifact content (see PRD §4 nice-to-have).
 
 ### 8.5 Data model — YAML frontmatter
 
@@ -341,7 +355,9 @@ includeInCopilotInstructions: true   # reference only — aggregates into copilo
 ---
 ```
 
-Artifacts with `scope: project` are replicated (via symlink) in **all** linked repos in Settings — there is no per-artifact selection. Post-spike refinement is expected (see §11).
+Artifacts with `scope: project` are replicated (via symlink) in **all** linked repos in Settings — there is no per-artifact selection.
+
+> **Frontmatter debt:** the schema above is an **initial proposal**. Refine after creating the first 5+ real artifacts (dogfooding) — fields may be added, renamed or made optional based on actual usage.
 
 ### 8.6 Data model — `settings.json`
 
@@ -362,6 +378,8 @@ Artifacts with `scope: project` are replicated (via symlink) in **all** linked r
 ```
 
 The Copilot PAT does **not** live here — it's stored in Keychain via `keytar` with `service="sde-ai-app"`, `account="copilot-pat"`.
+
+> **Schema migration debt:** the spike assumes a stable schema and does not version `settings.json`. Post-spike must add a `version` field and a migration step on app start.
 
 ### 8.7 Security
 
@@ -394,8 +412,8 @@ Attributes derived from the PRD's constraints and goals. Not formal SLAs — the
 
 | Attribute | Target | How to verify |
 |---|---|---|
-| **Time-to-validate** | App usable in 4 weeks with 1 dev. | Milestone: dogfooding at the end of week 4. |
-| **Portability** | macOS only; portable code where cheap (paths, keytar). | Build runs on macOS Apple Silicon and Intel. |
+| **Time-to-validate** | App usable for dogfooding within the spike's 8-week soft cap (1 dev). | PRD §6 stop rule. |
+| **Portability** | macOS only; portable code where cheap (paths, keytar). Linux/Windows stays as **debt** if requested later — code is portable but untested off macOS. | Build runs on macOS Apple Silicon and Intel. |
 | **Secret security** | Copilot PAT never plaintext in file, log or git. | Manual inspection: `grep` in `userData/`, logs, settings. |
 | **Core robustness** | Go Core crash does not bring down the UI. | Main respawns; "core restarted" banner in Renderer. |
 | **IPC latency** | Typical artifact save responds in < 1s. | Timeout configured at 10s; measure manually in the spike. |
@@ -405,37 +423,7 @@ Attributes derived from the PRD's constraints and goals. Not formal SLAs — the
 
 ---
 
-## 11. Risks and technical debt
-
-### 11.1 Technical risks and mitigations
-
-| Technical risk | Impact | Mitigation |
-|---------------|---------|-----------|
-| IPC stdin/stdout hangs/deadlocks with large payload | High | Per-line framing + payload limit (1 MB); stress test in week 1 |
-| Go Core crash in production hangs the UI | Medium | Main respawns automatically; Renderer shows "core restarted" banner |
-| Electron + keytar requires native module rebuild in the build pipeline | Medium | Pin Electron version; `electron-rebuild` in `postinstall`; minimal smoke test in CI |
-| `chmod 444` does not prevent editing via "force save" editor | Low | Header in the file; not security, just friction; accepted |
-| Path with spaces or special characters breaks symlink | Medium | Normalize via `filepath.Abs`; test fixture with space in week 1 |
-| Claude JSONL changes format and breaks the parser | Low | Should-have feature; isolated parser; silent failure with log |
-| Copilot usage API requires Business plan / changes schema | Low | Fallback: estimate via local tokenizer of skill content (PRD §8) |
-| Symlink inside a linked repo gets committed as a link | Low | Explicit warning in the UI when linking the repo (PRD §6); dev decides |
-| Shipping signed Go binary on macOS (Gatekeeper) | Medium | Spike runs unsigned via `xattr -d com.apple.quarantine`; signing is post-spike |
-
-### 11.2 Open questions (debt)
-
-Assumptions and gaps inherited from the PRD that deserve refinement before post-spike hardening:
-
-1. **Definitive frontmatter:** §8.5 schema is an initial proposal; refine after creating the first 5+ real artifacts (dogfooding).
-2. **Skill identification in Claude JSONLs:** strategy proposed in §6.5 may fail if Claude Code changes the tool name or input structure. Validate in week 4 with real data.
-3. **Multi-platform vs macOS:** PRD locks to macOS; user requested multi-platform settings. Code written portably where cheap (paths, keytar), but tested and shipped only on macOS. Stays as debt if Linux/Windows is wanted later.
-4. **Token aggregation by period/session:** dashboard proposed with simple filters by date and grouping by skill/project. Refine in the UI design.
-5. **Backup of files overwritten on conflict:** retention policy (time, max size) not defined — spike uses "never auto-cleans". Revisit if volume becomes a problem.
-6. **Custom templates:** PRD asks for `≥1 template per type`; layout in `.sde/templates/` leaves the door open for the user to add their own — not must-have, but cheap.
-7. **Config migration between app versions:** not addressed — spike assumes stable schema. Post-spike needs a version field in `settings.json`.
-
----
-
-## 12. Glossary
+## 11. Glossary
 
 | Term | Definition |
 |---|---|

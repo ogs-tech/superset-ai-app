@@ -21,7 +21,7 @@ Devs who use AI (Claude Code, Copilot) accumulate skills, references and prompts
 
 Centralizing these artifacts in a local GUI, versioned in git, with symlink-based sync to the tools, is worth the effort.
 
-**Validation:** the author uses the app daily for 2+ consecutive weeks without going back to the old method, within a 4-week spike.
+**Validation:** the author uses the app daily for 2+ consecutive weeks without going back to the old method.
 
 ## 3. User
 
@@ -42,7 +42,12 @@ Single persona: the author themselves. Dogfooding. No external users.
 
 - Full schema validation of frontmatter.
 - Text search.
-- Token consumption per artifact (Claude via JSONL, Copilot via Usage API).
+
+> Should-haves only start **after** must-haves have been in real use for ≥ 1 week. If a should-have takes > 3 days of implementation, it's cut and becomes post-spike debt.
+
+### Nice-to-have
+
+- Token consumption per artifact (Claude via JSONL, Copilot via Usage API). Split from should-have because the JSONL parser and the Copilot HTTP client carry significantly more risk (format breakage, plan/PAT requirements) than schema validation or text search.
 
 ## 5. Out of scope
 
@@ -55,25 +60,29 @@ Single persona: the author themselves. Dogfooding. No external users.
 
 ## 6. Success metrics
 
-- ≥ 10 working days editing at least 1 artifact.
-- ≥ 2 consecutive weeks without going back to the old method.
+- ≥ 10 working days in which ≥ 1 synced artifact was effectively consumed by Claude Code or Copilot in a real work session (verifiable via Claude JSONL or Copilot log).
+- ≥ 2 consecutive weeks without creating/editing artifacts outside the app (loose notes, ad-hoc prompts, direct edits in `~/.claude/` or `~/.copilot/`).
 - ≥ 5 artifacts created and used in real projects.
-- Zero broken sync that takes > 1 day to fix.
+- Zero occurrences of broken symlink, unresolved conflict or desynced artifact persisting > 1 working day after detection.
 - Final report with transferable decisions for the next step (Specfy).
+
+**Checkpoints:** 30min retro every **2 weeks** with 3 fixed questions:
+
+1. Am I using it? (yes/no/partial — with evidence)
+2. Is anything blocking daily use? (friction, bug, missing feature)
+3. Should I cut scope, continue or stop?
+
+Decision logged in this PRD (changelog) or a dedicated file. The 8-week soft cap below remains as the outer limit.
+
+**Stop rule (continue / cut scope / stop):** the spike runs without a hard deadline, but ends when any signal below triggers a 30min retro:
+
+- 8 calendar weeks without hitting validation (≥2 consecutive weeks of use + ≥5 artifacts in a real project) — soft cap.
+- Validation reached → close spike, decide on hardening / move to Specfy.
 
 **Failure:** abandonment before 2 continuous weeks, or going back to the old method without apparent pain.
 
 ## 7. Assumptions
 
-- Author has ≥ 4h/day available during the 4 weeks.
+- Author has ≥ 4h/day available throughout the spike.
 - File format read by Claude Code and Copilot remains stable.
 - Author's local git repos are sufficient to test sync in a real project.
-
-## 8. Product risks
-
-| Risk | Impact | Mitigation |
-|-------|---------|-----------|
-| Dogfooding abandoned early | High | That's the point of the spike — discover cheaply. | 
-| Scope creep | High | Must-have locked; surprises go to post-spike. |
-| Little real AI use during 4 weeks | Medium | Pre-select 2–3 projects where the skills will be applied. |
-| Learnings don't transfer to Specfy | Low | Document decisions even if the code is thrown away. |
