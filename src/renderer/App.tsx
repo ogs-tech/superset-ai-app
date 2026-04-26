@@ -78,7 +78,11 @@ export function App(): React.ReactElement {
   }
 
   if (view.kind === 'settings') {
-    return <SettingsScreen />;
+    return (
+      <SettingsScreen
+        onBack={() => setView({ kind: 'main', settings: view.settings })}
+      />
+    );
   }
 
   return (

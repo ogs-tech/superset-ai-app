@@ -3,12 +3,18 @@ import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
 import { WorkspaceBootstrapService } from '../../../src/main/application/services/workspace-bootstrap.js';
+import { ArtifactService } from '../../../src/main/application/services/artifact-service.js';
+import { TemplateService } from '../../../src/main/application/services/template-service.js';
+import { InMemoryArtifactRepository } from '../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
 import type { FileSystemMutator } from '../../../src/main/application/ports/file-system-mutator.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
 import type { EnvironmentPort } from '../../../src/main/application/ports/environment-port.js';
 import type { PathProber } from '../../../src/main/application/ports/path-prober.js';
+import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
+import type { Template } from '../../../src/shared/artifact.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
@@ -27,6 +33,8 @@ interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
   workspaceBootstrap: WorkspaceBootstrapService;
+  artifactService: ArtifactService;
+  templateService: TemplateService;
   dialogPort: DialogPort;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
@@ -49,6 +57,11 @@ interface Deps {
   environmentPort: EnvironmentPort;
   environmentSpy: {
     getHomeDir: ReturnType<typeof vi.fn>;
+  };
+  artifactRepo: InMemoryArtifactRepository;
+  clock: FixedClock;
+  templateRepoSpy: {
+    list: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -99,10 +112,30 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     getHomeDir: environmentSpy.getHomeDir,
   };
 
+  const artifactRepo = new InMemoryArtifactRepository();
+  const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
+  const artifactService = new ArtifactService(artifactRepo, clock);
+
+  const templateFixture: Template = {
+    id: 'skill/default',
+    type: 'skill',
+    name: 'Default Skill',
+    description: 'sample',
+    frontmatter: { type: 'skill' },
+    body: '# Default Skill\n',
+  };
+  const templateRepoSpy = {
+    list: vi.fn().mockResolvedValue([templateFixture]),
+  };
+  const templateRepo: TemplateRepository = { list: templateRepoSpy.list };
+  const templateService = new TemplateService(templateRepo);
+
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
     workspaceBootstrap: new WorkspaceBootstrapService(mutator),
+    artifactService,
+    templateService,
     dialogPort,
     pathProber,
     environmentPort,
@@ -112,6 +145,9 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     dialogSpy,
     pathProberSpy,
     environmentSpy,
+    artifactRepo,
+    clock,
+    templateRepoSpy,
   };
 };
 
@@ -314,5 +350,120 @@ describe('buildHandlers', () => {
     expect(deps.dialogSpy.selectFolder).toHaveBeenCalledWith({
       defaultPath: '/home',
     });
+  });
+});
+
+describe('buildHandlers — artifact', () => {
+  const sampleArtifact = {
+    id: 'skill/foo',
+    frontmatter: {
+      slug: 'foo',
+      name: 'Foo',
+      type: 'skill',
+      description: 'sample',
+      scope: 'personal',
+      version: '0.1.0',
+      createdAt: '',
+      updatedAt: '',
+    },
+    body: '# Foo\n',
+  };
+
+  it('artifact.save returns { artifact, syncReport: [] }', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    const result = (await handlers['artifact.save']?.({
+      artifact: sampleArtifact,
+    })) as { artifact: { id: string }; syncReport: unknown[] };
+
+    expect(result.artifact.id).toBe('skill/foo');
+    expect(result.syncReport).toEqual([]);
+  });
+
+  it('artifact.save validation error surfaces as DomainError (envelope-mapped by dispatcher)', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    const broken = {
+      ...sampleArtifact,
+      frontmatter: { ...sampleArtifact.frontmatter, slug: '' },
+    };
+    await expect(handlers['artifact.save']?.({ artifact: broken })).rejects.toMatchObject({
+      kind: 'validation',
+    });
+  });
+
+  it('artifact.list filters by type when provided', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+
+    const result = (await handlers['artifact.list']?.({ type: 'skill' })) as Array<{
+      id: string;
+    }>;
+    expect(result.map((a) => a.id)).toEqual(['skill/foo']);
+  });
+
+  it('artifact.list returns all when type is omitted', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+
+    const result = (await handlers['artifact.list']?.({})) as Array<{ id: string }>;
+    expect(result).toHaveLength(1);
+  });
+
+  it('artifact.get returns the artifact', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+
+    const result = (await handlers['artifact.get']?.({ id: 'skill/foo' })) as {
+      id: string;
+    };
+    expect(result.id).toBe('skill/foo');
+  });
+
+  it('artifact.delete removes the artifact and accepts removeSymlinks flag', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+
+    const result = (await handlers['artifact.delete']?.({
+      id: 'skill/foo',
+      removeSymlinks: true,
+    })) as { ok: true };
+    expect(result).toEqual({ ok: true });
+
+    expect(await deps.artifactRepo.exists({ id: 'skill/foo' })).toBe(false);
+  });
+
+  it('artifact.delete rejects when removeSymlinks is missing', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    await expect(
+      handlers['artifact.delete']?.({ id: 'skill/foo' }),
+    ).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it('template.list delegates to TemplateService with the requested type', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    const result = (await handlers['template.list']?.({ type: 'skill' })) as Template[];
+    expect(deps.templateRepoSpy.list).toHaveBeenCalledWith({ type: 'skill' });
+    expect(result).toHaveLength(1);
+    expect(result[0]!.type).toBe('skill');
+  });
+
+  it('template.list rejects unknown type with kind=validation', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    await expect(
+      handlers['template.list']?.({ type: 'unknown' }),
+    ).rejects.toMatchObject({ kind: 'validation' });
   });
 });

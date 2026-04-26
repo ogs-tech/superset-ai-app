@@ -19,7 +19,11 @@ interface PendingLink {
 const labelFor = (key: 'claude' | 'copilot'): string =>
   key === 'claude' ? 'Claude' : 'Copilot';
 
-export function Settings(): React.ReactElement {
+interface SettingsProps {
+  onBack?: () => void;
+}
+
+export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [settings, setSettings] = useState<SettingsModel | null>(null);
   const [repos, setRepos] = useState<LinkedRepoView[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +115,14 @@ export function Settings(): React.ReactElement {
       data-testid="settings-screen"
       style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}
     >
-      <h1>Settings</h1>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Settings</h1>
+        {onBack && (
+          <button type="button" onClick={onBack}>
+            Voltar
+          </button>
+        )}
+      </header>
 
       <section>
         <h2>Adapters</h2>

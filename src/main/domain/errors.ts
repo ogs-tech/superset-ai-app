@@ -13,3 +13,20 @@ export class DomainError extends Error {
     this.details = details;
   }
 }
+
+export interface ValidationDetails {
+  missing?: string[];
+  invalid?: string[];
+  conflict?: string;
+}
+
+export function validationError(args: {
+  message: string;
+  details?: ValidationDetails;
+}): DomainError {
+  return new DomainError(
+    'validation',
+    args.message,
+    args.details as Record<string, unknown> | undefined,
+  );
+}

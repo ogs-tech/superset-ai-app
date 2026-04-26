@@ -3,21 +3,50 @@ import { basename } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
 import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
+import type { ArtifactService } from '../application/services/artifact-service.js';
+import type { TemplateService } from '../application/services/template-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
 import type { EnvironmentPort } from '../application/ports/environment-port.js';
 import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
+import type { ArtifactListParams } from '../../shared/ipc-contract.js';
+import type { Artifact, ArtifactType } from '../../shared/artifact.js';
 import type { IpcHandlers } from './dispatcher.js';
 
 export interface IpcDeps {
   settingsService: SettingsService;
   repoService: RepoService;
   workspaceBootstrap: WorkspaceBootstrapService;
+  artifactService: ArtifactService;
+  templateService: TemplateService;
   dialogPort: DialogPort;
   pathProber: PathProber;
   environmentPort: EnvironmentPort;
 }
+
+const ARTIFACT_TYPES: readonly ArtifactType[] = ['skill', 'reference', 'agent'];
+
+const asArtifact = (value: unknown): Artifact => {
+  if (typeof value !== 'object' || value === null) {
+    throw new DomainError('validation', `Invalid 'artifact' payload`);
+  }
+  return value as Artifact;
+};
+
+const asArtifactType = (value: unknown, field: string): ArtifactType => {
+  if (typeof value !== 'string' || !(ARTIFACT_TYPES as readonly string[]).includes(value)) {
+    throw new DomainError('validation', `Invalid '${field}' (must be skill | reference | agent)`);
+  }
+  return value as ArtifactType;
+};
+
+const asBoolean = (value: unknown, field: string): boolean => {
+  if (typeof value !== 'boolean') {
+    throw new DomainError('validation', `Missing or invalid '${field}'`);
+  }
+  return value;
+};
 
 interface RepoLinkParams {
   path: string;
@@ -51,7 +80,16 @@ const asObject = (value: unknown, label: string): Record<string, unknown> => {
 };
 
 export function buildHandlers(deps: IpcDeps): IpcHandlers {
-  const { settingsService, repoService, workspaceBootstrap, dialogPort, pathProber, environmentPort } = deps;
+  const {
+    settingsService,
+    repoService,
+    workspaceBootstrap,
+    artifactService,
+    templateService,
+    dialogPort,
+    pathProber,
+    environmentPort,
+  } = deps;
 
   return {
     'app.getHomeDir': () => environmentPort.getHomeDir(),
@@ -140,6 +178,44 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
         dialogParams.defaultPath = raw['defaultPath'];
       }
       return dialogPort.selectFolder(dialogParams);
+    },
+
+    'artifact.list': async (params) => {
+      const raw =
+        params === undefined || params === null ? {} : asObject(params, 'artifact.list');
+      const query: ArtifactListParams = {};
+      if (raw['type'] !== undefined) {
+        query.type = asArtifactType(raw['type'], 'type');
+      }
+      return artifactService.list(query);
+    },
+
+    'artifact.get': async (params) => {
+      const raw = asObject(params, 'artifact.get');
+      return artifactService.get({ id: asString(raw['id'], 'id') });
+    },
+
+    'artifact.save': async (params) => {
+      const raw = asObject(params, 'artifact.save');
+      const artifact = asArtifact(raw['artifact']);
+      const isCreate = raw['isCreate'];
+      return artifactService.save({
+        artifact,
+        ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
+      });
+    },
+
+    'artifact.delete': async (params) => {
+      const raw = asObject(params, 'artifact.delete');
+      return artifactService.delete({
+        id: asString(raw['id'], 'id'),
+        removeSymlinks: asBoolean(raw['removeSymlinks'], 'removeSymlinks'),
+      });
+    },
+
+    'template.list': async (params) => {
+      const raw = asObject(params, 'template.list');
+      return templateService.list({ type: asArtifactType(raw['type'], 'type') });
     },
   };
 }

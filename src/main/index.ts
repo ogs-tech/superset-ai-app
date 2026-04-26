@@ -5,9 +5,14 @@ import { IPC_CHANNEL } from '../shared/ipc-contract.js';
 import { SettingsService } from './application/services/settings-service.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
+import { ArtifactService } from './application/services/artifact-service.js';
+import { TemplateService } from './application/services/template-service.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
+import { FsArtifactRepository } from './infrastructure/artifact/fs-artifact-repository.js';
+import { BuiltInTemplateRepository } from './infrastructure/template/built-in-template-repository.js';
+import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
 import { buildHandlers } from './ipc/registry.js';
@@ -38,10 +43,22 @@ function wireIpc(): void {
   const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
   const dialogPort = new ElectronDialogAdapter();
   const environmentPort = new ElectronEnvironmentAdapter();
+
+  const clock = new SystemClock();
+  const artifactRepo = new FsArtifactRepository(async () => {
+    const current = await settingsService.load();
+    return current?.workspacePath ?? app.getPath('userData');
+  });
+  const artifactService = new ArtifactService(artifactRepo, clock);
+  const templatesDir = join(process.cwd(), 'src', 'main', 'templates');
+  const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir));
+
   const handlers = buildHandlers({
     settingsService,
     repoService,
     workspaceBootstrap,
+    artifactService,
+    templateService,
     dialogPort,
     pathProber: repoReader,
     environmentPort,
