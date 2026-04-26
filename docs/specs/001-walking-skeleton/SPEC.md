@@ -1,10 +1,10 @@
 ---
 id: "001"
 title: Walking skeleton
-status: draft
+status: active
 priority: now
 created_at: 2026-04-25
-updated_at: 2026-04-25
+updated_at: 2026-04-26
 depends_on: []
 labels: [must-have, infra, core]
 related_arch: "§3.1, §4.1, §5.3, §8.1, §8.2"
