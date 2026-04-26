@@ -91,10 +91,10 @@ Group tasks under `## Phase N — <name>` sections (e.g. `Setup`, `Foundational`
 Transitions:
 
 - `draft` → `active`: ao iniciar a Phase 1; todos os `[NEEDS CLARIFICATION]` resolvidos.
-- `active` → `review`: Phase de Verification verde **e** Bookkeeping completo (ARCH/PRD sincronizados).
-- `review` → `done`: aprovado no retro quinzenal (PRD §6). Antes do retro a spec fica em `review` aguardando validação de produto/arquitetura.
+- `active` → `review`: Phase de Verification verde.
+- `review` → `done`: Phase de Bookkeeping completa (ARCH/PRD sincronizados). Não depende de retro.
 
-Dependências (`depends_on`): uma spec pode iniciar Phase 1 mesmo quando seu `depends_on` está em `review` (ainda não `done`), desde que a Verification da dependência esteja verde. O `done` formal vem só no retro quinzenal e não bloqueia trabalho downstream.
+Dependências (`depends_on`): uma spec pode iniciar Phase 1 mesmo quando seu `depends_on` está em `review`, desde que a Verification da dependência esteja verde.
 
 ### Sync with PRD/ARCH
 
@@ -104,7 +104,7 @@ Dependências (`depends_on`): uma spec pode iniciar Phase 1 mesmo quando seu `de
 
 ### Roadmap
 
-[docs/ROADMAP.md](docs/ROADMAP.md) holds the Now/Next/Later narrative and retro log. Updated **only at biweekly retros** (PRD §6). The `priority:` field in spec frontmatter is the queryable source of truth; ROADMAP is the human-readable snapshot.
+[docs/ROADMAP.md](docs/ROADMAP.md) holds the Now/Next/Later narrative and retro log. A coluna Status acompanha o frontmatter da spec **uma fase atrás**: quando a SPEC vira `done`, a linha do ROADMAP é atualizada para `review`; o retro quinzenal (PRD §6) promove ROADMAP `review` → `done`. Apenas a coluna Status pode ser atualizada fora do retro — Now/Next/Later e o retro log permanecem congelados entre retros. O `priority:` field in spec frontmatter is the queryable source of truth; ROADMAP is the human-readable snapshot.
 
 ### Discovery (no manual index)
 

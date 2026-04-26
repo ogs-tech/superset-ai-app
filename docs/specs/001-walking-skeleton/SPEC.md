@@ -1,7 +1,7 @@
 ---
 id: "001"
 title: Walking skeleton
-status: review
+status: done
 priority: now
 created_at: 2026-04-25
 updated_at: 2026-04-26

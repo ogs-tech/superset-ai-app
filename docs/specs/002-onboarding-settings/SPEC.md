@@ -1,7 +1,7 @@
 ---
 id: "002"
 title: Onboarding & settings
-status: review
+status: done
 priority: next
 created_at: 2026-04-26
 updated_at: 2026-04-26
@@ -113,7 +113,7 @@ Sem onboarding e settings, nenhuma das specs subsequentes (003 artifact-crud, 00
 
 - **T048 — PRD §4 evaluation:** a redação atual ("Settings: enable/disable adapter, default scope, management of linked repos") cobre o entregue. Modal de confirmação, dedupe por path e validação de `.git/` são detalhes de implementação cobertos por AC#10, AC#11 e AC#13 desta spec; promovê-los à PRD must-have geraria ruído sem ganho de alinhamento. **Decisão:** manter PRD §4 inalterada.
 - **T029 deviation:** o handler `workspace.exists` foi adicionado fora da lista enumerada em T029 para satisfazer AC#14 (router decide entre `<Main>` e `<WorkspaceMissing>` lendo o estado do disco). Implementado como port `PathProber` reutilizando `FsRepoReader` no wiring.
-- **T046 — manual smoke:** a verificação interativa (`npm run dev` em `userData` limpo) fica pendente para o autor antes do retro de promoção `review` → `done`.
+- **T046 — manual smoke:** verificação interativa (`npm run dev` em `userData` limpo) executada com sucesso pelo autor; onboarding apareceu, estrutura de diretórios criada, `settings.json` no shape esperado, reabertura abriu a tela principal.
 
 ## References
 

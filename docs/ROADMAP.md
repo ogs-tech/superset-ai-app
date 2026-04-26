@@ -22,7 +22,7 @@ updated_at: 2026-04-26
 
 | Spec | Description | Status |
 |------|-------------|--------|
-| `002-onboarding-settings` | first-use flow: pick workspace, write `settings.json`, link repos. `SettingsService` + `RepoService` (ARCH §6.6). | — |
+| `002-onboarding-settings` | first-use flow: pick workspace, write `settings.json`, link repos. `SettingsService` + `RepoService` (ARCH §6.6). | `review` |
 | `003-artifact-crud` | `ArtifactService` + `TemplateService` + UI listing/edit. No sync yet (ARCH §5.3). | — |
 | `004-symlink-sync-core` | `SymlinkManager` + `AdapterManager`. Save flow + conflict handling (ARCH §6.1, §6.2). | — |
 
