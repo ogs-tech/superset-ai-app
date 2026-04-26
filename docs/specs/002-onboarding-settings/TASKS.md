@@ -92,7 +92,7 @@
 - [x] T043 [P] `npm run lint` passa sem warnings novos. → AC#1–AC#19
 - [x] T044 [P] `npm run typecheck` passa em `tsconfig.node.json` e `tsconfig.web.json`. → AC#1–AC#19
 - [x] T045 `npm test` passa com cobertura ≥ 80% nas pastas `src/main/application/services/`, `src/main/infrastructure/settings/`, `src/main/infrastructure/workspace/`, `src/main/infrastructure/repo/` e `src/renderer/screens/`. → AC#4, AC#5, AC#6, AC#7, AC#17, AC#19
-- [ ] T046 Smoke manual: `npm run dev` em diretório com `userData` limpo (`rm -rf "$HOME/Library/Application Support/sde-ai-app"`); confirmar (a) onboarding aparece, (b) seleção cria estrutura em disco (`ls <workspace>` mostra todos os 6 subdiretórios), (c) `settings.json` em `~/Library/Application Support/sde-ai-app/settings.json` contém o shape esperado de AC#2/AC#16, (d) reabertura abre tela principal. Documentar passo a passo no PR description. → AC#1, AC#2, AC#3, AC#12, AC#16 *(pendente — requer ação manual do autor)*
+- [x] T046 Smoke manual: `npm run dev` em diretório com `userData` limpo (`rm -rf "$HOME/Library/Application Support/sde-ai-app"`); confirmar (a) onboarding aparece, (b) seleção cria estrutura em disco (`ls <workspace>` mostra todos os 6 subdiretórios), (c) `settings.json` em `~/Library/Application Support/sde-ai-app/settings.json` contém o shape esperado de AC#2/AC#16, (d) reabertura abre tela principal. Documentar passo a passo no PR description. → AC#1, AC#2, AC#3, AC#12, AC#16 *(pendente — requer ação manual do autor)*
 
 ## Phase 8 — Bookkeeping (sync de docs antes de `status: done`)
 

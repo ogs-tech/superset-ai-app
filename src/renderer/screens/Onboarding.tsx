@@ -13,39 +13,52 @@ interface SelectFolderResult {
   path?: string;
 }
 
+const DEFAULT_WORKSPACE_DIR = 'sde-ai-app';
+
 export function Onboarding({ onComplete, onIoError }: OnboardingProps): React.ReactElement {
   const [busy, setBusy] = useState(false);
+
+  const persist = async (workspacePath: string): Promise<void> => {
+    const apply = async (): Promise<void> => {
+      await callIpc('workspace.bootstrap', { workspacePath });
+      const defaults = getDefaults();
+      const next = await callIpc<Settings>('settings.merge', {
+        workspacePath,
+        adapters: defaults.adapters,
+        linkedRepos: defaults.linkedRepos,
+        ui: defaults.ui,
+      });
+      onComplete(next);
+    };
+
+    try {
+      await apply();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'I/O error';
+      onIoError(message, apply);
+    }
+  };
 
   const handleSelect = async (): Promise<void> => {
     setBusy(true);
     try {
       const picked = await callIpc<SelectFolderResult>('dialog.selectFolder', {
-        defaultPath: '~/sde-ai-app',
+        defaultPath: `~/${DEFAULT_WORKSPACE_DIR}`,
       });
       if (picked.canceled || !picked.path) {
-        setBusy(false);
         return;
       }
+      await persist(picked.path);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-      const workspacePath = picked.path;
-      const apply = async (): Promise<void> => {
-        await callIpc('workspace.bootstrap', { workspacePath });
-        const defaults = getDefaults();
-        const next = await callIpc<Settings>('settings.merge', {
-          workspacePath,
-          adapters: defaults.adapters,
-          linkedRepos: defaults.linkedRepos,
-          ui: defaults.ui,
-        });
-        onComplete(next);
-      };
-
-      try {
-        await apply();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'I/O error';
-        onIoError(message, apply);
-      }
+  const handleUseDefault = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const home = await callIpc<string>('app.getHomeDir', {});
+      await persist(`${home}/${DEFAULT_WORKSPACE_DIR}`);
     } finally {
       setBusy(false);
     }
@@ -58,11 +71,16 @@ export function Onboarding({ onComplete, onIoError }: OnboardingProps): React.Re
     >
       <h1>Bem-vindo ao sde-ai-app</h1>
       <p>
-        Selecione a pasta do workspace. Sugestão: <code>~/sde-ai-app</code>.
+        Selecione a pasta do workspace ou use o padrão <code>~/sde-ai-app</code>.
       </p>
-      <button type="button" onClick={() => void handleSelect()} disabled={busy}>
-        Selecionar pasta
-      </button>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button type="button" onClick={() => void handleUseDefault()} disabled={busy}>
+          Usar padrão (~/sde-ai-app)
+        </button>
+        <button type="button" onClick={() => void handleSelect()} disabled={busy}>
+          Selecionar pasta
+        </button>
+      </div>
     </main>
   );
 }

@@ -4,6 +4,7 @@ import type { SettingsService } from '../application/services/settings-service.j
 import type { RepoService } from '../application/services/repo-service.js';
 import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
+import type { EnvironmentPort } from '../application/ports/environment-port.js';
 import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
@@ -15,6 +16,7 @@ export interface IpcDeps {
   workspaceBootstrap: WorkspaceBootstrapService;
   dialogPort: DialogPort;
   pathProber: PathProber;
+  environmentPort: EnvironmentPort;
 }
 
 interface RepoLinkParams {
@@ -49,9 +51,11 @@ const asObject = (value: unknown, label: string): Record<string, unknown> => {
 };
 
 export function buildHandlers(deps: IpcDeps): IpcHandlers {
-  const { settingsService, repoService, workspaceBootstrap, dialogPort, pathProber } = deps;
+  const { settingsService, repoService, workspaceBootstrap, dialogPort, pathProber, environmentPort } = deps;
 
   return {
+    'app.getHomeDir': () => environmentPort.getHomeDir(),
+
     'settings.get': () => settingsService.load(),
 
     'settings.save': async (params) => {

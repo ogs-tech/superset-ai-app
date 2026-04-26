@@ -9,6 +9,7 @@ import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repo
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
+import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -36,12 +37,14 @@ function wireIpc(): void {
   const repoService = new RepoService(repoReader);
   const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
   const dialogPort = new ElectronDialogAdapter();
+  const environmentPort = new ElectronEnvironmentAdapter();
   const handlers = buildHandlers({
     settingsService,
     repoService,
     workspaceBootstrap,
     dialogPort,
     pathProber: repoReader,
+    environmentPort,
   });
   const dispatch = createDispatcher(handlers);
 

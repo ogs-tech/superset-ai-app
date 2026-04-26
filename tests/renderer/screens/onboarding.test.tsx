@@ -18,7 +18,7 @@ describe('<Onboarding>', () => {
     expect(
       screen.getByRole('button', { name: /selecionar pasta/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/~\/sde-ai-app/)).toBeInTheDocument();
+    expect(screen.getAllByText(/~\/sde-ai-app/).length).toBeGreaterThan(0);
   });
 
   it('does not contain adapter toggle UI', () => {
@@ -103,6 +103,51 @@ describe('<Onboarding>', () => {
     expect(
       call.mock.calls.find((c) => c[0] === 'settings.merge'),
     ).toBeUndefined();
+  });
+
+  it('clicking "Use default" resolves ~/sde-ai-app via app.getHomeDir and runs bootstrap+merge', async () => {
+    const user = userEvent.setup();
+    call.mockImplementation((method: string) => {
+      if (method === 'app.getHomeDir')
+        return Promise.resolve(ok('/Users/test'));
+      if (method === 'workspace.bootstrap') return Promise.resolve(ok(undefined));
+      if (method === 'settings.merge')
+        return Promise.resolve(
+          ok({
+            workspacePath: '/Users/test/sde-ai-app',
+            adapters: {
+              claude: { enabled: true, defaultScope: 'personal' },
+              copilot: { enabled: false, defaultScope: 'personal' },
+            },
+            linkedRepos: [],
+            ui: { theme: 'system' },
+          }),
+        );
+      return Promise.resolve(ok(undefined));
+    });
+
+    const onComplete = vi.fn();
+    render(<Onboarding onComplete={onComplete} onIoError={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /usar padrão/i }));
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('app.getHomeDir', expect.any(Object)),
+    );
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('workspace.bootstrap', {
+        workspacePath: '/Users/test/sde-ai-app',
+      }),
+    );
+    const mergeCall = call.mock.calls.find((c) => c[0] === 'settings.merge');
+    expect(mergeCall?.[1]).toMatchObject({
+      workspacePath: '/Users/test/sde-ai-app',
+    });
+
+    expect(
+      call.mock.calls.find((c) => c[0] === 'dialog.selectFolder'),
+    ).toBeUndefined();
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalled());
   });
 
   it('I/O failure during workspace.bootstrap routes to onIoError', async () => {

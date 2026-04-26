@@ -7,6 +7,7 @@ import type { SettingsRepository } from '../../../src/main/application/ports/set
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
 import type { FileSystemMutator } from '../../../src/main/application/ports/file-system-mutator.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
+import type { EnvironmentPort } from '../../../src/main/application/ports/environment-port.js';
 import type { PathProber } from '../../../src/main/application/ports/path-prober.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
@@ -45,6 +46,10 @@ interface Deps {
     exists: ReturnType<typeof vi.fn>;
   };
   pathProber: PathProber;
+  environmentPort: EnvironmentPort;
+  environmentSpy: {
+    getHomeDir: ReturnType<typeof vi.fn>;
+  };
 }
 
 const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
@@ -87,17 +92,26 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     exists: pathProberSpy.exists,
   };
 
+  const environmentSpy = {
+    getHomeDir: vi.fn().mockReturnValue('/Users/test'),
+  };
+  const environmentPort: EnvironmentPort = {
+    getHomeDir: environmentSpy.getHomeDir,
+  };
+
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
     workspaceBootstrap: new WorkspaceBootstrapService(mutator),
     dialogPort,
     pathProber,
+    environmentPort,
     settingsRepoSpy,
     repoReaderSpy,
     fsMutatorSpy,
     dialogSpy,
     pathProberSpy,
+    environmentSpy,
   };
 };
 
@@ -271,6 +285,17 @@ describe('buildHandlers', () => {
 
     expect(result).toBe(false);
     expect(deps.pathProberSpy.exists).toHaveBeenCalledWith('/missing');
+  });
+
+  it('app.getHomeDir delegates to EnvironmentPort.getHomeDir', async () => {
+    const deps = buildDeps();
+    deps.environmentSpy.getHomeDir.mockReturnValueOnce('/Users/odenir');
+    const handlers = buildHandlers(deps);
+
+    const result = await handlers['app.getHomeDir']?.({});
+
+    expect(result).toBe('/Users/odenir');
+    expect(deps.environmentSpy.getHomeDir).toHaveBeenCalledTimes(1);
   });
 
   it('dialog.selectFolder delegates to DialogPort.selectFolder', async () => {
