@@ -40,7 +40,7 @@ docs/specs/<id>-<slug>/
 ---
 id: "001"
 title: Symlink sync
-status: draft                # draft | active | done | dropped | superseded
+status: draft                # draft | active | review | done | dropped | superseded
 priority: now                # now | next | later
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
@@ -86,7 +86,13 @@ Group tasks under `## Phase N — <name>` sections (e.g. `Setup`, `Foundational`
 
 ### Status lifecycle
 
-`draft` → `active` → `done` (or `dropped` / `superseded`). Update `updated_at` on each transition. When `status: superseded`, set `superseded_by` to the new spec id.
+`draft` → `active` → `review` → `done` (or `dropped` / `superseded`). Update `updated_at` on each transition. When `status: superseded`, set `superseded_by` to the new spec id.
+
+Transitions:
+
+- `draft` → `active`: ao iniciar a Phase 1; todos os `[NEEDS CLARIFICATION]` resolvidos.
+- `active` → `review`: Phase de Verification verde **e** Bookkeeping completo (ARCH/PRD sincronizados).
+- `review` → `done`: aprovado no retro quinzenal (PRD §6). Antes do retro a spec fica em `review` aguardando validação de produto/arquitetura.
 
 ### Sync with PRD/ARCH
 

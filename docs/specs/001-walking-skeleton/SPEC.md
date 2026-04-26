@@ -1,7 +1,7 @@
 ---
 id: "001"
 title: Walking skeleton
-status: active
+status: review
 priority: now
 created_at: 2026-04-25
 updated_at: 2026-04-26
@@ -179,3 +179,8 @@ specs futuros):
 - ARCH §8.5 — `settings.json` data model (subset usado aqui).
 - ARCH ADR-11 — TypeScript-only no Main.
 - ROADMAP — `001-walking-skeleton` na fila Now.
+
+## Bookkeeping notes
+
+- **PRD §4 (T032):** spec é infra-only — must-have/should-have descrevem produto (CRUD, sync, settings) e não foram alterados pela implementação. Nenhuma mudança no PRD.
+- **ARCH §9 (T031):** ADR-12 (electron-vite), ADR-13 (hexagonal leve), ADR-14 (single-channel `call` + dispatcher) registrados a partir das "Considered alternatives" desta spec.

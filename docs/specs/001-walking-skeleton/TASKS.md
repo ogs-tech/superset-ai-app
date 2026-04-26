@@ -60,6 +60,6 @@
 
 > ROADMAP **não** é atualizado nesta phase — entra apenas no retro quinzenal (PRD §6 / CLAUDE.md).
 
-- [ ] T031 Reconciliar `ARCH §9`: garantir que existem ADRs cobrindo as decisões registradas em "Considered alternatives" (electron-vite vs alternativas, hexagonal leve vs Clean/flat, single-channel `call(method, params)` + dispatcher vs multi-channel/tRPC). Criar ou atualizar ADRs se a implementação divergiu; referenciar spec 001.
-- [ ] T032 Avaliar se `PRD §4` (must-have/should-have) precisa ajuste após a implementação. Esta spec é infra-only → provavelmente N/A; registrar a decisão (PR description ou nota no spec) se confirmado nada a mudar.
-- [ ] T033 Frontmatter de `SPEC.md`: marcar `status: active` ao iniciar Phase 1, `status: done` após Phase 8 verde; atualizar `updated_at` em cada transição; preencher `branch` quando criar a branch de implementação.
+- [x] T031 Reconciliar `ARCH §9`: garantir que existem ADRs cobrindo as decisões registradas em "Considered alternatives" (electron-vite vs alternativas, hexagonal leve vs Clean/flat, single-channel `call(method, params)` + dispatcher vs multi-channel/tRPC). Criar ou atualizar ADRs se a implementação divergiu; referenciar spec 001.
+- [x] T032 Avaliar se `PRD §4` (must-have/should-have) precisa ajuste após a implementação. Esta spec é infra-only → provavelmente N/A; registrar a decisão (PR description ou nota no spec) se confirmado nada a mudar.
+- [x] T033 Frontmatter de `SPEC.md`: marcar `status: active` ao iniciar Phase 1, `status: done` após Phase 8 verde; atualizar `updated_at` em cada transição; preencher `branch` quando criar a branch de implementação.
