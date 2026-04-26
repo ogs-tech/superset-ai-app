@@ -17,7 +17,7 @@ updated_at: 2026-04-25
 
 | Spec | Description | Status |
 |------|-------------|--------|
-| `001-walking-skeleton` | Electron + Go subprocess + JSON-RPC ping/pong. De-risks ADR-1, ADR-2 and the 1 MB stdio payload limit (ARCH §8.2). | — |
+| `001-walking-skeleton` | Scaffold Electron + React + TypeScript + Main services + `contextBridge` IPC round-trip. Lays the structural foundation for all subsequent specs (ARCH §3.1, §5, §8.1). | — |
 
 ## Next
 
@@ -50,8 +50,6 @@ updated_at: 2026-04-25
 | Spec | Description | Status |
 |------|-------------|--------|
 | `011-claude-token-parser` | JSONL aggregation (ARCH §5.3, §6.5). Format-breakage risk accepted. | — |
-| `012-copilot-usage-client` | GitHub Usage API + PAT via Keychain (ARCH §5.3, §8.4). | — |
+| `012-copilot-usage-client` | GitHub Usage API + PAT via Keychain (ARCH §5.3, §8.3). | — |
 
 ## Retro log
-
-- **2026-04-25** — kickoff. Roadmap derived from ARCH §5.3 (components) and §6 (flows). Order driven by dependency, not preference: 001 chosen as walking skeleton to de-risk ADR-1/ADR-2 before any feature. Should/nice-have parked until must-have is dogfooded for ≥1 week (PRD §4 explicit rule).

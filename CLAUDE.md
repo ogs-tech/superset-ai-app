@@ -3,8 +3,10 @@
 ## Docs
 
 - When editing `docs/PRD.md`, always read `docs/ARCH.md` first.
-- When editing `docs/ARCH.md`, always read `docs/PRD.md` first.
+- When editing `docs/ARCH.md`, always read `docs/PRD.md` and `docs/ROADMAP.md` first.
+- When editing `docs/ROADMAP.md`, always read `docs/ARCH.md` first.
 - Changes that affect product behavior require synchronized updates to PRD and ARCH.
+- Changes that affect execution sequence or delivery order require synchronized updates to ARCH and ROADMAP.
 
 ## Specs
 

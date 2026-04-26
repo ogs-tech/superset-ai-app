@@ -3,7 +3,7 @@ title: "ARCH — Skillforge (sde-ai-app)"
 internal_name: sde-ai-app
 codename: forge
 public_name: Skillforge
-status: Ready
+status: Draft
 created_at: 2026-04-19
 updated_at: 2026-04-25
 ---
@@ -37,7 +37,7 @@ Local GUI for a solo dev to create/edit AI artifacts (skills, references, agent 
 
 Non-negotiable constraints inherited from the PRD:
 
-- Stack: **Electron + React + Go** via IPC. No backend, API, database, auth, telemetry.
+- Stack: **Electron + React + TypeScript** (single Node runtime in the Main process). No backend, API, database, auth, telemetry.
 - Target platform: **macOS only** (Linux/Windows out of scope).
 - Sync: **symlink** (single source), no copy. Save is the only action.
 - Git: **read-only** (detect repo, branch). Manual commit.
@@ -51,44 +51,36 @@ Non-negotiable constraints inherited from the PRD:
 ### 3.1 Technical context — process boundaries
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         Electron Process                          │
-│                                                                   │
-│  ┌─────────────────┐   contextBridge   ┌──────────────────────┐   │
-│  │   Renderer      │◄─────IPC─────────►│  Main (Node.js)      │   │
-│  │   (React)       │                   │                      │   │
-│  │                 │                   │  - windows/menus     │   │
-│  │  - Editor       │                   │  - keytar (secrets)  │   │
-│  │  - Preview      │                   │  - spawn Go Core     │   │
-│  │  - Settings     │                   │  - JSON-RPC bridge   │   │
-│  └─────────────────┘                   └──────────┬───────────┘   │
-│                                                   │               │
-└───────────────────────────────────────────────────┼───────────────┘
-                                                    │ stdin/stdout
-                                                    │ JSON-RPC 2.0
-                                                    ▼
-                                ┌──────────────────────────────────┐
-                                │   Go Core (subprocess)           │
-                                │                                  │
-                                │  - ArtifactService (CRUD)        │
-                                │  - AdapterManager                │
-                                │    ├─ ClaudeAdapter              │
-                                │    └─ CopilotAdapter             │
-                                │  - SymlinkManager                │
-                                │  - TemplateService               │
-                                │  - RepoService (git read-only)   │
-                                │  - SettingsService               │
-                                │  - ClaudeTokenParser (JSONL)     │
-                                │  - CopilotUsageClient (HTTP)     │
-                                │  - CopilotInstructionsGen        │
-                                └──────────────┬───────────────────┘
-                                               │ filesystem + HTTPS
-                                               ▼
-              ┌────────────────┬────────────────────┬──────────────┐
-              │  Workspace     │  ~/.claude/        │  GitHub API  │
-              │  (artifacts)   │  ~/.copilot/       │  (usage)     │
-              │  <repo>/.claude│  <repo>/.github    │              │
-              └────────────────┴────────────────────┴──────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          Electron Process                            │
+│                                                                      │
+│  ┌─────────────────┐   contextBridge   ┌────────────────────────┐    │
+│  │   Renderer      │◄─────IPC─────────►│  Main (Node.js + TS)   │    │
+│  │   (React + TS)  │                   │                        │    │
+│  │                 │                   │  - windows/menus       │    │
+│  │  - Editor       │                   │  - keytar (secrets)    │    │
+│  │  - Preview      │                   │  - Main services:      │    │
+│  │  - Settings     │                   │    ArtifactService     │    │
+│  └─────────────────┘                   │    AdapterManager      │    │
+│                                        │      ├─ ClaudeAdapter  │    │
+│                                        │      └─ CopilotAdapter │    │
+│                                        │    SymlinkManager      │    │
+│                                        │    TemplateService     │    │
+│                                        │    RepoService         │    │
+│                                        │    SettingsService     │    │
+│                                        │    ClaudeTokenParser   │    │
+│                                        │    CopilotUsageClient  │    │
+│                                        │ CopilotInstructionsGen │    │
+│                                        └────────────┬───────────┘    │
+│                                                     │                │
+└─────────────────────────────────────────────────────┼────────────────┘
+                                                      │ filesystem + HTTPS
+                                                      ▼
+              ┌────────────────┬────────────────────┬────────────────┐
+              │  Workspace     │  ~/.claude/        │  GitHub API    │
+              │  (artifacts)   │  ~/.copilot/       │  (usage)       │
+              │  <repo>/.claude│  <repo>/.github    │                │
+              └────────────────┴────────────────────┴────────────────┘
 ```
 
 ### 3.2 External systems
@@ -125,16 +117,16 @@ This doc **does not cover**:
 | --------- | ---------------------------------- | ---------------------------------------------------- |
 | Shell     | Electron (latest LTS at the start) | `contextIsolation: true`, `nodeIntegration: false`. Version pinned; `electron-rebuild` runs in `postinstall` to rebuild keytar's native module. |
 | UI        | React + TypeScript                 | No SSR. Bundler at the dev's choice (Vite recommended).|
-| Core      | Go (stdlib + `yaml.v3`)            | Binary embedded in `resources/`.                     |
-| IPC       | JSON-RPC 2.0 over stdin/stdout     | See ADR-2 in section 9.                              |
+| Main services | TypeScript + Node stdlib (`fs`, `path`, `readline`, `fetch`) + `yaml`/`js-yaml` | Domain logic lives in the Main process. No subprocess, no separate runtime. See ADR-11. |
+| IPC       | Electron `contextBridge` + `ipcRenderer.invoke` | Renderer ↔ Main only. See ADR-11.                  |
 | Secrets   | Keychain via `keytar`              | Cross-platform at low cost — see ADR-4.              |
 | Markdown  | React library (e.g. react-markdown) | Rendering only, no WYSIWYG editing.                 |
-| Git       | Direct read of `.git/HEAD` in Go   | No libgit2, no `go-git` — avoids heavy dependency.   |
+| Git       | Direct read of `.git/HEAD` in TS   | No `simple-git`, no `nodegit` — avoids heavy dependency. |
 
 ### 4.2 Structural decisions (summary — details in §9)
 
-- **Go as a single subprocess** (not a native library) → isolated packaging and debugging.
-- **JSON-RPC 2.0 over stdin/stdout** → zero network setup, no local auth.
+- **TypeScript-only inside the Electron Main process** → no subprocess, no protocol design, single stack to debug. See ADR-11.
+- **`contextBridge` as the IPC surface** → direct Renderer ↔ Main calls, no network, no local auth.
 - **Symlink as the sync mechanism** (locked by the PRD) → single source, no copy.
 - **Monolith per component, no persistence beyond files** → consistent with spike timeline.
 
@@ -150,15 +142,15 @@ Static view of the system components.
 - **Does not do:** filesystem, process spawning, external HTTP calls. Everything via IPC.
 - **Dependencies:** Main (via `window.api` exposed by the preload).
 
-### 5.2 Main (Electron, Node.js)
+### 5.2 Main (Electron, Node.js + TypeScript)
 
-- **Responsibility:** app lifecycle; creates window; exposes IPC in the preload; **spawns the Go Core**; proxies Renderer↔Go calls; resolves secrets via `keytar` (Copilot PAT); handles Go restart/crash.
-- **Does not do:** domain logic (no YAML parsing, no symlink, no git). It's a "dumb bridge" with security responsibility.
-- **Dependencies:** Go Core (subprocess), Keychain system.
+- **Responsibility:** app lifecycle; creates window; exposes IPC in the preload; **hosts the domain services** (CRUD, sync, adapters, settings, repos); resolves secrets via `keytar` (Copilot PAT).
+- **Does not do:** rendering, direct DOM access. The Renderer never touches the filesystem or HTTP — every effect goes through the Main services.
+- **Dependencies:** Node stdlib, Keychain system, `yaml`/`js-yaml`.
 
-### 5.3 Go Core (subprocess)
+### 5.3 Main services (TypeScript)
 
-Monolithic module in a single binary with internal services:
+Domain logic organized as TypeScript modules inside the Main process. No subprocess, no protocol — the Renderer reaches them via `contextBridge` (see §8.1).
 
 | Service                         | Responsibility                                                                | Does not do                                   |
 | ------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------- |
@@ -166,14 +158,14 @@ Monolithic module in a single binary with internal services:
 | `AdapterManager`                | Orchestrates active adapters; requests sync from the right one(s) after Save. | Per-tool logic.                               |
 | `ClaudeAdapter`                 | Maps artifact → Claude paths (personal and project); delegates to SymlinkManager. | HTTP, API, tokens.                         |
 | `CopilotAdapter`                | Maps artifact → Copilot paths; triggers `copilot-instructions` generator.     | Tokens.                                       |
-| `SymlinkManager`                | Creates, removes and validates symlinks; detects conflicts (real file at destination). Normalizes paths via `filepath.Abs` to handle spaces and special characters. | Content copy, git.                   |
+| `SymlinkManager`                | Creates, removes and validates symlinks; detects conflicts (real file at destination). Normalizes paths via `path.resolve` to handle spaces and special characters. | Content copy, git.                   |
 | `TemplateService`               | Provides templates by type (skill/reference/agent).                           | Rendering.                                    |
 | `RepoService`                   | Detects `.git/`, reads current branch; lists linked repos.                    | Git write, commit, push.                      |
 | `SettingsService`               | Loads/persists `settings.json`; merges defaults.                              | Secrets (PAT lives in Keychain).              |
 | `SchemaValidator` (should-have) | Validates frontmatter against per-type schema.                                | Automatic sanitization.                       |
 | `SearchService` (should-have)   | In-memory text search (name + content).                                       | Persistent indexing.                          |
 | `ClaudeTokenParser` (nice-to-have)   | Reads JSONL from `~/.claude/projects/*/`, aggregates tokens by skill and project. Isolated module: silent failure with log if JSONL format changes. | Dollar cost, UI.                       |
-| `CopilotUsageClient` (nice-to-have)  | HTTP GET against GitHub Usage API with PAT (received via IPC on the call). | Storing PAT, UI.                          |
+| `CopilotUsageClient` (nice-to-have)  | HTTP GET against GitHub Usage API with PAT (resolved from Keychain on the call). | Storing PAT, UI.                          |
 | `CopilotInstructionsGen`        | Aggregates flagged references (frontmatter flag) into generated `copilot-instructions.md`; applies `chmod 444`. | Editing the file; symlink (delegates). |
 
 ---
@@ -184,8 +176,8 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 
 ### 6.1 Save artifact (happy path)
 
-1. Renderer sends `artifact.save` with payload + list of active adapters.
-2. Go validates frontmatter → writes the source file in the workspace → updates `updatedAt`.
+1. Renderer invokes `artifact.save` with payload + list of active adapters.
+2. `ArtifactService` validates frontmatter → writes the source file in the workspace → updates `updatedAt`.
 3. `AdapterManager` consults active adapters:
    - `ClaudeAdapter`: resolves destinations (`~/.claude/...` and, if `scope=project`, each repo linked in Settings).
    - `CopilotAdapter`: same; if the artifact is a `reference` with `includeInCopilotInstructions`, triggers `CopilotInstructionsGen`.
@@ -207,18 +199,18 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 
 1. User toggles the switch in Settings.
 2. Renderer asks "remove symlinks created by this adapter?".
-3. If yes: Go scans registered destinations (derived from artifacts), removes only symlinks whose target points to the workspace. Never removes real files.
+3. If yes: `SymlinkManager` scans registered destinations (derived from artifacts), removes only symlinks whose target points to the workspace. Never removes real files.
 4. Persists the setting; adapter is off.
 
 ### 6.4 Regenerate `copilot-instructions.md`
 
 1. Triggered by: save of a flagged reference; toggle of the flag; "Sync all"; manual button in Settings.
 2. `CopilotInstructionsGen` lists references with `includeInCopilotInstructions: true`, concatenates them in alphabetical order by `name`, writes to `_generated/copilot-instructions.md` with header `<!-- GENERATED — edit references in the app -->`, applies `chmod 444`. The header + `chmod 444` are friction only, not security: a "force save" editor can still overwrite, and that's accepted.
-3. `CopilotAdapter` ensures symlinks to active destinations (personal and each linked repo with the flag).
+3. `CopilotAdapter` ensures symlinks to active destinations: `~/.copilot/` (personal) and `<linked-repo>/.github/copilot-instructions.md` for every linked repo (regardless of which references contributed — the generated file is unified).
 
 ### 6.5 Passive token reading (Claude)
 
-1. User opens the dashboard; Renderer sends `tokens.claude.stats` with a time window.
+1. User opens the dashboard; Renderer invokes `tokens.claude.stats` with a time window.
 2. `ClaudeTokenParser` lists JSONLs in `~/.claude/projects/*/`, streams line-by-line (without loading everything into RAM), extracts `tool_use` events where `name == "Skill"` and `input.skill` matches a known slug — **matching pattern:** compare `input.skill` (or `skillName`, if it exists) against workspace slugs; fallback: regex on `file_path` containing `/skills/<slug>/`.
 3. Aggregates `input_tokens`/`output_tokens` per skill and per project (parent folder of the JSONL).
 4. Returns the aggregated series. No persistent cache in the spike — re-reads on each request.
@@ -243,7 +235,7 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 ### 7.1 Platform and packaging
 
 - **Single target:** macOS (Apple Silicon and Intel; architecture defined at build time).
-- Electron app packaged as `.app`; Go binary embedded in `resources/`.
+- Electron app packaged as `.app` — single artifact, no embedded subprocess binary.
 - Spike runs **unsigned** (`xattr -d com.apple.quarantine`); signing/notarization is post-spike.
 
 ### 7.2 Workspace layout (artifacts on disk)
@@ -260,6 +252,8 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 │  └─ <slug>.md
 ├─ _generated/
 │  └─ copilot-instructions.md   # generated, 444
+├─ _backups/
+│  └─ <timestamp>/        # files overwritten on destination conflict (§6.2); never auto-cleaned
 └─ .sde/
    └─ templates/          # custom templates (optional)
 ```
@@ -271,13 +265,16 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 | File | Path |
 |---|---|
 | `settings.json` | `app.getPath('userData')/settings.json` (macOS: `~/Library/Application Support/sde-ai-app/`) |
-| Go Core log | `<userData>/logs/core.log` |
+| Main service log | `<userData>/logs/main.log` |
 | Copilot PAT | Keychain via `keytar` (`service="sde-ai-app"`, `account="copilot-pat"`) |
 
 ### 7.4 Symlink destinations
 
-- **Source:** `<workspace>/skills/<slug>/SKILL.md` (skills are a directory, mirroring Claude), `<workspace>/references/<slug>.md`, `<workspace>/agents/<slug>.md`.
-- **Targets (symlink destinations):** by scope — `personal` → `~/.claude/`, `~/.copilot/`; `project` → `<linked-repo>/.claude/`, `<linked-repo>/.github/` (one symlink per linked repo).
+- **Source:**
+  - Skills: directory `<workspace>/skills/<slug>/` (the symlink targets the **directory**, mirroring Claude's layout and carrying any optional assets next to `SKILL.md`).
+  - References: file `<workspace>/references/<slug>.md`.
+  - Agents: file `<workspace>/agents/<slug>.md`.
+- **Targets (symlink destinations):** by scope — `personal` → `~/.claude/`, `~/.copilot/`; `project` → `<linked-repo>/.claude/`, `<linked-repo>/.github/` (one symlink per linked repo). Skill symlinks are always directory-level; references and agents are file-level.
 - **Generation:** `<workspace>/_generated/copilot-instructions.md` is the source of the Copilot symlink; `chmod 444` after each generation.
 
 ---
@@ -286,17 +283,10 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 
 ### 8.1 Renderer ↔ Main contract
 
-- Transport: `contextBridge.exposeInMainWorld('api', …)` in the preload.
+- Transport: `contextBridge.exposeInMainWorld('api', …)` in the preload, backed by `ipcRenderer.invoke`.
 - Method: `await window.api.call(method: string, params: object) → result | error`.
-- A single `call` method that multiplexes — Main routes: secrets stay in Main; the rest is forwarded to Go.
-
-### 8.2 Main ↔ Go Core contract
-
-- Transport: subprocess **stdin/stdout**.
-- Protocol: **JSON-RPC 2.0**, one message per line (`\n` delimiter).
-- Max payload: 1 MB per message to avoid stdin/stdout deadlock with large messages; planned stress test in week 1.
-- Per-request timeout: 10s (configurable); Go crash → Main respawns and notifies Renderer.
-- Go stderr → log file at `<userData>/logs/core.log`.
+- A single `call` method that multiplexes; Main dispatches to the corresponding service (see §5.3). Errors propagate as rejected promises shaped per §8.3.
+- Unhandled exceptions inside a service are caught at the dispatch boundary and serialized into the error envelope — they never crash the app.
 
 **Methods (summary — see `docs/IPC.md` if detailed later):**
 
@@ -312,26 +302,26 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 | `settings.get` / `settings.set` | —                                        | `Settings`                          |
 | `adapter.syncAll`               | `{ adapterId? }`                         | `SyncResult[]`                      |
 | `tokens.claude.stats`           | `{ from, to, groupBy }`                  | `TokenStats[]`                      |
-| `tokens.copilot.stats`          | `{ from, to, pat }` (PAT injected by Main) | `CopilotUsage`                    |
+| `tokens.copilot.stats`          | `{ from, to }` (PAT resolved by Main from Keychain) | `CopilotUsage`            |
 
-### 8.3 Error handling
+### 8.2 Error handling
 
-Every error follows JSON-RPC shape:
+Every Main service rejection serializes to a plain object propagated through `ipcRenderer.invoke`:
 
 ```json
-{ "code": <int>, "message": "<human>", "data": { "kind": "<slug>", "details": {...} } }
+{ "kind": "<slug>", "message": "<human>", "details": { ... } }
 ```
 
 `kind` enum: `validation`, `io`, `symlink_conflict`, `not_found`, `external_api`, `unauthorized`, `internal`.
 
-### 8.4 External HTTP (Copilot)
+### 8.3 External HTTP (Copilot)
 
 - Endpoint: `GET https://api.github.com/user/copilot/usage` (fallback `/orgs/{org}/copilot/usage` if organizational PAT).
 - Auth: `Authorization: Bearer <PAT>`.
 - Handled errors: 401 → `unauthorized`; 404 → `not_found` (plan without Copilot); ≥500 → `external_api` with exponential retry (max 3).
 - **Fallback:** if the endpoint is unavailable, the plan does not include Copilot, or the schema changes, the app estimates token cost via a local tokenizer over the artifact content (see PRD §4 nice-to-have).
 
-### 8.5 Data model — YAML frontmatter
+### 8.4 Data model — YAML frontmatter
 
 Standardization proposal (**ASSUMPTION**). Same schema for the 3 types, with optional type-specific fields:
 
@@ -355,7 +345,7 @@ Artifacts with `scope: project` are replicated (via symlink) in **all** linked r
 
 > **Frontmatter debt:** the schema above is an **initial proposal**. Refine after creating the first 5+ real artifacts (dogfooding) — fields may be added, renamed or made optional based on actual usage.
 
-### 8.6 Data model — `settings.json`
+### 8.5 Data model — `settings.json`
 
 **Location:** `app.getPath('userData')/settings.json` (cross-platform — macOS: `~/Library/Application Support/sde-ai-app/`). Separates app config from the artifact workspace (see ADR-5).
 
@@ -377,11 +367,11 @@ The Copilot PAT does **not** live here — it's stored in Keychain via `keytar` 
 
 > **Schema migration debt:** the spike assumes a stable schema and does not version `settings.json`. Post-spike must add a `version` field and a migration step on app start.
 
-### 8.7 Security
+### 8.6 Security
 
 - Renderer with no direct access to Node/filesystem (`contextIsolation: true`, `nodeIntegration: false`).
-- The Copilot PAT only flows through Main (injected into IPC calls to Go) and lives in the Keychain.
-- No local auth (single-user); no open network port (IPC over stdin/stdout).
+- The Copilot PAT only lives in the Keychain; Main resolves it on demand for `CopilotUsageClient` calls and never exposes it through the `contextBridge`.
+- No local auth (single-user); no open network port (IPC stays in-process via `ipcRenderer`/`ipcMain`).
 
 ---
 
@@ -389,16 +379,17 @@ The Copilot PAT does **not** live here — it's stored in Keychain via `keytar` 
 
 | # | Decision | Discarded alternatives | Why chosen | Reversibility |
 |---|---------|--------------------------|-------------------|-----------------|
-| 1 | Go as a single subprocess (not a native library) | `c-shared` lib via cgo + Node addon; port everything to Node | Simple to package, independent debugging, isolated crash | High — just swap the transport |
-| 2 | IPC via JSON-RPC 2.0 over stdin/stdout | HTTP localhost (exposed port, CORS); Unix socket (poor cross-plat); gRPC (complexity+tooling) | Zero network setup, no local auth needed, line-by-line is easy to debug | High — transport layer isolated |
+| 1 | ~~Go as a single subprocess~~ — **superseded by ADR-11 (2026-04-25)** | — | — | — |
+| 2 | ~~IPC via JSON-RPC 2.0 over stdin/stdout~~ — **superseded by ADR-11 (2026-04-25)** | — | — | — |
 | 3 | Symlink as the sync mechanism | Copy with file-watcher; hardlink (fails on directory); bind mount (root) | PRD requires "single source, no copy"; macOS handles symlinks well cross-tool | **Locked by the PRD** |
 | 4 | Copilot PAT in the Keychain (keytar) | Plaintext in `settings.json`; environment variable | Avoids leaks in backup/git/logs; keytar works cross-plat cheaply | High |
 | 5 | Settings in `app.getPath('userData')` | `~/sde-ai-app/settings.json` (alongside the workspace) | Multi-platform; keeps workspace separate from app config | High — just a path migration |
 | 6 | Frontmatter with single schema and per-type fields | Distinct schema per type; JSON instead of YAML | Less code, single editor; YAML is the convention in the ecosystem (Claude/Copilot) | High |
 | 7 | `includeInCopilotInstructions` in the reference's frontmatter | Curated list in Settings; all references aggregated | Keeps the decision next to the artifact (versionable in git), less UI | Medium — simple migration if changed |
 | 8 | Destination conflict: always overwrite, alert later | Abort; backup always; ask for modal confirmation per file | Save flow doesn't block; user surgically decides later | High |
-| 9 | Read-only git via direct read of `.git/HEAD` and `.git/config` | `go-git`, `libgit2`, shell out to `git` | Zero heavy dependency; covers 100% of what the PRD asks (detect repo + branch) | High |
-| 10 | No persistent search index | SQLite FTS; BoltDB; Bleve | PRD is a spike, low N of artifacts, in-memory scan suffices | High |
+| 9 | Read-only git via direct read of `.git/HEAD` and `.git/config` | `simple-git`, `nodegit`, shell out to `git` | Zero heavy dependency; covers 100% of what the PRD asks (detect repo + branch) | High |
+| 10 | No persistent search index | SQLite FTS; LevelDB; Lunr | PRD is a spike, low N of artifacts, in-memory scan suffices | High |
+| 11 | TypeScript-only stack inside the Electron Main process | Go subprocess + JSON-RPC (ADR-1, ADR-2); NestJS in Main; rewrite Main in another language | Single runtime → no protocol design, no `electron-rebuild` for a Go binary, no cross-process debug, no 1 MB stdio limit. Workload is I/O-bound (filesystem, HTTP, YAML) — Node handles it natively. The cost of the discarded path was ≈15-28% of the spike budget for zero technical gain in a single-user local app. | High — domain logic isolated as services that could be moved out later |
 
 ---
 
@@ -411,8 +402,8 @@ Attributes derived from the PRD's constraints and goals. Not formal SLAs — the
 | **Time-to-validate** | App usable for dogfooding within the spike's 8-week soft cap (1 dev). | PRD §6 stop rule. |
 | **Portability** | macOS only; portable code where cheap (paths, keytar). Linux/Windows stays as **debt** if requested later — code is portable but untested off macOS. | Build runs on macOS Apple Silicon and Intel. |
 | **Secret security** | Copilot PAT never plaintext in file, log or git. | Manual inspection: `grep` in `userData/`, logs, settings. |
-| **Core robustness** | Go Core crash does not bring down the UI. | Main respawns; "core restarted" banner in Renderer. |
-| **IPC latency** | Typical artifact save responds in < 1s. | Timeout configured at 10s; measure manually in the spike. |
+| **Service robustness** | Unhandled exception in a Main service is caught at the IPC dispatch boundary and surfaces as an error envelope; the app stays alive. | `try/catch` at the dispatch layer; manual fault injection in the spike. |
+| **IPC latency** | Typical artifact save responds in < 1s; `contextBridge` round-trip overhead < 100ms. | Measure manually in the spike. |
 | **Sync idempotency** | Re-save without changes does not create backups or duplicate symlinks. | Test fixture in week 1 — `artifact.save` 2× in a row. |
 | **Non-invasive at destination** | Never deletes a real file at the destination without backup; never touches a file outside the workspace except via symlink. | Code review focused on `SymlinkManager`. |
 | **Respect for manual git** | App never executes `git commit/push/checkout`. | Code review: zero shell-out to `git`. |
@@ -427,11 +418,11 @@ Attributes derived from the PRD's constraints and goals. Not formal SLAs — the
 | **Skill** | Artifact type; procedural instruction for the AI. On disk it is a directory `<slug>/SKILL.md` (mirrors the Claude Code layout). |
 | **Reference** | Artifact type; reference textual content. May be aggregated into `copilot-instructions.md` via flag. |
 | **Agent profile** | Artifact type; configuration of an agent (role, instructions, tools). |
-| **Adapter** | Component of the Go Core that knows the convention of a target tool (Claude or Copilot) and maps artifacts to destinations. |
+| **Adapter** | Main service that knows the convention of a target tool (Claude or Copilot) and maps artifacts to destinations. |
 | **Scope** | Artifact attribute: `personal` (sync to `~/.claude/`, `~/.copilot/`) or `project` (sync to each linked repo). |
 | **Workspace** | Root directory where the app stores source artifacts (default `~/sde-ai-app`). |
 | **Linked repo** | Local git repository the user linked in Settings; receives symlinks of artifacts with `scope: project`. |
 | **Symlink** | Symbolic link in the filesystem; the sole sync mechanism — there is no copy. |
 | **JSONL** | Files `~/.claude/projects/*/*.jsonl` that Claude Code writes with usage events (tool calls, tokens). |
 | **PAT** | Personal Access Token from GitHub, required for the Copilot Usage API. Stored in the Keychain. |
-| **Spike** | Time-boxed effort (4 weeks) to validate a hypothesis — in this case, "is centralizing AI context worthwhile?". |
+| **Spike** | Time-boxed effort (no hard deadline; 8-week soft cap per PRD §6) to validate a hypothesis — in this case, "is centralizing AI context worthwhile?". |
