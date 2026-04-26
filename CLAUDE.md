@@ -94,6 +94,8 @@ Transitions:
 - `active` → `review`: Phase de Verification verde **e** Bookkeeping completo (ARCH/PRD sincronizados).
 - `review` → `done`: aprovado no retro quinzenal (PRD §6). Antes do retro a spec fica em `review` aguardando validação de produto/arquitetura.
 
+Dependências (`depends_on`): uma spec pode iniciar Phase 1 mesmo quando seu `depends_on` está em `review` (ainda não `done`), desde que a Verification da dependência esteja verde. O `done` formal vem só no retro quinzenal e não bloqueia trabalho downstream.
+
 ### Sync with PRD/ARCH
 
 - Spec changes product behavior → update PRD must-have/should-have.

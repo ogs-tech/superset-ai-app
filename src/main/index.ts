@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { IPC_CHANNEL } from '../shared/ipc-contract.js';
 import { SettingsService } from './application/services/settings-service.js';
-import { InMemorySettingsRepository } from './infrastructure/settings/in-memory-settings-repository.js';
+import { RepoService } from './application/services/repo-service.js';
+import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
+import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
+import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
+import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
+import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -24,8 +29,20 @@ function isCallPayload(value: unknown): value is IpcCallPayload {
 }
 
 function wireIpc(): void {
-  const settingsService = new SettingsService(new InMemorySettingsRepository());
-  const handlers = buildHandlers({ settingsService });
+  const settingsService = new SettingsService(
+    new FsSettingsRepository(join(app.getPath('userData'), 'settings.json')),
+  );
+  const repoReader = new FsRepoReader();
+  const repoService = new RepoService(repoReader);
+  const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
+  const dialogPort = new ElectronDialogAdapter();
+  const handlers = buildHandlers({
+    settingsService,
+    repoService,
+    workspaceBootstrap,
+    dialogPort,
+    pathProber: repoReader,
+  });
   const dispatch = createDispatcher(handlers);
 
   ipcMain.handle(IPC_CHANNEL, async (_event, payload: unknown) => {

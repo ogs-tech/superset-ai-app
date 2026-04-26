@@ -11,7 +11,13 @@ export interface LinkedRepo {
   id: string;
   name: string;
   path: string;
-  branch: string;
+}
+
+export interface LinkedRepoView {
+  id: string;
+  name: string;
+  path: string;
+  branch: string | null;
 }
 
 export interface UiSettings {
@@ -26,4 +32,27 @@ export interface Settings {
   };
   linkedRepos: LinkedRepo[];
   ui: UiSettings;
+}
+
+export const WorkspacePaths = [
+  'skills',
+  'references',
+  'agents',
+  '_generated',
+  '_backups',
+  '.sde/templates',
+] as const;
+
+export type WorkspacePath = (typeof WorkspacePaths)[number];
+
+export function getDefaults(): Settings {
+  return {
+    workspacePath: '',
+    adapters: {
+      claude: { enabled: true, defaultScope: 'personal' },
+      copilot: { enabled: false, defaultScope: 'personal' },
+    },
+    linkedRepos: [],
+    ui: { theme: 'system' },
+  };
 }

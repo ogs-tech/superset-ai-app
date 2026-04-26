@@ -357,11 +357,13 @@ Artifacts with `scope: project` are replicated (via symlink) in **all** linked r
     "copilot": { "enabled": false, "defaultScope": "personal" }
   },
   "linkedRepos": [
-    { "id": "uuid", "name": "ogs-tech", "path": "/Users/x/Projects/ogs-tech", "branch": "main" }
+    { "id": "uuid", "name": "ogs-tech", "path": "/Users/x/Projects/ogs-tech" }
   ],
   "ui": { "theme": "system" }
 }
 ```
+
+The current branch of each linked repo is **not** persisted — it is recomputed on demand via `RepoService.getCurrentBranch(path)`. Persisting branch state would drift the moment the user switches branches in the repo.
 
 The Copilot PAT does **not** live here — it's stored in Keychain via `keytar` with `service="sde-ai-app"`, `account="copilot-pat"`.
 
@@ -393,6 +395,11 @@ The Copilot PAT does **not** live here — it's stored in Keychain via `keytar` 
 | 12 | Build/bundle via `electron-vite` (LTS) | Vite cru + `tsc` no Main; `electron-forge` | LTS suporta os 3 entry points (`main`/`preload`/`renderer`) + HMR no Renderer sem config significativa. Forge agrega packaging mas é overhead pré-spike; Vite + `tsc` fica como fallback se a fricção aparecer. Validado pela spec 001. | Alta — fallback Vite + `tsc` mantém o mesmo layout |
 | 13 | Layering hexagonal leve no Main (`domain` / `application` / `infrastructure` / `ipc`) | Clean Architecture completa (entities/use-cases/interfaces/frameworks); flat | Hexagonal leve dá clareza de fronteiras e troca de adapter (ex.: `InMemorySettingsRepository` → `JsonFileSettingsRepository` na spec 002) sem cerimônia. Clean cheio é overkill para app desktop solo; flat dificulta substituir adapter. Validado pela spec 001. | Alta — promoção a Clean ou colapso para flat permanecem possíveis |
 | 14 | Contrato IPC via single `call(method, params)` + dispatcher central | Um `ipcMain.handle` por operação; `tRPC`/`electron-trpc` | Single channel reduz superfície exposta via `contextBridge` e centraliza o error envelope (§8.2). Multi-channel duplica boilerplate; tRPC adiciona dependência runtime + schemas. Validado pela spec 001. | Alta — migração para tRPC ou multi-channel é viável se o contrato esticar |
+| 15 | Escrita atômica de `settings.json` via tempfile + `rename` | Write direto no destino; file locking (`flock`/`proper-lockfile`) | `rename` em mesmo FS é atômico em POSIX e NTFS; resolve corrupção parcial sem dependência externa. Write direto deixa janela de arquivo truncado se o processo é morto; locking adiciona complexidade desproporcional para um escritor único (Main process). Validado pela spec 002. | Alta — pode-se trocar por `proper-lockfile` se múltiplos escritores aparecerem |
+| 16 | `linkedRepos[].branch` não persistido — recomputado via `RepoService.getCurrentBranch()` em cada uso | Snapshot ao linkar e congelar até re-link; persistir e atualizar via watcher de `.git/HEAD` | Snapshot mente assim que o usuário troca de branch; custo de ler `.git/HEAD` é negligível. Watcher exige listener em N repos para benefício marginal. Implica remover `branch` do shape em §8.5. Validado pela spec 002. | Alta — re-introduzir snapshot é trivial se aparecer custo de I/O |
+| 17 | Modal de confirmação obrigatório no link de repo (texto explícito sobre symlinks possivelmente commitados) | Banner persistente em Settings; tooltip/inline help; nada | PRD §6 e ARCH §6.6 tratam como aviso explícito; tooltip é ignorado, banner vira ruído. Modal força reconhecimento uma vez por link. Validado pela spec 002. | Alta — substituir por banner/tooltip não invalida nenhum dado em disco |
+| 18 | `workspacePath` inexistente na reabertura → tela de erro com "Re-selecionar pasta" / "Cancelar" | Disparar re-onboarding; recriar estrutura silenciosamente | Re-onboarding apaga `adapters`/`linkedRepos` já configurados; recriar silenciosamente mascara disco montado errado ou pasta renomeada. Tela de erro deixa decisão com o usuário e preserva configuração. Validado pela spec 002. | Alta — comportamento é um branch isolado no bootstrap router |
+| 19 | `RepoService.getCurrentBranch` retorna `null` (não lança) em HEAD não-padrão (detached, packed-refs, garbage) | String sentinela (`"unknown"`, `"detached"`); lançar exceção | `null` força null-check no caller (TS) sem colidir com nome de branch válido; sentinela vira "branch fantasma" se vazada para UI; lançar obriga try/catch em todo consumidor para um caso esperado. Validado pela spec 002. | Alta — qualquer um dos modos descartados é ortogonal à interface |
 
 ---
 

@@ -5,7 +5,7 @@ codename: forge
 public_name: Skillforge
 status: Draft
 created_at: 2026-04-25
-updated_at: 2026-04-25
+updated_at: 2026-04-26
 ---
 
 # ROADMAP — Skillforge
@@ -16,7 +16,7 @@ updated_at: 2026-04-25
 
 | Spec | Description | Status |
 |------|-------------|--------|
-| `001-walking-skeleton` | Scaffold Electron + React + TypeScript + Main services + `contextBridge` IPC round-trip. Lays the structural foundation for all subsequent specs (ARCH §3.1, §5, §8.1). | — |
+| `001-walking-skeleton` | Scaffold Electron + React + TypeScript + Main services + `contextBridge` IPC round-trip. Lays the structural foundation for all subsequent specs (ARCH §3.1, §5, §8.1). | `review` |
 
 ## Next
 

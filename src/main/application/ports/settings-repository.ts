@@ -1,5 +1,6 @@
 import type { Settings } from '../../../shared/settings.js';
 
 export interface SettingsRepository {
-  load(): Promise<Settings>;
+  load(): Promise<Settings | null>;
+  save(settings: Settings): Promise<void>;
 }

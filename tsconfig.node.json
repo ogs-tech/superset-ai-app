@@ -12,6 +12,7 @@
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
     "tests/main/**/*.ts",
+    "tests/shared/**/*.ts",
     "electron.vite.config.ts",
     "vitest.config.ts",
     "eslint.config.js"
