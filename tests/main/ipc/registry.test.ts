@@ -15,6 +15,7 @@ import type { EnvironmentPort } from '../../../src/main/application/ports/enviro
 import type { PathProber } from '../../../src/main/application/ports/path-prober.js';
 import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
 import type { Template } from '../../../src/shared/artifact.js';
+import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
@@ -35,6 +36,7 @@ interface Deps {
   workspaceBootstrap: WorkspaceBootstrapService;
   artifactService: ArtifactService;
   templateService: TemplateService;
+  adapterManager: AdapterManager;
   dialogPort: DialogPort;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
@@ -114,7 +116,11 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
 
   const artifactRepo = new InMemoryArtifactRepository();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
-  const artifactService = new ArtifactService(artifactRepo, clock);
+  const adapterManager: AdapterManager = {
+    syncAll: vi.fn().mockResolvedValue([]),
+    syncOne: vi.fn().mockResolvedValue([]),
+  } as unknown as AdapterManager;
+  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
 
   const templateFixture: Template = {
     id: 'skill/default',
@@ -136,6 +142,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     workspaceBootstrap: new WorkspaceBootstrapService(mutator),
     artifactService,
     templateService,
+    adapterManager,
     dialogPort,
     pathProber,
     environmentPort,

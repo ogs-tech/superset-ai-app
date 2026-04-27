@@ -5,6 +5,7 @@ import type { RepoService } from '../application/services/repo-service.js';
 import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
 import type { ArtifactService } from '../application/services/artifact-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
+import type { AdapterManager } from '../application/services/adapter-manager.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
 import type { EnvironmentPort } from '../application/ports/environment-port.js';
 import type { PathProber } from '../application/ports/path-prober.js';
@@ -20,6 +21,7 @@ export interface IpcDeps {
   workspaceBootstrap: WorkspaceBootstrapService;
   artifactService: ArtifactService;
   templateService: TemplateService;
+  adapterManager: AdapterManager;
   dialogPort: DialogPort;
   pathProber: PathProber;
   environmentPort: EnvironmentPort;
@@ -86,6 +88,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     workspaceBootstrap,
     artifactService,
     templateService,
+    adapterManager,
     dialogPort,
     pathProber,
     environmentPort,
@@ -210,6 +213,17 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return artifactService.delete({
         id: asString(raw['id'], 'id'),
         removeSymlinks: asBoolean(raw['removeSymlinks'], 'removeSymlinks'),
+      });
+    },
+
+    'adapter.syncAll': async (params) => {
+      const raw = params === undefined || params === null ? {} : asObject(params, 'adapter.syncAll');
+      const adapterId = raw['adapterId'];
+      if (adapterId !== undefined && typeof adapterId !== 'string') {
+        throw new DomainError('validation', `Invalid 'adapterId'`);
+      }
+      return adapterManager.syncAll({
+        ...(typeof adapterId === 'string' ? { adapterId } : {}),
       });
     },
 

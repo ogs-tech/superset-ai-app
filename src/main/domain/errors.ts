@@ -30,3 +30,17 @@ export function validationError(args: {
     args.details as Record<string, unknown> | undefined,
   );
 }
+
+export function symlinkConflictError(args: {
+  message: string;
+  details?: { backupPath?: string; replacedTarget?: string; reason?: string };
+}): DomainError {
+  return new DomainError('symlink_conflict', args.message, args.details);
+}
+
+export function ioError(args: {
+  message: string;
+  details?: { code?: string; reason?: string };
+}): DomainError {
+  return new DomainError('io', args.message, args.details);
+}

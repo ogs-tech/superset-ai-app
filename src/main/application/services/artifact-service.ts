@@ -1,10 +1,11 @@
-import type { Artifact, ArtifactFrontmatter } from '../../../shared/artifact.js';
+import type { Artifact, ArtifactFrontmatter, SyncResult } from '../../../shared/artifact.js';
 import type { ClockPort } from '../../application/ports/clock-port.js';
 import type {
   ArtifactDeleteCommand,
   ArtifactListQuery,
   ArtifactRepository,
 } from '../../application/ports/artifact-repository.js';
+import type { AdapterManager } from './adapter-manager.js';
 import { formatArtifactId } from '../../domain/artifact-id.js';
 import { DomainError, validationError } from '../../domain/errors.js';
 
@@ -26,7 +27,7 @@ export interface SaveArtifactCommand {
 
 export interface SaveArtifactResult {
   artifact: Artifact;
-  syncReport: unknown[];
+  syncReport: SyncResult[];
 }
 
 export interface DeleteArtifactCommand {
@@ -42,6 +43,7 @@ export class ArtifactService {
   constructor(
     private readonly repository: ArtifactRepository,
     private readonly clock: ClockPort,
+    private readonly adapterManager: AdapterManager,
   ) {}
 
   list(query: ArtifactListQuery = {}): Promise<Artifact[]> {
@@ -84,7 +86,8 @@ export class ArtifactService {
     };
 
     const saved = await this.repository.save({ artifact: persisted });
-    return { artifact: saved, syncReport: [] };
+    const syncReport = await this.adapterManager.syncOne({ artifact: saved });
+    return { artifact: saved, syncReport };
   }
 
   async delete(command: DeleteArtifactCommand): Promise<DeleteArtifactResult> {

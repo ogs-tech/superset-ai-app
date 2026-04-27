@@ -7,6 +7,8 @@ import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
 import { ArtifactService } from './application/services/artifact-service.js';
 import { TemplateService } from './application/services/template-service.js';
+import { AdapterManager } from './application/services/adapter-manager.js';
+import { SymlinkManager } from './application/services/symlink-manager.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
@@ -15,6 +17,7 @@ import { BuiltInTemplateRepository } from './infrastructure/template/built-in-te
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
+import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -34,7 +37,7 @@ function isCallPayload(value: unknown): value is IpcCallPayload {
   );
 }
 
-function wireIpc(): void {
+async function wireIpc(): Promise<void> {
   const settingsService = new SettingsService(
     new FsSettingsRepository(join(app.getPath('userData'), 'settings.json')),
   );
@@ -49,7 +52,16 @@ function wireIpc(): void {
     const current = await settingsService.load();
     return current?.workspacePath ?? app.getPath('userData');
   });
-  const artifactService = new ArtifactService(artifactRepo, clock);
+
+  const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false, defaultScope: 'personal' }, copilot: { enabled: false, defaultScope: 'personal' } }, linkedRepos: [], ui: { theme: 'system' } };
+  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, settings.workspacePath || app.getPath('userData'));
+  const adapterManager = new AdapterManager({
+    settingsService,
+    artifactRepository: artifactRepo,
+    symlinkManager,
+    adapters: new Map(),
+  });
+  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
   const templatesDir = join(process.cwd(), 'src', 'main', 'templates');
   const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir));
 
@@ -59,6 +71,7 @@ function wireIpc(): void {
     workspaceBootstrap,
     artifactService,
     templateService,
+    adapterManager,
     dialogPort,
     pathProber: repoReader,
     environmentPort,
@@ -99,8 +112,8 @@ function createWindow(): void {
   }
 }
 
-void app.whenReady().then(() => {
-  wireIpc();
+void app.whenReady().then(async () => {
+  await wireIpc();
   createWindow();
 
   app.on('activate', () => {

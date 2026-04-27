@@ -36,6 +36,12 @@ export interface ArtifactSaveResult {
   syncReport: SyncResult[];
 }
 
+export interface AdapterSyncAllParams {
+  adapterId?: string;
+}
+
+export type AdapterSyncAllResult = SyncResult[];
+
 export interface ArtifactDeleteParams {
   id: string;
   removeSymlinks: boolean;

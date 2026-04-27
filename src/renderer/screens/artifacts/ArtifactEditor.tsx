@@ -2,10 +2,12 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
+import { SyncReportModal } from '../../components/SyncReportModal.js';
 import type {
   Artifact,
   ArtifactFrontmatter,
   ArtifactScope,
+  SyncResult,
 } from '../../../shared/artifact.js';
 
 interface ArtifactEditorProps {
@@ -32,6 +34,7 @@ export function ArtifactEditor({
   const [body, setBody] = useState(initial.body);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [saving, setSaving] = useState(false);
+  const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
 
   const update = <K extends keyof ArtifactFrontmatter>(
     key: K,
@@ -51,7 +54,7 @@ export function ArtifactEditor({
   const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
-      const result = await callIpc<{ artifact: Artifact; syncReport: unknown[] }>(
+      const result = await callIpc<{ artifact: Artifact; syncReport: SyncResult[] }>(
         'artifact.save',
         {
           artifact: { id: initial.id, frontmatter, body },
@@ -59,6 +62,9 @@ export function ArtifactEditor({
         },
       );
       setToast({ variant: 'success', message: `${result.artifact.frontmatter.name} salvo` });
+      if (result.syncReport.some((entry) => entry.status !== 'ok')) {
+        setSyncReport(result.syncReport);
+      }
       await onSaved(result.artifact);
     } catch (err) {
       const message = err instanceof IpcCallError ? err.message : String(err);
@@ -152,6 +158,7 @@ export function ArtifactEditor({
       </section>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />
     </main>
   );
 }

@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ArtifactService } from '../../../../src/main/application/services/artifact-service.js';
 import { InMemoryArtifactRepository } from '../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { DomainError } from '../../../../src/main/domain/errors.js';
+import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import type { Artifact, ArtifactFrontmatter } from '../../../../src/shared/artifact.js';
 
 const FROZEN = new Date('2026-04-26T10:00:00.000Z');
@@ -31,8 +32,12 @@ const makeArtifact = (overrides: Partial<Artifact> = {}): Artifact => ({
 const setup = () => {
   const repo = new InMemoryArtifactRepository();
   const clock = new FixedClock(FROZEN);
-  const service = new ArtifactService(repo, clock);
-  return { repo, clock, service };
+  const adapterManager = {
+    syncOne: vi.fn().mockResolvedValue([]),
+    syncAll: vi.fn().mockResolvedValue([]),
+  } as unknown as AdapterManager;
+  const service = new ArtifactService(repo, clock, adapterManager);
+  return { repo, clock, service, adapterManager };
 };
 
 describe('ArtifactService.save — validation', () => {
