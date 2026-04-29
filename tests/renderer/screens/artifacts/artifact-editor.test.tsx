@@ -8,11 +8,10 @@ import type { Artifact } from '../../../../src/shared/artifact.js';
 const baseArtifact = (): Artifact => ({
   id: '',
   frontmatter: {
-    slug: 'foo',
-    name: 'Foo',
+    name: 'foo',
     type: 'skill',
     description: 'sample',
-    scope: 'personal',
+    scopes: ['personal'],
     version: '0.1.0',
     createdAt: '',
     updatedAt: '',
@@ -81,6 +80,72 @@ describe('<ArtifactEditor>', () => {
 
     expect(await screen.findByTestId('toast')).toHaveAttribute('data-variant', 'success');
     expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders two checkboxes (personal, project) reflecting frontmatter.scopes', () => {
+    const initial = baseArtifact();
+    initial.frontmatter.scopes = ['personal', 'project'];
+    render(
+      <ArtifactEditor
+        initial={initial}
+        isCreate={false}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const personal = screen.getByRole('checkbox', { name: /personal/i });
+    const project = screen.getByRole('checkbox', { name: /project/i });
+    expect(personal).toBeChecked();
+    expect(project).toBeChecked();
+  });
+
+  it('toggling a checkbox updates frontmatter.scopes sent on save', async () => {
+    const user = userEvent.setup();
+    const initial = baseArtifact();
+    call.mockResolvedValue(
+      ok({ artifact: { ...initial, id: 'skill/foo' }, syncReport: [] }),
+    );
+
+    render(
+      <ArtifactEditor
+        initial={initial}
+        isCreate={true}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: /project/i }));
+    await user.click(screen.getByRole('button', { name: /salvar/i }));
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'artifact.save',
+        expect.objectContaining({
+          artifact: expect.objectContaining({
+            frontmatter: expect.objectContaining({ scopes: ['personal', 'project'] }),
+          }),
+        }),
+      ),
+    );
+  });
+
+  it('unchecking the only selected scope leaves scopes empty (validation handled by service)', async () => {
+    const user = userEvent.setup();
+    const initial = baseArtifact();
+
+    render(
+      <ArtifactEditor
+        initial={initial}
+        isCreate={true}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: /personal/i }));
+    expect(screen.getByRole('checkbox', { name: /personal/i })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /project/i })).not.toBeChecked();
   });
 
   it('shows error toast with the validation message when save fails', async () => {

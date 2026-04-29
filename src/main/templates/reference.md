@@ -1,13 +1,14 @@
 ---
 type: reference
-name: New Reference
+name: new-reference
 description: One-line summary of the knowledge captured here.
-scope: personal
+scopes:
+  - personal
 version: 0.1.0
 includeInCopilotInstructions: false
 ---
 
-# New Reference
+# new-reference
 
 ## Context
 

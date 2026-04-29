@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { callIpc } from '../lib/ipc.js';
+import { SyncReportModal } from '../components/SyncReportModal.js';
+import type { SyncResult } from '../../shared/artifact.js';
 import type {
-  AdapterScope,
   LinkedRepoView,
   Settings as SettingsModel,
 } from '../../shared/settings.js';
@@ -28,6 +29,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [repos, setRepos] = useState<LinkedRepoView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingLink | null>(null);
+  const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
 
   const refreshRepos = async (): Promise<void> => {
     const list = await callIpc<LinkedRepoView[]>('repo.list', {});
@@ -50,16 +52,12 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       adapters: { [key]: { enabled } },
     });
     setSettings(next);
-  };
-
-  const handleScopeChange = async (
-    key: 'claude' | 'copilot',
-    scope: AdapterScope,
-  ): Promise<void> => {
-    const next = await callIpc<SettingsModel>('settings.merge', {
-      adapters: { [key]: { defaultScope: scope } },
-    });
-    setSettings(next);
+    const report = enabled
+      ? await callIpc<SyncResult[]>('adapter.syncAll', { adapterId: key })
+      : await callIpc<SyncResult[]>('adapter.removeAll', { adapterId: key });
+    if (report.some((entry) => entry.status !== 'ok')) {
+      setSyncReport(report);
+    }
   };
 
   const handleAddRepo = async (): Promise<void> => {
@@ -137,16 +135,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
               }
             />
             <label htmlFor={`adapter-${key}`}>{labelFor(key)}</label>
-            <select
-              value={settings.adapters[key].defaultScope}
-              onChange={(e) =>
-                void handleScopeChange(key, e.target.value as AdapterScope)
-              }
-              aria-label={`${labelFor(key)} default scope`}
-            >
-              <option value="personal">personal</option>
-              <option value="project">project</option>
-            </select>
           </div>
         ))}
       </section>
@@ -194,6 +182,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           </div>
         </div>
       ) : null}
+      <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />
     </main>
   );
 }

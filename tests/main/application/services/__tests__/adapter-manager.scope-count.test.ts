@@ -21,11 +21,10 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
     const artifact = {
       id: 'reference/foo',
       frontmatter: {
-        slug: 'foo',
-        name: 'Foo',
+        name: 'foo',
         type: 'reference' as const,
         description: 'desc',
-        scope: 'project' as const,
+        scopes: ['project' as const],
         version: '1.0.0',
         createdAt: '',
         updatedAt: '',
@@ -51,11 +50,10 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
     const artifact = {
       id: 'skill/foo',
       frontmatter: {
-        slug: 'foo',
-        name: 'Foo',
+        name: 'foo',
         type: 'skill' as const,
         description: 'desc',
-        scope: 'personal' as const,
+        scopes: ['personal' as const],
         version: '1.0.0',
         createdAt: '',
         updatedAt: '',

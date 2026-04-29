@@ -13,11 +13,10 @@ describe('AdapterManager.syncOne with empty linkedRepos', () => {
     const artifact = {
       id: 'reference/empty',
       frontmatter: {
-        slug: 'empty',
-        name: 'Empty',
+        name: 'empty',
         type: 'reference' as const,
         description: 'empty artifact',
-        scope: 'project' as const,
+        scopes: ['project' as const],
         version: '1.0.0',
         createdAt: '',
         updatedAt: '',

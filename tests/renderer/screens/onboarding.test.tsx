@@ -49,8 +49,8 @@ describe('<Onboarding>', () => {
           ok({
             workspacePath: '/picked',
             adapters: {
-              claude: { enabled: true, defaultScope: 'personal' },
-              copilot: { enabled: false, defaultScope: 'personal' },
+              claude: { enabled: true },
+              copilot: { enabled: false },
             },
             linkedRepos: [],
             ui: { theme: 'system' },
@@ -73,8 +73,8 @@ describe('<Onboarding>', () => {
     expect(mergeCall?.[1]).toMatchObject({
       workspacePath: '/picked',
       adapters: {
-        claude: { enabled: true, defaultScope: 'personal' },
-        copilot: { enabled: false, defaultScope: 'personal' },
+        claude: { enabled: true },
+        copilot: { enabled: false },
       },
       linkedRepos: [],
       ui: { theme: 'system' },
@@ -116,8 +116,8 @@ describe('<Onboarding>', () => {
           ok({
             workspacePath: '/Users/test/sde-ai-app',
             adapters: {
-              claude: { enabled: true, defaultScope: 'personal' },
-              copilot: { enabled: false, defaultScope: 'personal' },
+              claude: { enabled: true },
+              copilot: { enabled: false },
             },
             linkedRepos: [],
             ui: { theme: 'system' },

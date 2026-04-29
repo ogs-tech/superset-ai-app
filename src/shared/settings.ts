@@ -1,10 +1,7 @@
-export type AdapterScope = 'personal' | 'project';
-
 export type ThemeMode = 'system' | 'light' | 'dark';
 
 export interface AdapterSettings {
   enabled: boolean;
-  defaultScope: AdapterScope;
 }
 
 export interface LinkedRepo {
@@ -49,8 +46,8 @@ export function getDefaults(): Settings {
   return {
     workspacePath: '',
     adapters: {
-      claude: { enabled: true, defaultScope: 'personal' },
-      copilot: { enabled: false, defaultScope: 'personal' },
+      claude: { enabled: true },
+      copilot: { enabled: false },
     },
     linkedRepos: [],
     ui: { theme: 'system' },

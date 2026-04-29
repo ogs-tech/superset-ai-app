@@ -1,11 +1,12 @@
 import type { ArtifactType } from '../../shared/artifact.js';
 import { DomainError } from './errors.js';
+import { validateArtifactName } from './artifact-name.js';
 
 const ARTIFACT_TYPES: readonly ArtifactType[] = ['skill', 'reference', 'agent'];
 
 export interface ParsedArtifactId {
   type: ArtifactType;
-  slug: string;
+  name: string;
 }
 
 export function parseArtifactId(id: string): ParsedArtifactId {
@@ -16,7 +17,7 @@ export function parseArtifactId(id: string): ParsedArtifactId {
     });
   }
   const typeCandidate = id.slice(0, slashIndex);
-  const slug = id.slice(slashIndex + 1);
+  const name = id.slice(slashIndex + 1);
   if (!isArtifactType(typeCandidate)) {
     throw new DomainError(
       'validation',
@@ -24,16 +25,17 @@ export function parseArtifactId(id: string): ParsedArtifactId {
       { invalid: ['id'] },
     );
   }
-  if (slug.length === 0) {
-    throw new DomainError('validation', `Invalid artifact id: '${id}' (empty slug)`, {
+  if (name.length === 0) {
+    throw new DomainError('validation', `Invalid artifact id: '${id}' (empty name)`, {
       invalid: ['id'],
     });
   }
-  return { type: typeCandidate, slug };
+  validateArtifactName(name);
+  return { type: typeCandidate, name };
 }
 
-export function formatArtifactId(type: ArtifactType, slug: string): string {
-  return `${type}/${slug}`;
+export function formatArtifactId(type: ArtifactType, name: string): string {
+  return `${type}/${name}`;
 }
 
 function isArtifactType(value: string): value is ArtifactType {

@@ -1,6 +1,25 @@
 import { getDefaults, type Settings } from '../../../shared/settings.js';
 import type { SettingsRepository } from '../ports/settings-repository.js';
 
+const stripLegacyFields = (settings: Settings): Settings => {
+  const adapters = settings.adapters as unknown as Record<
+    'claude' | 'copilot',
+    Record<string, unknown>
+  >;
+  const clean = (entry: Record<string, unknown>): { enabled: boolean } => {
+    const rest = { ...entry };
+    delete rest.defaultScope;
+    return rest as { enabled: boolean };
+  };
+  return {
+    ...settings,
+    adapters: {
+      claude: clean(adapters.claude),
+      copilot: clean(adapters.copilot),
+    },
+  };
+};
+
 type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends Array<infer U>
     ? Array<U>
@@ -35,8 +54,9 @@ const deepMerge = <T extends Record<string, unknown>>(
 export class SettingsService {
   constructor(private readonly repository: SettingsRepository) {}
 
-  load(): Promise<Settings | null> {
-    return this.repository.load();
+  async load(): Promise<Settings | null> {
+    const loaded = await this.repository.load();
+    return loaded === null ? null : stripLegacyFields(loaded);
   }
 
   save(settings: Settings): Promise<void> {
@@ -44,7 +64,8 @@ export class SettingsService {
   }
 
   async merge(partial: DeepPartial<Settings>): Promise<Settings> {
-    const current = (await this.repository.load()) ?? getDefaults();
+    const loaded = await this.repository.load();
+    const current = loaded === null ? getDefaults() : stripLegacyFields(loaded);
     const next = deepMerge(current as unknown as Record<string, unknown>, partial as DeepPartial<Record<string, unknown>>) as unknown as Settings;
     await this.repository.save(next);
     return next;

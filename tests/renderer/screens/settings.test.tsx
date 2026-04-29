@@ -8,8 +8,8 @@ import type { LinkedRepoView, Settings } from '../../../src/shared/settings.js';
 const baseSettings: Settings = {
   workspacePath: '/ws',
   adapters: {
-    claude: { enabled: true, defaultScope: 'personal' },
-    copilot: { enabled: false, defaultScope: 'personal' },
+    claude: { enabled: true },
+    copilot: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -31,12 +31,13 @@ const setupRoute = (
     if (method === 'settings.get') return Promise.resolve(ok(initial));
     if (method === 'repo.list') return Promise.resolve(ok(list));
     if (method === 'settings.merge') return Promise.resolve(ok(initial));
+    if (method === 'adapter.syncAll' || method === 'adapter.removeAll') return Promise.resolve(ok([]));
     return Promise.resolve(ok(undefined));
   });
 };
 
 describe('<Settings> — toggles', () => {
-  it('toggling claude adapter calls settings.merge with minimal payload', async () => {
+  it('toggling claude off calls settings.merge then adapter.removeAll', async () => {
     const user = userEvent.setup();
     setupRoute();
     render(<SettingsScreen />);
@@ -49,6 +50,68 @@ describe('<Settings> — toggles', () => {
         adapters: { claude: { enabled: false } },
       }),
     );
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adapter.removeAll', { adapterId: 'claude' }),
+    );
+  });
+
+  it('toggling claude on calls settings.merge then adapter.syncAll', async () => {
+    const user = userEvent.setup();
+    const initial: Settings = {
+      ...baseSettings,
+      adapters: {
+        claude: { enabled: false },
+        copilot: { enabled: false },
+      },
+    };
+    setupRoute(initial);
+    render(<SettingsScreen />);
+
+    const toggle = await screen.findByLabelText('Claude');
+    await user.click(toggle);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('settings.merge', {
+        adapters: { claude: { enabled: true } },
+      }),
+    );
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adapter.syncAll', { adapterId: 'claude' }),
+    );
+  });
+});
+
+describe('<Settings> — no per-adapter default scope', () => {
+  it('does not render a default scope <select> for any adapter', async () => {
+    setupRoute();
+    render(<SettingsScreen />);
+
+    await screen.findByLabelText('Claude');
+
+    expect(screen.queryByLabelText(/default scope/i)).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('toggling adapters never sends defaultScope to settings.merge', async () => {
+    const user = userEvent.setup();
+    setupRoute();
+    render(<SettingsScreen />);
+
+    await user.click(await screen.findByLabelText('Claude'));
+
+    await waitFor(() =>
+      expect(
+        call.mock.calls.find((c) => c[0] === 'settings.merge'),
+      ).toBeDefined(),
+    );
+    for (const c of call.mock.calls) {
+      if (c[0] !== 'settings.merge') continue;
+      const payload = c[1] as { adapters?: Record<string, Record<string, unknown>> };
+      const claudePatch = payload.adapters?.claude ?? {};
+      const copilotPatch = payload.adapters?.copilot ?? {};
+      expect(claudePatch).not.toHaveProperty('defaultScope');
+      expect(copilotPatch).not.toHaveProperty('defaultScope');
+    }
   });
 });
 

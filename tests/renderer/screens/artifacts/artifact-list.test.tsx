@@ -5,14 +5,13 @@ import { ArtifactList } from '../../../../src/renderer/screens/artifacts/Artifac
 import { mockApi, ok, type CallSpy } from '../../test-utils.js';
 import type { Artifact, ArtifactType } from '../../../../src/shared/artifact.js';
 
-const buildArtifact = (type: ArtifactType, slug: string): Artifact => ({
-  id: `${type}/${slug}`,
+const buildArtifact = (type: ArtifactType, name: string): Artifact => ({
+  id: `${type}/${name}`,
   frontmatter: {
-    slug,
-    name: `${slug.toUpperCase()}`,
+    name,
     type,
     description: 'sample',
-    scope: 'personal',
+    scopes: ['personal'],
     version: '0.1.0',
     createdAt: '2026-04-26T10:00:00.000Z',
     updatedAt: '2026-04-26T10:00:00.000Z',
@@ -44,12 +43,11 @@ describe('<ArtifactList>', () => {
     );
   });
 
-  it('renders each item with name and slug', async () => {
+  it('renders each item with name', async () => {
     setupHappy([buildArtifact('skill', 'foo')]);
     render(<ArtifactList />);
 
-    await waitFor(() => expect(screen.getByText('FOO')).toBeInTheDocument());
-    expect(screen.getByText('foo')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('foo')).toBeInTheDocument());
   });
 
   it('switching to references tab calls artifact.list with type=reference', async () => {
@@ -70,7 +68,7 @@ describe('<ArtifactList>', () => {
     setupHappy([artifact]);
     render(<ArtifactList />);
 
-    await waitFor(() => expect(screen.getByText('FOO')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('foo')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: /deletar/i }));
 
@@ -85,7 +83,7 @@ describe('<ArtifactList>', () => {
       }),
     );
 
-    await waitFor(() => expect(screen.queryByText('FOO')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('foo')).not.toBeInTheDocument());
   });
 
   it('cancel on confirm dialog does NOT call artifact.delete', async () => {
@@ -94,7 +92,7 @@ describe('<ArtifactList>', () => {
     setupHappy([artifact]);
     render(<ArtifactList />);
 
-    await waitFor(() => expect(screen.getByText('FOO')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('foo')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: /deletar/i }));
     await user.click(screen.getByRole('button', { name: /cancelar/i }));

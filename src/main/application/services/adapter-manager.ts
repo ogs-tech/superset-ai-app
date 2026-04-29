@@ -21,6 +21,14 @@ export interface SyncAllCommand {
   adapterId?: string;
 }
 
+export interface RemoveAllCommand {
+  adapterId: string;
+}
+
+export interface RemoveOneCommand {
+  artifact: Artifact;
+}
+
 export class AdapterManager {
   constructor(private readonly deps: AdapterManagerDeps) {}
 
@@ -30,17 +38,8 @@ export class AdapterManager {
     const results: SyncResult[] = [];
 
     const source = this.artifactSourcePath(command.artifact, settings.workspacePath);
+    const includesProject = command.artifact.frontmatter.scopes.includes('project');
     for (const adapter of enabledAdapters) {
-      if (command.artifact.frontmatter.scope === 'project' && settings.linkedRepos.length === 0) {
-        results.push({
-          adapter: adapter.adapterId,
-          destination: null,
-          status: 'ok',
-          details: { skipped: 'no-linked-repos' },
-        });
-        continue;
-      }
-
       const destinations = adapter.resolveDestinations({
         artifact: command.artifact,
         linkedRepos: settings.linkedRepos,
@@ -50,6 +49,15 @@ export class AdapterManager {
         results.push(
           await this.syncDestination(adapter.adapterId, source, destination.destination),
         );
+      }
+
+      if (includesProject && settings.linkedRepos.length === 0) {
+        results.push({
+          adapter: adapter.adapterId,
+          destination: null,
+          status: 'ok',
+          details: { skipped: 'no-linked-repos' },
+        });
       }
     }
 
@@ -65,17 +73,8 @@ export class AdapterManager {
     const artifacts = await this.deps.artifactRepository.list();
     const results: SyncResult[] = [];
     for (const artifact of artifacts) {
+      const includesProject = artifact.frontmatter.scopes.includes('project');
       for (const adapter of enabledAdapters) {
-        if (artifact.frontmatter.scope === 'project' && settings.linkedRepos.length === 0) {
-          results.push({
-            adapter: adapter.adapterId,
-            destination: null,
-            status: 'ok',
-            details: { skipped: 'no-linked-repos' },
-          });
-          continue;
-        }
-
         const destinations = adapter.resolveDestinations({
           artifact,
           linkedRepos: settings.linkedRepos,
@@ -86,9 +85,88 @@ export class AdapterManager {
             await this.syncDestination(adapter.adapterId, this.artifactSourcePath(artifact, settings.workspacePath), destination.destination),
           );
         }
+
+        if (includesProject && settings.linkedRepos.length === 0) {
+          results.push({
+            adapter: adapter.adapterId,
+            destination: null,
+            status: 'ok',
+            details: { skipped: 'no-linked-repos' },
+          });
+        }
       }
     }
     return results;
+  }
+
+  async removeOne(command: RemoveOneCommand): Promise<SyncResult[]> {
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const results: SyncResult[] = [];
+
+    for (const adapter of this.deps.adapters.values()) {
+      const destinations = adapter.resolveDestinations({
+        artifact: command.artifact,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const destination of destinations) {
+        results.push(await this.removeDestination(adapter.adapterId, destination.destination));
+      }
+    }
+    return results;
+  }
+
+  async removeAll(command: RemoveAllCommand): Promise<SyncResult[]> {
+    const adapter = this.deps.adapters.get(command.adapterId);
+    if (!adapter) return [];
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const artifacts = await this.deps.artifactRepository.list();
+    const results: SyncResult[] = [];
+
+    for (const artifact of artifacts) {
+      const destinations = adapter.resolveDestinations({
+        artifact,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const destination of destinations) {
+        results.push(await this.removeDestination(adapter.adapterId, destination.destination));
+      }
+    }
+    return results;
+  }
+
+  private async removeDestination(adapterId: string, destination: string): Promise<SyncResult> {
+    try {
+      const result = await this.deps.symlinkManager.removeIfExists({ destination });
+      const payload: SyncResult = {
+        adapter: adapterId,
+        destination,
+        status: 'ok',
+      };
+      if (!result.removed) {
+        payload.details = { skipped: 'not-found' };
+      }
+      return payload;
+    } catch (err) {
+      if (err instanceof DomainError) {
+        const payload: SyncResult = {
+          adapter: adapterId,
+          destination,
+          status: 'error',
+          message: err.message,
+        };
+        if (err.details !== undefined) {
+          payload.details = err.details as SyncResultDetails;
+        }
+        return payload;
+      }
+      return {
+        adapter: adapterId,
+        destination,
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
   }
 
   private enabledAdapters(settings: NonNullable<Awaited<ReturnType<SettingsService['load']>>>): Adapter[] {
@@ -103,11 +181,11 @@ export class AdapterManager {
   }
 
   private artifactSourcePath(artifact: Artifact, workspacePath: string): string {
-    const slug = artifact.frontmatter.slug;
+    const name = artifact.frontmatter.name;
     if (artifact.frontmatter.type === 'skill') {
-      return join(workspacePath, 'skills', slug);
+      return join(workspacePath, 'skills', name);
     }
-    return join(workspacePath, artifact.frontmatter.type === 'reference' ? 'references' : 'agents', `${slug}.md`);
+    return join(workspacePath, artifact.frontmatter.type === 'reference' ? 'references' : 'agents', `${name}.md`);
   }
 
   private async syncDestination(

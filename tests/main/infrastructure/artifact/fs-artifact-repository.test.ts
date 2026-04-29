@@ -13,32 +13,31 @@ const ISO = '2026-04-26T10:00:00.000Z';
 const buildFrontmatter = (
   overrides: Partial<ArtifactFrontmatter> = {},
 ): ArtifactFrontmatter => ({
-  slug: 'foo',
-  name: 'Foo',
+  name: 'foo',
   type: 'skill',
   description: 'a sample',
-  scope: 'personal',
+  scopes: ['personal'],
   version: '0.1.0',
   createdAt: ISO,
   updatedAt: ISO,
   ...overrides,
 });
 
-const skill = (slug = 'foo'): Artifact => ({
-  id: `skill/${slug}`,
-  frontmatter: buildFrontmatter({ slug, type: 'skill' }),
+const skill = (name = 'foo'): Artifact => ({
+  id: `skill/${name}`,
+  frontmatter: buildFrontmatter({ name, type: 'skill' }),
   body: '# Foo\n',
 });
 
-const reference = (slug = 'bar'): Artifact => ({
-  id: `reference/${slug}`,
-  frontmatter: buildFrontmatter({ slug, type: 'reference', name: 'Bar' }),
+const reference = (name = 'bar'): Artifact => ({
+  id: `reference/${name}`,
+  frontmatter: buildFrontmatter({ name, type: 'reference' }),
   body: '# Bar\n',
 });
 
-const agent = (slug = 'baz'): Artifact => ({
-  id: `agent/${slug}`,
-  frontmatter: buildFrontmatter({ slug, type: 'agent', name: 'Baz' }),
+const agent = (name = 'baz'): Artifact => ({
+  id: `agent/${name}`,
+  frontmatter: buildFrontmatter({ name, type: 'agent' }),
   body: '# Baz\n',
 });
 
@@ -61,7 +60,7 @@ describe('FsArtifactRepository.save — skill', () => {
     const raw = await readFile(target, 'utf8');
     const { frontmatter, body } = parseMarkdown<ArtifactFrontmatter>(raw);
 
-    expect(frontmatter.slug).toBe('foo');
+    expect(frontmatter.name).toBe('foo');
     expect(frontmatter.type).toBe('skill');
     expect(frontmatter.createdAt).toBe(ISO);
     expect(frontmatter.updatedAt).toBe(ISO);
@@ -203,7 +202,7 @@ describe('FsArtifactRepository.list and get', () => {
 
     const result = await repo.get({ id: 'skill/foo' });
     expect(result.id).toBe('skill/foo');
-    expect(result.frontmatter.slug).toBe('foo');
+    expect(result.frontmatter.name).toBe('foo');
     expect(result.body).toContain('# Foo');
   });
 
@@ -223,6 +222,35 @@ describe('FsArtifactRepository.list and get', () => {
 
     await repo.delete({ id: 'skill/foo' });
     expect(await repo.exists({ id: 'skill/foo' })).toBe(false);
+  });
+});
+
+describe('FsArtifactRepository.list — ignora entradas espúrias', () => {
+  it('ignora .DS_Store em skills/ (arquivo, não diretório)', async () => {
+    const repo = new FsArtifactRepository(workspace);
+    await repo.save({ artifact: skill('foo') });
+    await writeFile(join(workspace, 'skills', '.DS_Store'), 'binary', 'utf8');
+
+    const skills = await repo.list({ type: 'skill' });
+    expect(skills.map((a) => a.id)).toEqual(['skill/foo']);
+  });
+
+  it('ignora .DS_Store em references/', async () => {
+    const repo = new FsArtifactRepository(workspace);
+    await repo.save({ artifact: reference('bar') });
+    await writeFile(join(workspace, 'references', '.DS_Store'), 'binary', 'utf8');
+
+    const refs = await repo.list({ type: 'reference' });
+    expect(refs.map((a) => a.id)).toEqual(['reference/bar']);
+  });
+
+  it('ignora .DS_Store em agents/', async () => {
+    const repo = new FsArtifactRepository(workspace);
+    await repo.save({ artifact: agent('baz') });
+    await writeFile(join(workspace, 'agents', '.DS_Store'), 'binary', 'utf8');
+
+    const agents = await repo.list({ type: 'agent' });
+    expect(agents.map((a) => a.id)).toEqual(['agent/baz']);
   });
 });
 

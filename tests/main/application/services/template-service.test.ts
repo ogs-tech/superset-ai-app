@@ -6,10 +6,10 @@ import type {
 } from '../../../../src/main/application/ports/template-repository.js';
 import type { ArtifactType, Template } from '../../../../src/shared/artifact.js';
 
-const fixture = (type: ArtifactType, slug: string): Template => ({
-  id: `${type}/${slug}`,
+const fixture = (type: ArtifactType, name: string): Template => ({
+  id: `${type}/${name}`,
   type,
-  name: `${type} ${slug}`,
+  name: `${type} ${name}`,
   description: `Template for ${type}`,
   frontmatter: { type },
   body: `# ${type}\n`,

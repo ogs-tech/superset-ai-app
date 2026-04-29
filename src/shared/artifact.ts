@@ -3,11 +3,10 @@ export type ArtifactType = 'skill' | 'reference' | 'agent';
 export type ArtifactScope = 'personal' | 'project';
 
 export interface ArtifactFrontmatter {
-  slug: string;
   name: string;
   type: ArtifactType;
   description: string;
-  scope: ArtifactScope;
+  scopes: ArtifactScope[];
   version: string;
   tags?: string[];
   createdAt: string;
@@ -35,7 +34,7 @@ export type SyncStatus = 'ok' | 'conflict' | 'error';
 export interface SyncResultDetails {
   backupPath?: string;
   replacedTarget?: string;
-  skipped?: 'no-linked-repos';
+  skipped?: 'no-linked-repos' | 'not-found';
   reason?: string;
   action?: 'overwritten';
 }

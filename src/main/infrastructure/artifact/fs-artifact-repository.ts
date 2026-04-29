@@ -1,7 +1,7 @@
-import { promises as fs } from 'node:fs';
+import { promises as fs, type Dirent } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
-import type { Artifact, ArtifactFrontmatter, ArtifactType } from '../../../shared/artifact.js';
+import type { Artifact, ArtifactType } from '../../../shared/artifact.js';
 import type {
   ArtifactDeleteCommand,
   ArtifactExistsQuery,
@@ -13,6 +13,7 @@ import type {
 import { DomainError } from '../../domain/errors.js';
 import { formatArtifactId, parseArtifactId } from '../../domain/artifact-id.js';
 import { parseMarkdown, serializeMarkdown } from '../markdown/frontmatter.js';
+import { normalizeArtifactFrontmatter } from './normalize-frontmatter.js';
 
 const ARTIFACT_TYPES: ArtifactType[] = ['skill', 'reference', 'agent'];
 
@@ -45,8 +46,8 @@ export class FsArtifactRepository implements ArtifactRepository {
   }
 
   async get(query: ArtifactGetQuery): Promise<Artifact> {
-    const { type, slug } = parseArtifactId(query.id);
-    const filePath = await this.fileFor(type, slug);
+    const { type, name } = parseArtifactId(query.id);
+    const filePath = await this.fileFor(type, name);
     try {
       const raw = await fs.readFile(filePath, 'utf8');
       return this.fromRaw(query.id, raw);
@@ -62,10 +63,10 @@ export class FsArtifactRepository implements ArtifactRepository {
 
   async save(command: ArtifactSaveCommand): Promise<Artifact> {
     const artifact = command.artifact;
-    const { type, slug } = parseArtifactId(
-      formatArtifactId(artifact.frontmatter.type, artifact.frontmatter.slug),
+    const { type, name } = parseArtifactId(
+      formatArtifactId(artifact.frontmatter.type, artifact.frontmatter.name),
     );
-    const filePath = await this.fileFor(type, slug);
+    const filePath = await this.fileFor(type, name);
     const dir = dirname(filePath);
 
     await fs.mkdir(dir, { recursive: true });
@@ -88,17 +89,17 @@ export class FsArtifactRepository implements ArtifactRepository {
     }
 
     return {
-      id: formatArtifactId(type, slug),
+      id: formatArtifactId(type, name),
       frontmatter: artifact.frontmatter,
       body: artifact.body,
     };
   }
 
   async delete(command: ArtifactDeleteCommand): Promise<void> {
-    const { type, slug } = parseArtifactId(command.id);
+    const { type, name } = parseArtifactId(command.id);
     const root = await this.workspacePath();
     if (type === 'skill') {
-      const dir = join(root, FOLDER_BY_TYPE[type], slug);
+      const dir = join(root, FOLDER_BY_TYPE[type], name);
       try {
         await fs.access(dir);
       } catch (err) {
@@ -112,7 +113,7 @@ export class FsArtifactRepository implements ArtifactRepository {
       await fs.rm(dir, { recursive: true, force: true });
       return;
     }
-    const file = await this.fileFor(type, slug);
+    const file = await this.fileFor(type, name);
     try {
       await fs.unlink(file);
     } catch (err) {
@@ -126,9 +127,9 @@ export class FsArtifactRepository implements ArtifactRepository {
   }
 
   async exists(query: ArtifactExistsQuery): Promise<boolean> {
-    const { type, slug } = parseArtifactId(query.id);
+    const { type, name } = parseArtifactId(query.id);
     try {
-      await fs.access(await this.fileFor(type, slug));
+      await fs.access(await this.fileFor(type, name));
       return true;
     } catch {
       return false;
@@ -138,19 +139,26 @@ export class FsArtifactRepository implements ArtifactRepository {
   private async listByType(type: ArtifactType): Promise<Artifact[]> {
     const root = await this.workspacePath();
     const folder = join(root, FOLDER_BY_TYPE[type]);
-    let entries: string[];
+    let entries: Dirent[];
     try {
-      entries = await fs.readdir(folder);
+      entries = await fs.readdir(folder, { withFileTypes: true });
     } catch (err) {
       if (hasErrnoCode(err, 'ENOENT')) return [];
       throw err;
     }
 
     const out: Artifact[] = [];
-    for (const entry of entries) {
-      const slug = type === 'skill' ? entry : entry.replace(/\.md$/, '');
-      const id = formatArtifactId(type, slug);
-      const filePath = await this.fileFor(type, slug);
+    for (const dirent of entries) {
+      if (dirent.name.startsWith('.')) continue;
+      if (type === 'skill') {
+        if (!dirent.isDirectory()) continue;
+      } else {
+        if (!dirent.isFile()) continue;
+        if (!dirent.name.endsWith('.md')) continue;
+      }
+      const name = type === 'skill' ? dirent.name : dirent.name.replace(/\.md$/, '');
+      const id = formatArtifactId(type, name);
+      const filePath = await this.fileFor(type, name);
       try {
         const raw = await fs.readFile(filePath, 'utf8');
         out.push(this.fromRaw(id, raw));
@@ -162,16 +170,16 @@ export class FsArtifactRepository implements ArtifactRepository {
     return out;
   }
 
-  private async fileFor(type: ArtifactType, slug: string): Promise<string> {
+  private async fileFor(type: ArtifactType, name: string): Promise<string> {
     const root = await this.workspacePath();
     if (type === 'skill') {
-      return join(root, FOLDER_BY_TYPE[type], slug, 'SKILL.md');
+      return join(root, FOLDER_BY_TYPE[type], name, 'SKILL.md');
     }
-    return join(root, FOLDER_BY_TYPE[type], `${slug}.md`);
+    return join(root, FOLDER_BY_TYPE[type], `${name}.md`);
   }
 
   private fromRaw(id: string, raw: string): Artifact {
-    const { frontmatter, body } = parseMarkdown<ArtifactFrontmatter>(raw);
-    return { id, frontmatter, body };
+    const { frontmatter, body } = parseMarkdown(raw);
+    return { id, frontmatter: normalizeArtifactFrontmatter(frontmatter), body };
   }
 }

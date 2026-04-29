@@ -4,13 +4,12 @@ import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.
 import type { Artifact } from '../../../../../src/shared/artifact.js';
 
 const baseArtifact = (overrides: Partial<Artifact['frontmatter']> = {}): Artifact => ({
-  id: `${overrides.type ?? 'skill'}/${overrides.slug ?? 'foo'}`,
+  id: `${overrides.type ?? 'skill'}/${overrides.name ?? 'foo'}`,
   frontmatter: {
-    slug: 'foo',
-    name: 'Foo',
+    name: 'foo',
     type: 'skill',
     description: 'desc',
-    scope: 'personal',
+    scopes: ['personal'],
     version: '1.0.0',
     createdAt: '',
     updatedAt: '',
@@ -26,8 +25,8 @@ describe('AdapterManager.syncAll', () => {
       new FakeAdapter('copilot', '/personal/copilot/{slug}'),
     ];
     const { manager, registerArtifact, fs } = await setupAdapterManager(adapters);
-    const skill = baseArtifact({ slug: 'alpha', type: 'skill' });
-    const reference = baseArtifact({ slug: 'beta', type: 'reference' });
+    const skill = baseArtifact({ name: 'alpha', type: 'skill' });
+    const reference = baseArtifact({ name: 'beta', type: 'reference' });
     await registerArtifact(skill);
     await registerArtifact(reference);
     fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
@@ -46,7 +45,7 @@ describe('AdapterManager.syncAll', () => {
       new FakeAdapter('copilot', '/personal/copilot'),
     ];
     const { manager, registerArtifact, fs } = await setupAdapterManager(adapters);
-    const skill = baseArtifact({ slug: 'alpha', type: 'skill' });
+    const skill = baseArtifact({ name: 'alpha', type: 'skill' });
     await registerArtifact(skill);
     fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
 
@@ -60,7 +59,7 @@ describe('AdapterManager.syncAll', () => {
     const adapter = new FakeAdapter('claude', '/personal/claude');
     const settings = { ...defaultSettings, linkedRepos: [] };
     const { manager, registerArtifact } = await setupAdapterManager([adapter], settings);
-    const projectRef = baseArtifact({ slug: 'gamma', type: 'reference', scope: 'project' });
+    const projectRef = baseArtifact({ name: 'gamma', type: 'reference', scopes: ['project'] });
     await registerArtifact(projectRef);
 
     const results = await manager.syncAll({});
@@ -88,7 +87,7 @@ describe('AdapterManager error mapping', () => {
   it('maps generic Error from symlinkManager into status=error envelope', async () => {
     const adapter = new FakeAdapter('claude', '/personal/claude');
     const { manager, registerArtifact, symlinkManager } = await setupAdapterManager([adapter]);
-    const skill = baseArtifact({ slug: 'omega', type: 'skill' });
+    const skill = baseArtifact({ name: 'omega', type: 'skill' });
     await registerArtifact(skill);
     (symlinkManager as unknown as { create: (args: { source: string; destination: string }) => Promise<never> }).create = async () => {
       throw new Error('disk on fire');

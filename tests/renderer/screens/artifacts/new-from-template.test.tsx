@@ -14,7 +14,7 @@ const skillTemplate: Template = {
     type: 'skill',
     name: 'New Skill',
     description: 'starter description',
-    scope: 'personal',
+    scopes: ['personal'],
     version: '0.1.0',
   },
   body: '# Skill body\n',

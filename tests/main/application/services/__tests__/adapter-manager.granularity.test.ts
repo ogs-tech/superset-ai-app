@@ -13,11 +13,10 @@ describe('AdapterManager sync granularity by artifact type', () => {
     const skillArtifact = {
       id: 'skill/alpha',
       frontmatter: {
-        slug: 'alpha',
-        name: 'Alpha',
+        name: 'alpha',
         type: 'skill' as const,
         description: 'skill artifact',
-        scope: 'personal' as const,
+        scopes: ['personal' as const],
         version: '1.0.0',
         createdAt: '',
         updatedAt: '',
@@ -30,11 +29,10 @@ describe('AdapterManager sync granularity by artifact type', () => {
     const referenceArtifact = {
       id: 'reference/beta',
       frontmatter: {
-        slug: 'beta',
-        name: 'Beta',
+        name: 'beta',
         type: 'reference' as const,
         description: 'reference artifact',
-        scope: 'personal' as const,
+        scopes: ['personal' as const],
         version: '1.0.0',
         createdAt: '',
         updatedAt: '',

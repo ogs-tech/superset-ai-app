@@ -17,8 +17,8 @@ const WORKSPACE = '/workspace';
 const settings: Settings = {
   workspacePath: WORKSPACE,
   adapters: {
-    claude: { enabled: true, defaultScope: 'personal' },
-    copilot: { enabled: false, defaultScope: 'personal' },
+    claude: { enabled: true },
+    copilot: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -27,11 +27,10 @@ const settings: Settings = {
 const validFrontmatter = (
   overrides: Partial<ArtifactFrontmatter> = {},
 ): ArtifactFrontmatter => ({
-  slug: 'foo',
-  name: 'Foo',
+  name: 'foo',
   type: 'skill',
   description: 'sample skill',
-  scope: 'personal',
+  scopes: ['personal'],
   version: '0.1.0',
   createdAt: '',
   updatedAt: '',

@@ -1,12 +1,13 @@
 ---
 type: skill
-name: New Skill
+name: new-skill
 description: One-line summary of when to use this skill.
-scope: personal
+scopes:
+  - personal
 version: 0.1.0
 ---
 
-# New Skill
+# new-skill
 
 ## When to use
 

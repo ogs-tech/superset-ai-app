@@ -22,8 +22,8 @@ import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
   workspacePath: '/tmp/workspace',
   adapters: {
-    claude: { enabled: true, defaultScope: 'personal' },
-    copilot: { enabled: false, defaultScope: 'personal' },
+    claude: { enabled: true },
+    copilot: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -119,6 +119,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const adapterManager: AdapterManager = {
     syncAll: vi.fn().mockResolvedValue([]),
     syncOne: vi.fn().mockResolvedValue([]),
+    removeOne: vi.fn().mockResolvedValue([]),
   } as unknown as AdapterManager;
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
 
@@ -192,7 +193,6 @@ describe('buildHandlers', () => {
     expect(merged.adapters.claude.enabled).toBe(false);
     expect(merged.adapters.copilot).toEqual({
       enabled: false,
-      defaultScope: 'personal',
     });
     expect(merged.ui.theme).toBe('dark');
     expect(deps.settingsRepoSpy.save).toHaveBeenCalledWith(merged);
@@ -364,11 +364,10 @@ describe('buildHandlers — artifact', () => {
   const sampleArtifact = {
     id: 'skill/foo',
     frontmatter: {
-      slug: 'foo',
-      name: 'Foo',
+      name: 'foo',
       type: 'skill',
       description: 'sample',
-      scope: 'personal',
+      scopes: ['personal'],
       version: '0.1.0',
       createdAt: '',
       updatedAt: '',
@@ -394,7 +393,7 @@ describe('buildHandlers — artifact', () => {
 
     const broken = {
       ...sampleArtifact,
-      frontmatter: { ...sampleArtifact.frontmatter, slug: '' },
+      frontmatter: { ...sampleArtifact.frontmatter, name: '' },
     };
     await expect(handlers['artifact.save']?.({ artifact: broken })).rejects.toMatchObject({
       kind: 'validation',
@@ -440,8 +439,8 @@ describe('buildHandlers — artifact', () => {
     const result = (await handlers['artifact.delete']?.({
       id: 'skill/foo',
       removeSymlinks: true,
-    })) as { ok: true };
-    expect(result).toEqual({ ok: true });
+    })) as { ok: true; syncReport: unknown[] };
+    expect(result).toEqual({ ok: true, syncReport: [] });
 
     expect(await deps.artifactRepo.exists({ id: 'skill/foo' })).toBe(false);
   });

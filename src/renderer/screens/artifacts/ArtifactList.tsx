@@ -134,8 +134,7 @@ export function ArtifactList({ onClose }: ArtifactListProps = {}): React.ReactEl
             }}
           >
             <span>
-              <strong>{artifact.frontmatter.name}</strong>{' '}
-              <code>{artifact.frontmatter.slug}</code>
+              <strong>{artifact.frontmatter.name}</strong>
             </span>
             <span>
               <button type="button" onClick={() => setEditor({ kind: 'edit', artifact })}>
@@ -184,11 +183,10 @@ function artifactFromTemplate(template: Template, type: ArtifactType): Artifact 
   return {
     id: '',
     frontmatter: {
-      slug: fm.slug ?? '',
       name: fm.name ?? '',
       type,
       description: fm.description ?? '',
-      scope: fm.scope ?? 'personal',
+      scopes: fm.scopes ?? ['personal'],
       version: fm.version ?? '0.1.0',
       createdAt: '',
       updatedAt: '',

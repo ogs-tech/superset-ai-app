@@ -13,13 +13,22 @@ export class FakeAdapter implements Adapter {
     artifact: Artifact;
     linkedRepos: LinkedRepo[];
   }): AdapterDestination[] {
-    if (args.artifact.frontmatter.scope === 'personal') {
-      return [{ scope: 'personal', destination: this.personalDestination }];
+    const { scopes } = args.artifact.frontmatter;
+    const out: AdapterDestination[] = [];
+
+    if (scopes.includes('personal')) {
+      out.push({ scope: 'personal', destination: this.personalDestination });
     }
 
-    return args.linkedRepos.map((repo) => ({
-      scope: 'project',
-      destination: this.projectDestinationTemplate(repo.path),
-    }));
+    if (scopes.includes('project')) {
+      for (const repo of args.linkedRepos) {
+        out.push({
+          scope: 'project',
+          destination: this.projectDestinationTemplate(repo.path),
+        });
+      }
+    }
+
+    return out;
   }
 }

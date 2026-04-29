@@ -7,8 +7,8 @@ import type { Settings } from '../../src/shared/settings.js';
 const validSettings: Settings = {
   workspacePath: '/ws',
   adapters: {
-    claude: { enabled: true, defaultScope: 'personal' },
-    copilot: { enabled: false, defaultScope: 'personal' },
+    claude: { enabled: true },
+    copilot: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

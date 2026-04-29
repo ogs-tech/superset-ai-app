@@ -7,15 +7,13 @@ import type {
 } from '../../application/ports/artifact-repository.js';
 import type { AdapterManager } from './adapter-manager.js';
 import { formatArtifactId } from '../../domain/artifact-id.js';
+import { isValidArtifactName } from '../../domain/artifact-name.js';
 import { DomainError, validationError } from '../../domain/errors.js';
 
-const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*$/;
 const REQUIRED_FIELDS: Array<keyof ArtifactFrontmatter> = [
-  'slug',
   'name',
   'type',
   'description',
-  'scope',
   'version',
 ];
 const DESCRIPTION_MAX_LENGTH = 200;
@@ -37,6 +35,7 @@ export interface DeleteArtifactCommand {
 
 export interface DeleteArtifactResult {
   ok: true;
+  syncReport?: SyncResult[];
 }
 
 export class ArtifactService {
@@ -58,7 +57,9 @@ export class ArtifactService {
     const { artifact, isCreate = false } = command;
     this.validate(artifact);
 
-    const id = formatArtifactId(artifact.frontmatter.type, artifact.frontmatter.slug);
+    const id = formatArtifactId(artifact.frontmatter.type, artifact.frontmatter.name);
+    const previousId = artifact.id;
+    const isRename = !isCreate && previousId !== '' && previousId !== id;
     const exists = await this.repository.exists({ id });
 
     if (isCreate && exists) {
@@ -68,9 +69,20 @@ export class ArtifactService {
       });
     }
 
+    if (isRename && exists) {
+      throw validationError({
+        message: `Artifact already exists: ${id}`,
+        details: { conflict: id },
+      });
+    }
+
     const nowIso = this.clock.now().toISOString();
     let createdAt = nowIso;
-    if (exists) {
+    let previousArtifact: Artifact | undefined;
+    if (isRename) {
+      previousArtifact = await this.repository.get({ id: previousId });
+      createdAt = previousArtifact.frontmatter.createdAt || nowIso;
+    } else if (exists) {
       const previous = await this.repository.get({ id });
       createdAt = previous.frontmatter.createdAt || nowIso;
     }
@@ -86,14 +98,27 @@ export class ArtifactService {
     };
 
     const saved = await this.repository.save({ artifact: persisted });
+
+    const removeReport: SyncResult[] = [];
+    if (isRename && previousArtifact) {
+      const removed = await this.adapterManager.removeOne({ artifact: previousArtifact });
+      removeReport.push(...removed);
+      await this.repository.delete({ id: previousId });
+    }
+
     const syncReport = await this.adapterManager.syncOne({ artifact: saved });
-    return { artifact: saved, syncReport };
+    return { artifact: saved, syncReport: [...removeReport, ...syncReport] };
   }
 
   async delete(command: DeleteArtifactCommand): Promise<DeleteArtifactResult> {
+    let syncReport: SyncResult[] | undefined;
+    if (command.removeSymlinks) {
+      const artifact = await this.repository.get({ id: command.id });
+      syncReport = await this.adapterManager.removeOne({ artifact });
+    }
     const repoCommand: ArtifactDeleteCommand = { id: command.id };
     await this.repository.delete(repoCommand);
-    return { ok: true };
+    return syncReport === undefined ? { ok: true } : { ok: true, syncReport };
   }
 
   private validate(artifact: Artifact): void {
@@ -113,8 +138,9 @@ export class ArtifactService {
     }
 
     const invalid: string[] = [];
-    if (!SLUG_REGEX.test(fm.slug)) invalid.push('slug');
+    if (!isValidArtifactName(fm.name)) invalid.push('name');
     if (fm.description.length > DESCRIPTION_MAX_LENGTH) invalid.push('description');
+    if (!Array.isArray(fm.scopes) || fm.scopes.length === 0) invalid.push('scopes');
     if (invalid.length > 0) {
       throw validationError({
         message: `Invalid field(s): ${invalid.join(', ')}`,

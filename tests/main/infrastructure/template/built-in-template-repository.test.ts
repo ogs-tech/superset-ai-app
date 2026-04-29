@@ -36,10 +36,18 @@ describe('BuiltInTemplateRepository.list', () => {
     expect(list[0]!.frontmatter.type).toBe('agent');
   });
 
+  it('all built-in templates default to scopes: ["personal"]', async () => {
+    const repo = new BuiltInTemplateRepository(TEMPLATES_DIR);
+    for (const type of ['skill', 'reference', 'agent'] as const) {
+      const list = await repo.list({ type });
+      expect(list[0]!.frontmatter.scopes).toEqual(['personal']);
+    }
+  });
+
   it('parses body separately from frontmatter', async () => {
     const repo = new BuiltInTemplateRepository(TEMPLATES_DIR);
     const list = await repo.list({ type: 'skill' });
-    expect(list[0]!.body).toContain('# New Skill');
+    expect(list[0]!.body).toContain('# new-skill');
     expect(list[0]!.body).not.toContain('---');
   });
 });

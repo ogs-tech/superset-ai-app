@@ -17,13 +17,6 @@ interface ArtifactEditorProps {
   onCancel: () => void;
 }
 
-const slugify = (input: string): string =>
-  input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
 export function ArtifactEditor({
   initial,
   isCreate,
@@ -41,14 +34,6 @@ export function ArtifactEditor({
     value: ArtifactFrontmatter[K],
   ): void => {
     setFrontmatter((fm) => ({ ...fm, [key]: value }));
-  };
-
-  const handleNameChange = (value: string): void => {
-    setFrontmatter((fm) => ({
-      ...fm,
-      name: value,
-      slug: isCreate && (!fm.slug || fm.slug === slugify(fm.name)) ? slugify(value) : fm.slug,
-    }));
   };
 
   const handleSave = async (): Promise<void> => {
@@ -75,7 +60,7 @@ export function ArtifactEditor({
   };
 
   return (
-    <main
+    <main 
       data-testid="artifact-editor"
       style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}
     >
@@ -99,15 +84,9 @@ export function ArtifactEditor({
             <input
               type="text"
               value={frontmatter.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-            />
-          </label>
-          <label style={{ display: 'block' }}>
-            Slug
-            <input
-              type="text"
-              value={frontmatter.slug}
-              onChange={(e) => update('slug', e.target.value)}
+              onChange={(e) => update('name', e.target.value)}
+              pattern="^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+              title="lowercase letters, digits and hyphens only (1-64 chars, no leading/trailing hyphen)"
             />
           </label>
           <label style={{ display: 'block' }}>
@@ -127,16 +106,27 @@ export function ArtifactEditor({
               onChange={(e) => update('version', e.target.value)}
             />
           </label>
-          <label style={{ display: 'block' }}>
-            Escopo
-            <select
-              value={frontmatter.scope}
-              onChange={(e) => update('scope', e.target.value as ArtifactScope)}
-            >
-              <option value="personal">personal</option>
-              <option value="project">project</option>
-            </select>
-          </label>
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend>Escopo</legend>
+            {(['personal', 'project'] as const).map((value) => (
+              <label
+                key={value}
+                style={{ display: 'inline-flex', alignItems: 'center', marginRight: '1rem' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={frontmatter.scopes.includes(value)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? Array.from(new Set([...frontmatter.scopes, value]))
+                      : frontmatter.scopes.filter((s) => s !== value);
+                    update('scopes', next as ArtifactScope[]);
+                  }}
+                />
+                {value}
+              </label>
+            ))}
+          </fieldset>
         </fieldset>
 
         <fieldset>

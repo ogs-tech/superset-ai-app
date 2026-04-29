@@ -141,6 +141,22 @@ export class SymlinkManager {
     await this.fs.unlink(destinationPath);
   }
 
+  async removeIfExists(args: { destination: string }): Promise<{ removed: boolean }> {
+    const destinationPath = resolve(args.destination);
+    const stat = await this.fs.lstat(destinationPath);
+    if (stat.kind === 'none') {
+      return { removed: false };
+    }
+    if (stat.kind !== 'symlink') {
+      throw ioError({
+        message: `Destination is not a symlink: ${destinationPath}`,
+        details: { reason: 'not-a-symlink' },
+      });
+    }
+    await this.fs.unlink(destinationPath);
+    return { removed: true };
+  }
+
   async scanByTarget(args: {
     rootPath: string;
     workspacePath: string;

@@ -11,11 +11,10 @@ const FROZEN = new Date('2026-04-26T10:00:00.000Z');
 const validFrontmatter = (
   overrides: Partial<ArtifactFrontmatter> = {},
 ): ArtifactFrontmatter => ({
-  slug: 'foo',
-  name: 'Foo',
+  name: 'foo',
   type: 'skill',
   description: 'a sample skill',
-  scope: 'personal',
+  scopes: ['personal'],
   version: '0.1.0',
   createdAt: '',
   updatedAt: '',
@@ -35,6 +34,7 @@ const setup = () => {
   const adapterManager = {
     syncOne: vi.fn().mockResolvedValue([]),
     syncAll: vi.fn().mockResolvedValue([]),
+    removeOne: vi.fn().mockResolvedValue([]),
   } as unknown as AdapterManager;
   const service = new ArtifactService(repo, clock, adapterManager);
   return { repo, clock, service, adapterManager };
@@ -46,7 +46,6 @@ describe('ArtifactService.save — validation', () => {
     const broken = makeArtifact({
       frontmatter: {
         ...validFrontmatter(),
-        slug: '',
         name: '',
         description: '',
       } as ArtifactFrontmatter,
@@ -54,19 +53,31 @@ describe('ArtifactService.save — validation', () => {
 
     await expect(service.save({ artifact: broken })).rejects.toMatchObject({
       kind: 'validation',
-      details: { missing: expect.arrayContaining(['slug', 'name', 'description']) },
+      details: { missing: expect.arrayContaining(['name', 'description']) },
     });
   });
 
-  it('rejects slug that fails ^[a-z0-9][a-z0-9-]*$ with details.invalid', async () => {
+  it('rejects name that fails the kebab-case pattern with details.invalid', async () => {
     const { service } = setup();
     const broken = makeArtifact({
-      frontmatter: validFrontmatter({ slug: '-bad' }),
+      frontmatter: validFrontmatter({ name: '-bad' }),
     });
 
     await expect(service.save({ artifact: broken })).rejects.toMatchObject({
       kind: 'validation',
-      details: { invalid: ['slug'] },
+      details: { invalid: ['name'] },
+    });
+  });
+
+  it('rejects empty scopes array with details.invalid', async () => {
+    const { service } = setup();
+    const broken = makeArtifact({
+      frontmatter: validFrontmatter({ scopes: [] }),
+    });
+
+    await expect(service.save({ artifact: broken })).rejects.toMatchObject({
+      kind: 'validation',
+      details: { invalid: ['scopes'] },
     });
   });
 
@@ -104,13 +115,13 @@ describe('ArtifactService.list', () => {
     await service.save({
       artifact: makeArtifact({
         id: 'skill/foo',
-        frontmatter: validFrontmatter({ slug: 'foo', type: 'skill' }),
+        frontmatter: validFrontmatter({ name: 'foo', type: 'skill' }),
       }),
     });
     await service.save({
       artifact: makeArtifact({
         id: 'reference/bar',
-        frontmatter: validFrontmatter({ slug: 'bar', type: 'reference' }),
+        frontmatter: validFrontmatter({ name: 'bar', type: 'reference' }),
         body: '',
       }),
     });
@@ -124,19 +135,19 @@ describe('ArtifactService.list', () => {
     await service.save({
       artifact: makeArtifact({
         id: 'skill/foo',
-        frontmatter: validFrontmatter({ slug: 'foo', type: 'skill' }),
+        frontmatter: validFrontmatter({ name: 'foo', type: 'skill' }),
       }),
     });
     await service.save({
       artifact: makeArtifact({
         id: 'reference/bar',
-        frontmatter: validFrontmatter({ slug: 'bar', type: 'reference' }),
+        frontmatter: validFrontmatter({ name: 'bar', type: 'reference' }),
       }),
     });
     await service.save({
       artifact: makeArtifact({
         id: 'agent/baz',
-        frontmatter: validFrontmatter({ slug: 'baz', type: 'agent' }),
+        frontmatter: validFrontmatter({ name: 'baz', type: 'agent' }),
       }),
     });
 
@@ -225,12 +236,130 @@ describe('ArtifactService.delete', () => {
     ).rejects.toMatchObject({ kind: 'not_found' });
   });
 
-  it('returns { ok: true }', async () => {
+  it('returns { ok: true, syncReport: [] } when removeSymlinks is true and adapters report ok', async () => {
     const { service } = setup();
     await service.save({ artifact: makeArtifact() });
 
     const result = await service.delete({ id: 'skill/foo', removeSymlinks: true });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, syncReport: [] });
+  });
+
+  it('calls adapterManager.removeOne with the loaded artifact when removeSymlinks=true', async () => {
+    const { service, adapterManager } = setup();
+    const saved = await service.save({ artifact: makeArtifact() });
+
+    await service.delete({ id: 'skill/foo', removeSymlinks: true });
+
+    expect(adapterManager.removeOne).toHaveBeenCalledWith({ artifact: saved.artifact });
+  });
+
+  it('does NOT call adapterManager.removeOne when removeSymlinks=false', async () => {
+    const { service, adapterManager } = setup();
+    await service.save({ artifact: makeArtifact() });
+
+    await service.delete({ id: 'skill/foo', removeSymlinks: false });
+
+    expect(adapterManager.removeOne).not.toHaveBeenCalled();
+  });
+});
+
+describe('ArtifactService.save — rename', () => {
+  it('moves the artifact to the new id when name changes (no duplicate)', async () => {
+    const { service, repo } = setup();
+    const created = await service.save({ artifact: makeArtifact() });
+
+    const renamed = await service.save({
+      artifact: {
+        id: created.artifact.id,
+        frontmatter: { ...created.artifact.frontmatter, name: 'foo-renamed' },
+        body: created.artifact.body,
+      },
+    });
+
+    expect(renamed.artifact.id).toBe('skill/foo-renamed');
+    expect(await repo.exists({ id: 'skill/foo' })).toBe(false);
+    expect(await repo.exists({ id: 'skill/foo-renamed' })).toBe(true);
+  });
+
+  it('preserves createdAt and bumps updatedAt on rename', async () => {
+    const { service, clock } = setup();
+    const first = await service.save({ artifact: makeArtifact() });
+    const createdAt = first.artifact.frontmatter.createdAt;
+
+    const later = new Date('2026-04-26T12:00:00.000Z');
+    clock.set(later);
+
+    const renamed = await service.save({
+      artifact: {
+        id: first.artifact.id,
+        frontmatter: { ...first.artifact.frontmatter, name: 'foo-renamed' },
+        body: first.artifact.body,
+      },
+    });
+
+    expect(renamed.artifact.frontmatter.createdAt).toBe(createdAt);
+    expect(renamed.artifact.frontmatter.updatedAt).toBe(later.toISOString());
+  });
+
+  it('removes old symlinks via adapterManager.removeOne with the previous artifact on rename', async () => {
+    const { service, adapterManager } = setup();
+    const first = await service.save({ artifact: makeArtifact() });
+
+    await service.save({
+      artifact: {
+        id: first.artifact.id,
+        frontmatter: { ...first.artifact.frontmatter, name: 'foo-renamed' },
+        body: first.artifact.body,
+      },
+    });
+
+    expect(adapterManager.removeOne).toHaveBeenCalledWith({ artifact: first.artifact });
+  });
+
+  it('rejects rename with details.conflict when target id already exists; nothing is moved', async () => {
+    const { service, repo, adapterManager } = setup();
+    const original = await service.save({ artifact: makeArtifact() });
+    await service.save({
+      artifact: makeArtifact({
+        id: 'skill/taken',
+        frontmatter: validFrontmatter({ name: 'taken' }),
+      }),
+    });
+
+    (adapterManager.removeOne as ReturnType<typeof vi.fn>).mockClear();
+
+    await expect(
+      service.save({
+        artifact: {
+          id: original.artifact.id,
+          frontmatter: { ...original.artifact.frontmatter, name: 'taken' },
+          body: original.artifact.body,
+        },
+      }),
+    ).rejects.toMatchObject({
+      kind: 'validation',
+      details: { conflict: 'skill/taken' },
+    });
+
+    expect(await repo.exists({ id: 'skill/foo' })).toBe(true);
+    expect(adapterManager.removeOne).not.toHaveBeenCalled();
+  });
+
+  it('does NOT call removeOne when name is unchanged on re-save', async () => {
+    const { service, adapterManager } = setup();
+    const first = await service.save({ artifact: makeArtifact() });
+
+    (adapterManager.removeOne as ReturnType<typeof vi.fn>).mockClear();
+
+    await service.save({
+      artifact: {
+        id: first.artifact.id,
+        frontmatter: first.artifact.frontmatter,
+        body: 'updated body',
+      },
+    });
+
+    expect(adapterManager.removeOne).not.toHaveBeenCalled();
   });
 });
 
@@ -238,7 +367,7 @@ describe('ArtifactService.save — DomainError instance', () => {
   it('throws an actual DomainError so the dispatcher envelope wires up correctly', async () => {
     const { service } = setup();
     const broken = makeArtifact({
-      frontmatter: validFrontmatter({ slug: '' }),
+      frontmatter: validFrontmatter({ name: '' }),
     });
 
     await expect(service.save({ artifact: broken })).rejects.toBeInstanceOf(DomainError);

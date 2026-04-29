@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { IPC_CHANNEL } from '../shared/ipc-contract.js';
 import { SettingsService } from './application/services/settings-service.js';
@@ -18,6 +19,7 @@ import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
+import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -53,13 +55,14 @@ async function wireIpc(): Promise<void> {
     return current?.workspacePath ?? app.getPath('userData');
   });
 
-  const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false, defaultScope: 'personal' }, copilot: { enabled: false, defaultScope: 'personal' } }, linkedRepos: [], ui: { theme: 'system' } };
+  const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false }, copilot: { enabled: false } }, linkedRepos: [], ui: { theme: 'system' } };
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, settings.workspacePath || app.getPath('userData'));
+  const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
   const adapterManager = new AdapterManager({
     settingsService,
     artifactRepository: artifactRepo,
     symlinkManager,
-    adapters: new Map(),
+    adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
   const templatesDir = join(process.cwd(), 'src', 'main', 'templates');

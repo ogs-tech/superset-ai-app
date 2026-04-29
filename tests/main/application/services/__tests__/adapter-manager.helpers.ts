@@ -12,8 +12,8 @@ import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/files
 export const defaultSettings: Settings = {
   workspacePath: '/workspace',
   adapters: {
-    claude: { enabled: true, defaultScope: 'personal' },
-    copilot: { enabled: true, defaultScope: 'personal' },
+    claude: { enabled: true },
+    copilot: { enabled: true },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

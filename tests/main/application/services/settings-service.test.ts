@@ -7,8 +7,8 @@ import { getDefaults, type Settings } from '../../../../src/shared/settings.js';
 const baseSettings = (): Settings => ({
   workspacePath: '/tmp/sample',
   adapters: {
-    claude: { enabled: true, defaultScope: 'personal' },
-    copilot: { enabled: false, defaultScope: 'personal' },
+    claude: { enabled: true },
+    copilot: { enabled: false },
   },
   linkedRepos: [{ id: 'r1', name: 'repo', path: '/repos/r1' }],
   ui: { theme: 'system' },
@@ -61,8 +61,8 @@ describe('SettingsService.merge', () => {
       ui: { theme: 'dark' },
     });
 
-    expect(result.adapters.claude).toEqual({ enabled: false, defaultScope: 'personal' });
-    expect(result.adapters.copilot).toEqual({ enabled: false, defaultScope: 'personal' });
+    expect(result.adapters.claude).toEqual({ enabled: false });
+    expect(result.adapters.copilot).toEqual({ enabled: false });
     expect(result.ui.theme).toBe('dark');
     expect(result.linkedRepos).toEqual(persisted.linkedRepos);
     expect(result.workspacePath).toBe(persisted.workspacePath);

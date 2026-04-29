@@ -18,8 +18,8 @@ describe('getDefaults', () => {
     expect(defaults).toEqual({
       workspacePath: '',
       adapters: {
-        claude: { enabled: true, defaultScope: 'personal' },
-        copilot: { enabled: false, defaultScope: 'personal' },
+        claude: { enabled: true },
+        copilot: { enabled: false },
       },
       linkedRepos: [],
       ui: { theme: 'system' },

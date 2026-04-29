@@ -9,11 +9,10 @@ describe('AdapterManager.syncOne shape', () => {
     const artifact = {
       id: 'skill/foo',
       frontmatter: {
-        slug: 'foo',
-        name: 'Foo',
+        name: 'foo',
         type: 'skill' as const,
         description: 'desc',
-        scope: 'personal' as const,
+        scopes: ['personal' as const],
         version: '1.0.0',
         createdAt: '',
         updatedAt: '',

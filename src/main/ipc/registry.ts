@@ -227,6 +227,13 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       });
     },
 
+    'adapter.removeAll': async (params) => {
+      const raw = asObject(params, 'adapter.removeAll');
+      return adapterManager.removeAll({
+        adapterId: asString(raw['adapterId'], 'adapterId'),
+      });
+    },
+
     'template.list': async (params) => {
       const raw = asObject(params, 'template.list');
       return templateService.list({ type: asArtifactType(raw['type'], 'type') });

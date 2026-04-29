@@ -1,6 +1,6 @@
 import type { IpcErrorKind } from '../../shared/ipc-contract.js';
 
-export type DomainErrorKind = Exclude<IpcErrorKind, 'internal'>;
+export type DomainErrorKind = IpcErrorKind;
 
 export class DomainError extends Error {
   readonly kind: DomainErrorKind;
