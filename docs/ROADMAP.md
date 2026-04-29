@@ -30,13 +30,14 @@ updated_at: 2026-04-29
 
 ### Must-have remaining (PRD §4)
 
-| Spec                            | Description                                                                                                              | Status   |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------- |
-| `005-claude-adapter`            | `ClaudeAdapter` (ARCH §5.3). Depends on 004.                                                                             | —        |
-| `006-multi-scope-artifacts`     | `Artifact.frontmatter.scopes: ArtifactScope[]` substitui o singular `scope`; multi-escopo sem duplicação (ARCH ADR-30/31). | `review` |
-| `007-copilot-adapter`           | `CopilotAdapter` (ARCH §5.3). Depends on 004.                                                                            | —        |
-| `008-copilot-instructions-gen`  | aggregation + `chmod 444` (ARCH §6.4). Depends on 007.                                                                   | —        |
-| `009-disable-adapter-flow`      | toggle off + symlink cleanup (ARCH §6.3). Depends on 005, 007.                                                           | —        |
+| Spec                           | Description                                                                                                                | Status   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `005-claude-adapter`           | `ClaudeAdapter` (ARCH §5.3). Depends on 004.                                                                               | `review` |
+| `014-global-instructions`      | Sincroniza `~/.claude/CLAUDE.md` (Claude) e `global-copilot-instructions.md` (Copilot). Depende de 005, 007.               | —        |
+| `006-multi-scope-artifacts`    | `Artifact.frontmatter.scopes: ArtifactScope[]` substitui o singular `scope`; multi-escopo sem duplicação (ARCH ADR-30/31). | `review` |
+| `007-copilot-adapter`          | `CopilotAdapter` (ARCH §5.3). Depends on 004.                                                                              | —        |
+| `008-copilot-instructions-gen` | aggregation + `chmod 444` (ARCH §6.4). Depends on 007.                                                                     | —        |
+| `009-disable-adapter-flow`     | toggle off + symlink cleanup (ARCH §6.3). Depends on 005, 007.                                                             | —        |
 
 ### Should-have (PRD §4 — only after must-have validated ≥1 week in real use)
 
@@ -51,9 +52,5 @@ updated_at: 2026-04-29
 | -------------------------- | ------------------------------------------------------------------- | ------ |
 | `012-claude-token-parser`  | JSONL aggregation (ARCH §5.3, §6.5). Format-breakage risk accepted. | —      |
 | `013-copilot-usage-client` | GitHub Usage API + PAT via Keychain (ARCH §5.3, §8.3).              | —      |
-
-### Out of scope (this spike)
-
-- **Personal global instruction files** — `~/.claude/CLAUDE.md` (Claude Code) e `~/.config/github-copilot/<editor>/global-copilot-instructions.md` (Copilot). O app gerencia apenas skills/references/agents; arquivos de instrução pessoal autoral continuam editados à mão pelo usuário. Veja PRD §5 e ARCH ADR-32.
 
 ## Retro log

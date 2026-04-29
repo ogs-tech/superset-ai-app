@@ -1,10 +1,10 @@
 ---
 id: "005"
 title: Claude adapter
-status: draft
+status: done
 priority: later
 created_at: 2026-04-27
-updated_at: 2026-04-27
+updated_at: 2026-04-29
 depends_on: ["004"]
 labels: [must-have, adapter, core]
 related_prd: "§4"

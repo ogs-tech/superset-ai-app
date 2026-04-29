@@ -5,7 +5,7 @@ codename: forge
 public_name: Skillforge
 status: Ready
 created_at: 2026-04-19
-updated_at: 2026-04-25
+updated_at: 2026-04-29
 ---
 
 # PRD — Skillforge (sde-ai-app)
@@ -57,7 +57,6 @@ Single persona: the author themselves. Dogfooding. No external users.
 - Git history in the UI.
 - Visual polish, accessibility, i18n.
 - Marketable product.
-- Personal global instruction files (`~/.claude/CLAUDE.md`, `~/.config/github-copilot/<editor>/global-copilot-instructions.md`). The app manages skills/references/agents only; personal authorial instructions stay user-edited. See ARCH ADR-32.
 
 ## 6. Success metrics
 
