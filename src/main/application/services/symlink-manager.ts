@@ -57,12 +57,15 @@ export class SymlinkManager {
       }
 
       if (stat.kind === 'file' || stat.kind === 'directory') {
-        const relativeTarget = relative(this.workspacePath, destinationPath);
+        let relativeTarget = relative(this.workspacePath, destinationPath);
         if (relativeTarget.startsWith('..')) {
-          throw ioError({
-            message: `Backup destination outside workspace: ${destinationPath}`,
-            details: { reason: 'backup-outside-workspace' },
-          });
+          relativeTarget = destinationPath.replace(/^\/+/, '');
+          if (relativeTarget === '') {
+            throw ioError({
+              message: `Cannot derive backup path for: ${destinationPath}`,
+              details: { reason: 'backup-path-undeterminable' },
+            });
+          }
         }
         const timestamp = this.timestampForNow();
         const backupPath = await this.nextBackupPath(relativeTarget, timestamp);

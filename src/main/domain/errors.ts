@@ -18,6 +18,7 @@ export interface ValidationDetails {
   missing?: string[];
   invalid?: string[];
   conflict?: string;
+  reason?: string;
 }
 
 export function validationError(args: {

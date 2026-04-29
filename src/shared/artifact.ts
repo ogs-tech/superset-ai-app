@@ -1,4 +1,4 @@
-export type ArtifactType = 'skill' | 'reference' | 'agent';
+export type ArtifactType = 'skill' | 'reference' | 'agent' | 'global-instruction';
 
 export type ArtifactScope = 'personal' | 'project';
 

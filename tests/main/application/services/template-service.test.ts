@@ -55,4 +55,22 @@ describe('TemplateService.list', () => {
     expect(skills.every((t) => t.frontmatter.type === 'skill')).toBe(true);
     expect(skills.length).toBe(2);
   });
+
+  it('returns 2 templates for global-instruction with slugs claude and copilot (AC#5)', async () => {
+    const repo = new InMemoryTemplateRepository([
+      fixture('global-instruction', 'claude'),
+      fixture('global-instruction', 'copilot'),
+      fixture('skill', 'noise'),
+    ]);
+    const service = new TemplateService(repo);
+    const list = await service.list({ type: 'global-instruction' });
+    expect(list).toHaveLength(2);
+    expect(list.map((t) => t.id).sort()).toEqual([
+      'global-instruction/claude',
+      'global-instruction/copilot',
+    ]);
+    for (const tpl of list) {
+      expect(tpl.body.length).toBeGreaterThan(0);
+    }
+  });
 });

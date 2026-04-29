@@ -20,6 +20,8 @@ import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-a
 import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
+import { CopilotAdapter } from './infrastructure/adapters/copilot-adapter.js';
+import type { Adapter } from './application/ports/adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -58,11 +60,15 @@ async function wireIpc(): Promise<void> {
   const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false }, copilot: { enabled: false } }, linkedRepos: [], ui: { theme: 'system' } };
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, settings.workspacePath || app.getPath('userData'));
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
+  const copilotAdapter = new CopilotAdapter({ homedir: homedir() });
   const adapterManager = new AdapterManager({
     settingsService,
     artifactRepository: artifactRepo,
     symlinkManager,
-    adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
+    adapters: new Map<string, Adapter>([
+      [claudeAdapter.adapterId, claudeAdapter],
+      [copilotAdapter.adapterId, copilotAdapter],
+    ]),
   });
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
   const templatesDir = join(process.cwd(), 'src', 'main', 'templates');

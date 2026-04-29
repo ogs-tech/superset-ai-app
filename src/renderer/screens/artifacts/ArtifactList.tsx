@@ -5,10 +5,20 @@ import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { ArtifactEditor } from './ArtifactEditor.js';
 import type { Artifact, ArtifactType, Template } from '../../../shared/artifact.js';
 
-const TABS: ArtifactType[] = ['skill', 'reference', 'agent'];
+const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction'];
 
-const tabLabel = (type: ArtifactType): string =>
-  type === 'skill' ? 'skills' : type === 'reference' ? 'references' : 'agents';
+const tabLabel = (type: ArtifactType): string => {
+  switch (type) {
+    case 'skill':
+      return 'skills';
+    case 'reference':
+      return 'references';
+    case 'agent':
+      return 'agents';
+    case 'global-instruction':
+      return 'global instructions';
+  }
+};
 
 interface ArtifactListProps {
   onClose?: () => void;

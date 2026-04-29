@@ -182,10 +182,19 @@ export class AdapterManager {
 
   private artifactSourcePath(artifact: Artifact, workspacePath: string): string {
     const name = artifact.frontmatter.name;
-    if (artifact.frontmatter.type === 'skill') {
+    const type = artifact.frontmatter.type;
+    if (type === 'skill') {
       return join(workspacePath, 'skills', name);
     }
-    return join(workspacePath, artifact.frontmatter.type === 'reference' ? 'references' : 'agents', `${name}.md`);
+    const folder =
+      type === 'reference'
+        ? 'references'
+        : type === 'agent'
+          ? 'agents'
+          : type === 'global-instruction'
+            ? 'global-instructions'
+            : 'agents';
+    return join(workspacePath, folder, `${name}.md`);
   }
 
   private async syncDestination(

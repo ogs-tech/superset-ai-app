@@ -27,7 +27,12 @@ export interface IpcDeps {
   environmentPort: EnvironmentPort;
 }
 
-const ARTIFACT_TYPES: readonly ArtifactType[] = ['skill', 'reference', 'agent'];
+const ARTIFACT_TYPES: readonly ArtifactType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
 
 const asArtifact = (value: unknown): Artifact => {
   if (typeof value !== 'object' || value === null) {
@@ -38,7 +43,10 @@ const asArtifact = (value: unknown): Artifact => {
 
 const asArtifactType = (value: unknown, field: string): ArtifactType => {
   if (typeof value !== 'string' || !(ARTIFACT_TYPES as readonly string[]).includes(value)) {
-    throw new DomainError('validation', `Invalid '${field}' (must be skill | reference | agent)`);
+    throw new DomainError(
+      'validation',
+      `Invalid '${field}' (must be ${ARTIFACT_TYPES.join(' | ')})`,
+    );
   }
   return value as ArtifactType;
 };

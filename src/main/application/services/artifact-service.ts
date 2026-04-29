@@ -17,6 +17,7 @@ const REQUIRED_FIELDS: Array<keyof ArtifactFrontmatter> = [
   'version',
 ];
 const DESCRIPTION_MAX_LENGTH = 200;
+const GLOBAL_INSTRUCTION_ALLOWED_SLUGS: ReadonlyArray<string> = ['claude', 'copilot'];
 
 export interface SaveArtifactCommand {
   artifact: Artifact;
@@ -123,6 +124,11 @@ export class ArtifactService {
 
   private validate(artifact: Artifact): void {
     const fm = artifact.frontmatter;
+
+    if (fm.type === 'global-instruction') {
+      this.validateGlobalInstruction(fm);
+    }
+
     const missing: string[] = [];
     for (const field of REQUIRED_FIELDS) {
       const value = fm[field];
@@ -145,6 +151,22 @@ export class ArtifactService {
       throw validationError({
         message: `Invalid field(s): ${invalid.join(', ')}`,
         details: { invalid },
+      });
+    }
+  }
+
+  private validateGlobalInstruction(fm: ArtifactFrontmatter): void {
+    if (!GLOBAL_INSTRUCTION_ALLOWED_SLUGS.includes(fm.name)) {
+      throw validationError({
+        message: `Invalid slug for global-instruction: '${fm.name}' (must be 'claude' or 'copilot')`,
+        details: { reason: 'global-instruction-slug-not-allowed' },
+      });
+    }
+    const scopes = Array.isArray(fm.scopes) ? fm.scopes : [];
+    if (scopes.length !== 1 || scopes[0] !== 'personal') {
+      throw validationError({
+        message: `Invalid scopes for global-instruction: must be exactly ['personal']`,
+        details: { reason: 'global-instruction-scope-must-be-personal' },
       });
     }
   }

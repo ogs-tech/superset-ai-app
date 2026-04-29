@@ -1,0 +1,85 @@
+import { describe, expect, it } from 'vitest';
+import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
+import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
+import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
+import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
+import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
+import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
+import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
+import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Settings } from '../../../../../src/shared/settings.js';
+
+const HOMEDIR = '/Users/alice';
+const WORKSPACE = '/workspace';
+
+const globalInstructionCopilot: Artifact = {
+  id: 'global-instruction/copilot',
+  frontmatter: {
+    name: 'copilot',
+    type: 'global-instruction',
+    description: 'global instruction',
+    scopes: ['personal'],
+    version: '0.1.0',
+    createdAt: '',
+    updatedAt: '',
+  },
+  body: '# copilot\n',
+};
+
+const buildSettings = (copilotEnabled: boolean): Settings => ({
+  workspacePath: WORKSPACE,
+  adapters: {
+    claude: { enabled: false },
+    copilot: { enabled: copilotEnabled },
+  },
+  linkedRepos: [],
+  ui: { theme: 'system' },
+});
+
+const setup = async (settings: Settings) => {
+  const settingsRepo = new InMemorySettingsRepository();
+  await settingsRepo.save(settings);
+  const settingsService = new SettingsService(settingsRepo);
+  const artifactRepo = new InMemoryArtifactRepository();
+  const fs = new InMemoryFileSystem();
+  fs.createFile('/workspace/global-instructions/copilot.md', '# copilot\n');
+  const symlinkManager = new SymlinkManager(
+    fs,
+    new FixedClock(new Date('2026-04-26T10:00:00.000Z')),
+    settings.workspacePath,
+  );
+  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR });
+  const manager = new AdapterManager({
+    settingsService,
+    artifactRepository: artifactRepo,
+    symlinkManager,
+    adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
+  });
+  await artifactRepo.save({ artifact: globalInstructionCopilot });
+  return { manager, fs };
+};
+
+describe('CopilotAdapter — wiring with AdapterManager (AC#12)', () => {
+  it('produces SyncResult adapter:"copilot" status:"ok" when enabled and global-instruction:copilot exists', async () => {
+    const { manager } = await setup(buildSettings(true));
+
+    const results = await manager.syncAll({});
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      adapter: 'copilot',
+      status: 'ok',
+      destination: '/Users/alice/.copilot/instructions/global.instructions.md',
+    });
+  });
+
+  it('produces zero SyncResults when disabled', async () => {
+    const { manager } = await setup(buildSettings(false));
+
+    const results = await manager.syncAll({});
+
+    const copilotResults = results.filter((r) => r.adapter === 'copilot');
+    expect(copilotResults).toHaveLength(0);
+  });
+});

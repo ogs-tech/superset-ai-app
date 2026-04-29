@@ -15,12 +15,18 @@ import { formatArtifactId, parseArtifactId } from '../../domain/artifact-id.js';
 import { parseMarkdown, serializeMarkdown } from '../markdown/frontmatter.js';
 import { normalizeArtifactFrontmatter } from './normalize-frontmatter.js';
 
-const ARTIFACT_TYPES: ArtifactType[] = ['skill', 'reference', 'agent'];
+const ARTIFACT_TYPES: ArtifactType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
 
 const FOLDER_BY_TYPE: Record<ArtifactType, string> = {
   skill: 'skills',
   reference: 'references',
   agent: 'agents',
+  'global-instruction': 'global-instructions',
 };
 
 const hasErrnoCode = (err: unknown, code: string): boolean =>

@@ -34,6 +34,16 @@ export class ClaudeAdapter implements Adapter {
   }): AdapterDestination[] {
     const { type, scopes, name } = args.artifact.frontmatter;
 
+    if (type === 'global-instruction') {
+      if (name !== 'claude') return [];
+      return [
+        {
+          scope: 'personal',
+          destination: join(this.homedir, '.claude/CLAUDE.md'),
+        },
+      ];
+    }
+
     if (type === 'reference') {
       return [];
     }

@@ -420,6 +420,25 @@ describe('buildHandlers — artifact', () => {
     expect(result).toHaveLength(1);
   });
 
+  it('artifact.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    const result = (await handlers['artifact.list']?.({
+      type: 'global-instruction',
+    })) as Array<{ id: string }>;
+    expect(result).toEqual([]);
+  });
+
+  it('template.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
+    const deps = buildDeps();
+    const handlers = buildHandlers(deps);
+
+    await expect(
+      handlers['template.list']?.({ type: 'global-instruction' }),
+    ).resolves.toBeDefined();
+  });
+
   it('artifact.get returns the artifact', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);

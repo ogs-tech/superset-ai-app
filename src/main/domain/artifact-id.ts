@@ -2,7 +2,12 @@ import type { ArtifactType } from '../../shared/artifact.js';
 import { DomainError } from './errors.js';
 import { validateArtifactName } from './artifact-name.js';
 
-const ARTIFACT_TYPES: readonly ArtifactType[] = ['skill', 'reference', 'agent'];
+const ARTIFACT_TYPES: readonly ArtifactType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
 
 export interface ParsedArtifactId {
   type: ArtifactType;
