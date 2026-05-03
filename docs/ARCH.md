@@ -157,7 +157,7 @@ Domain logic organized as TypeScript modules inside the Main process. No subproc
 | `ArtifactService`               | CRUD of `.md` with YAML frontmatter; reads/writes in the workspace.           | Sync, symlink, UI.                            |
 | `AdapterManager`                | Orchestrates active adapters; requests sync from the right one(s) after Save. | Per-tool logic.                               |
 | `ClaudeAdapter`                 | Maps artifact → Claude paths (personal and project); delegates to SymlinkManager. | HTTP, API, tokens.                         |
-| `CopilotAdapter`                | Maps artifact → Copilot paths; triggers `copilot-instructions` generator.     | Tokens.                                       |
+| `CopilotAdapter`                | Maps artifact → Copilot paths (personal e project) for `skill`, `agent` e `global-instruction:copilot`; delegates to `SymlinkManager`. Stub introduzido pela 014, expandido pela 007. Triggers `copilot-instructions` generator (008). | Tokens, references individuais (vão via aggregation). |
 | `SymlinkManager`                | Creates, removes and validates symlinks; detects conflicts (real file at destination). Normalizes paths via `path.resolve` to handle spaces and special characters. | Content copy, git.                   |
 | `TemplateService`               | Provides templates by type (skill/reference/agent).                           | Rendering.                                    |
 | `RepoService`                   | Detects `.git/`, reads current branch; lists linked repos.                    | Git write, commit, push.                      |
@@ -250,6 +250,9 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 │  └─ <slug>.md
 ├─ agents/
 │  └─ <slug>.md
+├─ global-instructions/
+│  ├─ claude.md           # source of ~/.claude/CLAUDE.md
+│  └─ copilot.md          # source of ~/.copilot/instructions/global.instructions.md
 ├─ _generated/
 │  └─ copilot-instructions.md   # generated, 444
 ├─ _backups/
@@ -275,6 +278,14 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
   - References: file `<workspace>/references/<slug>.md`.
   - Agents: file `<workspace>/agents/<slug>.md`.
 - **Targets (symlink destinations):** by scope — `personal` → `~/.claude/`, `~/.copilot/`; `project` → `<linked-repo>/.claude/`, `<linked-repo>/.github/` (one symlink per linked repo). Skill symlinks are always directory-level; references and agents are file-level.
+- **Copilot destinations** (spec 007 — `skill` e `agent`):
+  - `skill` personal → `~/.copilot/skills/<slug>/` (dir-level).
+  - `skill` project → `<repo>/.github/skills/<slug>/`.
+  - `agent` personal → `~/.copilot/agents/<slug>.agent.md` (file-level, extensão obrigatória).
+  - `agent` project → `<repo>/.github/agents/<slug>.agent.md`.
+- **Global instructions** (spec 014 — sempre `personal`):
+  - `global-instruction:claude` → `~/.claude/CLAUDE.md` ← `<workspace>/global-instructions/claude.md`.
+  - `global-instruction:copilot` → `~/.copilot/instructions/global.instructions.md` ← `<workspace>/global-instructions/copilot.md`.
 - **Generation:** `<workspace>/_generated/copilot-instructions.md` is the source of the Copilot symlink; `chmod 444` after each generation.
 
 ---
@@ -329,7 +340,7 @@ Standardization proposal (**ASSUMPTION**). Same schema for the 3 types, with opt
 ---
 slug: code-review-checklist          # required, [a-z0-9-], unique per type
 name: Code Review Checklist          # required, human-readable
-type: skill                          # required: skill | reference | agent
+type: skill                          # required: skill | reference | agent | global-instruction
 description: Quick checklist for PRs. # required, ≤200 chars
 scope: personal                      # required: personal | project
 version: 0.1.0                       # required, semver
@@ -344,6 +355,8 @@ includeInCopilotInstructions: true   # reference only — aggregates into copilo
 Artifacts with `scope: project` are replicated (via symlink) in **all** linked repos in Settings — there is no per-artifact selection.
 
 > **Frontmatter debt:** the schema above is an **initial proposal**. Refine after creating the first 5+ real artifacts (dogfooding) — fields may be added, renamed or made optional based on actual usage.
+
+> **`global-instruction` constraints (spec 014):** `slug` ∈ `{claude, copilot}` (single-instance por ferramenta — validado por `ArtifactService.save`); `scopes` deve ser exatamente `["personal"]`; map para destinos via `ClaudeAdapter`/`CopilotAdapter` conforme §7.4.
 
 ### 8.5 Data model — `settings.json`
 
@@ -413,6 +426,7 @@ The Copilot PAT does **not** live here — it's stored in Keychain via `keytar` 
 | 30 | `Artifact.frontmatter.scopes: ArtifactScope[]` (sempre ≥1) substitui o singular `scope`; legacy `scope: <string>` é auto-migrado em leitura para `scopes: [<string>]` via helper `normalizeArtifactFrontmatter` no `FsArtifactRepository` | Manter `scope` singular e duplicar artefato quando precisa de ambos; adicionar valor `'both'` ao enum; migration script one-shot | Permite um único artifact alvejar `personal` + `project` sem duplicação; auto-migração na leitura é transparente (zero ação do usuário) e o custo extra (3 linhas no helper) é trivial. `'both'` no enum confunde "tag única" com "set membership"; script one-shot exige ação manual e quebra repos legados até rodar. `AdapterDestination.scope` (singular) permanece — é o destino *resolvido*, não a intenção do artifact. Validado pela spec 006. | Alta — remover o branch legado é mudança local no helper assim que não houver artifacts antigos em uso |
 | 31 | `AdapterSettings` é só `{ enabled }`; o antigo `defaultScope` (`personal`/`project` por adapter) foi removido. `SettingsService.load`/`merge` faz strip silencioso da chave legada se presente em settings persistidos | Manter `defaultScope` como hint pra UI; substituir por `defaultScopes: ArtifactScope[]`; migration script | A intenção de escopo agora vive **no próprio artifact** (`frontmatter.scopes`), e nenhum service/adapter consumia `defaultScope` — era estado inerte gravado pela UI. Manter campo morto enviesa contrato e adiciona ruído em fixtures. Strip on load garante compatibilidade sem exigir ação do usuário. Validado pela spec 006 (Phase 10). | Alta — readicionar o campo é trivial caso a UI decida pré-popular escopos no `ArtifactEditor` |
 | 32 | Personal global instruction files (`~/.claude/CLAUDE.md`, `~/.config/github-copilot/<editor>/global-copilot-instructions.md`) entram no escopo do spike via spec 014; abordagem técnica (novo artifact type single-instance, serviço dedicado ou extensão de adapter) fica para detalhamento na `spec.md` | Manter fora do escopo (decisão original do spike); edição manual sem sincronização entre máquinas | Centralizar instruções pessoais junto com skills/references/agents no mesmo workspace versionado é coerente com o objetivo do spike — validar centralização | Alta — remover spec 014 retorna ao estado anterior; nenhum dado existente migrou |
+| 33 | Paths canônicos do Copilot fixados (spec 007): `skill` em `~/.copilot/skills/<slug>/` (personal) e `<repo>/.github/skills/<slug>/` (project) — dir-level com `SKILL.md` dentro; `agent` em `~/.copilot/agents/<slug>.agent.md` (personal) e `<repo>/.github/agents/<slug>.agent.md` (project) — file-level com extensão obrigatória `.agent.md`; `global-instruction:copilot` em `~/.copilot/instructions/global.instructions.md` (path canônico VS Code, resolvido pela 014). | (a) Aninhar skill em `instructions/`; (b) achatar skill como `.instructions.md`; (c) usar `.md` puro para agent (Custom Agents do Copilot rejeitam) | Doc oficial VS Code Copilot ([Use Agent Skills](https://code.visualstudio.com/docs/copilot/customization/agent-skills)) lista 6 well-known scan locations sem dedup. Dir-level para skill preserva assets junto do `SKILL.md`; `.agent.md` é exigido para Custom Agents. Decisões alinham com paridade ao `ClaudeAdapter` (005). | Média — mudar de path requer re-symlink em massa via `AdapterManager.removeAll`+`syncAll`; Copilot pode renomear paths em versões futuras (ver DEBT na 007). |
 
 ---
 

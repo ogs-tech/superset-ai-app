@@ -78,22 +78,22 @@
 
 ## Phase 9 — Verification
 
-- [ ] T028 Rodar `pnpm typecheck` (ou comando do projeto) — zero erros TS. Nenhum cast de `any` em `copilot-adapter.ts` ou nos branches novos de `claude-adapter.ts`.
-- [ ] T029 Rodar `pnpm test` — todos os testes da 014 passam, suite completa segue verde.
-- [ ] T030 Rodar `pnpm lint` — zero warnings em arquivos novos/modificados.
-- [ ] T031 Smoke manual: iniciar app, habilitar Claude e Copilot em Settings, criar `global-instruction:claude` via UI, salvar; inspecionar `~/.claude/CLAUDE.md` e confirmar symlink apontando para `<workspace>/global-instructions/claude.md`. Repetir para `copilot`. Documentar resultado nas notas da spec — incluir hash `sha256` do conteúdo backupeado em `_backups/` se houver `~/.claude/CLAUDE.md` preexistente real, comparado com o conteúdo original.
+- [x] T028 Rodar `pnpm typecheck` (ou comando do projeto) — zero erros TS. Nenhum cast de `any` em `copilot-adapter.ts` ou nos branches novos de `claude-adapter.ts`. — **Executado 2026-05-03 via `npm run typecheck`** (script real do repo); exit 0, zero erros TS.
+- [x] T029 Rodar `pnpm test` — todos os testes da 014 passam, suite completa segue verde. — **Executado 2026-05-03 via `npm test`**: 66 test files / 301 tests passed.
+- [x] T030 Rodar `pnpm lint` — zero warnings em arquivos novos/modificados. — **Executado 2026-05-03 via `npm run lint`**; exit 0, zero warnings.
+- [x] T031 Smoke manual: iniciar app, habilitar Claude e Copilot em Settings, criar `global-instruction:claude` via UI, salvar; inspecionar `~/.claude/CLAUDE.md` e confirmar symlink apontando para `<workspace>/global-instructions/claude.md`. Repetir para `copilot`. Documentar resultado nas notas da spec — incluir hash `sha256` do conteúdo backupeado em `_backups/` se houver `~/.claude/CLAUDE.md` preexistente real, comparado com o conteúdo original. — **Validado pelo usuário 2026-05-03**: smoke manual ok.
 
 ## Phase 10 — Bookkeeping
 
-- [ ] T032 Atualizar `docs/specs/014-global-instructions/spec.md` frontmatter: `status: review` ao terminar Phase 9; `updated_at: <hoje>`.
-- [ ] T033 Atualizar `docs/PRD.md` §4 must-have: incluir global instructions (Claude `CLAUDE.md` e Copilot `global.instructions.md` em `~/.copilot/instructions/`) explicitamente. Sync com ARCH.
-- [ ] T034 Atualizar `docs/ARCH.md`:
+- [x] T032 Atualizar `docs/specs/014-global-instructions/spec.md` frontmatter: `status: review` ao terminar Phase 9; `updated_at: <hoje>`. — **Executado 2026-05-03**: `active → review → done`; `updated_at: 2026-05-03`.
+- [x] T033 Atualizar `docs/PRD.md` §4 must-have: incluir global instructions (Claude `CLAUDE.md` e Copilot `global.instructions.md` em `~/.copilot/instructions/`) explicitamente. Sync com ARCH. — **Executado 2026-05-03** em sync com 007 T024.
+- [x] T034 Atualizar `docs/ARCH.md`:
   - §5.3: linha `CopilotAdapter` reflete "stub introduzido pela 014, expandido pela 007".
   - §7.2: adicionar `global-instructions/<slug>.md` ao layout.
   - §7.4: adicionar linhas para `<workspace>/global-instructions/claude.md` → `~/.claude/CLAUDE.md` e `<workspace>/global-instructions/copilot.md` → `~/.copilot/instructions/global.instructions.md`.
-  - §8.4: incluir `global-instruction` no enum de `type`; documentar restrições (slug ∈ `{claude, copilot}`, scope `personal` only).
-- [ ] T035 Atualizar `docs/ROADMAP.md`:
+  - §8.4: incluir `global-instruction` no enum de `type`; documentar restrições (slug ∈ `{claude, copilot}`, scope `personal` only). — **Executado 2026-05-03** em sync com 007 T022; §8.4 inclui o note de constraints `global-instruction`.
+- [x] T035 Atualizar `docs/ROADMAP.md`:
   - Linha `014-global-instructions`: Status `—` → `review`.
-  - Linha `007-copilot-adapter`: ajustar description para refletir que `CopilotAdapter` já existe como stub e a 007 estende para skills/agents/references; ajustar dependência (`Depends on 014`).
-- [ ] T036 Avaliar promoção a ADR formal em ARCH §9 do **stub-adapter pattern** (CopilotAdapter introduzido como stub na 014, completado pela 007) e/ou **single-instance type via slug enum**. Se promover, editar ARCH e referenciar de volta em `spec.md` "Considered alternatives".
-- [ ] T037 Ao transicionar SPEC para `done` (após T032-T036): confirmar que ROADMAP foi atualizado conforme defasagem de uma fase (CLAUDE.md). Apenas a coluna Status muda — Now/Next/Later permanecem congelados até o retro.
+  - Linha `007-copilot-adapter`: ajustar description para refletir que `CopilotAdapter` já existe como stub e a 007 estende para skills/agents/references; ajustar dependência (`Depends on 014`). — **Executado**: linha 014 já estava em `review` (mudança pré-sessão); linha 007 atualizada para "Depends on 014" + Status `—` → `review`. NOTA sobre AC#15 mencionado em T025: backup path acabou em `<workspace>/_backups/<timestamp>/Users/alice/.claude/CLAUDE.md` (caminho absoluto sem leading slash) por extensão do `SymlinkManager` — ajustar AC#15 wording fica como débito separado (não bloqueia 014).
+- [x] T036 Avaliar promoção a ADR formal em ARCH §9 do **stub-adapter pattern** (CopilotAdapter introduzido como stub na 014, completado pela 007) e/ou **single-instance type via slug enum**. Se promover, editar ARCH e referenciar de volta em `spec.md` "Considered alternatives". — **Avaliado 2026-05-03**: stub-adapter pattern fica **N/A** (apenas 1 instância, valor marginal de formalizar; revisitar quando padrão se repetir). Single-instance type via slug enum também N/A (constraint já documentada em §8.4). ADR-33 (paths canônicos Copilot) adicionada por outra rota (007 T023).
+- [x] T037 Ao transicionar SPEC para `done` (após T032-T036): confirmar que ROADMAP foi atualizado conforme defasagem de uma fase (CLAUDE.md). Apenas a coluna Status muda — Now/Next/Later permanecem congelados até o retro. — **Confirmado 2026-05-03**: ROADMAP linha 014 segue `review` (lag de 1 fase atrás de SPEC `done`); linha 007 também `review`. Now/Next/Later e retro log intocados.

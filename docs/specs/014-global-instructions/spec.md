@@ -1,10 +1,10 @@
 ---
 id: "014"
 title: Global instructions
-status: active
+status: done
 priority: later
 created_at: 2026-04-29
-updated_at: 2026-04-29
+updated_at: 2026-05-03
 depends_on: ["005"]
 labels: [must-have, adapter, core]
 related_prd: "§4"

@@ -34,7 +34,8 @@ Single persona: the author themselves. Dogfooding. No external users.
 - CRUD of skills, references and agent profiles in Markdown + YAML frontmatter.
 - Templates by type (don't face a blank page).
 - Markdown preview on save.
-- Sync via symlink to Claude Code and Copilot, personal and project scopes.
+- Sync via symlink to Claude Code and Copilot, personal and project scopes (`skill` e `agent`).
+- Global instructions per-tool: `global-instruction:claude` → `~/.claude/CLAUDE.md`; `global-instruction:copilot` → `~/.copilot/instructions/global.instructions.md` (single-instance, scope `personal`).
 - `copilot-instructions.md` generated from flagged references.
 - Settings: enable/disable adapter, default scope, management of linked repos.
 

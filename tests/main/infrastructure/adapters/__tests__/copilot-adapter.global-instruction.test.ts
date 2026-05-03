@@ -49,25 +49,9 @@ describe('CopilotAdapter — global-instruction routing (AC#9, AC#10, AC#16)', (
     expect(destinations).toEqual([]);
   });
 
-  it('returns [] for type "skill" (AC#10)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
-      artifact: buildArtifact('skill', 'review'),
-      linkedRepos: [],
-    });
-
-    expect(destinations).toEqual([]);
-  });
-
-  it('returns [] for type "agent" (AC#10)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
-      artifact: buildArtifact('agent', 'triage'),
-      linkedRepos: [],
-    });
-
-    expect(destinations).toEqual([]);
-  });
+  // NOTE: 014's stub-era assertions for `skill` and `agent` returning [] were
+  // removed when 007 expanded those branches to produce real destinations
+  // (see AC#2-5). Coverage now lives in copilot-adapter.{skill,agent}-*.test.ts.
 
   it('returns [] for type "reference" (AC#10)', () => {
     const adapter = new CopilotAdapter({ homedir: HOMEDIR });

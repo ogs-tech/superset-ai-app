@@ -33,9 +33,9 @@ updated_at: 2026-04-29
 | Spec                           | Description                                                                                                                | Status   |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `005-claude-adapter`           | `ClaudeAdapter` (ARCH §5.3). Depends on 004.                                                                               | `review` |
-| `014-global-instructions`      | Sincroniza `~/.claude/CLAUDE.md` (Claude) e `global-copilot-instructions.md` (Copilot). Depende de 005, 007.               | —        |
+| `014-global-instructions`      | Sincroniza `~/.claude/CLAUDE.md` (Claude) e `global-copilot-instructions.md` (Copilot). Depende de 005, 007.               | `review` |
 | `006-multi-scope-artifacts`    | `Artifact.frontmatter.scopes: ArtifactScope[]` substitui o singular `scope`; multi-escopo sem duplicação (ARCH ADR-30/31). | `review` |
-| `007-copilot-adapter`          | `CopilotAdapter` (ARCH §5.3). Depends on 004.                                                                              | —        |
+| `007-copilot-adapter`          | `CopilotAdapter` para `skill`/`agent` (ARCH §5.3, §7.4, ADR-33). Depends on 014.                                            | `review` |
 | `008-copilot-instructions-gen` | aggregation + `chmod 444` (ARCH §6.4). Depends on 007.                                                                     | —        |
 | `009-disable-adapter-flow`     | toggle off + symlink cleanup (ARCH §6.3). Depends on 005, 007.                                                             | —        |
 
