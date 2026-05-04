@@ -38,6 +38,7 @@ interface CustomizationEditorProps {
   isCreate: boolean;
   onSaved: (customization: Customization) => void | Promise<void>;
   onCancel: () => void;
+  root?: string;
 }
 
 type BodyView = 'edit' | 'preview' | 'split';
@@ -47,6 +48,7 @@ export function CustomizationEditor({
   isCreate,
   onSaved,
   onCancel,
+  root,
 }: CustomizationEditorProps): React.ReactElement {
   const [frontmatter, setFrontmatter] = useState<CustomizationFrontmatter>(initial.frontmatter);
   const [body, setBody] = useState(initial.body);
@@ -88,6 +90,7 @@ export function CustomizationEditor({
         {
           customization: { id: initial.id, frontmatter, body },
           isCreate,
+          ...(root ? { root } : {}),
         },
       );
       setToast({ variant: 'success', message: `${result.customization.frontmatter.name} saved` });
