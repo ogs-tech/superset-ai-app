@@ -47,6 +47,7 @@ export class AdapterManager {
   constructor(private readonly deps: AdapterManagerDeps) {}
 
   async syncOne(command: SyncOneCommand): Promise<SyncResult[]> {
+    if (command.artifact.frontmatter.type === 'template') return [];
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const enabledAdapters = this.enabledAdapters(settings);
     const results: SyncResult[] = [];
@@ -87,6 +88,7 @@ export class AdapterManager {
     const artifacts = await this.deps.artifactRepository.list();
     const results: SyncResult[] = [];
     for (const artifact of artifacts) {
+      if (artifact.frontmatter.type === 'template') continue;
       const includesProject = artifact.frontmatter.scopes.includes('project');
       for (const adapter of enabledAdapters) {
         const destinations = await adapter.resolveDestinations({
@@ -114,6 +116,7 @@ export class AdapterManager {
   }
 
   async removeOne(command: RemoveOneCommand): Promise<SyncResult[]> {
+    if (command.artifact.frontmatter.type === 'template') return [];
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const results: SyncResult[] = [];
 
@@ -138,6 +141,7 @@ export class AdapterManager {
     const results: SyncResult[] = [];
 
     for (const artifact of artifacts) {
+      if (artifact.frontmatter.type === 'template') continue;
       const destinations = await adapter.resolveDestinations({
         artifact,
         linkedRepos: settings.linkedRepos,
@@ -161,6 +165,7 @@ export class AdapterManager {
     const errors: SymlinkError[] = [];
 
     for (const artifact of artifacts) {
+      if (artifact.frontmatter.type === 'template') continue;
       const destinations = await adapter.resolveDestinations({
         artifact,
         linkedRepos: settings.linkedRepos,
@@ -213,6 +218,7 @@ export class AdapterManager {
     let count = 0;
 
     for (const artifact of artifacts) {
+      if (artifact.frontmatter.type === 'template') continue;
       const destinations = await adapter.resolveDestinations({
         artifact,
         linkedRepos: settings.linkedRepos,

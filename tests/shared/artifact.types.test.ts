@@ -55,3 +55,26 @@ describe('ArtifactType union (spec 014)', () => {
     expect(fm.type).toBe('global-instruction');
   });
 });
+
+describe('Template artifact type', () => {
+  it('includes "template" in ArtifactType', () => {
+    const value: ArtifactType = 'template';
+    expect(value).toBe('template');
+  });
+
+  it('accepts a template artifact frontmatter with targetType', () => {
+    const fm = {
+      name: 'my-skill-template',
+      type: 'template',
+      description: 'desc',
+      scopes: ['personal'] as ArtifactScope[],
+      version: '0.1.0',
+      targetType: 'skill',
+      createdAt: '',
+      updatedAt: '',
+    } satisfies ArtifactFrontmatter;
+
+    expect(fm.type).toBe('template');
+    expect(fm.targetType).toBe('skill');
+  });
+});

@@ -20,6 +20,7 @@ const ARTIFACT_TYPES: ArtifactType[] = [
   'reference',
   'agent',
   'global-instruction',
+  'template',
 ];
 
 const FOLDER_BY_TYPE: Record<ArtifactType, string> = {
@@ -27,6 +28,7 @@ const FOLDER_BY_TYPE: Record<ArtifactType, string> = {
   reference: 'references',
   agent: 'agents',
   'global-instruction': 'global-instructions',
+  template: 'templates',
 };
 
 const hasErrnoCode = (err: unknown, code: string): boolean =>

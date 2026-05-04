@@ -6,7 +6,7 @@ import { ArtifactEditor } from './ArtifactEditor.js';
 import type { Artifact, ArtifactType, Template } from '../../../shared/artifact.js';
 import type { SearchOutput } from '../../../shared/search.js';
 
-const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction'];
+const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction', 'template'];
 
 const GLOBAL_INSTRUCTION_NAME = 'default';
 
@@ -20,6 +20,8 @@ const tabLabel = (type: ArtifactType): string => {
       return 'agents';
     case 'global-instruction':
       return 'global instructions';
+    case 'template':
+      return 'templates';
   }
 };
 
@@ -31,6 +33,7 @@ interface ArtifactListProps {
 type Editor =
   | { kind: 'closed' }
   | { kind: 'new'; template: Template; type: ArtifactType }
+  | { kind: 'create'; artifact: Artifact }
   | { kind: 'edit'; artifact: Artifact };
 
 export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {}): React.ReactElement {
@@ -108,13 +111,13 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
 
   if (editor.kind !== 'closed') {
     const initial =
-      editor.kind === 'edit'
+      editor.kind === 'edit' || editor.kind === 'create'
         ? editor.artifact
         : artifactFromTemplate(editor.template, editor.type);
     return (
       <ArtifactEditor
         initial={initial}
-        isCreate={editor.kind === 'new'}
+        isCreate={editor.kind === 'new' || editor.kind === 'create'}
         onSaved={handleSaved}
         onCancel={() => setEditor({ kind: 'closed' })}
       />
@@ -153,9 +156,21 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
         ))}
       </nav>
 
-      {activeTab !== 'global-instruction' && (
+      {activeTab !== 'global-instruction' && activeTab !== 'template' && (
         <button type="button" onClick={() => setShowTemplateDialog(true)}>
           Novo a partir de template
+        </button>
+      )}
+
+      {activeTab === 'template' && (
+        <button
+          type="button"
+          onClick={() =>
+            setEditor({ kind: 'create', artifact: blankTemplateArtifact() })
+          }
+          data-testid="new-template-button"
+        >
+          Novo template
         </button>
       )}
 
@@ -274,5 +289,22 @@ function artifactFromTemplate(template: Template, type: ArtifactType): Artifact 
       ...(fm.tags ? { tags: fm.tags } : {}),
     },
     body: template.body,
+  };
+}
+
+function blankTemplateArtifact(): Artifact {
+  return {
+    id: '',
+    frontmatter: {
+      name: '',
+      type: 'template',
+      description: '',
+      scopes: ['personal'],
+      version: '0.1.0',
+      targetType: 'skill',
+      createdAt: '',
+      updatedAt: '',
+    },
+    body: '',
   };
 }

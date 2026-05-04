@@ -14,7 +14,7 @@ import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
 import type { ArtifactListParams } from '../../shared/ipc-contract.js';
-import type { Artifact, ArtifactType } from '../../shared/artifact.js';
+import type { Artifact, ArtifactType, TemplateTargetType } from '../../shared/artifact.js';
 import type { IpcHandlers } from './dispatcher.js';
 
 export interface IpcDeps {
@@ -36,7 +36,25 @@ const ARTIFACT_TYPES: readonly ArtifactType[] = [
   'reference',
   'agent',
   'global-instruction',
+  'template',
 ];
+
+const TEMPLATE_TARGET_TYPES: readonly TemplateTargetType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
+
+const asTemplateTargetType = (value: unknown, field: string): TemplateTargetType => {
+  if (typeof value !== 'string' || !(TEMPLATE_TARGET_TYPES as readonly string[]).includes(value)) {
+    throw new DomainError(
+      'validation',
+      `Invalid '${field}' (must be ${TEMPLATE_TARGET_TYPES.join(' | ')})`,
+    );
+  }
+  return value as TemplateTargetType;
+};
 
 const asArtifact = (value: unknown): Artifact => {
   if (typeof value !== 'object' || value === null) {
@@ -265,7 +283,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
 
     'template.list': async (params) => {
       const raw = asObject(params, 'template.list');
-      return templateService.list({ type: asArtifactType(raw['type'], 'type') });
+      return templateService.list({ type: asTemplateTargetType(raw['type'], 'type') });
     },
 
     'adapter.setEnabled': async (params) => {

@@ -1,7 +1,7 @@
-import type { ArtifactType, Template } from '../../../shared/artifact.js';
+import type { Template, TemplateTargetType } from '../../../shared/artifact.js';
 
 export interface TemplateListQuery {
-  type: ArtifactType;
+  type: TemplateTargetType;
 }
 
 export interface TemplateRepository {

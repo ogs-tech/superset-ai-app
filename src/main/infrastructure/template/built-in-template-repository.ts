@@ -1,13 +1,13 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
-import type { ArtifactFrontmatter, ArtifactType, Template } from '../../../shared/artifact.js';
+import type { ArtifactFrontmatter, Template, TemplateTargetType } from '../../../shared/artifact.js';
 import type {
   TemplateListQuery,
   TemplateRepository,
 } from '../../application/ports/template-repository.js';
 import { parseMarkdown } from '../markdown/frontmatter.js';
 
-const FILES_BY_TYPE: Record<ArtifactType, ReadonlyArray<string>> = {
+const FILES_BY_TYPE: Record<TemplateTargetType, ReadonlyArray<string>> = {
   skill: ['skill.md'],
   reference: ['reference.md'],
   agent: ['agent.md'],

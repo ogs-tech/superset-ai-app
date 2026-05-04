@@ -124,7 +124,7 @@ async function wireIpc(): Promise<void> {
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager, schemaValidator);
   const searchService = new SearchService({ artifactRepository: artifactRepo });
   const templatesDir = join(process.cwd(), 'src', 'main', 'templates');
-  const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir));
+  const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir), artifactRepo);
 
   const handlers = buildHandlers({
     settingsService,

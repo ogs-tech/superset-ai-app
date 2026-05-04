@@ -8,7 +8,15 @@ import type {
   ArtifactFrontmatter,
   ArtifactScope,
   SyncResult,
+  TemplateTargetType,
 } from '../../../shared/artifact.js';
+
+const TEMPLATE_TARGET_TYPES: TemplateTargetType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
 
 interface ArtifactEditorProps {
   initial: Artifact;
@@ -113,6 +121,22 @@ export function ArtifactEditor({
               onChange={(e) => update('version', e.target.value)}
             />
           </label>
+          {frontmatter.type === 'template' && (
+            <label style={{ display: 'block' }}>
+              Tipo alvo
+              <select
+                data-testid="target-type-select"
+                value={frontmatter.targetType ?? 'skill'}
+                onChange={(e) => update('targetType', e.target.value as TemplateTargetType)}
+              >
+                {TEMPLATE_TARGET_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
             <legend>Escopo</legend>
             {(['personal', 'project'] as const).map((value) => (

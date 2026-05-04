@@ -4,6 +4,7 @@ import { skillSchema } from '../schemas/skill.js';
 import { referenceSchema } from '../schemas/reference.js';
 import { agentSchema } from '../schemas/agent.js';
 import { globalInstructionSchema } from '../schemas/global-instruction.js';
+import { templateSchema } from '../schemas/template.js';
 
 export interface ValidationError {
   path: string;
@@ -85,6 +86,9 @@ export class SchemaValidator {
         break;
       case 'global-instruction':
         result = globalInstructionSchema.safeParse(frontmatter);
+        break;
+      case 'template':
+        result = templateSchema.safeParse(frontmatter);
         break;
       default:
         return { ok: false, errors: [{ path: 'frontmatter.type', kind: 'enum', message: `Unknown type: ${String(type)}` }] };
