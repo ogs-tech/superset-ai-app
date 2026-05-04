@@ -12,13 +12,13 @@ beforeEach(() => {
 });
 
 describe('<Onboarding>', () => {
-  it('shows folder selection button referencing default ~/sde-ai-app', () => {
+  it('shows folder selection button referencing default ~/.sde-ai-app', () => {
     render(<Onboarding onComplete={vi.fn()} onIoError={vi.fn()} />);
 
     expect(
       screen.getByRole('button', { name: /selecionar pasta/i }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/~\/sde-ai-app/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/~\/\.sde-ai-app/).length).toBeGreaterThan(0);
   });
 
   it('does not contain adapter toggle UI', () => {
@@ -41,6 +41,8 @@ describe('<Onboarding>', () => {
   it('selecting a folder triggers workspace.bootstrap and settings.merge with defaults', async () => {
     const user = userEvent.setup();
     call.mockImplementation((method: string) => {
+      if (method === 'workspace.getActive')
+        return Promise.resolve(ok('/Users/test/.sde-ai-app'));
       if (method === 'dialog.selectFolder')
         return Promise.resolve(ok({ canceled: false, path: '/picked' }));
       if (method === 'workspace.bootstrap') return Promise.resolve(ok(undefined));
@@ -86,6 +88,8 @@ describe('<Onboarding>', () => {
   it('canceling the dialog leaves no IPC side effects beyond the dialog call', async () => {
     const user = userEvent.setup();
     call.mockImplementation((method: string) => {
+      if (method === 'workspace.getActive')
+        return Promise.resolve(ok('/Users/test/.sde-ai-app'));
       if (method === 'dialog.selectFolder')
         return Promise.resolve(ok({ canceled: true }));
       return Promise.resolve(ok(undefined));
@@ -105,7 +109,7 @@ describe('<Onboarding>', () => {
     ).toBeUndefined();
   });
 
-  it('clicking "Use default" resolves ~/sde-ai-app via app.getHomeDir and runs bootstrap+merge', async () => {
+  it('clicking "Use default" resolves ~/.sde-ai-app via app.getHomeDir and runs bootstrap+merge', async () => {
     const user = userEvent.setup();
     call.mockImplementation((method: string) => {
       if (method === 'app.getHomeDir')
@@ -114,7 +118,7 @@ describe('<Onboarding>', () => {
       if (method === 'settings.merge')
         return Promise.resolve(
           ok({
-            workspacePath: '/Users/test/sde-ai-app',
+            workspacePath: '/Users/test/.sde-ai-app',
             adapters: {
               claude: { enabled: true },
               copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -134,13 +138,18 @@ describe('<Onboarding>', () => {
       expect(call).toHaveBeenCalledWith('app.getHomeDir', expect.any(Object)),
     );
     await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('workspace.setActive', {
+        workspacePath: '/Users/test/.sde-ai-app',
+      }),
+    );
+    await waitFor(() =>
       expect(call).toHaveBeenCalledWith('workspace.bootstrap', {
-        workspacePath: '/Users/test/sde-ai-app',
+        workspacePath: '/Users/test/.sde-ai-app',
       }),
     );
     const mergeCall = call.mock.calls.find((c) => c[0] === 'settings.merge');
     expect(mergeCall?.[1]).toMatchObject({
-      workspacePath: '/Users/test/sde-ai-app',
+      workspacePath: '/Users/test/.sde-ai-app',
     });
 
     expect(
@@ -153,6 +162,8 @@ describe('<Onboarding>', () => {
   it('I/O failure during workspace.bootstrap routes to onIoError', async () => {
     const user = userEvent.setup();
     call.mockImplementation((method: string) => {
+      if (method === 'workspace.getActive')
+        return Promise.resolve(ok('/Users/test/.sde-ai-app'));
       if (method === 'dialog.selectFolder')
         return Promise.resolve(ok({ canceled: false, path: '/picked' }));
       if (method === 'workspace.bootstrap')

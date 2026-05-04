@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { callIpc } from './lib/ipc.js';
 import { Onboarding } from './screens/Onboarding.js';
-import { WorkspaceMissing } from './screens/WorkspaceMissing.js';
 import { IoError } from './screens/IoError.js';
 import { Main } from './screens/Main.js';
 import { Settings as SettingsScreen } from './screens/Settings.js';
@@ -10,7 +9,6 @@ import type { Settings } from '../shared/settings.js';
 type View =
   | { kind: 'loading' }
   | { kind: 'onboarding' }
-  | { kind: 'workspace-missing'; settings: Settings }
   | { kind: 'main'; settings: Settings }
   | { kind: 'settings'; settings: Settings }
   | { kind: 'io-error'; message: string; retry: () => Promise<void> };
@@ -29,7 +27,7 @@ export function App(): React.ReactElement {
         path: current.workspacePath,
       });
       if (!exists) {
-        setView({ kind: 'workspace-missing', settings: current });
+        setView({ kind: 'onboarding' });
         return;
       }
       setView({ kind: 'main', settings: current });
@@ -58,15 +56,6 @@ export function App(): React.ReactElement {
     );
   }
 
-  if (view.kind === 'workspace-missing') {
-    return (
-      <WorkspaceMissing
-        onResolved={(settings) => setView({ kind: 'main', settings })}
-        onCancel={() => void bootstrap()}
-      />
-    );
-  }
-
   if (view.kind === 'io-error') {
     return (
       <IoError
@@ -87,7 +76,6 @@ export function App(): React.ReactElement {
 
   return (
     <Main
-      settings={view.settings}
       onOpenSettings={() => setView({ kind: 'settings', settings: view.settings })}
     />
   );

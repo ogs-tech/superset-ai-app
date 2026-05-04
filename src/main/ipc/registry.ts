@@ -3,6 +3,7 @@ import { basename } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
 import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
+import type { WorkspaceLocator } from '../application/services/workspace-locator.js';
 import type { ArtifactService } from '../application/services/artifact-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
@@ -29,6 +30,7 @@ export interface IpcDeps {
   dialogPort: DialogPort;
   pathProber: PathProber;
   environmentPort: EnvironmentPort;
+  workspaceLocator?: WorkspaceLocator;
 }
 
 const ARTIFACT_TYPES: readonly ArtifactType[] = [
@@ -106,6 +108,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     dialogPort,
     pathProber,
     environmentPort,
+    workspaceLocator,
   } = deps;
 
   return {
@@ -186,6 +189,21 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     'workspace.exists': (params) => {
       const { path } = params as RepoPathParams;
       return pathProber.exists(asString(path, 'path'));
+    },
+
+    'workspace.getActive': async (): Promise<string> => {
+      if (!workspaceLocator) {
+        throw new DomainError('internal', 'workspaceLocator not wired');
+      }
+      return workspaceLocator.resolve();
+    },
+
+    'workspace.setActive': async (params) => {
+      if (!workspaceLocator) {
+        throw new DomainError('internal', 'workspaceLocator not wired');
+      }
+      const { workspacePath } = params as WorkspaceBootstrapParams;
+      await workspaceLocator.setActive(asString(workspacePath, 'workspacePath'));
     },
 
     'dialog.selectFolder': (params) => {

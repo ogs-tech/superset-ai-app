@@ -48,14 +48,14 @@ describe('<App> bootstrap router', () => {
     );
   });
 
-  it('renders <WorkspaceMissing> when workspacePath does not exist', async () => {
+  it('renders <Onboarding> when workspacePath does not exist', async () => {
     route({
       'settings.get': ok({ ...validSettings, workspacePath: '/missing' }),
       'workspace.exists': ok(false),
     });
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByTestId('workspace-missing-screen')).toBeInTheDocument(),
+      expect(screen.getByTestId('onboarding-screen')).toBeInTheDocument(),
     );
   });
 });

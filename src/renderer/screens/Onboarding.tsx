@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { callIpc } from '../lib/ipc.js';
-import { getDefaults } from '../../shared/settings.js';
+import { getDefaults, getDefaultWorkspacePath } from '../../shared/settings.js';
 import type { Settings } from '../../shared/settings.js';
 
 interface OnboardingProps {
@@ -13,13 +13,12 @@ interface SelectFolderResult {
   path?: string;
 }
 
-const DEFAULT_WORKSPACE_DIR = 'sde-ai-app';
-
 export function Onboarding({ onComplete, onIoError }: OnboardingProps): React.ReactElement {
   const [busy, setBusy] = useState(false);
 
   const persist = async (workspacePath: string): Promise<void> => {
     const apply = async (): Promise<void> => {
+      await callIpc('workspace.setActive', { workspacePath });
       await callIpc('workspace.bootstrap', { workspacePath });
       const defaults = getDefaults();
       const next = await callIpc<Settings>('settings.merge', {
@@ -42,8 +41,9 @@ export function Onboarding({ onComplete, onIoError }: OnboardingProps): React.Re
   const handleSelect = async (): Promise<void> => {
     setBusy(true);
     try {
+      const active = await callIpc<string>('workspace.getActive', {});
       const picked = await callIpc<SelectFolderResult>('dialog.selectFolder', {
-        defaultPath: `~/${DEFAULT_WORKSPACE_DIR}`,
+        defaultPath: active,
       });
       if (picked.canceled || !picked.path) {
         return;
@@ -58,7 +58,7 @@ export function Onboarding({ onComplete, onIoError }: OnboardingProps): React.Re
     setBusy(true);
     try {
       const home = await callIpc<string>('app.getHomeDir', {});
-      await persist(`${home}/${DEFAULT_WORKSPACE_DIR}`);
+      await persist(getDefaultWorkspacePath(home));
     } finally {
       setBusy(false);
     }
@@ -71,11 +71,11 @@ export function Onboarding({ onComplete, onIoError }: OnboardingProps): React.Re
     >
       <h1>Bem-vindo ao sde-ai-app</h1>
       <p>
-        Selecione a pasta do workspace ou use o padrão <code>~/sde-ai-app</code>.
+        Selecione a pasta do workspace ou use o padrão <code>~/.sde-ai-app</code>.
       </p>
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <button type="button" onClick={() => void handleUseDefault()} disabled={busy}>
-          Usar padrão (~/sde-ai-app)
+          Usar padrão (~/.sde-ai-app)
         </button>
         <button type="button" onClick={() => void handleSelect()} disabled={busy}>
           Selecionar pasta

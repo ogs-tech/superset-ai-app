@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDefaults, type LinkedRepo, type Settings } from '../../src/shared/settings.js';
+import { getDefaults, getDefaultWorkspacePath, type LinkedRepo, type Settings } from '../../src/shared/settings.js';
 
 describe('LinkedRepo', () => {
   it('accepts { id, name, path } without requiring branch', () => {
@@ -8,6 +8,16 @@ describe('LinkedRepo', () => {
     expect(repo.id).toBe('r1');
     expect(repo.name).toBe('repo');
     expect(repo.path).toBe('/tmp/repo');
+  });
+});
+
+describe('getDefaultWorkspacePath', () => {
+  it('returns ~/.sde-ai-app for a given homedir', () => {
+    expect(getDefaultWorkspacePath('/home/user')).toBe('/home/user/.sde-ai-app');
+  });
+
+  it('works with macOS-style homedir', () => {
+    expect(getDefaultWorkspacePath('/Users/odenir')).toBe('/Users/odenir/.sde-ai-app');
   });
 });
 

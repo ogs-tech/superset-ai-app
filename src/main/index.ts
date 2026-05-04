@@ -2,8 +2,12 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { promises as fs } from 'node:fs';
 import { IPC_CHANNEL } from '../shared/ipc-contract.js';
+import { getDefaultWorkspacePath, type Settings } from '../shared/settings.js';
 import { SettingsService } from './application/services/settings-service.js';
+import { WorkspaceLocator } from './application/services/workspace-locator.js';
+import { FsWorkspacePointerRepository } from './infrastructure/workspace/fs-workspace-pointer-repository.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
 import { ArtifactService } from './application/services/artifact-service.js';
@@ -44,9 +48,45 @@ function isCallPayload(value: unknown): value is IpcCallPayload {
   );
 }
 
+async function migrateLegacySettings(
+  legacySettingsPath: string,
+  pointerRepo: FsWorkspacePointerRepository,
+): Promise<void> {
+  let raw: string;
+  try {
+    raw = await fs.readFile(legacySettingsPath, 'utf8');
+  } catch (err) {
+    if (typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 'ENOENT') {
+      return;
+    }
+    throw err;
+  }
+  const legacy = JSON.parse(raw) as Partial<Settings>;
+  const target = typeof legacy.workspacePath === 'string' && legacy.workspacePath.length > 0
+    ? legacy.workspacePath
+    : getDefaultWorkspacePath(homedir());
+  await fs.mkdir(target, { recursive: true });
+  await fs.writeFile(join(target, 'settings.json'), raw, 'utf8');
+  await pointerRepo.save(target);
+  await fs.unlink(legacySettingsPath).catch(() => undefined);
+}
+
 async function wireIpc(): Promise<void> {
+  const userDataDir = app.getPath('userData');
+  const pointerRepo = new FsWorkspacePointerRepository(join(userDataDir, 'workspace.json'));
+  await migrateLegacySettings(join(userDataDir, 'settings.json'), pointerRepo);
+
+  const defaultWorkspacePath = getDefaultWorkspacePath(homedir());
+  const workspaceLocator = new WorkspaceLocator({
+    pointerRepo,
+    envValue: () => process.env['SDE_AI_APP_WORKSPACE'],
+    defaultPath: defaultWorkspacePath,
+  });
+
   const settingsService = new SettingsService(
-    new FsSettingsRepository(join(app.getPath('userData'), 'settings.json')),
+    new FsSettingsRepository(async () =>
+      join(await workspaceLocator.resolve(), 'settings.json'),
+    ),
   );
   const repoReader = new FsRepoReader();
   const repoService = new RepoService(repoReader);
@@ -55,23 +95,20 @@ async function wireIpc(): Promise<void> {
   const environmentPort = new ElectronEnvironmentAdapter();
 
   const clock = new SystemClock();
-  const artifactRepo = new FsArtifactRepository(async () => {
-    const current = await settingsService.load();
-    return current?.workspacePath ?? app.getPath('userData');
-  });
+  const artifactRepo = new FsArtifactRepository(async () => workspaceLocator.resolve());
 
-  const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false }, copilot: { enabled: false } }, linkedRepos: [], ui: { theme: 'system' } };
-  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, settings.workspacePath || app.getPath('userData'));
+  const activeWorkspacePath = await workspaceLocator.resolve();
+  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, activeWorkspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
   const copilotInstructionsGen = new CopilotInstructionsGen({
     artifactRepository: artifactRepo,
     workspaceFs: nodeFsAdapter,
-    workspacePath: settings.workspacePath || app.getPath('userData'),
+    workspacePath: activeWorkspacePath,
   });
   const copilotAdapter = new CopilotAdapter({
     homedir: homedir(),
-    workspacePath: settings.workspacePath || app.getPath('userData'),
+    workspacePath: activeWorkspacePath,
     copilotInstructionsGen,
   });
   const adapterManager = new AdapterManager({
@@ -101,6 +138,7 @@ async function wireIpc(): Promise<void> {
     dialogPort,
     pathProber: repoReader,
     environmentPort,
+    workspaceLocator,
   });
   const dispatch = createDispatcher(handlers);
 

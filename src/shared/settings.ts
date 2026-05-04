@@ -46,6 +46,10 @@ export const WorkspacePaths = [
 
 export type WorkspacePath = (typeof WorkspacePaths)[number];
 
+export function getDefaultWorkspacePath(homedir: string): string {
+  return `${homedir}/.sde-ai-app`;
+}
+
 export function getDefaults(): Settings {
   return {
     workspacePath: '',
