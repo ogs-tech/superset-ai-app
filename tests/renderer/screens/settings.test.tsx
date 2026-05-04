@@ -28,6 +28,7 @@ const setupRoute = (
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
     if (method === 'settings.get') return Promise.resolve(ok(initial));
+    if (method === 'repo.list') return Promise.resolve(ok([]));
     if (method === 'settings.merge') return Promise.resolve(ok(initial));
     if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [] }));
     if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));

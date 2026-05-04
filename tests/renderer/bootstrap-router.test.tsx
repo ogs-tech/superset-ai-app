@@ -41,6 +41,7 @@ describe('<App> bootstrap router', () => {
       'settings.get': ok(validSettings),
       'workspace.exists': ok(true),
       'repo.list': ok([]),
+      'artifact.list': ok([]),
     });
     render(<App />);
     await waitFor(() =>
