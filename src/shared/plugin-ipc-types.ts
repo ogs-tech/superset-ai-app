@@ -1,0 +1,83 @@
+// Mirror of domain types for renderer use (no branded types here — renderers use plain strings)
+
+export type PluginOriginIpc = 'imported' | 'owned';
+
+export type PluginRefIpc =
+  | { kind: 'branch'; value: string }
+  | { kind: 'tag'; value: string }
+  | { kind: 'sha'; value: string };
+
+export type PluginSourceIpc = {
+  kind: 'git';
+  url: string;
+  ref?: PluginRefIpc;
+};
+
+export type PluginPublishInfoIpc = {
+  remoteUrl: string;
+  visibility: 'public' | 'private';
+  lastPublishedSha: string;
+  lastPublishedVersion: string;
+  lastPublishedAt: string;
+};
+
+export type PluginArtifacts = {
+  skills: string[];
+  agents: string[];
+  commands: string[];
+  hooks: boolean;
+  mcp: boolean;
+  lsp: boolean;
+};
+
+export type PluginSummaryIpc = {
+  id: string;
+  origin: PluginOriginIpc;
+  scope: 'personal' | 'project';
+  enabled: boolean;
+  installedAt: string;
+  source?: PluginSourceIpc;
+  installedRef?: PluginRefIpc;
+  publishInfo?: PluginPublishInfoIpc;
+};
+
+export type PluginDrift = {
+  kind: 'not_in_settings' | 'not_in_registry' | 'symlink_missing';
+  details?: string;
+};
+
+export type PluginListItemIpc = PluginSummaryIpc & {
+  drift?: PluginDrift;
+};
+
+export type PluginDetailIpc = PluginListItemIpc & {
+  manifest?: {
+    id: string;
+    version: string;
+    description?: string;
+    artifacts: PluginArtifacts;
+  };
+};
+
+// Request types
+export type PluginImportRequest = {
+  url: string;
+  ref?: PluginRefIpc;
+  scope: 'personal' | 'project';
+};
+
+export type PluginCreateOwnedRequest = {
+  id: string;
+  version: string;
+  description?: string;
+  scope: 'personal' | 'project';
+};
+
+export type PluginPublishRequest = {
+  id: string;
+  scope: 'personal' | 'project';
+  repoName?: string;
+  visibility?: 'public' | 'private';
+  version: string;
+  commitMessage?: string;
+};
