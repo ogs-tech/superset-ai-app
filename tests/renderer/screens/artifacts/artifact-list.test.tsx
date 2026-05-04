@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ArtifactList } from '../../../../src/renderer/screens/artifacts/ArtifactList.js';
 import { mockApi, ok, type CallSpy } from '../../test-utils.js';
-import type { Artifact, ArtifactType } from '../../../../src/shared/artifact.js';
+import type { Artifact, ArtifactType, Template } from '../../../../src/shared/artifact.js';
 
 const buildArtifact = (type: ArtifactType, name: string): Artifact => ({
   id: `${type}/${name}`,
@@ -98,5 +98,119 @@ describe('<ArtifactList>', () => {
     await user.click(screen.getByRole('button', { name: /cancelar/i }));
 
     expect(call.mock.calls.find((c) => c[0] === 'artifact.delete')).toBeUndefined();
+  });
+
+  describe('global-instruction tab', () => {
+    const defaultTemplate: Template = {
+      id: 'global-instruction/default',
+      type: 'global-instruction',
+      name: 'default',
+      description: 'Personal global instructions',
+      frontmatter: {
+        name: 'default',
+        type: 'global-instruction',
+        description: 'Personal global instructions',
+        scopes: ['personal'],
+        version: '0.1.0',
+      },
+      body: '# Global instructions template\n',
+    };
+
+    const setupGlobalInstruction = (existing: Artifact[] = []): void => {
+      call.mockImplementation((method: string, params: unknown) => {
+        if (method === 'artifact.list') {
+          const type = (params as { type: ArtifactType }).type;
+          return Promise.resolve(ok(type === 'global-instruction' ? existing : []));
+        }
+        if (method === 'template.list') {
+          return Promise.resolve(ok([defaultTemplate]));
+        }
+        return Promise.resolve(ok(undefined));
+      });
+    };
+
+    it('renders a single unified slot and no "Novo" button', async () => {
+      const user = userEvent.setup();
+      setupGlobalInstruction();
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /global instructions/i }));
+
+      const slot = await screen.findByTestId('global-instruction-slot');
+      expect(within(slot).getByText(/global instructions/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /novo a partir de template/i })).not.toBeInTheDocument();
+    });
+
+    it('marks slot as "(não configurado)" when no artifact exists and "(configurado)" when it does', async () => {
+      const user = userEvent.setup();
+      setupGlobalInstruction();
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /global instructions/i }));
+
+      await waitFor(() => {
+        const slot = screen.getByTestId('global-instruction-slot');
+        expect(within(slot).getByText(/não configurado/i)).toBeInTheDocument();
+      });
+
+      call.mockClear();
+      const existing: Artifact = {
+        ...buildArtifact('global-instruction', 'default'),
+        frontmatter: {
+          ...buildArtifact('global-instruction', 'default').frontmatter,
+          name: 'default',
+        },
+      };
+      setupGlobalInstruction([existing]);
+
+      // Trigger reload by switching tabs and back
+      await user.click(screen.getByRole('tab', { name: /^skills$/i }));
+      await user.click(screen.getByRole('tab', { name: /global instructions/i }));
+
+      await waitFor(() => {
+        const slot = screen.getByTestId('global-instruction-slot');
+        expect(within(slot).getByText(/^\(configurado\)$/i)).toBeInTheDocument();
+      });
+    });
+
+    it('clicking Editar with no existing record fetches template and opens editor in create mode', async () => {
+      const user = userEvent.setup();
+      setupGlobalInstruction();
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /global instructions/i }));
+
+      const slot = await screen.findByTestId('global-instruction-slot');
+      await user.click(within(slot).getByRole('button', { name: /editar/i }));
+
+      await waitFor(() =>
+        expect(call).toHaveBeenCalledWith('template.list', { type: 'global-instruction' }),
+      );
+
+      const editor = await screen.findByTestId('artifact-editor');
+      expect(within(editor).getByRole('heading', { name: /novo artifact/i })).toBeInTheDocument();
+    });
+
+    it('clicking Editar with an existing record opens editor in edit mode without fetching templates', async () => {
+      const user = userEvent.setup();
+      const existing: Artifact = {
+        ...buildArtifact('global-instruction', 'default'),
+        frontmatter: {
+          ...buildArtifact('global-instruction', 'default').frontmatter,
+          name: 'default',
+        },
+      };
+      setupGlobalInstruction([existing]);
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /global instructions/i }));
+
+      const slot = await screen.findByTestId('global-instruction-slot');
+      await user.click(within(slot).getByRole('button', { name: /editar/i }));
+
+      const editor = await screen.findByTestId('artifact-editor');
+      expect(within(editor).getByRole('heading', { name: /editar default/i })).toBeInTheDocument();
+      expect(call.mock.calls.find((c) => c[0] === 'template.list')).toBeUndefined();
+    });
   });
 });

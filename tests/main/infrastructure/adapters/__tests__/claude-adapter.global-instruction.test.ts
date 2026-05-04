@@ -5,10 +5,10 @@ import type { Artifact } from '../../../../../src/shared/artifact.js';
 
 const HOMEDIR = '/Users/alice';
 
-const globalInstructionArtifact = (slug: 'claude' | 'copilot'): Artifact => ({
-  id: `global-instruction/${slug}`,
+const globalInstructionArtifact = (): Artifact => ({
+  id: `global-instruction/default`,
   frontmatter: {
-    name: slug,
+    name: 'default',
     type: 'global-instruction',
     description: 'global instruction',
     scopes: ['personal'],
@@ -16,14 +16,14 @@ const globalInstructionArtifact = (slug: 'claude' | 'copilot'): Artifact => ({
     createdAt: '',
     updatedAt: '',
   },
-  body: `# ${slug}\n`,
+  body: `# global instruction\n`,
 });
 
-describe('ClaudeAdapter — global-instruction (AC#6, AC#7)', () => {
-  it('resolves slug "claude" to <homedir>/.claude/CLAUDE.md', () => {
+describe('ClaudeAdapter — global-instruction', () => {
+  it('resolves to <homedir>/.claude/CLAUDE.md', () => {
     const adapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const destinations = adapter.resolveDestinations({
-      artifact: globalInstructionArtifact('claude'),
+      artifact: globalInstructionArtifact(),
       linkedRepos: [],
     });
 
@@ -32,20 +32,10 @@ describe('ClaudeAdapter — global-instruction (AC#6, AC#7)', () => {
     ]);
   });
 
-  it('returns [] for slug "copilot" (Claude adapter ignores it)', () => {
+  it('all returned destinations are absolute', () => {
     const adapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const destinations = adapter.resolveDestinations({
-      artifact: globalInstructionArtifact('copilot'),
-      linkedRepos: [],
-    });
-
-    expect(destinations).toEqual([]);
-  });
-
-  it('all returned destinations are absolute (AC#16)', () => {
-    const adapter = new ClaudeAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
-      artifact: globalInstructionArtifact('claude'),
+      artifact: globalInstructionArtifact(),
       linkedRepos: [],
     });
 

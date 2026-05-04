@@ -21,11 +21,11 @@ const buildArtifact = (
   body: `# ${name}\n`,
 });
 
-describe('CopilotAdapter — global-instruction routing (AC#9, AC#10, AC#16)', () => {
-  it('resolves slug "copilot" to <homedir>/.copilot/instructions/global.instructions.md (AC#9)', async () => {
+describe('CopilotAdapter — global-instruction routing', () => {
+  it('resolves to <homedir>/.copilot/instructions/global.instructions.md', async () => {
     const adapter = makeAdapter();
     const destinations = await adapter.resolveDestinations({
-      artifact: buildArtifact('global-instruction', 'copilot'),
+      artifact: buildArtifact('global-instruction', 'default'),
       linkedRepos: [],
     });
 
@@ -37,20 +37,10 @@ describe('CopilotAdapter — global-instruction routing (AC#9, AC#10, AC#16)', (
     ]);
   });
 
-  it('returns [] for global-instruction + slug "claude" (AC#10)', async () => {
+  it('all returned destinations are absolute', async () => {
     const adapter = makeAdapter();
     const destinations = await adapter.resolveDestinations({
-      artifact: buildArtifact('global-instruction', 'claude'),
-      linkedRepos: [],
-    });
-
-    expect(destinations).toEqual([]);
-  });
-
-  it('all returned destinations are absolute (AC#16)', async () => {
-    const adapter = makeAdapter();
-    const destinations = await adapter.resolveDestinations({
-      artifact: buildArtifact('global-instruction', 'copilot'),
+      artifact: buildArtifact('global-instruction', 'default'),
       linkedRepos: [],
     });
 

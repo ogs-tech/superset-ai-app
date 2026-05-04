@@ -8,6 +8,8 @@ import type { SearchOutput } from '../../../shared/search.js';
 
 const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction'];
 
+const GLOBAL_INSTRUCTION_NAME = 'default';
+
 const tabLabel = (type: ArtifactType): string => {
   switch (type) {
     case 'skill':
@@ -59,6 +61,29 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
     setEditor({ kind: 'closed' });
     setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
     await loadList(activeTab);
+  };
+
+  const openGlobalInstructionEditor = async (): Promise<void> => {
+    const existing = items.find((a) => a.frontmatter.name === GLOBAL_INSTRUCTION_NAME);
+    if (existing) {
+      setEditor({ kind: 'edit', artifact: existing });
+      return;
+    }
+    try {
+      const templates = await callIpc<Template[]>('template.list', { type: 'global-instruction' });
+      const template = templates[0];
+      if (!template) {
+        setToast({
+          variant: 'error',
+          message: 'Template global-instruction não encontrado',
+        });
+        return;
+      }
+      setEditor({ kind: 'new', template, type: 'global-instruction' });
+    } catch (err) {
+      const message = err instanceof IpcCallError ? err.message : String(err);
+      setToast({ variant: 'error', message });
+    }
   };
 
   const handleDeleteConfirmed = async (): Promise<void> => {
@@ -128,9 +153,11 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
         ))}
       </nav>
 
-      <button type="button" onClick={() => setShowTemplateDialog(true)}>
-        Novo a partir de template
-      </button>
+      {activeTab !== 'global-instruction' && (
+        <button type="button" onClick={() => setShowTemplateDialog(true)}>
+          Novo a partir de template
+        </button>
+      )}
 
       {searchResults !== undefined && (
         <p data-testid="search-results-count">
@@ -138,7 +165,35 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
         </p>
       )}
 
-      {(() => {
+      {activeTab === 'global-instruction' && searchResults === undefined ? (() => {
+        const existing = items.find((a) => a.frontmatter.name === GLOBAL_INSTRUCTION_NAME);
+        return (
+          <ul
+            data-testid="global-instruction-slots"
+            style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}
+          >
+            <li
+              data-testid="global-instruction-slot"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '0.5rem 0',
+                borderBottom: '1px solid #ddd',
+              }}
+            >
+              <span>
+                <strong>Global instructions</strong>{' '}
+                <small>{existing ? '(configurado)' : '(não configurado)'}</small>
+              </span>
+              <span>
+                <button type="button" onClick={() => void openGlobalInstructionEditor()}>
+                  Editar
+                </button>
+              </span>
+            </li>
+          </ul>
+        );
+      })() : (() => {
         const displayItems = searchResults !== undefined
           ? searchResults.results.map((r) => r.artifact)
           : items;

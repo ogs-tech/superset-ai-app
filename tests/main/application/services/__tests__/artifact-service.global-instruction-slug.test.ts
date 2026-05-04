@@ -13,7 +13,7 @@ const FROZEN = new Date('2026-04-26T10:00:00.000Z');
 const globalInstructionFrontmatter = (
   overrides: Partial<ArtifactFrontmatter> = {},
 ): ArtifactFrontmatter => ({
-  name: 'claude',
+  name: 'default',
   type: 'global-instruction',
   description: 'global instruction file',
   scopes: ['personal'],
@@ -41,7 +41,27 @@ const setup = () => {
   return { service };
 };
 
-describe('ArtifactService.save — global-instruction slug enum (AC#2)', () => {
+describe('ArtifactService.save — global-instruction slug enum', () => {
+  it('rejects slug "claude" with reason: global-instruction-slug-not-allowed', async () => {
+    const { service } = setup();
+    const artifact = makeArtifact({ name: 'claude' });
+
+    await expect(service.save({ artifact, isCreate: true })).rejects.toMatchObject({
+      kind: 'validation',
+      details: { reason: 'global-instruction-slug-not-allowed' },
+    });
+  });
+
+  it('rejects slug "copilot" with reason: global-instruction-slug-not-allowed', async () => {
+    const { service } = setup();
+    const artifact = makeArtifact({ name: 'copilot' });
+
+    await expect(service.save({ artifact, isCreate: true })).rejects.toMatchObject({
+      kind: 'validation',
+      details: { reason: 'global-instruction-slug-not-allowed' },
+    });
+  });
+
   it('rejects slug "foo" with reason: global-instruction-slug-not-allowed', async () => {
     const { service } = setup();
     const artifact = makeArtifact({ name: 'foo' });
@@ -52,9 +72,9 @@ describe('ArtifactService.save — global-instruction slug enum (AC#2)', () => {
     });
   });
 
-  it('rejects slug "Claude" (case-sensitive) with reason: global-instruction-slug-not-allowed', async () => {
+  it('rejects slug "Default" (case-sensitive) with reason: global-instruction-slug-not-allowed', async () => {
     const { service } = setup();
-    const artifact = makeArtifact({ name: 'Claude' });
+    const artifact = makeArtifact({ name: 'Default' });
 
     await expect(service.save({ artifact, isCreate: true })).rejects.toMatchObject({
       kind: 'validation',
@@ -72,19 +92,11 @@ describe('ArtifactService.save — global-instruction slug enum (AC#2)', () => {
     });
   });
 
-  it('accepts slug "claude"', async () => {
+  it('accepts slug "default"', async () => {
     const { service } = setup();
-    const artifact = makeArtifact({ name: 'claude' });
+    const artifact = makeArtifact({ name: 'default' });
 
     const result = await service.save({ artifact, isCreate: true });
-    expect(result.artifact.frontmatter.name).toBe('claude');
-  });
-
-  it('accepts slug "copilot"', async () => {
-    const { service } = setup();
-    const artifact = makeArtifact({ name: 'copilot' });
-
-    const result = await service.save({ artifact, isCreate: true });
-    expect(result.artifact.frontmatter.name).toBe('copilot');
+    expect(result.artifact.frontmatter.name).toBe('default');
   });
 });

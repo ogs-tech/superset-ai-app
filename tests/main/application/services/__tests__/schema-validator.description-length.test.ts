@@ -3,7 +3,7 @@ import { SchemaValidator } from '../../../../../src/main/application/services/sc
 import type { ArtifactFrontmatter, ArtifactType } from '../../../../../src/shared/artifact.js';
 
 const validBase = (type: ArtifactType): ArtifactFrontmatter => ({
-  name: type === 'global-instruction' ? 'claude' : 'my-artifact',
+  name: type === 'global-instruction' ? 'default' : 'my-artifact',
   type,
   description: 'A valid description',
   scopes: ['personal'],

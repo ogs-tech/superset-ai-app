@@ -11,7 +11,7 @@ import { formatArtifactId } from '../../domain/artifact-id.js';
 import { isValidArtifactName } from '../../domain/artifact-name.js';
 import { DomainError, validationError } from '../../domain/errors.js';
 
-const GLOBAL_INSTRUCTION_ALLOWED_SLUGS: ReadonlyArray<string> = ['claude', 'copilot'];
+const GLOBAL_INSTRUCTION_ALLOWED_SLUGS: ReadonlyArray<string> = ['default'];
 
 export interface SaveArtifactCommand {
   artifact: Artifact;
@@ -165,7 +165,7 @@ export class ArtifactService {
   private validateGlobalInstruction(fm: ArtifactFrontmatter): void {
     if (!GLOBAL_INSTRUCTION_ALLOWED_SLUGS.includes(fm.name)) {
       throw validationError({
-        message: `Invalid slug for global-instruction: '${fm.name}' (must be 'claude' or 'copilot')`,
+        message: `Invalid slug for global-instruction: '${fm.name}' (must be 'default')`,
         details: { reason: 'global-instruction-slug-not-allowed' },
       });
     }

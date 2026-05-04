@@ -14,7 +14,7 @@ const FROZEN = new Date('2026-04-26T10:00:00.000Z');
 const globalInstructionFrontmatter = (
   overrides: Partial<ArtifactFrontmatter> = {},
 ): ArtifactFrontmatter => ({
-  name: 'claude',
+  name: 'default',
   type: 'global-instruction',
   description: 'global instruction file',
   scopes: ['personal'],

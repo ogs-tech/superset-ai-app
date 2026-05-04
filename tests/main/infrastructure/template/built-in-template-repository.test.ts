@@ -51,23 +51,18 @@ describe('BuiltInTemplateRepository.list', () => {
     expect(list[0]!.body).not.toContain('---');
   });
 
-  it('returns exactly 2 templates for global-instruction with slugs claude and copilot (AC#5)', async () => {
+  it('returns exactly 1 unified global-instruction template with slug "default"', async () => {
     const repo = new BuiltInTemplateRepository(TEMPLATES_DIR);
     const list = await repo.list({ type: 'global-instruction' });
-    expect(list).toHaveLength(2);
-    const slugs = list.map((t) => t.frontmatter.name).sort();
-    expect(slugs).toEqual(['claude', 'copilot']);
-    for (const tpl of list) {
-      expect(tpl.frontmatter.type).toBe('global-instruction');
-      expect(tpl.body.length).toBeGreaterThan(0);
-    }
+    expect(list).toHaveLength(1);
+    expect(list[0]!.frontmatter.name).toBe('default');
+    expect(list[0]!.frontmatter.type).toBe('global-instruction');
+    expect(list[0]!.body.length).toBeGreaterThan(0);
   });
 
-  it('global-instruction templates default to scopes: ["personal"]', async () => {
+  it('global-instruction template defaults to scopes: ["personal"]', async () => {
     const repo = new BuiltInTemplateRepository(TEMPLATES_DIR);
     const list = await repo.list({ type: 'global-instruction' });
-    for (const tpl of list) {
-      expect(tpl.frontmatter.scopes).toEqual(['personal']);
-    }
+    expect(list[0]!.frontmatter.scopes).toEqual(['personal']);
   });
 });

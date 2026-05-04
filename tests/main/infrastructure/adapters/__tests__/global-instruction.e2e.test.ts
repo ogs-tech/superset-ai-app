@@ -18,10 +18,10 @@ import type { Settings } from '../../../../../src/shared/settings.js';
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const globalInstruction = (slug: 'claude' | 'copilot'): Artifact => ({
+const globalInstruction = (): Artifact => ({
   id: '',
   frontmatter: {
-    name: slug,
+    name: 'default',
     type: 'global-instruction',
     description: 'global instruction',
     scopes: ['personal'],
@@ -29,7 +29,7 @@ const globalInstruction = (slug: 'claude' | 'copilot'): Artifact => ({
     createdAt: '',
     updatedAt: '',
   },
-  body: `# ${slug}\n`,
+  body: `# default\n`,
 });
 
 const baseSettings = (
@@ -71,12 +71,12 @@ const setup = async () => {
   return { artifactService, fs };
 };
 
-describe('global-instruction — end-to-end save with both adapters (AC#13, AC#14, AC#15, AC#16)', () => {
-  it('save(global-instruction:claude) creates symlink at <homedir>/.claude/CLAUDE.md → <workspace>/global-instructions/claude.md (AC#13)', async () => {
+describe('global-instruction — end-to-end save fans out to both adapters', () => {
+  it('save creates a Claude symlink at <homedir>/.claude/CLAUDE.md → <workspace>/global-instructions/default.md', async () => {
     const { artifactService, fs } = await setup();
 
     const result = await artifactService.save({
-      artifact: globalInstruction('claude'),
+      artifact: globalInstruction(),
       isCreate: true,
     });
 
@@ -89,16 +89,16 @@ describe('global-instruction — end-to-end save with both adapters (AC#13, AC#1
     const stat = await fs.lstat(destination);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(destination);
-    expect(target).toBe('/workspace/global-instructions/claude.md');
+    expect(target).toBe('/workspace/global-instructions/default.md');
     expect(isAbsolute(destination)).toBe(true);
     expect(isAbsolute(target)).toBe(true);
   });
 
-  it('save(global-instruction:copilot) creates symlink at <homedir>/.copilot/instructions/global.instructions.md → <workspace>/global-instructions/copilot.md (AC#14)', async () => {
+  it('save creates a Copilot symlink at <homedir>/.copilot/instructions/global.instructions.md → <workspace>/global-instructions/default.md', async () => {
     const { artifactService, fs } = await setup();
 
     const result = await artifactService.save({
-      artifact: globalInstruction('copilot'),
+      artifact: globalInstruction(),
       isCreate: true,
     });
 
@@ -111,19 +111,19 @@ describe('global-instruction — end-to-end save with both adapters (AC#13, AC#1
     const stat = await fs.lstat(destination);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(destination);
-    expect(target).toBe('/workspace/global-instructions/copilot.md');
+    expect(target).toBe('/workspace/global-instructions/default.md');
     expect(isAbsolute(destination)).toBe(true);
     expect(isAbsolute(target)).toBe(true);
   });
 
-  it('save(global-instruction:claude) with preexisting real file at ~/.claude/CLAUDE.md produces conflict + backup (AC#15)', async () => {
+  it('save with preexisting file at ~/.claude/CLAUDE.md produces conflict + backup', async () => {
     const { artifactService, fs } = await setup();
 
     const preexistingPath = '/Users/alice/.claude/CLAUDE.md';
     fs.createFile(preexistingPath, 'prior content');
 
     const result = await artifactService.save({
-      artifact: globalInstruction('claude'),
+      artifact: globalInstruction(),
       isCreate: true,
     });
 
@@ -139,28 +139,21 @@ describe('global-instruction — end-to-end save with both adapters (AC#13, AC#1
     const stat = await fs.lstat(preexistingPath);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(preexistingPath);
-    expect(target).toBe('/workspace/global-instructions/claude.md');
+    expect(target).toBe('/workspace/global-instructions/default.md');
 
     const backedUp = await fs.lstat(backupPath!);
     expect(backedUp.kind).toBe('file');
   });
 
-  it('all destinations returned for global-instruction artifacts are absolute (AC#16)', async () => {
+  it('all destinations returned for the global-instruction artifact are absolute', async () => {
     const { artifactService } = await setup();
 
-    const claudeResult = await artifactService.save({
-      artifact: globalInstruction('claude'),
-      isCreate: true,
-    });
-    const copilotResult = await artifactService.save({
-      artifact: globalInstruction('copilot'),
+    const result = await artifactService.save({
+      artifact: globalInstruction(),
       isCreate: true,
     });
 
-    const allDestinations = [
-      ...claudeResult.syncReport,
-      ...copilotResult.syncReport,
-    ]
+    const allDestinations = result.syncReport
       .map((r) => r.destination)
       .filter((d): d is string => d !== null);
 

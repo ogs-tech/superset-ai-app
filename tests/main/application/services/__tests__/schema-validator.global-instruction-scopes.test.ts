@@ -3,7 +3,7 @@ import { SchemaValidator } from '../../../../../src/main/application/services/sc
 import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
 
 const validGI: ArtifactFrontmatter = {
-  name: 'claude',
+  name: 'default',
   type: 'global-instruction',
   description: 'A valid global instruction',
   scopes: ['personal'],

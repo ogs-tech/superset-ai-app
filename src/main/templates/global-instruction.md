@@ -1,15 +1,15 @@
 ---
 type: global-instruction
-name: claude
-description: Personal global instructions for Claude Code (~/.claude/CLAUDE.md).
+name: default
+description: Personal global instructions distributed to every enabled assistant.
 scopes:
   - personal
 version: 0.1.0
 ---
 
-# Claude Code — global instructions
+# Global instructions
 
-Personal preferences and conventions that apply across every workspace where Claude Code runs.
+Personal preferences and conventions that apply across every workspace and every enabled assistant (Claude Code, Copilot, ...).
 
 ## Tone and process
 
@@ -20,3 +20,5 @@ Personal preferences and conventions that apply across every workspace where Cla
 
 - Follow TDD when implementing features or bug fixes.
 - Run lint and typecheck before declaring a task done.
+- Suggest tests alongside new logic.
+- Don't introduce new dependencies without flagging the choice.

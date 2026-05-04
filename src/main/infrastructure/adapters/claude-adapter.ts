@@ -35,7 +35,6 @@ export class ClaudeAdapter implements Adapter {
     const { type, scopes, name } = args.artifact.frontmatter;
 
     if (type === 'global-instruction') {
-      if (name !== 'claude') return [];
       return [
         {
           scope: 'personal',

@@ -50,7 +50,7 @@ export class CopilotAdapter implements Adapter {
   }): Promise<AdapterDestination[]> {
     const { type, scopes, name } = args.artifact.frontmatter;
 
-    if (type === 'global-instruction' && name === 'copilot') {
+    if (type === 'global-instruction') {
       return [
         {
           scope: 'personal',

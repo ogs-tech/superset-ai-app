@@ -14,10 +14,10 @@ import type { CopilotInstructionsGenPort } from '../../../../../src/main/applica
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const globalInstructionCopilot: Artifact = {
-  id: 'global-instruction/copilot',
+const globalInstructionDefault: Artifact = {
+  id: 'global-instruction/default',
   frontmatter: {
-    name: 'copilot',
+    name: 'default',
     type: 'global-instruction',
     description: 'global instruction',
     scopes: ['personal'],
@@ -25,7 +25,7 @@ const globalInstructionCopilot: Artifact = {
     createdAt: '',
     updatedAt: '',
   },
-  body: '# copilot\n',
+  body: '# default\n',
 };
 
 const buildSettings = (copilotEnabled: boolean): Settings => ({
@@ -48,7 +48,7 @@ const setup = async (settings: Settings) => {
   const settingsService = new SettingsService(settingsRepo);
   const artifactRepo = new InMemoryArtifactRepository();
   const fs = new InMemoryFileSystem();
-  fs.createFile('/workspace/global-instructions/copilot.md', '# copilot\n');
+  fs.createFile('/workspace/global-instructions/default.md', '# default\n');
   const symlinkManager = new SymlinkManager(
     fs,
     new FixedClock(new Date('2026-04-26T10:00:00.000Z')),
@@ -65,12 +65,12 @@ const setup = async (settings: Settings) => {
     symlinkManager,
     adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
   });
-  await artifactRepo.save({ artifact: globalInstructionCopilot });
+  await artifactRepo.save({ artifact: globalInstructionDefault });
   return { manager, fs };
 };
 
-describe('CopilotAdapter — wiring with AdapterManager (AC#12)', () => {
-  it('produces SyncResult adapter:"copilot" status:"ok" when enabled and global-instruction:copilot exists', async () => {
+describe('CopilotAdapter — wiring with AdapterManager', () => {
+  it('produces SyncResult adapter:"copilot" status:"ok" when enabled and global-instruction:default exists', async () => {
     const { manager } = await setup(buildSettings(true));
 
     const results = await manager.syncAll({});

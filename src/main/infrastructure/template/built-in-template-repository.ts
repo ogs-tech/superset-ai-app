@@ -11,7 +11,7 @@ const FILES_BY_TYPE: Record<ArtifactType, ReadonlyArray<string>> = {
   skill: ['skill.md'],
   reference: ['reference.md'],
   agent: ['agent.md'],
-  'global-instruction': ['global-instruction-claude.md', 'global-instruction-copilot.md'],
+  'global-instruction': ['global-instruction.md'],
 };
 
 export class BuiltInTemplateRepository implements TemplateRepository {

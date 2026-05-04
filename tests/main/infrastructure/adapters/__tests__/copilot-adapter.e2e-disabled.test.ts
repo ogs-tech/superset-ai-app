@@ -34,7 +34,7 @@ const artifacts: Artifact[] = [
   buildArtifact('skill', 'review'),
   buildArtifact('agent', 'triage'),
   buildArtifact('reference', 'glossary'),
-  buildArtifact('global-instruction', 'copilot'),
+  buildArtifact('global-instruction', 'default'),
 ];
 
 const buildSettings = (): Settings => ({
@@ -56,7 +56,7 @@ const setup = async () => {
   fs.createFile(join(WORKSPACE, 'skills/review'), '# review\n');
   fs.createFile(join(WORKSPACE, 'agents/triage.md'), '# triage\n');
   fs.createFile(join(WORKSPACE, 'references/glossary.md'), '# glossary\n');
-  fs.createFile(join(WORKSPACE, 'global-instructions/copilot.md'), '# copilot\n');
+  fs.createFile(join(WORKSPACE, 'global-instructions/default.md'), '# default\n');
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const gen: CopilotInstructionsGenPort = { generate: vi.fn().mockResolvedValue({ path: `${WORKSPACE}/_generated/copilot-instructions.md`, refsIncluded: 0 }) };
