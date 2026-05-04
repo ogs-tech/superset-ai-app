@@ -25,6 +25,9 @@ import { CopilotInstructionsGen } from './application/services/copilot-instructi
 import { SchemaValidator } from './application/services/schema-validator.js';
 import { SearchService } from './application/services/search-service.js';
 import type { Adapter } from './application/ports/adapter.js';
+import type { PluginService } from './application/services/plugin-service.js';
+import type { CredentialStorePort } from './application/ports/credential-store-port.js';
+import { SafeStorageCredentials } from './infrastructure/credentials/safe-storage-credentials.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -91,6 +94,12 @@ async function wireIpc(): Promise<void> {
   const templateRepo = new FsTemplateRepository(workspacePath);
   const templateService = new TemplateService(templateRepo, clock, schemaValidator);
 
+  const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));
+
+  // TODO(T7.4): wire real PluginService with SimpleGitClient, PluginInstaller,
+  // PluginAuthorService, PluginPublisher, ClaudeSettingsFile, and PluginCacheFile.
+  const pluginService = null as unknown as PluginService;
+
   const handlers = buildHandlers({
     settingsService,
     repoService,
@@ -99,6 +108,8 @@ async function wireIpc(): Promise<void> {
     adapterManager,
     searchService,
     dialogPort,
+    pluginService,
+    credentialStore,
   });
   const dispatch = createDispatcher(handlers);
 

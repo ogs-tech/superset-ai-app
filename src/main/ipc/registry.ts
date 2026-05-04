@@ -7,12 +7,16 @@ import type { TemplateService } from '../application/services/template-service.j
 import type { AdapterManager } from '../application/services/adapter-manager.js';
 import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
+import type { PluginService } from '../application/services/plugin-service.js';
+import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
 import type { CustomizationListParams } from '../../shared/ipc-contract.js';
 import type { Customization, CustomizationType } from '../../shared/customization.js';
 import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
+import { buildPluginHandlers } from './plugin-handlers.js';
+import { buildCredentialsHandlers } from './credentials-handlers.js';
 
 export interface IpcDeps {
   settingsService: SettingsService;
@@ -22,6 +26,8 @@ export interface IpcDeps {
   adapterManager: AdapterManager;
   searchService: SearchService;
   dialogPort: DialogPort;
+  pluginService: PluginService;
+  credentialStore: CredentialStorePort;
 }
 
 const ARTIFACT_TYPES: readonly CustomizationType[] = [
@@ -115,6 +121,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     adapterManager,
     searchService,
     dialogPort,
+    pluginService,
+    credentialStore,
   } = deps;
 
   return {
@@ -316,5 +324,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       }
       return searchService.search(query, options);
     },
+
+    ...buildPluginHandlers(pluginService),
+    ...buildCredentialsHandlers(credentialStore),
   };
 }

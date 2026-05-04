@@ -13,6 +13,8 @@ import type { TemplateRepository } from '../../../src/main/application/ports/tem
 import type { Template, TemplateFrontmatter } from '../../../src/shared/template.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import type { SearchService } from '../../../src/main/application/services/search-service.js';
+import type { PluginService } from '../../../src/main/application/services/plugin-service.js';
+import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
@@ -34,6 +36,8 @@ interface Deps {
   adapterManager: AdapterManager;
   searchService: SearchService;
   dialogPort: DialogPort;
+  pluginService: PluginService;
+  credentialStore: CredentialStorePort;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
@@ -128,6 +132,14 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     search: vi.fn().mockResolvedValue({ results: [], total: 0, truncated: false }),
   };
 
+  const pluginService = null as unknown as PluginService;
+  const credentialStore: CredentialStorePort = {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+    isAvailable: vi.fn().mockResolvedValue(true),
+  };
+
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
@@ -136,6 +148,8 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     adapterManager,
     searchService: searchService as unknown as SearchService,
     dialogPort,
+    pluginService,
+    credentialStore,
     settingsRepoSpy,
     repoReaderSpy,
     dialogSpy,
