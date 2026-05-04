@@ -38,7 +38,6 @@ const customizations: Customization[] = [
 ];
 
 const buildSettings = (): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: false },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -65,6 +64,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([[copilotAdapter.adapterId, copilotAdapter]]),
   });
   for (const customization of customizations) {

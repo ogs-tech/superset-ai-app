@@ -34,7 +34,6 @@ const skillBoth: Customization = {
 const repos: LinkedRepo[] = [{ id: 'r1', name: 'r1', path: '/repos/r1' }];
 
 const buildSettings = (): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: true, exclusiveSkillsWithClaude: false },
@@ -59,6 +58,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
       [copilotAdapter.adapterId, copilotAdapter],

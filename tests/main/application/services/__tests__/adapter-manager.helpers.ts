@@ -9,8 +9,9 @@ import type { Settings } from '../../../../../src/shared/settings.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 
+export const DEFAULT_WORKSPACE_PATH = '/workspace';
+
 export const defaultSettings: Settings = {
-  workspacePath: '/workspace',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: true, exclusiveSkillsWithClaude: false },
@@ -22,6 +23,7 @@ export const defaultSettings: Settings = {
 export const setupAdapterManager = async (
   adapters: Adapter[],
   settings: Settings = defaultSettings,
+  workspacePath: string = DEFAULT_WORKSPACE_PATH,
 ) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
@@ -31,12 +33,13 @@ export const setupAdapterManager = async (
     await customizationRepo.save({ customization });
   };
   const fs = new InMemoryFileSystem();
-  const symlinkManager = new SymlinkManager(fs, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), settings.workspacePath);
+  const symlinkManager = new SymlinkManager(fs, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), workspacePath);
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath,
     adapters: new Map(adapters.map((adapter) => [adapter.adapterId, adapter])),
   });
-  return { settingsService, customizationRepo, symlinkManager, manager, fs, registerCustomization };
+  return { settingsService, customizationRepo, symlinkManager, manager, fs, registerCustomization, workspacePath };
 };

@@ -29,7 +29,6 @@ const globalInstructionDefault: Customization = {
 };
 
 const buildSettings = (copilotEnabled: boolean): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: false },
     copilot: { enabled: copilotEnabled, exclusiveSkillsWithClaude: false },
@@ -52,7 +51,7 @@ const setup = async (settings: Settings) => {
   const symlinkManager = new SymlinkManager(
     fs,
     new FixedClock(new Date('2026-04-26T10:00:00.000Z')),
-    settings.workspacePath,
+    WORKSPACE,
   );
   const copilotAdapter = new CopilotAdapter({
     homedir: HOMEDIR,
@@ -63,6 +62,7 @@ const setup = async (settings: Settings) => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
   });
   await customizationRepo.save({ customization: globalInstructionDefault });

@@ -5,7 +5,6 @@ import { mockApi, ok, type CallSpy } from './test-utils.js';
 import type { Settings } from '../../src/shared/settings.js';
 
 const validSettings: Settings = {
-  workspacePath: '/ws',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -28,18 +27,9 @@ const route = (overrides: Record<string, unknown>) => {
 };
 
 describe('<App> bootstrap router', () => {
-  it('renders <Onboarding> when settings.get returns null', async () => {
-    route({ 'settings.get': ok(null) });
-    render(<App />);
-    await waitFor(() =>
-      expect(screen.getByTestId('onboarding-screen')).toBeInTheDocument(),
-    );
-  });
-
-  it('renders <Main> when settings has a valid workspacePath', async () => {
+  it('renders <Main> when settings.get returns persisted settings', async () => {
     route({
       'settings.get': ok(validSettings),
-      'workspace.exists': ok(true),
       'repo.list': ok([]),
       'customization.list': ok([]),
     });
@@ -49,14 +39,16 @@ describe('<App> bootstrap router', () => {
     );
   });
 
-  it('renders <Onboarding> when workspacePath does not exist', async () => {
+  it('renders <Main> after seeding defaults when settings.get returns null', async () => {
     route({
-      'settings.get': ok({ ...validSettings, workspacePath: '/missing' }),
-      'workspace.exists': ok(false),
+      'settings.get': ok(null),
+      'settings.merge': ok(validSettings),
+      'repo.list': ok([]),
+      'customization.list': ok([]),
     });
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByTestId('onboarding-screen')).toBeInTheDocument(),
+      expect(screen.getByTestId('main-screen')).toBeInTheDocument(),
     );
   });
 });

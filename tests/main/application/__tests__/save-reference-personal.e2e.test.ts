@@ -32,7 +32,6 @@ const refPersonal: Customization = {
 };
 
 const buildSettings = (): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: false }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -54,6 +53,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
   });
   return { customizationRepo, fs, adapterManager };

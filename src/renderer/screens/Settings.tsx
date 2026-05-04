@@ -157,13 +157,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       </header>
 
       <section>
-        <h2>Workspace</h2>
-        <p>
-          <code data-testid="settings-workspace-path">{settings.workspacePath}</code>
-        </p>
-      </section>
-
-      <section>
         <h2>Adapters</h2>
         {(['claude', 'copilot'] as const).map((key) => (
           <div key={key} style={{ marginBottom: '0.5rem' }}>

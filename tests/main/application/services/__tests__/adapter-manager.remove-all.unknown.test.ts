@@ -9,7 +9,6 @@ import { SettingsService } from '../../../../../src/main/application/services/se
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const baseSettings: Settings = {
-  workspacePath: '/workspace',
   adapters: { claude: { enabled: true }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -21,11 +20,12 @@ const setup = async () => {
   const settingsService = new SettingsService(repo);
   const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
-  const sm = new SymlinkManager(fs, new FixedClock(new Date()), baseSettings.workspacePath);
+  const sm = new SymlinkManager(fs, new FixedClock(new Date()), '/workspace');
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager: sm,
+    workspacePath: '/workspace',
     adapters: new Map(),
   });
   const listSpy = vi.spyOn(customizationRepo, 'list');

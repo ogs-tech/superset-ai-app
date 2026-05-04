@@ -7,7 +7,6 @@ import type { Settings } from '../../../../src/shared/settings.js';
 import type { SyncResult } from '../../../../src/shared/customization.js';
 
 const baseSettings: Settings = {
-  workspacePath: '/ws',
   adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },

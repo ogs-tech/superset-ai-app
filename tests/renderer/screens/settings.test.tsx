@@ -6,7 +6,6 @@ import { mockApi, ok, type CallSpy } from '../test-utils.js';
 import type { Settings } from '../../../src/shared/settings.js';
 
 const baseSettings: Settings = {
-  workspacePath: '/ws',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -110,12 +109,3 @@ describe('<Settings> — no per-adapter default scope', () => {
   });
 });
 
-describe('<Settings> — workspace', () => {
-  it('shows the active workspace path', async () => {
-    setupRoute();
-    render(<SettingsScreen />);
-
-    const path = await screen.findByTestId('settings-workspace-path');
-    expect(path).toHaveTextContent('/ws');
-  });
-});

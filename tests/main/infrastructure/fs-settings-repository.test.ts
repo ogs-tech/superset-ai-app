@@ -30,7 +30,7 @@ describe('FsSettingsRepository.load', () => {
   });
 
   it('returns the parsed object when the file exists', async () => {
-    const persisted = makeSettings({ workspacePath: '/tmp/ws' });
+    const persisted = makeSettings({ ui: { theme: 'dark' } });
     await fs.writeFile(target, JSON.stringify(persisted), 'utf8');
 
     const repo = new FsSettingsRepository(target);
@@ -54,7 +54,7 @@ describe('FsSettingsRepository.save', () => {
 
   it('writes atomically: tempfile lives in the same directory as the target before rename', async () => {
     const repo = new FsSettingsRepository(target);
-    const settings = makeSettings({ workspacePath: '/tmp/ws-atomic' });
+    const settings = makeSettings({ ui: { theme: 'dark' } });
     const renameSpy = vi.spyOn(fs, 'rename');
 
     await repo.save(settings);
@@ -69,12 +69,12 @@ describe('FsSettingsRepository.save', () => {
   });
 
   it('preserves the previous version when rename fails and cleans up the tempfile', async () => {
-    const v1 = makeSettings({ workspacePath: '/tmp/ws-v1' });
+    const v1 = makeSettings({ ui: { theme: 'light' } });
     await fs.writeFile(target, JSON.stringify(v1), 'utf8');
     const v1Bytes = await readFile(target);
 
     const repo = new FsSettingsRepository(target);
-    const v2 = makeSettings({ workspacePath: '/tmp/ws-v2' });
+    const v2 = makeSettings({ ui: { theme: 'dark' } });
 
     const renameSpy = vi.spyOn(fs, 'rename').mockRejectedValueOnce(new Error('boom'));
 

@@ -15,7 +15,6 @@ const FROZEN = new Date('2026-04-26T10:00:00.000Z');
 const WORKSPACE = '/workspace';
 
 const settings: Settings = {
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -57,6 +56,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
   const service = new CustomizationService(customizationRepo, clock, adapterManager);

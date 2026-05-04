@@ -28,7 +28,6 @@ const skillPersonal: Customization = {
 };
 
 const buildSettings = (claudeEnabled: boolean): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: claudeEnabled },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -47,13 +46,14 @@ const setup = async (settings: Settings) => {
   const symlinkManager = new SymlinkManager(
     fs,
     new FixedClock(new Date('2026-04-26T10:00:00.000Z')),
-    settings.workspacePath,
+    WORKSPACE,
   );
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
   await customizationRepo.save({ customization: skillPersonal });

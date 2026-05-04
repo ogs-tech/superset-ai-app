@@ -32,7 +32,6 @@ const refMultiScope: Customization = {
 };
 
 const buildSettings = (): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: false }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [
     { id: 'r1', name: 'repo1', path: '/repos/repo1' },
@@ -57,6 +56,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
   });
   return { customizationRepo, fs, adapterManager };

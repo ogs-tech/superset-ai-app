@@ -6,7 +6,6 @@ import { mockApi, ok, type CallSpy } from '../../test-utils.js';
 import type { LinkedRepoView, Settings } from '../../../../src/shared/settings.js';
 
 const baseSettings: Settings = {
-  workspacePath: '/ws',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },

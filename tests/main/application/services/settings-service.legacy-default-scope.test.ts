@@ -11,7 +11,6 @@ const stubRepo = (overrides: Partial<SettingsRepository> = {}): SettingsReposito
 
 const legacyPersisted = (): Settings =>
   ({
-    workspacePath: '/tmp/legacy',
     adapters: {
       claude: { enabled: true, defaultScope: 'personal' },
       copilot: { enabled: false, defaultScope: 'project' },

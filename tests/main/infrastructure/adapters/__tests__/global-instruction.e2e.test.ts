@@ -35,7 +35,6 @@ const globalInstruction = (): Customization => ({
 const baseSettings = (
   overrides: Partial<Settings['adapters']> = {},
 ): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: true, exclusiveSkillsWithClaude: false },
@@ -62,6 +61,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
       [copilotAdapter.adapterId, copilotAdapter],

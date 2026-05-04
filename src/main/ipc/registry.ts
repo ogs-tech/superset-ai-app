@@ -2,15 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
-import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
-import type { WorkspaceLocator } from '../application/services/workspace-locator.js';
 import type { CustomizationService } from '../application/services/customization-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
 import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
-import type { EnvironmentPort } from '../application/ports/environment-port.js';
-import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
 import type { CustomizationListParams } from '../../shared/ipc-contract.js';
@@ -21,15 +17,11 @@ import type { IpcHandlers } from './dispatcher.js';
 export interface IpcDeps {
   settingsService: SettingsService;
   repoService: RepoService;
-  workspaceBootstrap: WorkspaceBootstrapService;
   customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
   searchService: SearchService;
   dialogPort: DialogPort;
-  pathProber: PathProber;
-  environmentPort: EnvironmentPort;
-  workspaceLocator?: WorkspaceLocator;
 }
 
 const ARTIFACT_TYPES: readonly CustomizationType[] = [
@@ -100,10 +92,6 @@ interface RepoPathParams {
   path: string;
 }
 
-interface WorkspaceBootstrapParams {
-  workspacePath: string;
-}
-
 const asString = (value: unknown, field: string): string => {
   if (typeof value !== 'string' || value.length === 0) {
     throw new DomainError('validation', `Missing or invalid '${field}'`);
@@ -122,20 +110,14 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
   const {
     settingsService,
     repoService,
-    workspaceBootstrap,
     customizationService,
     templateService,
     adapterManager,
     searchService,
     dialogPort,
-    pathProber,
-    environmentPort,
-    workspaceLocator,
   } = deps;
 
   return {
-    'app.getHomeDir': () => environmentPort.getHomeDir(),
-
     'settings.get': () => settingsService.load(),
 
     'settings.save': async (params) => {
@@ -201,31 +183,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
         views.push({ id: repo.id, name: repo.name, path: repo.path, branch });
       }
       return views;
-    },
-
-    'workspace.bootstrap': async (params) => {
-      const { workspacePath } = params as WorkspaceBootstrapParams;
-      await workspaceBootstrap.create(asString(workspacePath, 'workspacePath'));
-    },
-
-    'workspace.exists': (params) => {
-      const { path } = params as RepoPathParams;
-      return pathProber.exists(asString(path, 'path'));
-    },
-
-    'workspace.getActive': async (): Promise<string> => {
-      if (!workspaceLocator) {
-        throw new DomainError('internal', 'workspaceLocator not wired');
-      }
-      return workspaceLocator.resolve();
-    },
-
-    'workspace.setActive': async (params) => {
-      if (!workspaceLocator) {
-        throw new DomainError('internal', 'workspaceLocator not wired');
-      }
-      const { workspacePath } = params as WorkspaceBootstrapParams;
-      await workspaceLocator.setActive(asString(workspacePath, 'workspacePath'));
     },
 
     'dialog.selectFolder': (params) => {

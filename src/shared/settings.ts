@@ -26,7 +26,6 @@ export interface UiSettings {
 }
 
 export interface Settings {
-  workspacePath: string;
   adapters: {
     claude: AdapterSettings;
     copilot: CopilotAdapterSettings;
@@ -46,13 +45,8 @@ export const WorkspacePaths = [
 
 export type WorkspacePath = (typeof WorkspacePaths)[number];
 
-export function getDefaultWorkspacePath(homedir: string): string {
-  return `${homedir}/.sde-ai-app`;
-}
-
 export function getDefaults(): Settings {
   return {
-    workspacePath: '',
     adapters: {
       claude: { enabled: true },
       copilot: { enabled: false, exclusiveSkillsWithClaude: false },

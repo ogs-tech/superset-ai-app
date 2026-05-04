@@ -6,7 +6,6 @@ import { mockApi, ok, type CallSpy } from '../../test-utils.js';
 import type { Settings } from '../../../../src/shared/settings.js';
 
 const copilotOn = (exclusiveSkillsWithClaude: boolean): Settings => ({
-  workspacePath: '/ws',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: true, exclusiveSkillsWithClaude },

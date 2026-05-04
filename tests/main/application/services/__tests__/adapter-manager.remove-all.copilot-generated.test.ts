@@ -16,7 +16,6 @@ const WORKSPACE = '/workspace';
 const GENERATED = join(WORKSPACE, '_generated/copilot-instructions.md');
 
 const baseSettings: Settings = {
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: true }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -46,6 +45,7 @@ describe('AdapterManager.removeAdapterSymlinks — Copilot _generated cleanup (A
       settingsService,
       customizationRepository: customizationRepo,
       symlinkManager: sm,
+      workspacePath: WORKSPACE,
       adapters: new Map([['copilot', copilotAdapter]]),
       workspaceFs: fs,
     });

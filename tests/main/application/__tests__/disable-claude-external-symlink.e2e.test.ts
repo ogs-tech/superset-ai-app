@@ -15,7 +15,6 @@ const HOMEDIR = '/home/alice';
 const WORKSPACE = '/workspace';
 
 const baseSettings: Settings = {
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -45,6 +44,7 @@ describe('disable-claude-external-symlink e2e (AC#13)', () => {
       settingsService,
       customizationRepository: customizationRepo,
       symlinkManager: sm,
+      workspacePath: WORKSPACE,
       adapters: new Map([['claude', claudeAdapter]]),
     });
 

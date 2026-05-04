@@ -15,7 +15,6 @@ const HOMEDIR = '/home/alice';
 const WORKSPACE = '/workspace';
 
 const baseSettings: Settings = {
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
   linkedRepos: [{ id: 'r1', name: 'r1', path: '/repos/r1' }],
   ui: { theme: 'system' },
@@ -73,6 +72,7 @@ describe('disable-claude e2e (AC#10)', () => {
       settingsService,
       customizationRepository: customizationRepo,
       symlinkManager: sm,
+      workspacePath: WORKSPACE,
       adapters: new Map([['claude', claudeAdapter]]),
     });
 

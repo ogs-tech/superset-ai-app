@@ -24,6 +24,7 @@ export interface AdapterManagerDeps {
   customizationRepository: CustomizationRepository;
   symlinkManager: SymlinkManager;
   adapters: Map<string, Adapter>;
+  workspacePath: string;
   workspaceFs?: WritableFileSystemPort;
 }
 
@@ -51,7 +52,7 @@ export class AdapterManager {
     const enabledAdapters = this.enabledAdapters(settings);
     const results: SyncResult[] = [];
 
-    const source = this.customizationSourcePath(command.customization, settings.workspacePath);
+    const source = this.customizationSourcePath(command.customization, this.deps.workspacePath);
     const includesProject = command.customization.frontmatter.scopes.includes('project');
     for (const adapter of enabledAdapters) {
       const destinations = await adapter.resolveDestinations({
@@ -96,7 +97,7 @@ export class AdapterManager {
 
         for (const destination of destinations) {
           results.push(
-            await this.syncDestination(adapter.adapterId, this.customizationSourcePath(customization, settings.workspacePath), destination.destination),
+            await this.syncDestination(adapter.adapterId, this.customizationSourcePath(customization, this.deps.workspacePath), destination.destination),
           );
         }
 
@@ -154,7 +155,7 @@ export class AdapterManager {
     if (!adapter) return { removed: 0, skipped: 0, errors: [] };
 
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
-    const workspacePath = settings.workspacePath;
+    const workspacePath = this.deps.workspacePath;
     const customizations = await this.deps.customizationRepository.list();
     let removed = 0;
     let skipped = 0;
@@ -208,7 +209,7 @@ export class AdapterManager {
     if (!adapter) return 0;
 
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
-    const workspacePath = settings.workspacePath;
+    const workspacePath = this.deps.workspacePath;
     const customizations = await this.deps.customizationRepository.list();
     let count = 0;
 

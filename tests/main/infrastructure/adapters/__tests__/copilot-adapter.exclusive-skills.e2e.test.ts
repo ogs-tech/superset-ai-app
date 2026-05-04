@@ -33,7 +33,6 @@ const skillPersonal: Customization = {
 };
 
 const makeSettings = (exclusiveSkillsWithClaude: boolean, claudeEnabled: boolean): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: claudeEnabled },
     copilot: { enabled: true, exclusiveSkillsWithClaude },
@@ -65,6 +64,7 @@ const setup = async (settings: Settings) => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map<string, import('../../../../../src/main/application/ports/adapter.js').Adapter>([
       [copilotAdapter.adapterId, copilotAdapter],
       [claudeAdapter.adapterId, claudeAdapter],

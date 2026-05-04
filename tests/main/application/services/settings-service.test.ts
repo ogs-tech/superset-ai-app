@@ -5,7 +5,6 @@ import { DomainError } from '../../../../src/main/domain/errors.js';
 import { getDefaults, type Settings } from '../../../../src/shared/settings.js';
 
 const baseSettings = (): Settings => ({
-  workspacePath: '/tmp/sample',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -65,7 +64,6 @@ describe('SettingsService.merge', () => {
     expect(result.adapters.copilot).toEqual({ enabled: false, exclusiveSkillsWithClaude: false });
     expect(result.ui.theme).toBe('dark');
     expect(result.linkedRepos).toEqual(persisted.linkedRepos);
-    expect(result.workspacePath).toBe(persisted.workspacePath);
   });
 
   it('persists the consolidated object via repository.save', async () => {
@@ -88,9 +86,9 @@ describe('SettingsService.merge', () => {
       stubRepo({ load: () => Promise.resolve(null), save }),
     );
 
-    const result = await service.merge({ workspacePath: '/tmp/new' });
+    const result = await service.merge({ ui: { theme: 'dark' } });
 
-    expect(result).toEqual({ ...getDefaults(), workspacePath: '/tmp/new' });
+    expect(result).toEqual({ ...getDefaults(), ui: { theme: 'dark' } });
     expect(save).toHaveBeenCalledWith(result);
   });
 

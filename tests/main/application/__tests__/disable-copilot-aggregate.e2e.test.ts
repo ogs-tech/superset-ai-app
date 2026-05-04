@@ -17,7 +17,6 @@ const WORKSPACE = '/workspace';
 const GENERATED = join(WORKSPACE, '_generated/copilot-instructions.md');
 
 const baseSettings: Settings = {
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: false }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [
     { id: 'r1', name: 'r1', path: '/repos/r1' },
@@ -71,6 +70,7 @@ describe('disable-copilot-aggregate e2e (AC#11)', () => {
       settingsService,
       customizationRepository: customizationRepo,
       symlinkManager: sm,
+      workspacePath: WORKSPACE,
       adapters: new Map([['copilot', copilotAdapter]]),
       workspaceFs: fs,
     });

@@ -15,7 +15,6 @@ const HOMEDIR = '/home/alice';
 const WORKSPACE = '/workspace';
 
 const baseSettings: Settings = {
-  workspacePath: WORKSPACE,
   adapters: { claude: { enabled: true }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -49,6 +48,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager: sm,
+    workspacePath: WORKSPACE,
     adapters: new Map([['claude', claudeAdapter]]),
   });
   return { manager };

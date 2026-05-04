@@ -2,12 +2,8 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { promises as fs } from 'node:fs';
 import { IPC_CHANNEL } from '../shared/ipc-contract.js';
-import { getDefaultWorkspacePath, type Settings } from '../shared/settings.js';
 import { SettingsService } from './application/services/settings-service.js';
-import { WorkspaceLocator } from './application/services/workspace-locator.js';
-import { FsWorkspacePointerRepository } from './infrastructure/workspace/fs-workspace-pointer-repository.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
 import { CustomizationService } from './application/services/customization-service.js';
@@ -22,7 +18,6 @@ import { FsTemplateRepository } from './infrastructure/template/fs-template-repo
 import { TemplateSeeder } from './application/services/template-seeder.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
-import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from './infrastructure/adapters/copilot-adapter.js';
@@ -49,73 +44,40 @@ function isCallPayload(value: unknown): value is IpcCallPayload {
   );
 }
 
-async function migrateLegacySettings(
-  legacySettingsPath: string,
-  pointerRepo: FsWorkspacePointerRepository,
-): Promise<void> {
-  let raw: string;
-  try {
-    raw = await fs.readFile(legacySettingsPath, 'utf8');
-  } catch (err) {
-    if (typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 'ENOENT') {
-      return;
-    }
-    throw err;
-  }
-  const legacy = JSON.parse(raw) as Partial<Settings>;
-  const target = typeof legacy.workspacePath === 'string' && legacy.workspacePath.length > 0
-    ? legacy.workspacePath
-    : getDefaultWorkspacePath(homedir());
-  await fs.mkdir(target, { recursive: true });
-  await fs.writeFile(join(target, 'settings.json'), raw, 'utf8');
-  await pointerRepo.save(target);
-  await fs.unlink(legacySettingsPath).catch(() => undefined);
-}
-
 async function wireIpc(): Promise<void> {
-  const userDataDir = app.getPath('userData');
-  const pointerRepo = new FsWorkspacePointerRepository(join(userDataDir, 'workspace.json'));
-  await migrateLegacySettings(join(userDataDir, 'settings.json'), pointerRepo);
+  const workspacePath = join(homedir(), '.sde-ai-app');
 
-  const defaultWorkspacePath = getDefaultWorkspacePath(homedir());
-  const workspaceLocator = new WorkspaceLocator({
-    pointerRepo,
-    envValue: () => process.env['SDE_AI_APP_WORKSPACE'],
-    defaultPath: defaultWorkspacePath,
-  });
+  const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
+  await workspaceBootstrap.create(workspacePath);
 
   const settingsService = new SettingsService(
-    new FsSettingsRepository(async () =>
-      join(await workspaceLocator.resolve(), 'settings.json'),
-    ),
+    new FsSettingsRepository(join(workspacePath, 'settings.json')),
   );
   const repoReader = new FsRepoReader();
   const repoService = new RepoService(repoReader);
-  const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
   const dialogPort = new ElectronDialogAdapter();
-  const environmentPort = new ElectronEnvironmentAdapter();
 
   const clock = new SystemClock();
-  const customizationRepo = new FsCustomizationRepository(async () => workspaceLocator.resolve());
+  const customizationRepo = new FsCustomizationRepository(workspacePath);
 
-  const activeWorkspacePath = await workspaceLocator.resolve();
-  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, activeWorkspacePath);
+  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
   const copilotInstructionsGen = new CopilotInstructionsGen({
     customizationRepository: customizationRepo,
     workspaceFs: nodeFsAdapter,
-    workspacePath: activeWorkspacePath,
+    workspacePath,
   });
   const copilotAdapter = new CopilotAdapter({
     homedir: homedir(),
-    workspacePath: activeWorkspacePath,
+    workspacePath,
     copilotInstructionsGen,
   });
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
       [copilotAdapter.adapterId, copilotAdapter],
@@ -125,22 +87,18 @@ async function wireIpc(): Promise<void> {
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
   const searchService = new SearchService({ customizationRepository: customizationRepo });
   const templatesSeedDir = join(process.cwd(), 'src', 'main', 'templates');
-  await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(activeWorkspacePath);
-  const templateRepo = new FsTemplateRepository(async () => workspaceLocator.resolve());
+  await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(workspacePath);
+  const templateRepo = new FsTemplateRepository(workspacePath);
   const templateService = new TemplateService(templateRepo, clock, schemaValidator);
 
   const handlers = buildHandlers({
     settingsService,
     repoService,
-    workspaceBootstrap,
     customizationService,
     templateService,
     adapterManager,
     searchService,
     dialogPort,
-    pathProber: repoReader,
-    environmentPort,
-    workspaceLocator,
   });
   const dispatch = createDispatcher(handlers);
 

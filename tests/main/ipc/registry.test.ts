@@ -2,17 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
-import { WorkspaceBootstrapService } from '../../../src/main/application/services/workspace-bootstrap.js';
 import { CustomizationService } from '../../../src/main/application/services/customization-service.js';
 import { TemplateService } from '../../../src/main/application/services/template-service.js';
 import { InMemoryCustomizationRepository } from '../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
-import type { FileSystemMutator } from '../../../src/main/application/ports/file-system-mutator.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
-import type { EnvironmentPort } from '../../../src/main/application/ports/environment-port.js';
-import type { PathProber } from '../../../src/main/application/ports/path-prober.js';
 import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
 import type { Template, TemplateFrontmatter } from '../../../src/shared/template.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
@@ -21,7 +17,6 @@ import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
 const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
-  workspacePath: '/tmp/workspace',
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -34,7 +29,6 @@ const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
 interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
-  workspaceBootstrap: WorkspaceBootstrapService;
   customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
@@ -48,19 +42,8 @@ interface Deps {
     exists: ReturnType<typeof vi.fn>;
     readFile: ReturnType<typeof vi.fn>;
   };
-  fsMutatorSpy: {
-    mkdirRecursive: ReturnType<typeof vi.fn>;
-  };
   dialogSpy: {
     selectFolder: ReturnType<typeof vi.fn>;
-  };
-  pathProberSpy: {
-    exists: ReturnType<typeof vi.fn>;
-  };
-  pathProber: PathProber;
-  environmentPort: EnvironmentPort;
-  environmentSpy: {
-    getHomeDir: ReturnType<typeof vi.fn>;
   };
   customizationRepo: InMemoryCustomizationRepository;
   clock: FixedClock;
@@ -92,32 +75,11 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     readFile: repoReaderSpy.readFile,
   };
 
-  const fsMutatorSpy = {
-    mkdirRecursive: vi.fn().mockResolvedValue(undefined),
-  };
-  const mutator: FileSystemMutator = {
-    mkdirRecursive: fsMutatorSpy.mkdirRecursive,
-  };
-
   const dialogSpy = {
     selectFolder: vi.fn().mockResolvedValue({ canceled: false, path: '/picked' }),
   };
   const dialogPort: DialogPort = {
     selectFolder: dialogSpy.selectFolder,
-  };
-
-  const pathProberSpy = {
-    exists: vi.fn().mockResolvedValue(true),
-  };
-  const pathProber: PathProber = {
-    exists: pathProberSpy.exists,
-  };
-
-  const environmentSpy = {
-    getHomeDir: vi.fn().mockReturnValue('/Users/test'),
-  };
-  const environmentPort: EnvironmentPort = {
-    getHomeDir: environmentSpy.getHomeDir,
   };
 
   const customizationRepo = new InMemoryCustomizationRepository();
@@ -169,20 +131,14 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
-    workspaceBootstrap: new WorkspaceBootstrapService(mutator),
     customizationService,
     templateService,
     adapterManager,
     searchService: searchService as unknown as SearchService,
     dialogPort,
-    pathProber,
-    environmentPort,
     settingsRepoSpy,
     repoReaderSpy,
-    fsMutatorSpy,
     dialogSpy,
-    pathProberSpy,
-    environmentSpy,
     customizationRepo,
     clock,
     templateRepoSpy,
@@ -204,7 +160,7 @@ describe('buildHandlers', () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const next = baseSettings({ workspacePath: '/new' });
+    const next = baseSettings({ ui: { theme: 'dark' } });
     const result = await handlers['settings.save']?.(next);
 
     expect(result).toBeUndefined();
@@ -334,42 +290,6 @@ describe('buildHandlers', () => {
       { id: 'a', name: 'a', path: '/a', branch: 'main' },
       { id: 'b', name: 'b', path: '/b', branch: 'dev' },
     ]);
-  });
-
-  it('workspace.bootstrap delegates to WorkspaceBootstrapService.create', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    const result = await handlers['workspace.bootstrap']?.({
-      workspacePath: '/ws',
-    });
-
-    expect(result).toBeUndefined();
-    expect(deps.fsMutatorSpy.mkdirRecursive).toHaveBeenCalled();
-    const firstCall = deps.fsMutatorSpy.mkdirRecursive.mock.calls[0]?.[0] as string;
-    expect(firstCall.startsWith('/ws/')).toBe(true);
-  });
-
-  it('workspace.exists delegates to PathProber.exists', async () => {
-    const deps = buildDeps();
-    deps.pathProberSpy.exists.mockResolvedValueOnce(false);
-    const handlers = buildHandlers(deps);
-
-    const result = await handlers['workspace.exists']?.({ path: '/missing' });
-
-    expect(result).toBe(false);
-    expect(deps.pathProberSpy.exists).toHaveBeenCalledWith('/missing');
-  });
-
-  it('app.getHomeDir delegates to EnvironmentPort.getHomeDir', async () => {
-    const deps = buildDeps();
-    deps.environmentSpy.getHomeDir.mockReturnValueOnce('/Users/odenir');
-    const handlers = buildHandlers(deps);
-
-    const result = await handlers['app.getHomeDir']?.({});
-
-    expect(result).toBe('/Users/odenir');
-    expect(deps.environmentSpy.getHomeDir).toHaveBeenCalledTimes(1);
   });
 
   it('dialog.selectFolder delegates to DialogPort.selectFolder', async () => {

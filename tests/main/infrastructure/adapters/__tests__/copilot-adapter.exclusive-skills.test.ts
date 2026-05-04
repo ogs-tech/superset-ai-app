@@ -14,7 +14,6 @@ const makeGen = (): CopilotInstructionsGenPort => ({
 });
 
 const makeSettings = (overrides: { exclusiveSkillsWithClaude?: boolean; claudeEnabled?: boolean }): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: overrides.claudeEnabled ?? true },
     copilot: { enabled: true, exclusiveSkillsWithClaude: overrides.exclusiveSkillsWithClaude ?? false },

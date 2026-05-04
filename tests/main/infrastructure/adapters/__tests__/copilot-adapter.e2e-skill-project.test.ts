@@ -36,7 +36,6 @@ const repos: LinkedRepo[] = [
 ];
 
 const buildSettings = (): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: false },
     copilot: { enabled: true, exclusiveSkillsWithClaude: false },
@@ -60,6 +59,7 @@ const setup = async () => {
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([[copilotAdapter.adapterId, copilotAdapter]]),
   });
   await customizationRepo.save({ customization: skillProject });

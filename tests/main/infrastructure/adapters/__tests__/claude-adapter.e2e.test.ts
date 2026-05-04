@@ -43,7 +43,6 @@ const agentProject: Customization = {
 };
 
 const buildSettings = (linkedRepos: LinkedRepo[] = []): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
     copilot: { enabled: false, exclusiveSkillsWithClaude: false },
@@ -59,12 +58,13 @@ const setup = async (settings: Settings) => {
   const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
-  const symlinkManager = new SymlinkManager(fs, clock, settings.workspacePath);
+  const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
