@@ -69,7 +69,8 @@ describe('<Settings> — linked repos section', () => {
     await user.click(await screen.findByRole('button', { name: /add repo/i }));
 
     await screen.findByRole('dialog');
-    await user.click(screen.getByRole('button', { name: /cancelar/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
     expect(
       call.mock.calls.find((c) => c[0] === 'repo.link'),
@@ -77,7 +78,7 @@ describe('<Settings> — linked repos section', () => {
 
     await user.click(screen.getByRole('button', { name: /add repo/i }));
     await screen.findByRole('dialog');
-    await user.click(screen.getByRole('button', { name: /confirmar/i }));
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() =>
       expect(
@@ -114,7 +115,7 @@ describe('<Settings> — linked repos section', () => {
     for (let i = 0; i < 2; i += 1) {
       await user.click(await screen.findByRole('button', { name: /add repo/i }));
       await screen.findByRole('dialog');
-      await user.click(screen.getByRole('button', { name: /confirmar/i }));
+      await user.click(screen.getByRole('button', { name: /confirm/i }));
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     }
 

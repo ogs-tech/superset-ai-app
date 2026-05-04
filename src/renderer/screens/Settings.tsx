@@ -1,4 +1,30 @@
 import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControlLabel,
+  FormGroup,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
+import AddIcon from '@mui/icons-material/Add';
 import { callIpc } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
@@ -46,11 +72,9 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
   const handleExclusiveSkillsToggle = async (value: boolean): Promise<void> => {
     if (value) {
-      // Remove copilot destinations first (while resolveDestinations still returns them), then save flag
       await callIpc('adapter.removeAll', { adapterId: 'copilot' });
       await callIpc('settings.merge', { adapters: { copilot: { exclusiveSkillsWithClaude: true } } });
     } else {
-      // Save flag first so resolveDestinations resolves destinations again, then recreate
       await callIpc('settings.merge', { adapters: { copilot: { exclusiveSkillsWithClaude: false } } });
       await callIpc('adapter.syncAll', { adapterId: 'copilot' });
     }
@@ -89,7 +113,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     const current = await callIpc<SettingsModel | null>('settings.get', {});
     if (current !== null) setSettings(current);
     if (removeSymlinks) {
-      setDisableToast(`${result.removed} removidos, ${result.skipped} ignorados`);
+      setDisableToast(`${result.removed} removed, ${result.skipped} skipped`);
       setTimeout(() => setDisableToast(null), 4000);
     }
   };
@@ -139,94 +163,198 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   };
 
   if (settings === null) {
-    return <main data-testid="settings-loading">Carregando…</main>;
+    return (
+      <Box
+        component="main"
+        data-testid="settings-loading"
+        sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.secondary' }}
+      >
+        <CircularProgress size={18} />
+        <Typography>Loading…</Typography>
+      </Box>
+    );
   }
 
   return (
-    <main
-      data-testid="settings-screen"
-      style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}
-    >
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Settings</h1>
+    <Container component="main" data-testid="settings-screen" maxWidth="md" sx={{ py: 4 }}>
+      <Stack
+        direction="row"
+        sx={{ mb: 4, justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <Typography variant="h4" component="h1">
+          Settings
+        </Typography>
         {onBack && (
-          <button type="button" onClick={onBack}>
-            Voltar
-          </button>
+          <Button
+            variant="text"
+            startIcon={<ArrowBackIcon />}
+            onClick={onBack}
+          >
+            Back
+          </Button>
         )}
-      </header>
+      </Stack>
 
-      <section>
-        <h2>Adapters</h2>
-        {(['claude', 'copilot'] as const).map((key) => (
-          <div key={key} style={{ marginBottom: '0.5rem' }}>
-            <input
-              id={`adapter-${key}`}
-              type="checkbox"
-              checked={settings.adapters[key].enabled}
-              onChange={(e) =>
-                void handleAdapterToggle(key, e.target.checked)
+      <Paper
+        component="section"
+        variant="outlined"
+        sx={{ p: 3, mb: 3 }}
+      >
+        <Typography variant="h6" component="h2" gutterBottom>
+          Adapters
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Enable assistants to keep your customizations in sync.
+        </Typography>
+        <FormGroup>
+          {(['claude', 'copilot'] as const).map((key) => (
+            <FormControlLabel
+              key={key}
+              control={
+                <Checkbox
+                  id={`adapter-${key}`}
+                  checked={settings.adapters[key].enabled}
+                  onChange={(e) => void handleAdapterToggle(key, e.target.checked)}
+                />
               }
+              label={labelFor(key)}
             />
-            <label htmlFor={`adapter-${key}`}>{labelFor(key)}</label>
-          </div>
-        ))}
-        {settings.adapters.copilot.enabled && (
-          <div style={{ marginTop: '0.5rem' }}>
-            <input
-              id="copilot-exclusive-skills"
-              type="checkbox"
-              checked={settings.adapters.copilot.exclusiveSkillsWithClaude}
-              onChange={(e) => void handleExclusiveSkillsToggle(e.target.checked)}
-            />
-            <label htmlFor="copilot-exclusive-skills" title="Avoids duplicates in VS Code Copilot when Claude is also enabled">
-              Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)
-            </label>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2>Linked repos</h2>
-        {repoError !== null ? <p role="alert">{repoError}</p> : null}
-        <button type="button" onClick={() => void handleAddRepo()}>
-          Add repo
-        </button>
-        <ul>
-          {repos.map((repo) => (
-            <li key={repo.id} data-testid="linked-repo-item">
-              <span>
-                <strong>{repo.name}</strong> — <code>{repo.path}</code>
-                {repo.branch !== null ? ` (${repo.branch})` : ' (no branch)'}
-              </span>
-              <button type="button" onClick={() => void handleUnlink(repo.id)}>
-                Unlink
-              </button>
-            </li>
           ))}
-        </ul>
-      </section>
+          {settings.adapters.copilot.enabled && (
+            <Tooltip title="Avoids duplicates in VS Code Copilot when Claude is also enabled">
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    id="copilot-exclusive-skills"
+                    checked={settings.adapters.copilot.exclusiveSkillsWithClaude}
+                    onChange={(e) => void handleExclusiveSkillsToggle(e.target.checked)}
+                  />
+                }
+                label="Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)"
+              />
+            </Tooltip>
+          )}
+        </FormGroup>
+      </Paper>
 
-      {pending !== null ? (
-        <div role="dialog" aria-labelledby="link-confirm-title">
-          <h2 id="link-confirm-title">Confirmar link de repositório</h2>
-          <p>
-            Ao linkar <code>{pending.path}</code>, o app poderá criar
-            <strong> symlinks </strong> em <code>.claude/</code> e
-            <code> .github/</code> dentro do repositório, e essas mudanças
-            podem ser <strong>commit</strong>adas se você não as ignorar via
-            <code> .gitignore</code>.
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" onClick={() => void handleConfirmLink()}>
-              Confirmar
-            </button>
-            <button type="button" onClick={handleCancelLink}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <Paper
+        component="section"
+        variant="outlined"
+        sx={{ p: 3, mb: 3 }}
+      >
+        <Stack
+          direction="row"
+          sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}
+        >
+          <Typography variant="h6" component="h2">
+            Linked repos
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => void handleAddRepo()}
+          >
+            Add repo
+          </Button>
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Repositories where project-scoped customizations will be synced.
+        </Typography>
+        {repoError !== null ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {repoError}
+          </Alert>
+        ) : null}
+        {repos.length === 0 ? (
+          <Box
+            sx={{
+              border: 1,
+              borderStyle: 'dashed',
+              borderColor: 'divider',
+              borderRadius: 1,
+              p: 3,
+              textAlign: 'center',
+              color: 'text.secondary',
+            }}
+          >
+            <Typography variant="body2">No repositories linked yet.</Typography>
+          </Box>
+        ) : (
+          <List dense disablePadding>
+            {repos.map((repo) => (
+              <ListItem
+                key={repo.id}
+                data-testid="linked-repo-item"
+                divider
+                secondaryAction={
+                  <Tooltip title="Unlink">
+                    <IconButton
+                      edge="end"
+                      onClick={() => void handleUnlink(repo.id)}
+                      aria-label="Unlink"
+                    >
+                      <LinkOffIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                }
+              >
+                <ListItemText
+                  primary={<Box component="strong">{repo.name}</Box>}
+                  secondary={
+                    <>
+                      <Box
+                        component="code"
+                        sx={{ fontFamily: 'monospace', color: 'text.secondary' }}
+                      >
+                        {repo.path}
+                      </Box>
+                      {repo.branch !== null ? ` (${repo.branch})` : ' (no branch)'}
+                    </>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Paper>
+
+      <Dialog
+        open={pending !== null}
+        onClose={handleCancelLink}
+        aria-labelledby="link-confirm-title"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="link-confirm-title">Confirm repo link</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Linking{' '}
+            <Box component="code" sx={{ fontFamily: 'monospace' }}>
+              {pending?.path}
+            </Box>{' '}
+            allows the app to create <strong>symlinks</strong> in{' '}
+            <Box component="code" sx={{ fontFamily: 'monospace' }}>
+              .claude/
+            </Box>{' '}
+            and{' '}
+            <Box component="code" sx={{ fontFamily: 'monospace' }}>
+              .github/
+            </Box>{' '}
+            inside the repository. These changes may be{' '}
+            <strong>committed</strong> unless you ignore them via{' '}
+            <Box component="code" sx={{ fontFamily: 'monospace' }}>
+              .gitignore
+            </Box>
+            .
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelLink}>Cancel</Button>
+          <Button variant="contained" onClick={() => void handleConfirmLink()}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {disableModal !== null && (
         <ConfirmDisableModal
@@ -238,9 +366,16 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         />
       )}
       {disableToast !== null && (
-        <p data-testid="disable-toast" role="status">{disableToast}</p>
+        <Alert
+          data-testid="disable-toast"
+          role="status"
+          severity="success"
+          sx={{ mt: 2 }}
+        >
+          {disableToast}
+        </Alert>
       )}
       <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />
-    </main>
+    </Container>
   );
 }

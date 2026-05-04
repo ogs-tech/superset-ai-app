@@ -76,12 +76,12 @@ describe('<SyncReportModal>', () => {
     expect(item).not.toHaveTextContent(/_backups\//);
   });
 
-  it('invokes onClose when Fechar is clicked', async () => {
+  it('invokes onClose when Close is clicked', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<SyncReportModal report={[conflictResult]} onClose={onClose} />);
 
-    await user.click(screen.getByRole('button', { name: /fechar/i }));
+    await user.click(screen.getByRole('button', { name: /close/i }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

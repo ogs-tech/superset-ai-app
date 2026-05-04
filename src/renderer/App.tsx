@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 import { callIpc } from './lib/ipc.js';
 import { IoError } from './screens/IoError.js';
 import { Main } from './screens/Main.js';
@@ -32,7 +33,23 @@ export function App(): React.ReactElement {
   }, [bootstrap]);
 
   if (view.kind === 'loading') {
-    return <main data-testid="loading-screen">Carregando…</main>;
+    return (
+      <Box
+        component="main"
+        data-testid="loading-screen"
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+          color: 'text.secondary',
+        }}
+      >
+        <CircularProgress size={20} />
+        Loading…
+      </Box>
+    );
   }
 
   if (view.kind === 'io-error') {

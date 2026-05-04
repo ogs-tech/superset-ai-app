@@ -53,7 +53,7 @@ describe('<CustomizationEditor>', () => {
     expect(preview.querySelector('strong')?.textContent).toBe('markdown');
   });
 
-  it('clicking Salvar dispatches customization.save and shows success toast on ok envelope', async () => {
+  it('clicking Save dispatches customization.save and shows success toast on ok envelope', async () => {
     const user = userEvent.setup();
     const onSaved = vi.fn();
     const initial = baseCustomization();
@@ -70,7 +70,7 @@ describe('<CustomizationEditor>', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /salvar/i }));
+    await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
@@ -117,7 +117,7 @@ describe('<CustomizationEditor>', () => {
     );
 
     await user.click(screen.getByRole('checkbox', { name: /project/i }));
-    await user.click(screen.getByRole('button', { name: /salvar/i }));
+    await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe('<CustomizationEditor>', () => {
       body: '# Template body\n',
     };
 
-    it('shows "Aplicar template" for non-template customizations and lists templates by current type', async () => {
+    it('shows "Apply template" for non-template customizations and lists templates by current type', async () => {
       const user = userEvent.setup();
       call.mockImplementation((method: string) => {
         if (method === 'template.list') return Promise.resolve(ok([skillTemplate]));
@@ -180,7 +180,7 @@ describe('<CustomizationEditor>', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(screen.getByRole('button', { name: /apply template/i }));
 
       await waitFor(() =>
         expect(call).toHaveBeenCalledWith('template.list', { targetType: 'skill' }),
@@ -204,10 +204,13 @@ describe('<CustomizationEditor>', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(screen.getByRole('button', { name: /apply template/i }));
       await user.click(await screen.findByRole('button', { name: /default-skill/i }));
       await user.click(
-        await screen.findByRole('button', { name: /substituir body/i }),
+        await screen.findByRole('button', { name: /replace body/i }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByTestId('confirm-apply-template-dialog')).not.toBeInTheDocument(),
       );
 
       expect(screen.getByTestId('body-textarea')).toHaveValue('# Template body\n');
@@ -235,10 +238,10 @@ describe('<CustomizationEditor>', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(screen.getByRole('button', { name: /apply template/i }));
       await user.click(await screen.findByRole('button', { name: /default-skill/i }));
       await user.click(
-        await screen.findByRole('button', { name: /manter body atual/i }),
+        await screen.findByRole('button', { name: /keep current body/i }),
       );
 
       expect(screen.getByTestId('body-textarea')).toHaveValue(baseCustomization().body);
@@ -263,11 +266,11 @@ describe('<CustomizationEditor>', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(screen.getByRole('button', { name: /apply template/i }));
       await user.click(await screen.findByRole('button', { name: /default-skill/i }));
 
       expect(
-        screen.queryByRole('button', { name: /substituir body/i }),
+        screen.queryByRole('button', { name: /replace body/i }),
       ).not.toBeInTheDocument();
       expect(screen.getByTestId('body-textarea')).toHaveValue('# Template body\n');
     });
@@ -286,7 +289,7 @@ describe('<CustomizationEditor>', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /salvar/i }));
+    await user.click(screen.getByRole('button', { name: /save/i }));
 
     const toast = await screen.findByTestId('toast');
     expect(toast).toHaveAttribute('data-variant', 'error');

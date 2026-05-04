@@ -1,3 +1,13 @@
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Stack,
+} from '@mui/material';
+
 interface ConfirmDisableModalProps {
   adapterName: string;
   count: number;
@@ -14,34 +24,45 @@ export function ConfirmDisableModal({
   onCancel,
 }: ConfirmDisableModalProps): React.ReactElement {
   return (
-    <div role="dialog" aria-labelledby="confirm-disable-title" data-testid="confirm-disable-modal">
-      <h2 id="confirm-disable-title">Desligar {adapterName}</h2>
-      <p>
-        Existem <strong>{count}</strong> symlinks gerenciados por este adapter.
-      </p>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          data-testid="confirm-remove-btn"
-          onClick={onConfirmRemove}
-        >
-          Sim, remover {count} symlinks
-        </button>
-        <button
-          type="button"
-          data-testid="confirm-no-remove-btn"
-          onClick={onConfirmNoRemove}
-        >
-          Não, só desligar
-        </button>
-        <button
-          type="button"
-          data-testid="confirm-cancel-btn"
-          onClick={onCancel}
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
+    <Dialog
+      open
+      onClose={onCancel}
+      aria-labelledby="confirm-disable-title"
+      data-testid="confirm-disable-modal"
+      maxWidth="xs"
+      fullWidth
+    >
+      <DialogTitle id="confirm-disable-title">Disable {adapterName}</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          There are <strong>{count}</strong> symlinks managed by this adapter.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+          <Button
+            data-testid="confirm-cancel-btn"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          <Button
+            data-testid="confirm-no-remove-btn"
+            onClick={onConfirmNoRemove}
+            variant="outlined"
+          >
+            No, just disable
+          </Button>
+          <Button
+            data-testid="confirm-remove-btn"
+            onClick={onConfirmRemove}
+            variant="contained"
+            color="error"
+          >
+            Yes, remove {count} symlinks
+          </Button>
+        </Stack>
+      </DialogActions>
+    </Dialog>
   );
 }
