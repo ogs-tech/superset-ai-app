@@ -147,7 +147,7 @@ describe('PluginId', () => {
     });
 
     it('should include raw value in details when provided', () => {
-      const err = new PluginIdInvalidError('test message', 'invalid-id');
+      const err = new PluginIdInvalidError('test message', { raw: 'invalid-id' });
       expect(err.details?.raw).toBe('invalid-id');
     });
 

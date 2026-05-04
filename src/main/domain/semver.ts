@@ -1,20 +1,10 @@
 import type { Result } from './plugin-id.js';
+import { SemVerInvalidError } from './plugin-errors.js';
 
 export type { Result };
+export { SemVerInvalidError };
 
 export type SemVer = string & { readonly __brand: 'SemVer' };
-
-export class SemVerInvalidError extends Error {
-  override readonly name = 'SemVerInvalidError';
-  readonly details?: { raw: string };
-
-  constructor(message: string, raw?: string) {
-    super(message);
-    if (raw !== undefined) {
-      this.details = { raw };
-    }
-  }
-}
 
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
 
@@ -26,14 +16,14 @@ export function semVer(raw: string): SemVer {
   if (typeof raw !== 'string' || !SEMVER_PATTERN.test(raw)) {
     throw new SemVerInvalidError(
       `Invalid semantic version: '${raw}' (expected format: major.minor.patch[-prerelease])`,
-      raw,
+      { raw },
     );
   }
   // Check for empty pre-release (e.g., '1.2.3-')
   if (raw.endsWith('-')) {
     throw new SemVerInvalidError(
       `Invalid semantic version: '${raw}' (pre-release cannot be empty)`,
-      raw,
+      { raw },
     );
   }
   return raw as SemVer;

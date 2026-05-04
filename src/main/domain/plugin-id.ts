@@ -1,32 +1,11 @@
-/**
- * Result type for operations that may fail
- */
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
-/**
- * Branded type for plugin IDs
- * - Must start with lowercase letter
- * - Can contain 0-63 additional lowercase letters, digits, or hyphens
- * - Total length: 1-64 characters
- */
 export type PluginId = string & { __brand: 'PluginId' };
 
+import { PluginIdInvalidError } from './plugin-errors.js';
+export { PluginIdInvalidError };
+
 const PLUGIN_ID_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
-
-/**
- * Error thrown when PluginId validation fails
- */
-export class PluginIdInvalidError extends Error {
-  override readonly name = 'PluginIdInvalidError';
-  readonly details?: { raw: string };
-
-  constructor(message: string, raw?: string) {
-    super(message);
-    if (raw !== undefined) {
-      this.details = { raw };
-    }
-  }
-}
 
 /**
  * Create a PluginId from a string
@@ -50,7 +29,7 @@ export function tryPluginId(raw: string): Result<PluginId, PluginIdInvalidError>
       ok: false,
       error: new PluginIdInvalidError(
         `Invalid plugin ID: expected string, got ${typeof raw}`,
-        raw,
+        { raw: String(raw) },
       ),
     };
   }
@@ -70,7 +49,7 @@ export function tryPluginId(raw: string): Result<PluginId, PluginIdInvalidError>
     const message = `Invalid plugin ID: '${raw}' (${reason})`;
     return {
       ok: false,
-      error: new PluginIdInvalidError(message, raw),
+      error: new PluginIdInvalidError(message, { raw }),
     };
   }
 
