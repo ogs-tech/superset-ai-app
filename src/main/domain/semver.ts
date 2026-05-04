@@ -1,19 +1,18 @@
-type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
+import type { Result } from './plugin-id.js';
 
-/**
- * Branded string type for semantic versions.
- * Enforces format: major.minor.patch[-prerelease]
- * Examples: '1.2.3', '1.0.0-rc.1', '2.0.0-beta.1'
- */
+export type { Result };
+
 export type SemVer = string & { readonly __brand: 'SemVer' };
 
 export class SemVerInvalidError extends Error {
+  override readonly name = 'SemVerInvalidError';
   readonly details?: { raw: string };
 
-  constructor(message: string, raw: string) {
+  constructor(message: string, raw?: string) {
     super(message);
-    this.name = 'SemVerInvalidError';
-    this.details = { raw };
+    if (raw !== undefined) {
+      this.details = { raw };
+    }
   }
 }
 
