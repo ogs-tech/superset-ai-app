@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { CustomizationService } from '../../../../src/main/application/services/customization-service.js';
+import type { WorkspaceRoot } from '../../../../src/main/application/services/customization-service.js';
 import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { DomainError } from '../../../../src/main/domain/errors.js';
@@ -371,5 +373,107 @@ describe('CustomizationService.save — DomainError instance', () => {
     });
 
     await expect(service.save({ customization: broken })).rejects.toBeInstanceOf(DomainError);
+  });
+});
+
+describe('WorkspaceRoot type', () => {
+  it('is exported and accepts { kind: "customizations" }', () => {
+    const root: WorkspaceRoot = { kind: 'customizations' };
+    expect(root.kind).toBe('customizations');
+  });
+
+  it('is exported and accepts { kind: "plugin", pluginId: string }', () => {
+    const root: WorkspaceRoot = { kind: 'plugin', pluginId: 'my-plugin' };
+    expect(root.kind).toBe('plugin');
+    if (root.kind === 'plugin') {
+      expect(root.pluginId).toBe('my-plugin');
+    }
+  });
+});
+
+describe('CustomizationService.resolveRoot — path resolution', () => {
+  const WORKSPACE = '/test/workspace';
+
+  const setupWithWorkspace = () => {
+    const repo = new InMemoryCustomizationRepository();
+    const clock = new FixedClock(FROZEN);
+    const adapterManager = {
+      syncOne: vi.fn().mockResolvedValue([]),
+      syncAll: vi.fn().mockResolvedValue([]),
+      removeOne: vi.fn().mockResolvedValue([]),
+    } as unknown as AdapterManager;
+    const service = new CustomizationService(repo, clock, adapterManager, undefined, WORKSPACE);
+    return { service };
+  };
+
+  it('resolves customizations root to <workspace>/customizations', () => {
+    const { service } = setupWithWorkspace();
+    const result = (service as any).resolveRoot({ kind: 'customizations' });
+    expect(result).toBe(join(WORKSPACE, 'customizations'));
+  });
+
+  it('resolves plugin root to <workspace>/plugins/<id>', () => {
+    const { service } = setupWithWorkspace();
+    const result = (service as any).resolveRoot({ kind: 'plugin', pluginId: 'my-plugin' });
+    expect(result).toBe(join(WORKSPACE, 'plugins', 'my-plugin'));
+  });
+
+  it('defaults to customizations when no root is provided', () => {
+    const { service } = setupWithWorkspace();
+    const result = (service as any).resolveRoot();
+    expect(result).toBe(join(WORKSPACE, 'customizations'));
+  });
+
+  it('throws when workspacePath is not set', () => {
+    const { service } = setup();
+    expect(() => (service as any).resolveRoot()).toThrow('workspacePath is required');
+  });
+});
+
+describe('CustomizationService — root parameter accepted on public methods', () => {
+  it('list accepts optional root parameter without error', async () => {
+    const { service } = setup();
+    await service.save({ customization: makeCustomization() });
+
+    const resultDefault = await service.list({});
+    const resultWithRoot = await service.list({}, { kind: 'customizations' });
+    const resultWithPlugin = await service.list({}, { kind: 'plugin', pluginId: 'my-plugin' });
+
+    expect(resultDefault).toHaveLength(1);
+    expect(resultWithRoot).toHaveLength(1);
+    // plugin root uses the same in-memory repo in tests, so same data
+    expect(resultWithPlugin).toHaveLength(1);
+  });
+
+  it('get accepts optional root in query without error', async () => {
+    const { service } = setup();
+    await service.save({ customization: makeCustomization() });
+
+    const result = await service.get({ id: 'skill/foo', root: { kind: 'customizations' } });
+    expect(result.id).toBe('skill/foo');
+  });
+
+  it('save accepts optional root in command without error', async () => {
+    const { service } = setup();
+
+    const result = await service.save({
+      customization: makeCustomization(),
+      root: { kind: 'plugin', pluginId: 'my-plugin' },
+    });
+
+    expect(result.customization.id).toBe('skill/foo');
+  });
+
+  it('delete accepts optional root in command without error', async () => {
+    const { service } = setup();
+    await service.save({ customization: makeCustomization() });
+
+    const result = await service.delete({
+      id: 'skill/foo',
+      removeSymlinks: false,
+      root: { kind: 'plugin', pluginId: 'my-plugin' },
+    });
+
+    expect(result.ok).toBe(true);
   });
 });
