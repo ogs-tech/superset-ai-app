@@ -1,4 +1,17 @@
 import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItemButton,
+  ListItemText,
+  Typography,
+} from '@mui/material';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { Template, TemplateTargetType } from '../../../shared/template.js';
 
@@ -29,36 +42,49 @@ export function NewFromTemplateDialog({
   }, [targetType]);
 
   return (
-    <div
-      role="dialog"
-      aria-label="Selecionar template"
+    <Dialog
+      open
+      onClose={onCancel}
+      aria-label="Select template"
       data-testid="template-dialog"
-      style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        background: 'white',
-        border: '1px solid #ccc',
-        padding: '1.5rem',
-        minWidth: 360,
-      }}
+      maxWidth="sm"
+      fullWidth
     >
-      <h2>Escolher template ({targetType})</h2>
-      {error && <p role="alert">{error}</p>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {templates.map((tpl) => (
-          <li key={tpl.id} style={{ padding: '0.5rem 0' }}>
-            <button type="button" onClick={() => onSelect(tpl)}>
-              <strong>{tpl.frontmatter.name}</strong> — {tpl.frontmatter.description}
-            </button>
-          </li>
-        ))}
-        {templates.length === 0 && !error && <li>Nenhum template encontrado.</li>}
-      </ul>
-      <button type="button" onClick={onCancel}>
-        Cancelar
-      </button>
-    </div>
+      <DialogTitle>
+        Pick template{' '}
+        <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}>
+          ({targetType})
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        {error && (
+          <Alert severity="error" role="alert" sx={{ mb: 1.5 }}>
+            {error}
+          </Alert>
+        )}
+        {templates.length === 0 && !error && (
+          <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+            No templates found.
+          </Typography>
+        )}
+        <List disablePadding>
+          {templates.map((tpl) => (
+            <ListItemButton
+              key={tpl.id}
+              onClick={() => onSelect(tpl)}
+              aria-label={tpl.frontmatter.name}
+            >
+              <ListItemText
+                primary={<Box component="strong">{tpl.frontmatter.name}</Box>}
+                secondary={tpl.frontmatter.description}
+              />
+            </ListItemButton>
+          ))}
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
   );
 }

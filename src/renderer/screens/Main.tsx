@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { AppBar, Box, IconButton, Toolbar, Tooltip } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { CustomizationList } from './customizations/CustomizationList.js';
 import { TopbarSearch } from '../components/TopbarSearch.js';
 import type { SearchOutput } from '../../shared/search.js';
@@ -11,24 +13,33 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
   const [searchResults, setSearchResults] = useState<SearchOutput | undefined>(undefined);
 
   return (
-    <div data-testid="main-screen">
-      <header
+    <Box data-testid="main-screen" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppBar
         data-testid="topbar"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem',
-          padding: '0.5rem 1.5rem',
-          borderBottom: '1px solid #ddd',
+        position="sticky"
+        color="default"
+        elevation={0}
+        sx={{
+          backgroundColor: 'background.paper',
+          borderBottom: 1,
+          borderColor: 'divider',
         }}
       >
-        <TopbarSearch onResults={setSearchResults} />
-        <button type="button" onClick={onOpenSettings}>
-          Abrir Settings
-        </button>
-      </header>
+        <Toolbar sx={{ gap: 2 }}>
+          <TopbarSearch onResults={setSearchResults} />
+          <Box sx={{ flexGrow: 1 }} />
+          <Tooltip title="Open settings">
+            <IconButton
+              onClick={onOpenSettings}
+              aria-label="Open settings"
+              data-testid="open-settings-button"
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </AppBar>
       <CustomizationList searchResults={searchResults} />
-    </div>
+    </Box>
   );
 }

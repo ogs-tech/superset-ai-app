@@ -71,11 +71,11 @@ describe('<CustomizationList>', () => {
 
     await waitFor(() => expect(screen.getByText('foo')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: /deletar/i }));
+    await user.click(screen.getByRole('button', { name: /delete/i }));
 
     expect(screen.getByTestId('confirm-delete-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /confirmar/i }));
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith('customization.delete', {
@@ -95,35 +95,35 @@ describe('<CustomizationList>', () => {
 
     await waitFor(() => expect(screen.getByText('foo')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: /deletar/i }));
-    await user.click(screen.getByRole('button', { name: /cancelar/i }));
+    await user.click(screen.getByRole('button', { name: /delete/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
 
     expect(call.mock.calls.find((c) => c[0] === 'customization.delete')).toBeUndefined();
   });
 
   describe('duplicate', () => {
-    it('renders a "Duplicar" button on each customization row', async () => {
+    it('renders a "Duplicate" button on each customization row', async () => {
       setupHappy([buildCustomization('skill', 'foo')]);
       render(<CustomizationList />);
 
       const row = await screen.findByTestId('customization-item-skill/foo');
-      expect(within(row).getByRole('button', { name: /duplicar/i })).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /duplicate/i })).toBeInTheDocument();
     });
 
-    it('clicking Duplicar opens editor in create mode with name suffixed "-copy"', async () => {
+    it('clicking Duplicate opens editor in create mode with name suffixed "-copy"', async () => {
       const user = userEvent.setup();
       setupHappy([buildCustomization('skill', 'foo')]);
       render(<CustomizationList />);
 
       const row = await screen.findByTestId('customization-item-skill/foo');
-      await user.click(within(row).getByRole('button', { name: /duplicar/i }));
+      await user.click(within(row).getByRole('button', { name: /duplicate/i }));
 
       const editor = await screen.findByTestId('customization-editor');
-      expect(within(editor).getByRole('heading', { name: /novo customization/i })).toBeInTheDocument();
+      expect(within(editor).getByRole('heading', { name: /new customization/i })).toBeInTheDocument();
       expect(screen.getByDisplayValue('foo-copy')).toBeInTheDocument();
     });
 
-    it('clicking Duplicar copies body, description, scopes, version, tags', async () => {
+    it('clicking Duplicate copies body, description, scopes, version, tags', async () => {
       const user = userEvent.setup();
       const source: Customization = {
         id: 'skill/foo',
@@ -143,7 +143,7 @@ describe('<CustomizationList>', () => {
       render(<CustomizationList />);
 
       const row = await screen.findByTestId('customization-item-skill/foo');
-      await user.click(within(row).getByRole('button', { name: /duplicar/i }));
+      await user.click(within(row).getByRole('button', { name: /duplicate/i }));
 
       expect(await screen.findByDisplayValue('my desc')).toBeInTheDocument();
       expect(screen.getByDisplayValue('1.2.3')).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('<CustomizationList>', () => {
       render(<CustomizationList />);
 
       const row = await screen.findByTestId('customization-item-skill/foo');
-      await user.click(within(row).getByRole('button', { name: /duplicar/i }));
+      await user.click(within(row).getByRole('button', { name: /duplicate/i }));
 
       expect(await screen.findByDisplayValue('foo-copy-3')).toBeInTheDocument();
     });
@@ -203,10 +203,10 @@ describe('<CustomizationList>', () => {
 
       const slot = await screen.findByTestId('global-instruction-slot');
       expect(within(slot).getByText(/global instructions/i)).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /novo a partir de template/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /new from template/i })).not.toBeInTheDocument();
     });
 
-    it('marks slot as "(não configurado)" when no customization exists and "(configurado)" when it does', async () => {
+    it('marks slot as "(not configured)" when no customization exists and "(configured)" when it does', async () => {
       const user = userEvent.setup();
       setupGlobalInstruction();
       render(<CustomizationList />);
@@ -215,7 +215,7 @@ describe('<CustomizationList>', () => {
 
       await waitFor(() => {
         const slot = screen.getByTestId('global-instruction-slot');
-        expect(within(slot).getByText(/não configurado/i)).toBeInTheDocument();
+        expect(within(slot).getByText(/not configured/i)).toBeInTheDocument();
       });
 
       call.mockClear();
@@ -234,11 +234,11 @@ describe('<CustomizationList>', () => {
 
       await waitFor(() => {
         const slot = screen.getByTestId('global-instruction-slot');
-        expect(within(slot).getByText(/^\(configurado\)$/i)).toBeInTheDocument();
+        expect(within(slot).getByText(/^\(configured\)$/i)).toBeInTheDocument();
       });
     });
 
-    it('clicking Editar with no existing record fetches template and opens editor in create mode', async () => {
+    it('clicking Edit with no existing record fetches template and opens editor in create mode', async () => {
       const user = userEvent.setup();
       setupGlobalInstruction();
       render(<CustomizationList />);
@@ -246,17 +246,17 @@ describe('<CustomizationList>', () => {
       await user.click(await screen.findByRole('tab', { name: /global instructions/i }));
 
       const slot = await screen.findByTestId('global-instruction-slot');
-      await user.click(within(slot).getByRole('button', { name: /editar/i }));
+      await user.click(within(slot).getByRole('button', { name: /edit/i }));
 
       await waitFor(() =>
         expect(call).toHaveBeenCalledWith('template.list', { targetType: 'global-instruction' }),
       );
 
       const editor = await screen.findByTestId('customization-editor');
-      expect(within(editor).getByRole('heading', { name: /novo customization/i })).toBeInTheDocument();
+      expect(within(editor).getByRole('heading', { name: /new customization/i })).toBeInTheDocument();
     });
 
-    it('clicking Editar with an existing record opens editor in edit mode without fetching templates', async () => {
+    it('clicking Edit with an existing record opens editor in edit mode without fetching templates', async () => {
       const user = userEvent.setup();
       const existing: Customization = {
         ...buildCustomization('global-instruction', 'default'),
@@ -271,10 +271,10 @@ describe('<CustomizationList>', () => {
       await user.click(await screen.findByRole('tab', { name: /global instructions/i }));
 
       const slot = await screen.findByTestId('global-instruction-slot');
-      await user.click(within(slot).getByRole('button', { name: /editar/i }));
+      await user.click(within(slot).getByRole('button', { name: /edit/i }));
 
       const editor = await screen.findByTestId('customization-editor');
-      expect(within(editor).getByRole('heading', { name: /editar default/i })).toBeInTheDocument();
+      expect(within(editor).getByRole('heading', { name: /edit default/i })).toBeInTheDocument();
       expect(call.mock.calls.find((c) => c[0] === 'template.list')).toBeUndefined();
     });
   });
@@ -327,14 +327,14 @@ describe('<CustomizationList>', () => {
       const skillRow = within(list).getByTestId('template-item-template/new-skill');
       expect(within(skillRow).getByText('new-skill')).toBeInTheDocument();
       expect(within(skillRow).getByText('(skill)')).toBeInTheDocument();
-      expect(within(skillRow).getByRole('button', { name: /editar/i })).toBeInTheDocument();
-      expect(within(skillRow).getByRole('button', { name: /deletar/i })).toBeInTheDocument();
+      expect(within(skillRow).getByRole('button', { name: /edit/i })).toBeInTheDocument();
+      expect(within(skillRow).getByRole('button', { name: /delete/i })).toBeInTheDocument();
 
       const agentRow = within(list).getByTestId('template-item-template/new-agent');
       expect(within(agentRow).getByText('(agent)')).toBeInTheDocument();
     });
 
-    it('clicking "Novo template" opens TemplateEditor in create mode', async () => {
+    it('clicking "New template" opens TemplateEditor in create mode', async () => {
       const user = userEvent.setup();
       setupTemplateTab([]);
       render(<CustomizationList />);
@@ -352,10 +352,10 @@ describe('<CustomizationList>', () => {
 
       await user.click(await screen.findByRole('tab', { name: /^templates$/i }));
       const row = await screen.findByTestId('template-item-template/new-skill');
-      await user.click(within(row).getByRole('button', { name: /deletar/i }));
+      await user.click(within(row).getByRole('button', { name: /delete/i }));
 
       expect(screen.getByTestId('confirm-delete-template-dialog')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: /confirmar/i }));
+      await user.click(screen.getByRole('button', { name: /confirm/i }));
 
       await waitFor(() =>
         expect(call).toHaveBeenCalledWith('template.delete', { id: 'template/new-skill' }),

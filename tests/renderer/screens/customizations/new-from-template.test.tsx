@@ -34,12 +34,12 @@ describe('<CustomizationList> — new from template', () => {
     });
   });
 
-  it('clicking "Novo a partir de template" opens dialog with templates from template.list', async () => {
+  it('clicking "New from template" opens dialog with templates from template.list', async () => {
     const user = userEvent.setup();
     render(<CustomizationList />);
 
     await user.click(
-      await screen.findByRole('button', { name: /novo a partir de template/i }),
+      await screen.findByRole('button', { name: /new from template/i }),
     );
 
     await waitFor(() =>
@@ -53,7 +53,7 @@ describe('<CustomizationList> — new from template', () => {
     render(<CustomizationList />);
 
     await user.click(
-      await screen.findByRole('button', { name: /novo a partir de template/i }),
+      await screen.findByRole('button', { name: /new from template/i }),
     );
     await user.click(await screen.findByRole('button', { name: /new-skill/i }));
 

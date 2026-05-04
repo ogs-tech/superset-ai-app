@@ -1,4 +1,28 @@
 import { useEffect, useState } from 'react';
+import {
+  Box,
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Stack,
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
@@ -11,24 +35,37 @@ import type {
 import type { Template, TemplateTargetType } from '../../../shared/template.js';
 import type { SearchOutput } from '../../../shared/search.js';
 
-type Tab = CustomizationType | 'template';
+type TabKey = CustomizationType | 'template';
 
-const TABS: Tab[] = ['skill', 'reference', 'agent', 'global-instruction', 'template'];
+const TABS: TabKey[] = ['skill', 'reference', 'agent', 'global-instruction', 'template'];
 
 const GLOBAL_INSTRUCTION_NAME = 'default';
 
-const tabLabel = (tab: Tab): string => {
+const tabLabel = (tab: TabKey): string => {
   switch (tab) {
     case 'skill':
-      return 'skills';
+      return 'Skills';
     case 'reference':
-      return 'references';
+      return 'References';
     case 'agent':
-      return 'agents';
+      return 'Agents';
     case 'global-instruction':
-      return 'global instructions';
+      return 'Global instructions';
     case 'template':
-      return 'templates';
+      return 'Templates';
+  }
+};
+
+const singularLabel = (tab: CustomizationType): string => {
+  switch (tab) {
+    case 'skill':
+      return 'skill';
+    case 'reference':
+      return 'reference';
+    case 'agent':
+      return 'agent';
+    case 'global-instruction':
+      return 'global instruction';
   }
 };
 
@@ -46,7 +83,7 @@ type Editor =
   | { kind: 'template-edit'; template: Template };
 
 export function CustomizationList({ onClose, searchResults }: CustomizationListProps = {}): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<Tab>('skill');
+  const [activeTab, setActiveTab] = useState<TabKey>('skill');
   const [items, setItems] = useState<Customization[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -87,13 +124,13 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
 
   const handleSaved = async (saved: Customization): Promise<void> => {
     setEditor({ kind: 'closed' });
-    setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
+    setToast({ variant: 'success', message: `${saved.frontmatter.name} saved` });
     if (activeTab !== 'template') await loadList(activeTab);
   };
 
   const handleTemplateSaved = async (saved: Template): Promise<void> => {
     setEditor({ kind: 'closed' });
-    setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
+    setToast({ variant: 'success', message: `${saved.frontmatter.name} saved` });
     await loadTemplates();
   };
 
@@ -109,7 +146,7 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
       if (!template) {
         setToast({
           variant: 'error',
-          message: 'Template global-instruction não encontrado',
+          message: 'global-instruction template not found',
         });
         return;
       }
@@ -130,7 +167,7 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
       setItems((prev) => prev.filter((a) => a.id !== confirmDelete.id));
       setToast({
         variant: 'success',
-        message: `${confirmDelete.frontmatter.name} removido`,
+        message: `${confirmDelete.frontmatter.name} removed`,
       });
     } catch (err) {
       const message = err instanceof IpcCallError ? err.message : String(err);
@@ -147,7 +184,7 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
       setTemplates((prev) => prev.filter((t) => t.id !== confirmDeleteTemplate.id));
       setToast({
         variant: 'success',
-        message: `${confirmDeleteTemplate.frontmatter.name} removido`,
+        message: `${confirmDeleteTemplate.frontmatter.name} removed`,
       });
     } catch (err) {
       const message = err instanceof IpcCallError ? err.message : String(err);
@@ -188,176 +225,216 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
     activeTab !== 'global-instruction' && activeTab !== 'template';
 
   return (
-    <main
+    <Container
+      component="main"
       data-testid="customization-list"
-      style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}
+      maxWidth="md"
+      sx={{ py: 4 }}
     >
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Customizations</h1>
+      <Stack
+        direction="row"
+        sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <Typography variant="h4" component="h1">
+          Customizations
+        </Typography>
         {onClose && (
-          <button type="button" onClick={onClose}>
-            Voltar
-          </button>
+          <Button variant="text" startIcon={<ArrowBackIcon />} onClick={onClose}>
+            Back
+          </Button>
         )}
-      </header>
+      </Stack>
 
-      <nav role="tablist" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+      <Tabs
+        value={activeTab}
+        onChange={(_, value: TabKey) => setActiveTab(value)}
+        sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
         {TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            aria-selected={tab === activeTab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              fontWeight: tab === activeTab ? 'bold' : 'normal',
-              textTransform: 'capitalize',
-            }}
-          >
-            {tabLabel(tab)}
-          </button>
+          <Tab key={tab} value={tab} label={tabLabel(tab)} />
         ))}
-      </nav>
+      </Tabs>
 
-      {isCustomizationTabWithPicker && (
-        <button type="button" onClick={() => setShowTemplateDialog(true)}>
-          Novo a partir de template
-        </button>
-      )}
-
-      {isTemplateTab && (
-        <button
-          type="button"
-          onClick={() => setEditor({ kind: 'template-create', template: blankTemplate() })}
-          data-testid="new-template-button"
-        >
-          Novo template
-        </button>
+      {(isCustomizationTabWithPicker || isTemplateTab) && (
+        <Box sx={{ mb: 2 }}>
+          {isCustomizationTabWithPicker && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowTemplateDialog(true)}
+            >
+              New from template
+            </Button>
+          )}
+          {isTemplateTab && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setEditor({ kind: 'template-create', template: blankTemplate() })}
+              data-testid="new-template-button"
+            >
+              New template
+            </Button>
+          )}
+        </Box>
       )}
 
       {searchResults !== undefined && (
-        <p data-testid="search-results-count">
+        <Typography
+          data-testid="search-results-count"
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: 1 }}
+        >
           {searchResults.total} results{searchResults.truncated ? ' (truncated)' : ''}
-        </p>
+        </Typography>
       )}
 
       {activeTab === 'global-instruction' && searchResults === undefined ? (() => {
         const existing = items.find((a) => a.frontmatter.name === GLOBAL_INSTRUCTION_NAME);
         return (
-          <ul
-            data-testid="global-instruction-slots"
-            style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}
-          >
-            <li
+          <List data-testid="global-instruction-slots" disablePadding>
+            <ListItem
               data-testid="global-instruction-slot"
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '0.5rem 0',
-                borderBottom: '1px solid #ddd',
-              }}
+              divider
+              secondaryAction={
+                <Button
+                  size="small"
+                  startIcon={<EditIcon fontSize="small" />}
+                  onClick={() => void openGlobalInstructionEditor()}
+                >
+                  Edit
+                </Button>
+              }
             >
-              <span>
-                <strong>Global instructions</strong>{' '}
-                <small>{existing ? '(configurado)' : '(não configurado)'}</small>
-              </span>
-              <span>
-                <button type="button" onClick={() => void openGlobalInstructionEditor()}>
-                  Editar
-                </button>
-              </span>
-            </li>
-          </ul>
+              <ListItemText
+                primary={<Box component="strong">Global instructions</Box>}
+                secondary={existing ? '(configured)' : '(not configured)'}
+              />
+            </ListItem>
+          </List>
         );
       })() : isTemplateTab && searchResults === undefined ? (
-        <ul
-          data-testid="template-list"
-          style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}
-        >
-          {templates.length === 0 && <li>Nenhum template ainda.</li>}
+        <List data-testid="template-list" disablePadding>
+          {templates.length === 0 && (
+            <EmptyState
+              message="No templates yet."
+              ctaLabel="Create your first template"
+              onCta={() => setEditor({ kind: 'template-create', template: blankTemplate() })}
+            />
+          )}
           {templates.map((tpl) => (
-            <li
+            <ListItem
               key={tpl.id}
               data-testid={`template-item-${tpl.id}`}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '0.5rem 0',
-                borderBottom: '1px solid #ddd',
-              }}
+              divider
+              secondaryAction={
+                <Stack direction="row" spacing={0.5}>
+                  <Tooltip title="Edit">
+                    <IconButton
+                      size="small"
+                      onClick={() => setEditor({ kind: 'template-edit', template: tpl })}
+                      aria-label="Edit"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Duplicate">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setEditor({
+                          kind: 'template-create',
+                          template: duplicateTemplate(tpl, templates),
+                        })
+                      }
+                      aria-label="Duplicate"
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => setConfirmDeleteTemplate(tpl)}
+                      aria-label="Delete"
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              }
             >
-              <span>
-                <strong>{tpl.frontmatter.name}</strong>{' '}
-                <small>({tpl.frontmatter.targetType})</small>
-              </span>
-              <span>
-                <button
-                  type="button"
-                  onClick={() => setEditor({ kind: 'template-edit', template: tpl })}
-                >
-                  Editar
-                </button>{' '}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setEditor({
-                      kind: 'template-create',
-                      template: duplicateTemplate(tpl, templates),
-                    })
-                  }
-                >
-                  Duplicar
-                </button>{' '}
-                <button type="button" onClick={() => setConfirmDeleteTemplate(tpl)}>
-                  Deletar
-                </button>
-              </span>
-            </li>
+              <ListItemText
+                primary={<Box component="strong">{tpl.frontmatter.name}</Box>}
+                secondary={`(${tpl.frontmatter.targetType})`}
+              />
+            </ListItem>
           ))}
-        </ul>
+        </List>
       ) : (() => {
         const displayItems = searchResults !== undefined
           ? searchResults.results.map((r) => r.customization)
           : items;
         return (
-          <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
-            {displayItems.length === 0 && searchResults !== undefined && <li>No search results.</li>}
+          <List disablePadding>
+            {displayItems.length === 0 && searchResults !== undefined && (
+              <EmptyState message="No search results." />
+            )}
             {displayItems.length === 0 && searchResults === undefined && (
-              <li>Nenhum {tabLabel(activeTab)} ainda.</li>
+              <EmptyState
+                message={`No ${singularLabel(activeTab as CustomizationType)}s yet.`}
+                ctaLabel={`Create your first ${singularLabel(activeTab as CustomizationType)}`}
+                onCta={() => setShowTemplateDialog(true)}
+              />
             )}
             {displayItems.map((customization) => (
-              <li
+              <ListItem
                 key={customization.id}
                 data-testid={`customization-item-${customization.id}`}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '0.5rem 0',
-                  borderBottom: '1px solid #ddd',
-                }}
+                divider
+                secondaryAction={
+                  <Stack direction="row" spacing={0.5}>
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditor({ kind: 'edit', customization })}
+                        aria-label="Edit"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Duplicate">
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          setEditor({ kind: 'create', customization: duplicateCustomization(customization, items) })
+                        }
+                        aria-label="Duplicate"
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => setConfirmDelete(customization)}
+                        aria-label="Delete"
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                }
               >
-                <span>
-                  <strong>{customization.frontmatter.name}</strong>
-                </span>
-                <span>
-                  <button type="button" onClick={() => setEditor({ kind: 'edit', customization })}>
-                    Editar
-                  </button>{' '}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditor({ kind: 'create', customization: duplicateCustomization(customization, items) })
-                    }
-                  >
-                    Duplicar
-                  </button>{' '}
-                  <button type="button" onClick={() => setConfirmDelete(customization)}>
-                    Deletar
-                  </button>
-                </span>
-              </li>
+                <ListItemText primary={<Box component="strong">{customization.frontmatter.name}</Box>} />
+              </ListItem>
             ))}
-          </ul>
+          </List>
         );
       })()}
 
@@ -372,40 +449,79 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
         />
       )}
 
-      {confirmDelete && (
-        <div role="dialog" aria-label="Confirmar exclusão" data-testid="confirm-delete-dialog">
-          <p>
-            Remover <strong>{confirmDelete.frontmatter.name}</strong>?
-          </p>
-          <button type="button" onClick={handleDeleteConfirmed}>
-            Confirmar
-          </button>
-          <button type="button" onClick={() => setConfirmDelete(null)}>
-            Cancelar
-          </button>
-        </div>
-      )}
+      <Dialog
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        aria-label="Confirm deletion"
+        data-testid="confirm-delete-dialog"
+      >
+        <DialogTitle>Confirm deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Remove <strong>{confirmDelete?.frontmatter.name}</strong>?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteConfirmed}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {confirmDeleteTemplate && (
-        <div
-          role="dialog"
-          aria-label="Confirmar exclusão de template"
-          data-testid="confirm-delete-template-dialog"
-        >
-          <p>
-            Remover template <strong>{confirmDeleteTemplate.frontmatter.name}</strong>?
-          </p>
-          <button type="button" onClick={handleDeleteTemplateConfirmed}>
-            Confirmar
-          </button>
-          <button type="button" onClick={() => setConfirmDeleteTemplate(null)}>
-            Cancelar
-          </button>
-        </div>
-      )}
+      <Dialog
+        open={confirmDeleteTemplate !== null}
+        onClose={() => setConfirmDeleteTemplate(null)}
+        aria-label="Confirm template deletion"
+        data-testid="confirm-delete-template-dialog"
+      >
+        <DialogTitle>Confirm template deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Remove template <strong>{confirmDeleteTemplate?.frontmatter.name}</strong>?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteTemplate(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteTemplateConfirmed}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
-    </main>
+    </Container>
+  );
+}
+
+interface EmptyStateProps {
+  message: string;
+  ctaLabel?: string;
+  onCta?: () => void;
+}
+
+function EmptyState({ message, ctaLabel, onCta }: EmptyStateProps): React.ReactElement {
+  return (
+    <Box
+      sx={{
+        border: 1,
+        borderStyle: 'dashed',
+        borderColor: 'divider',
+        borderRadius: 1,
+        p: 4,
+        textAlign: 'center',
+        color: 'text.secondary',
+      }}
+    >
+      <Typography variant="body2" sx={{ mb: ctaLabel ? 2 : 0 }}>
+        {message}
+      </Typography>
+      {ctaLabel && onCta && (
+        <Button variant="outlined" startIcon={<AddIcon />} onClick={onCta}>
+          {ctaLabel}
+        </Button>
+      )}
+    </Box>
   );
 }
 

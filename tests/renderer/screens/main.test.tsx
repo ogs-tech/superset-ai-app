@@ -25,7 +25,7 @@ describe('<Main> — home view', () => {
     expect(await screen.findByTestId('customization-list')).toBeInTheDocument();
     expect(screen.getByTestId('topbar')).toBeInTheDocument();
     expect(screen.getByTestId('topbar-search-input')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /abrir settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open settings/i })).toBeInTheDocument();
   });
 
   it('does not render linked repos UI in the home view', async () => {

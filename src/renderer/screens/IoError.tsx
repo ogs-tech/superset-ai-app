@@ -1,3 +1,6 @@
+import { Alert, Box, Button, Container, Stack, Typography } from '@mui/material';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
+
 interface IoErrorProps {
   message: string;
   onRetry: () => void;
@@ -6,17 +9,26 @@ interface IoErrorProps {
 
 export function IoError({ message, onRetry, onCancel }: IoErrorProps): React.ReactElement {
   return (
-    <main data-testid="io-error-screen" style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Erro de I/O</h1>
-      <p role="alert">{message}</p>
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <button type="button" onClick={onRetry}>
-          Tentar novamente
-        </button>
-        <button type="button" onClick={onCancel}>
-          Cancelar
-        </button>
-      </div>
-    </main>
+    <Container component="main" data-testid="io-error-screen" maxWidth="sm" sx={{ py: 6 }}>
+      <Stack spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <ErrorOutlineIcon color="error" />
+          <Typography variant="h4" component="h1">
+            I/O error
+          </Typography>
+        </Box>
+        <Alert severity="error" role="alert" sx={{ width: '100%' }}>
+          {message}
+        </Alert>
+        <Stack direction="row" spacing={1.5}>
+          <Button variant="contained" onClick={onRetry}>
+            Retry
+          </Button>
+          <Button variant="outlined" onClick={onCancel}>
+            Cancel
+          </Button>
+        </Stack>
+      </Stack>
+    </Container>
   );
 }
