@@ -135,6 +135,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     description: 'sample',
     frontmatter: { type: 'skill' },
     body: '# Default Skill\n',
+    isBuiltIn: true,
   };
   const templateRepoSpy = {
     list: vi.fn().mockResolvedValue([templateFixture]),

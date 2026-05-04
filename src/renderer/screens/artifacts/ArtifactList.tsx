@@ -3,10 +3,22 @@ import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { ArtifactEditor } from './ArtifactEditor.js';
-import type { Artifact, ArtifactType, Template } from '../../../shared/artifact.js';
+import type {
+  Artifact,
+  ArtifactType,
+  Template,
+  TemplateTargetType,
+} from '../../../shared/artifact.js';
 import type { SearchOutput } from '../../../shared/search.js';
 
 const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction', 'template'];
+
+const TEMPLATE_TARGET_TYPES: TemplateTargetType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
 
 const GLOBAL_INSTRUCTION_NAME = 'default';
 
@@ -39,6 +51,7 @@ type Editor =
 export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {}): React.ReactElement {
   const [activeTab, setActiveTab] = useState<ArtifactType>('skill');
   const [items, setItems] = useState<Artifact[]>([]);
+  const [builtInTemplates, setBuiltInTemplates] = useState<Template[]>([]);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [editor, setEditor] = useState<Editor>({ kind: 'closed' });
@@ -54,9 +67,26 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
     }
   };
 
+  const loadBuiltInTemplates = async (): Promise<void> => {
+    try {
+      const lists = await Promise.all(
+        TEMPLATE_TARGET_TYPES.map((type) =>
+          callIpc<Template[]>('template.list', { type }),
+        ),
+      );
+      setBuiltInTemplates(lists.flat().filter((t) => t.isBuiltIn));
+    } catch (err) {
+      const message = err instanceof IpcCallError ? err.message : String(err);
+      setToast({ variant: 'error', message });
+    }
+  };
+
   useEffect(() => {
     void (async () => {
       await loadList(activeTab);
+      if (activeTab === 'template') {
+        await loadBuiltInTemplates();
+      }
     })();
   }, [activeTab]);
 
@@ -212,35 +242,74 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
         const displayItems = searchResults !== undefined
           ? searchResults.results.map((r) => r.artifact)
           : items;
+        const showBuiltInTemplates =
+          activeTab === 'template' && searchResults === undefined && builtInTemplates.length > 0;
         return (
-          <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
-            {displayItems.length === 0 && searchResults !== undefined && <li>No search results.</li>}
-            {displayItems.length === 0 && searchResults === undefined && <li>Nenhum {tabLabel(activeTab)} ainda.</li>}
-            {displayItems.map((artifact) => (
-          <li
-            key={artifact.id}
-            data-testid={`artifact-item-${artifact.id}`}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '0.5rem 0',
-              borderBottom: '1px solid #ddd',
-            }}
-          >
-            <span>
-              <strong>{artifact.frontmatter.name}</strong>
-            </span>
-            <span>
-              <button type="button" onClick={() => setEditor({ kind: 'edit', artifact })}>
-                Editar
-              </button>{' '}
-              <button type="button" onClick={() => setConfirmDelete(artifact)}>
-                Deletar
-              </button>
-            </span>
-          </li>
-            ))}
-          </ul>
+          <>
+            <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
+              {displayItems.length === 0 && searchResults !== undefined && <li>No search results.</li>}
+              {displayItems.length === 0 && searchResults === undefined && !showBuiltInTemplates && (
+                <li>Nenhum {tabLabel(activeTab)} ainda.</li>
+              )}
+              {displayItems.map((artifact) => (
+                <li
+                  key={artifact.id}
+                  data-testid={`artifact-item-${artifact.id}`}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '0.5rem 0',
+                    borderBottom: '1px solid #ddd',
+                  }}
+                >
+                  <span>
+                    <strong>{artifact.frontmatter.name}</strong>
+                  </span>
+                  <span>
+                    <button type="button" onClick={() => setEditor({ kind: 'edit', artifact })}>
+                      Editar
+                    </button>{' '}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditor({ kind: 'create', artifact: duplicateArtifact(artifact, items) })
+                      }
+                    >
+                      Duplicar
+                    </button>{' '}
+                    <button type="button" onClick={() => setConfirmDelete(artifact)}>
+                      Deletar
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {showBuiltInTemplates && (
+              <ul
+                data-testid="built-in-template-list"
+                style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}
+              >
+                {builtInTemplates.map((template) => (
+                  <li
+                    key={template.id}
+                    data-testid={`built-in-template-${template.id}`}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem 0',
+                      borderBottom: '1px solid #ddd',
+                      opacity: 0.85,
+                    }}
+                  >
+                    <span>
+                      <strong>{template.name}</strong>{' '}
+                      <small>(built-in · {template.type})</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         );
       })()}
 
@@ -289,6 +358,27 @@ function artifactFromTemplate(template: Template, type: ArtifactType): Artifact 
       ...(fm.tags ? { tags: fm.tags } : {}),
     },
     body: template.body,
+  };
+}
+
+function duplicateArtifact(source: Artifact, siblings: Artifact[]): Artifact {
+  const taken = new Set(siblings.map((a) => a.frontmatter.name));
+  const base = source.frontmatter.name;
+  let candidate = `${base}-copy`;
+  let i = 2;
+  while (taken.has(candidate)) {
+    candidate = `${base}-copy-${i}`;
+    i++;
+  }
+  return {
+    id: '',
+    frontmatter: {
+      ...source.frontmatter,
+      name: candidate,
+      createdAt: '',
+      updatedAt: '',
+    },
+    body: source.body,
   };
 }
 

@@ -18,6 +18,7 @@ const skillTemplate: Template = {
     version: '0.1.0',
   },
   body: '# Skill body\n',
+  isBuiltIn: true,
 };
 
 let call: CallSpy;

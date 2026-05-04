@@ -14,6 +14,7 @@ const fixture = (type: TemplateTargetType, name: string): Template => ({
   description: `Template for ${type}`,
   frontmatter: { type },
   body: `# ${type}\n`,
+  isBuiltIn: true,
 });
 
 class InMemoryTemplateRepository implements TemplateRepository {

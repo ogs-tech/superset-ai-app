@@ -29,6 +29,7 @@ export interface Template {
   description: string;
   frontmatter: Partial<ArtifactFrontmatter>;
   body: string;
+  isBuiltIn: boolean;
 }
 
 export type SyncStatus = 'ok' | 'conflict' | 'error';

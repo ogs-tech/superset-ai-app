@@ -42,5 +42,6 @@ function toTemplate(artifact: Artifact, targetType: TemplateListQuery['type']): 
       ...(fm.tags ? { tags: fm.tags } : {}),
     },
     body: artifact.body,
+    isBuiltIn: false,
   };
 }

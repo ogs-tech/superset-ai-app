@@ -100,6 +100,71 @@ describe('<ArtifactList>', () => {
     expect(call.mock.calls.find((c) => c[0] === 'artifact.delete')).toBeUndefined();
   });
 
+  describe('duplicate', () => {
+    it('renders a "Duplicar" button on each artifact row', async () => {
+      setupHappy([buildArtifact('skill', 'foo')]);
+      render(<ArtifactList />);
+
+      const row = await screen.findByTestId('artifact-item-skill/foo');
+      expect(within(row).getByRole('button', { name: /duplicar/i })).toBeInTheDocument();
+    });
+
+    it('clicking Duplicar opens editor in create mode with name suffixed "-copy"', async () => {
+      const user = userEvent.setup();
+      setupHappy([buildArtifact('skill', 'foo')]);
+      render(<ArtifactList />);
+
+      const row = await screen.findByTestId('artifact-item-skill/foo');
+      await user.click(within(row).getByRole('button', { name: /duplicar/i }));
+
+      const editor = await screen.findByTestId('artifact-editor');
+      expect(within(editor).getByRole('heading', { name: /novo artifact/i })).toBeInTheDocument();
+      expect(screen.getByDisplayValue('foo-copy')).toBeInTheDocument();
+    });
+
+    it('clicking Duplicar copies body, description, scopes, version, tags', async () => {
+      const user = userEvent.setup();
+      const source: Artifact = {
+        id: 'skill/foo',
+        frontmatter: {
+          name: 'foo',
+          type: 'skill',
+          description: 'my desc',
+          scopes: ['personal', 'project'],
+          version: '1.2.3',
+          tags: ['a', 'b'],
+          createdAt: '2026-04-26T10:00:00.000Z',
+          updatedAt: '2026-04-26T10:00:00.000Z',
+        },
+        body: '# my body\n',
+      };
+      setupHappy([source]);
+      render(<ArtifactList />);
+
+      const row = await screen.findByTestId('artifact-item-skill/foo');
+      await user.click(within(row).getByRole('button', { name: /duplicar/i }));
+
+      expect(await screen.findByDisplayValue('my desc')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('1.2.3')).toBeInTheDocument();
+      expect(screen.getByTestId('body-textarea')).toHaveValue('# my body\n');
+    });
+
+    it('uses "-copy-2", "-copy-3" when "-copy" suffix already exists', async () => {
+      const user = userEvent.setup();
+      setupHappy([
+        buildArtifact('skill', 'foo'),
+        buildArtifact('skill', 'foo-copy'),
+        buildArtifact('skill', 'foo-copy-2'),
+      ]);
+      render(<ArtifactList />);
+
+      const row = await screen.findByTestId('artifact-item-skill/foo');
+      await user.click(within(row).getByRole('button', { name: /duplicar/i }));
+
+      expect(await screen.findByDisplayValue('foo-copy-3')).toBeInTheDocument();
+    });
+  });
+
   describe('global-instruction tab', () => {
     const defaultTemplate: Template = {
       id: 'global-instruction/default',
@@ -114,6 +179,7 @@ describe('<ArtifactList>', () => {
         version: '0.1.0',
       },
       body: '# Global instructions template\n',
+      isBuiltIn: true,
     };
 
     const setupGlobalInstruction = (existing: Artifact[] = []): void => {
@@ -210,6 +276,109 @@ describe('<ArtifactList>', () => {
 
       const editor = await screen.findByTestId('artifact-editor');
       expect(within(editor).getByRole('heading', { name: /editar default/i })).toBeInTheDocument();
+      expect(call.mock.calls.find((c) => c[0] === 'template.list')).toBeUndefined();
+    });
+  });
+
+  describe('template tab', () => {
+    const builtInSkillTemplate: Template = {
+      id: 'skill/default',
+      type: 'skill',
+      name: 'default',
+      description: 'starter skill template',
+      frontmatter: { type: 'skill', name: 'default', scopes: ['personal'], version: '0.1.0' },
+      body: '# default skill\n',
+      isBuiltIn: true,
+    };
+    const builtInAgentTemplate: Template = {
+      id: 'agent/default',
+      type: 'agent',
+      name: 'default',
+      description: 'starter agent template',
+      frontmatter: { type: 'agent', name: 'default', scopes: ['personal'], version: '0.1.0' },
+      body: '# default agent\n',
+      isBuiltIn: true,
+    };
+    const userSkillTemplate: Template = {
+      id: 'template/my-skill-tpl',
+      type: 'skill',
+      name: 'my-skill-tpl',
+      description: 'user-managed skill template',
+      frontmatter: { type: 'skill', name: 'my-skill-tpl', scopes: ['personal'], version: '0.1.0' },
+      body: '# user skill template\n',
+      isBuiltIn: false,
+    };
+
+    const setupTemplateTab = (userTemplates: Artifact[] = []): void => {
+      call.mockImplementation((method: string, params: unknown) => {
+        if (method === 'artifact.list') {
+          const type = (params as { type: ArtifactType }).type;
+          return Promise.resolve(ok(type === 'template' ? userTemplates : []));
+        }
+        if (method === 'template.list') {
+          const type = (params as { type: string }).type;
+          if (type === 'skill') return Promise.resolve(ok([userSkillTemplate, builtInSkillTemplate]));
+          if (type === 'agent') return Promise.resolve(ok([builtInAgentTemplate]));
+          return Promise.resolve(ok([]));
+        }
+        return Promise.resolve(ok(undefined));
+      });
+    };
+
+    it('lists built-in templates as read-only on the template tab', async () => {
+      const user = userEvent.setup();
+      setupTemplateTab();
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /^templates$/i }));
+
+      const list = await screen.findByTestId('built-in-template-list');
+      const skillRow = within(list).getByTestId('built-in-template-skill/default');
+      expect(within(skillRow).getByText('default')).toBeInTheDocument();
+      expect(within(skillRow).getByText(/built-in · skill/)).toBeInTheDocument();
+      expect(within(skillRow).queryByRole('button', { name: /editar/i })).not.toBeInTheDocument();
+      expect(within(skillRow).queryByRole('button', { name: /deletar/i })).not.toBeInTheDocument();
+
+      const agentRow = within(list).getByTestId('built-in-template-agent/default');
+      expect(within(agentRow).getByText(/built-in · agent/)).toBeInTheDocument();
+    });
+
+    it('renders user templates as editable alongside built-ins on the template tab', async () => {
+      const user = userEvent.setup();
+      const userArtifact: Artifact = {
+        id: 'template/my-skill-tpl',
+        frontmatter: {
+          name: 'my-skill-tpl',
+          type: 'template',
+          description: 'user template',
+          scopes: ['personal'],
+          version: '0.1.0',
+          targetType: 'skill',
+          createdAt: '2026-05-04T00:00:00.000Z',
+          updatedAt: '2026-05-04T00:00:00.000Z',
+        },
+        body: '# user skill template\n',
+      };
+      setupTemplateTab([userArtifact]);
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /^templates$/i }));
+
+      const userRow = await screen.findByTestId('artifact-item-template/my-skill-tpl');
+      expect(within(userRow).getByRole('button', { name: /editar/i })).toBeInTheDocument();
+      expect(within(userRow).getByRole('button', { name: /deletar/i })).toBeInTheDocument();
+
+      expect(await screen.findByTestId('built-in-template-skill/default')).toBeInTheDocument();
+    });
+
+    it('does not fetch built-ins for non-template tabs', async () => {
+      setupTemplateTab();
+      render(<ArtifactList />);
+
+      await waitFor(() =>
+        expect(call).toHaveBeenCalledWith('artifact.list', { type: 'skill' }),
+      );
+
       expect(call.mock.calls.find((c) => c[0] === 'template.list')).toBeUndefined();
     });
   });

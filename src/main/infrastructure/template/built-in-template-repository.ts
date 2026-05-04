@@ -32,6 +32,7 @@ export class BuiltInTemplateRepository implements TemplateRepository {
         description: frontmatter.description ?? '',
         frontmatter,
         body,
+        isBuiltIn: true,
       });
     }
     return templates;
