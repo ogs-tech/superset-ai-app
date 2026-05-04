@@ -1,5 +1,6 @@
 import { dirname, normalize, relative } from 'node:path';
-import type { FileSystemEntry, FileSystemPort } from '../../application/ports/filesystem-port.js';
+import type { FileSystemEntry } from '../../application/ports/filesystem-port.js';
+import type { FileStat, WritableFileSystemPort } from '../../application/ports/writable-filesystem-port.js';
 
 type ErrorWithCode = Error & { code?: string };
 
@@ -7,15 +8,16 @@ interface FileSystemEntryRecord {
   kind: Exclude<FileSystemEntry['kind'], 'none'>;
   target?: string;
   content?: string;
+  mode: number;
 }
 
 interface FailOnRule {
-  op: 'lstat' | 'readlink' | 'symlink' | 'unlink' | 'mkdir' | 'copyFile' | 'readdir' | 'pathExists';
+  op: 'lstat' | 'readlink' | 'symlink' | 'unlink' | 'mkdir' | 'copyFile' | 'readdir' | 'pathExists' | 'writeFile' | 'rename' | 'chmod' | 'stat';
   path: string;
   code: string;
 }
 
-export class InMemoryFileSystem implements FileSystemPort {
+export class InMemoryFileSystem implements WritableFileSystemPort {
   private readonly entries = new Map<string, FileSystemEntryRecord>();
   private readonly failOn: FailOnRule[];
 
@@ -44,7 +46,7 @@ export class InMemoryFileSystem implements FileSystemPort {
       this.ensureDirectory(parent);
     }
     if (!this.entries.has(normalized)) {
-      this.entries.set(normalized, { kind: 'directory' });
+      this.entries.set(normalized, { kind: 'directory', mode: 0o755 });
     }
   }
 
@@ -79,7 +81,7 @@ export class InMemoryFileSystem implements FileSystemPort {
     this.checkFail('symlink', args.path);
     const normalized = this.normalize(args.path);
     this.ensureDirectory(dirname(normalized));
-    this.entries.set(normalized, { kind: 'symlink', target: args.target });
+    this.entries.set(normalized, { kind: 'symlink', target: args.target, mode: 0o777 });
   }
 
   async unlink(path: string): Promise<void> {
@@ -103,7 +105,7 @@ export class InMemoryFileSystem implements FileSystemPort {
     if (this.entries.has(normalized)) {
       return;
     }
-    this.entries.set(normalized, { kind: 'directory' });
+    this.entries.set(normalized, { kind: 'directory', mode: 0o755 });
   }
 
   async copyFile(src: string, dest: string): Promise<void> {
@@ -117,7 +119,7 @@ export class InMemoryFileSystem implements FileSystemPort {
       throw err;
     }
     this.ensureDirectory(dirname(destPath));
-    this.entries.set(destPath, { kind: 'file', content: entry.content });
+    this.entries.set(destPath, { kind: 'file', content: entry.content, mode: 0o644 });
   }
 
   async readdir(path: string): Promise<string[]> {
@@ -158,7 +160,7 @@ export class InMemoryFileSystem implements FileSystemPort {
     const normalized = this.normalize(path);
     const entry = this.entries.get(normalized);
     if (!entry || entry.kind !== 'file' || entry.content === undefined) {
-      const err: ErrorWithCode = new Error('ENOENT');
+      const err: ErrorWithCode = new Error(`ENOENT: no such file: ${normalized}`);
       err.code = 'ENOENT';
       throw err;
     }
@@ -168,6 +170,49 @@ export class InMemoryFileSystem implements FileSystemPort {
   createFile(path: string, content: string): void {
     const normalized = this.normalize(path);
     this.ensureDirectory(dirname(normalized));
-    this.entries.set(normalized, { kind: 'file', content });
+    this.entries.set(normalized, { kind: 'file', content, mode: 0o644 });
+  }
+
+  async writeFile(path: string, content: string): Promise<void> {
+    this.checkFail('writeFile', path);
+    const normalized = this.normalize(path);
+    this.ensureDirectory(dirname(normalized));
+    const existing = this.entries.get(normalized);
+    this.entries.set(normalized, { kind: 'file', content, mode: existing?.mode ?? 0o644 });
+  }
+
+  async rename(oldPath: string, newPath: string): Promise<void> {
+    this.checkFail('rename', oldPath);
+    const normalizedOld = this.normalize(oldPath);
+    const normalizedNew = this.normalize(newPath);
+    const entry = this.entries.get(normalizedOld);
+    if (!entry) {
+      const err: ErrorWithCode = new Error('ENOENT');
+      err.code = 'ENOENT';
+      throw err;
+    }
+    this.ensureDirectory(dirname(normalizedNew));
+    this.entries.delete(normalizedOld);
+    this.entries.set(normalizedNew, entry);
+  }
+
+  async chmod(path: string, mode: number): Promise<void> {
+    this.checkFail('chmod', path);
+    const normalized = this.normalize(path);
+    const entry = this.entries.get(normalized);
+    if (!entry) {
+      const err: ErrorWithCode = new Error('ENOENT');
+      err.code = 'ENOENT';
+      throw err;
+    }
+    this.entries.set(normalized, { ...entry, mode });
+  }
+
+  async stat(path: string): Promise<FileStat | null> {
+    this.checkFail('stat', path);
+    const normalized = this.normalize(path);
+    const entry = this.entries.get(normalized);
+    if (!entry || entry.kind !== 'file') return null;
+    return { mode: entry.mode };
   }
 }

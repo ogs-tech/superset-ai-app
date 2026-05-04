@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute } from 'node:path';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 
-const skillPersonal: Artifact = {
+const skillPersonal: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -18,7 +18,7 @@ const skillPersonal: Artifact = {
   body: '# review',
 };
 
-const agentProject: Artifact = {
+const agentProject: Customization = {
   id: 'agent/triage',
   frontmatter: {
     name: 'triage',
@@ -37,7 +37,7 @@ describe('ClaudeAdapter — paths with spaces/accents', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/José Silva' });
 
     const [destination] = adapter.resolveDestinations({
-      artifact: skillPersonal,
+      customization: skillPersonal,
       linkedRepos: [],
     });
 
@@ -50,7 +50,7 @@ describe('ClaudeAdapter — paths with spaces/accents', () => {
     const repos: LinkedRepo[] = [{ id: 'r', name: 'r', path: '/Users/x/My Repo (work)' }];
 
     const destinations = adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: repos,
     });
 

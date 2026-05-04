@@ -1,26 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { isAbsolute } from 'node:path';
+import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
-import { ArtifactService } from '../../../../../src/main/application/services/artifact-service.js';
+import { CustomizationService } from '../../../../../src/main/application/services/customization-service.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const globalInstruction = (slug: 'claude' | 'copilot'): Artifact => ({
+const globalInstruction = (): Customization => ({
   id: '',
   frontmatter: {
-    name: slug,
+    name: 'default',
     type: 'global-instruction',
     description: 'global instruction',
     scopes: ['personal'],
@@ -28,16 +29,15 @@ const globalInstruction = (slug: 'claude' | 'copilot'): Artifact => ({
     createdAt: '',
     updatedAt: '',
   },
-  body: `# ${slug}\n`,
+  body: `# default\n`,
 });
 
 const baseSettings = (
   overrides: Partial<Settings['adapters']> = {},
 ): Settings => ({
-  workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: true },
+    copilot: { enabled: true, exclusiveSkillsWithClaude: false },
     ...overrides,
   },
   linkedRepos: [],
@@ -48,31 +48,35 @@ const setup = async () => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(baseSettings());
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
-  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR });
+  const gen: CopilotInstructionsGenPort = {
+    generate: vi.fn().mockResolvedValue({ path: `${WORKSPACE}/_generated/copilot-instructions.md`, refsIncluded: 0 }),
+  };
+  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const adapterManager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
       [copilotAdapter.adapterId, copilotAdapter],
     ]),
   });
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
-  return { artifactService, fs };
+  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
+  return { customizationService, fs };
 };
 
-describe('global-instruction — end-to-end save with both adapters (AC#13, AC#14, AC#15, AC#16)', () => {
-  it('save(global-instruction:claude) creates symlink at <homedir>/.claude/CLAUDE.md → <workspace>/global-instructions/claude.md (AC#13)', async () => {
-    const { artifactService, fs } = await setup();
+describe('global-instruction — end-to-end save fans out to both adapters', () => {
+  it('save creates a Claude symlink at <homedir>/.claude/CLAUDE.md → <workspace>/global-instructions/default.md', async () => {
+    const { customizationService, fs } = await setup();
 
-    const result = await artifactService.save({
-      artifact: globalInstruction('claude'),
+    const result = await customizationService.save({
+      customization: globalInstruction(),
       isCreate: true,
     });
 
@@ -85,16 +89,16 @@ describe('global-instruction — end-to-end save with both adapters (AC#13, AC#1
     const stat = await fs.lstat(destination);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(destination);
-    expect(target).toBe('/workspace/global-instructions/claude.md');
+    expect(target).toBe('/workspace/global-instructions/default.md');
     expect(isAbsolute(destination)).toBe(true);
     expect(isAbsolute(target)).toBe(true);
   });
 
-  it('save(global-instruction:copilot) creates symlink at <homedir>/.copilot/instructions/global.instructions.md → <workspace>/global-instructions/copilot.md (AC#14)', async () => {
-    const { artifactService, fs } = await setup();
+  it('save creates a Copilot symlink at <homedir>/.copilot/instructions/global.instructions.md → <workspace>/global-instructions/default.md', async () => {
+    const { customizationService, fs } = await setup();
 
-    const result = await artifactService.save({
-      artifact: globalInstruction('copilot'),
+    const result = await customizationService.save({
+      customization: globalInstruction(),
       isCreate: true,
     });
 
@@ -107,19 +111,19 @@ describe('global-instruction — end-to-end save with both adapters (AC#13, AC#1
     const stat = await fs.lstat(destination);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(destination);
-    expect(target).toBe('/workspace/global-instructions/copilot.md');
+    expect(target).toBe('/workspace/global-instructions/default.md');
     expect(isAbsolute(destination)).toBe(true);
     expect(isAbsolute(target)).toBe(true);
   });
 
-  it('save(global-instruction:claude) with preexisting real file at ~/.claude/CLAUDE.md produces conflict + backup (AC#15)', async () => {
-    const { artifactService, fs } = await setup();
+  it('save with preexisting file at ~/.claude/CLAUDE.md produces conflict + backup', async () => {
+    const { customizationService, fs } = await setup();
 
     const preexistingPath = '/Users/alice/.claude/CLAUDE.md';
     fs.createFile(preexistingPath, 'prior content');
 
-    const result = await artifactService.save({
-      artifact: globalInstruction('claude'),
+    const result = await customizationService.save({
+      customization: globalInstruction(),
       isCreate: true,
     });
 
@@ -135,28 +139,21 @@ describe('global-instruction — end-to-end save with both adapters (AC#13, AC#1
     const stat = await fs.lstat(preexistingPath);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(preexistingPath);
-    expect(target).toBe('/workspace/global-instructions/claude.md');
+    expect(target).toBe('/workspace/global-instructions/default.md');
 
     const backedUp = await fs.lstat(backupPath!);
     expect(backedUp.kind).toBe('file');
   });
 
-  it('all destinations returned for global-instruction artifacts are absolute (AC#16)', async () => {
-    const { artifactService } = await setup();
+  it('all destinations returned for the global-instruction customization are absolute', async () => {
+    const { customizationService } = await setup();
 
-    const claudeResult = await artifactService.save({
-      artifact: globalInstruction('claude'),
-      isCreate: true,
-    });
-    const copilotResult = await artifactService.save({
-      artifact: globalInstruction('copilot'),
+    const result = await customizationService.save({
+      customization: globalInstruction(),
       isCreate: true,
     });
 
-    const allDestinations = [
-      ...claudeResult.syncReport,
-      ...copilotResult.syncReport,
-    ]
+    const allDestinations = result.syncReport
       .map((r) => r.destination)
       .filter((d): d is string => d !== null);
 

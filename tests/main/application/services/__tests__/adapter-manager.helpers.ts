@@ -1,19 +1,20 @@
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 
+export const DEFAULT_WORKSPACE_PATH = '/workspace';
+
 export const defaultSettings: Settings = {
-  workspacePath: '/workspace',
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: true },
+    copilot: { enabled: true, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -22,21 +23,23 @@ export const defaultSettings: Settings = {
 export const setupAdapterManager = async (
   adapters: Adapter[],
   settings: Settings = defaultSettings,
+  workspacePath: string = DEFAULT_WORKSPACE_PATH,
 ) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
-  const registerArtifact = async (artifact: Artifact) => {
-    await artifactRepo.save({ artifact });
+  const customizationRepo = new InMemoryCustomizationRepository();
+  const registerCustomization = async (customization: Customization) => {
+    await customizationRepo.save({ customization });
   };
   const fs = new InMemoryFileSystem();
-  const symlinkManager = new SymlinkManager(fs, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), settings.workspacePath);
+  const symlinkManager = new SymlinkManager(fs, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), workspacePath);
   const manager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath,
     adapters: new Map(adapters.map((adapter) => [adapter.adapterId, adapter])),
   });
-  return { settingsService, artifactRepo, symlinkManager, manager, fs, registerArtifact };
+  return { settingsService, customizationRepo, symlinkManager, manager, fs, registerCustomization, workspacePath };
 };

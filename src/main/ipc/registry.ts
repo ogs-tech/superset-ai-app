@@ -2,53 +2,74 @@ import { randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
-import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
-import type { ArtifactService } from '../application/services/artifact-service.js';
+import type { CustomizationService } from '../application/services/customization-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
+import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
-import type { EnvironmentPort } from '../application/ports/environment-port.js';
-import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
-import type { ArtifactListParams } from '../../shared/ipc-contract.js';
-import type { Artifact, ArtifactType } from '../../shared/artifact.js';
+import type { CustomizationListParams } from '../../shared/ipc-contract.js';
+import type { Customization, CustomizationType } from '../../shared/customization.js';
+import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
 
 export interface IpcDeps {
   settingsService: SettingsService;
   repoService: RepoService;
-  workspaceBootstrap: WorkspaceBootstrapService;
-  artifactService: ArtifactService;
+  customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
+  searchService: SearchService;
   dialogPort: DialogPort;
-  pathProber: PathProber;
-  environmentPort: EnvironmentPort;
 }
 
-const ARTIFACT_TYPES: readonly ArtifactType[] = [
+const ARTIFACT_TYPES: readonly CustomizationType[] = [
   'skill',
   'reference',
   'agent',
   'global-instruction',
 ];
 
-const asArtifact = (value: unknown): Artifact => {
-  if (typeof value !== 'object' || value === null) {
-    throw new DomainError('validation', `Invalid 'artifact' payload`);
+const TEMPLATE_TARGET_TYPES: readonly TemplateTargetType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
+
+const asTemplateTargetType = (value: unknown, field: string): TemplateTargetType => {
+  if (typeof value !== 'string' || !(TEMPLATE_TARGET_TYPES as readonly string[]).includes(value)) {
+    throw new DomainError(
+      'validation',
+      `Invalid '${field}' (must be ${TEMPLATE_TARGET_TYPES.join(' | ')})`,
+    );
   }
-  return value as Artifact;
+  return value as TemplateTargetType;
 };
 
-const asArtifactType = (value: unknown, field: string): ArtifactType => {
+const asCustomization = (value: unknown): Customization => {
+  if (typeof value !== 'object' || value === null) {
+    throw new DomainError('validation', `Invalid 'customization' payload`);
+  }
+  return value as Customization;
+};
+
+const asTemplate = (value: unknown): Template => {
+  if (typeof value !== 'object' || value === null) {
+    throw new DomainError('validation', `Invalid 'template' payload`);
+  }
+  return value as Template;
+};
+
+const asCustomizationType = (value: unknown, field: string): CustomizationType => {
   if (typeof value !== 'string' || !(ARTIFACT_TYPES as readonly string[]).includes(value)) {
     throw new DomainError(
       'validation',
       `Invalid '${field}' (must be ${ARTIFACT_TYPES.join(' | ')})`,
     );
   }
-  return value as ArtifactType;
+  return value as CustomizationType;
 };
 
 const asBoolean = (value: unknown, field: string): boolean => {
@@ -71,10 +92,6 @@ interface RepoPathParams {
   path: string;
 }
 
-interface WorkspaceBootstrapParams {
-  workspacePath: string;
-}
-
 const asString = (value: unknown, field: string): string => {
   if (typeof value !== 'string' || value.length === 0) {
     throw new DomainError('validation', `Missing or invalid '${field}'`);
@@ -93,18 +110,14 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
   const {
     settingsService,
     repoService,
-    workspaceBootstrap,
-    artifactService,
+    customizationService,
     templateService,
     adapterManager,
+    searchService,
     dialogPort,
-    pathProber,
-    environmentPort,
   } = deps;
 
   return {
-    'app.getHomeDir': () => environmentPort.getHomeDir(),
-
     'settings.get': () => settingsService.load(),
 
     'settings.save': async (params) => {
@@ -172,16 +185,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return views;
     },
 
-    'workspace.bootstrap': async (params) => {
-      const { workspacePath } = params as WorkspaceBootstrapParams;
-      await workspaceBootstrap.create(asString(workspacePath, 'workspacePath'));
-    },
-
-    'workspace.exists': (params) => {
-      const { path } = params as RepoPathParams;
-      return pathProber.exists(asString(path, 'path'));
-    },
-
     'dialog.selectFolder': (params) => {
       const raw = params === undefined || params === null ? {} : asObject(params, 'dialog.selectFolder');
       const dialogParams: SelectFolderParams = {};
@@ -191,34 +194,34 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return dialogPort.selectFolder(dialogParams);
     },
 
-    'artifact.list': async (params) => {
+    'customization.list': async (params) => {
       const raw =
-        params === undefined || params === null ? {} : asObject(params, 'artifact.list');
-      const query: ArtifactListParams = {};
+        params === undefined || params === null ? {} : asObject(params, 'customization.list');
+      const query: CustomizationListParams = {};
       if (raw['type'] !== undefined) {
-        query.type = asArtifactType(raw['type'], 'type');
+        query.type = asCustomizationType(raw['type'], 'type');
       }
-      return artifactService.list(query);
+      return customizationService.list(query);
     },
 
-    'artifact.get': async (params) => {
-      const raw = asObject(params, 'artifact.get');
-      return artifactService.get({ id: asString(raw['id'], 'id') });
+    'customization.get': async (params) => {
+      const raw = asObject(params, 'customization.get');
+      return customizationService.get({ id: asString(raw['id'], 'id') });
     },
 
-    'artifact.save': async (params) => {
-      const raw = asObject(params, 'artifact.save');
-      const artifact = asArtifact(raw['artifact']);
+    'customization.save': async (params) => {
+      const raw = asObject(params, 'customization.save');
+      const customization = asCustomization(raw['customization']);
       const isCreate = raw['isCreate'];
-      return artifactService.save({
-        artifact,
+      return customizationService.save({
+        customization,
         ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
       });
     },
 
-    'artifact.delete': async (params) => {
-      const raw = asObject(params, 'artifact.delete');
-      return artifactService.delete({
+    'customization.delete': async (params) => {
+      const raw = asObject(params, 'customization.delete');
+      return customizationService.delete({
         id: asString(raw['id'], 'id'),
         removeSymlinks: asBoolean(raw['removeSymlinks'], 'removeSymlinks'),
       });
@@ -243,8 +246,75 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'template.list': async (params) => {
-      const raw = asObject(params, 'template.list');
-      return templateService.list({ type: asArtifactType(raw['type'], 'type') });
+      const raw = params === undefined || params === null ? {} : asObject(params, 'template.list');
+      const query: { targetType?: TemplateTargetType } = {};
+      if (raw['targetType'] !== undefined) {
+        query.targetType = asTemplateTargetType(raw['targetType'], 'targetType');
+      }
+      return templateService.list(query);
+    },
+
+    'template.get': async (params) => {
+      const raw = asObject(params, 'template.get');
+      return templateService.get({ id: asString(raw['id'], 'id') });
+    },
+
+    'template.save': async (params) => {
+      const raw = asObject(params, 'template.save');
+      const template = asTemplate(raw['template']);
+      const isCreate = raw['isCreate'];
+      return templateService.save({
+        template,
+        ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
+      });
+    },
+
+    'template.delete': async (params) => {
+      const raw = asObject(params, 'template.delete');
+      await templateService.delete({ id: asString(raw['id'], 'id') });
+      return { ok: true };
+    },
+
+    'adapter.setEnabled': async (params) => {
+      const raw = asObject(params, 'adapter.setEnabled');
+      const adapterId = asString(raw['adapterId'], 'adapterId');
+      if (typeof raw['enabled'] !== 'boolean') {
+        throw new DomainError('validation', "Missing or invalid 'enabled'");
+      }
+      const enabled = raw['enabled'];
+      const removeSymlinks = raw['removeSymlinks'] !== false;
+      const runSyncAll = raw['runSyncAll'] !== false;
+
+      if (!enabled) {
+        const removeResult = removeSymlinks
+          ? await adapterManager.removeAdapterSymlinks(adapterId)
+          : { removed: 0, skipped: 0, errors: [] };
+        await settingsService.merge({ adapters: { [adapterId]: { enabled: false } } });
+        return removeResult;
+      } else {
+        await settingsService.merge({ adapters: { [adapterId]: { enabled: true } } });
+        const syncReport = runSyncAll
+          ? await adapterManager.syncAll({ adapterId })
+          : [];
+        return { syncReport };
+      }
+    },
+
+    'adapter.countDestinations': async (params) => {
+      const raw = asObject(params, 'adapter.countDestinations');
+      const adapterId = asString(raw['adapterId'], 'adapterId');
+      const count = await adapterManager.countDestinations(adapterId);
+      return { count };
+    },
+
+    'customization.search': async (params) => {
+      const raw = params === undefined || params === null ? {} : asObject(params, 'customization.search');
+      const query = asString(raw['query'], 'query');
+      let options: SearchOptions | undefined;
+      if (raw['options'] !== undefined) {
+        options = raw['options'] as SearchOptions;
+      }
+      return searchService.search(query, options);
     },
   };
 }

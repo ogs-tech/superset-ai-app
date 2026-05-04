@@ -1,4 +1,4 @@
-import type { Artifact } from '../../../shared/artifact.js';
+import type { Customization } from '../../../shared/customization.js';
 import type { LinkedRepo } from '../../../shared/settings.js';
 
 export interface AdapterDestination {
@@ -9,7 +9,7 @@ export interface AdapterDestination {
 export interface Adapter {
   adapterId: string;
   resolveDestinations(args: {
-    artifact: Artifact;
+    customization: Customization;
     linkedRepos: LinkedRepo[];
-  }): AdapterDestination[];
+  }): Promise<AdapterDestination[]> | AdapterDestination[];
 }

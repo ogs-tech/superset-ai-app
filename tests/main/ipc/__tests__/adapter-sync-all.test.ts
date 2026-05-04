@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildHandlers, type IpcDeps } from '../../../../src/main/ipc/registry.js';
 import { createDispatcher } from '../../../../src/main/ipc/dispatcher.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
-import type { SyncResult } from '../../../../src/shared/artifact.js';
+import type { SyncResult } from '../../../../src/shared/customization.js';
 
 const stubResults: SyncResult[] = [
   { adapter: 'claude', destination: '/dest/claude', status: 'ok' },

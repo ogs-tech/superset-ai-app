@@ -6,16 +6,24 @@ const stripLegacyFields = (settings: Settings): Settings => {
     'claude' | 'copilot',
     Record<string, unknown>
   >;
-  const clean = (entry: Record<string, unknown>): { enabled: boolean } => {
+  const cleanClaude = (entry: Record<string, unknown>): { enabled: boolean } => {
     const rest = { ...entry };
     delete rest.defaultScope;
     return rest as { enabled: boolean };
   };
+  const cleanCopilot = (entry: Record<string, unknown>): { enabled: boolean; exclusiveSkillsWithClaude: boolean } => {
+    const rest = { ...entry };
+    delete rest.defaultScope;
+    if (typeof rest['exclusiveSkillsWithClaude'] !== 'boolean') {
+      rest['exclusiveSkillsWithClaude'] = false;
+    }
+    return rest as { enabled: boolean; exclusiveSkillsWithClaude: boolean };
+  };
   return {
     ...settings,
     adapters: {
-      claude: clean(adapters.claude),
-      copilot: clean(adapters.copilot),
+      claude: cleanClaude(adapters.claude),
+      copilot: cleanCopilot(adapters.copilot),
     },
   };
 };

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute } from 'node:path';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 
-const agentProject: Artifact = {
+const agentProject: Customization = {
   id: 'agent/triage',
   frontmatter: {
     name: 'triage',
@@ -28,7 +28,7 @@ describe('ClaudeAdapter — agent + project', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: repos,
     });
 
@@ -42,7 +42,7 @@ describe('ClaudeAdapter — agent + project', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: repos,
     });
 
@@ -55,7 +55,7 @@ describe('ClaudeAdapter — agent + project', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: [],
     });
 

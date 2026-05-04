@@ -4,6 +4,10 @@ export interface AdapterSettings {
   enabled: boolean;
 }
 
+export interface CopilotAdapterSettings extends AdapterSettings {
+  exclusiveSkillsWithClaude: boolean;
+}
+
 export interface LinkedRepo {
   id: string;
   name: string;
@@ -22,10 +26,9 @@ export interface UiSettings {
 }
 
 export interface Settings {
-  workspacePath: string;
   adapters: {
     claude: AdapterSettings;
-    copilot: AdapterSettings;
+    copilot: CopilotAdapterSettings;
   };
   linkedRepos: LinkedRepo[];
   ui: UiSettings;
@@ -44,10 +47,9 @@ export type WorkspacePath = (typeof WorkspacePaths)[number];
 
 export function getDefaults(): Settings {
   return {
-    workspacePath: '',
     adapters: {
       claude: { enabled: true },
-      copilot: { enabled: false },
+      copilot: { enabled: false, exclusiveSkillsWithClaude: false },
     },
     linkedRepos: [],
     ui: { theme: 'system' },

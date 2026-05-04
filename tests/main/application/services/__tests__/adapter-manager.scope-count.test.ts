@@ -17,8 +17,8 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
       new FakeAdapter('claude', '/workspace/personal/claude'),
       new FakeAdapter('copilot', '/workspace/personal/copilot'),
     ];
-    const { manager, fs, registerArtifact } = await setupAdapterManager(adapters, settings);
-    const artifact = {
+    const { manager, fs, registerCustomization } = await setupAdapterManager(adapters, settings);
+    const customization = {
       id: 'reference/foo',
       frontmatter: {
         name: 'foo',
@@ -31,10 +31,10 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
       },
       body: '# foo',
     };
-    await registerArtifact(artifact);
+    await registerCustomization(customization);
     fs.createFile('/workspace/references/foo.md', '# foo');
 
-    const result = await manager.syncOne({ artifact });
+    const result = await manager.syncOne({ customization });
 
     expect(result).toHaveLength(6);
     expect(result.filter((item) => item.adapter === 'claude')).toHaveLength(3);
@@ -46,8 +46,8 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
       new FakeAdapter('claude', '/workspace/personal/claude'),
       new FakeAdapter('copilot', '/workspace/personal/copilot'),
     ];
-    const { manager, fs, registerArtifact } = await setupAdapterManager(adapters, defaultSettings);
-    const artifact = {
+    const { manager, fs, registerCustomization } = await setupAdapterManager(adapters, defaultSettings);
+    const customization = {
       id: 'skill/foo',
       frontmatter: {
         name: 'foo',
@@ -60,10 +60,10 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
       },
       body: '# foo',
     };
-    await registerArtifact(artifact);
+    await registerCustomization(customization);
     fs.createFile('/workspace/skills/foo/SKILL.md', '# foo');
 
-    const result = await manager.syncOne({ artifact });
+    const result = await manager.syncOne({ customization });
 
     expect(result).toHaveLength(2);
   });

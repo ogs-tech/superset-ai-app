@@ -11,7 +11,6 @@ const stubRepo = (overrides: Partial<SettingsRepository> = {}): SettingsReposito
 
 const legacyPersisted = (): Settings =>
   ({
-    workspacePath: '/tmp/legacy',
     adapters: {
       claude: { enabled: true, defaultScope: 'personal' },
       copilot: { enabled: false, defaultScope: 'project' },
@@ -30,7 +29,7 @@ describe('SettingsService — legacy defaultScope strip on load', () => {
 
     expect(result).not.toBeNull();
     expect(result!.adapters.claude).toEqual({ enabled: true });
-    expect(result!.adapters.copilot).toEqual({ enabled: false });
+    expect(result!.adapters.copilot).toEqual({ enabled: false, exclusiveSkillsWithClaude: false });
     expect(
       (result!.adapters.claude as unknown as { defaultScope?: string }).defaultScope,
     ).toBeUndefined();
@@ -49,7 +48,7 @@ describe('SettingsService — legacy defaultScope strip on load', () => {
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(next.adapters.claude).toEqual({ enabled: true });
-    expect(next.adapters.copilot).toEqual({ enabled: false });
+    expect(next.adapters.copilot).toEqual({ enabled: false, exclusiveSkillsWithClaude: false });
     expect((save.mock.calls[0]![0] as Settings).adapters.claude).toEqual({ enabled: true });
   });
 });

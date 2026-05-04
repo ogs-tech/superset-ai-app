@@ -16,10 +16,9 @@ describe('getDefaults', () => {
     const defaults: Settings = getDefaults();
 
     expect(defaults).toEqual({
-      workspacePath: '',
       adapters: {
         claude: { enabled: true },
-        copilot: { enabled: false },
+        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
       linkedRepos: [],
       ui: { theme: 'system' },

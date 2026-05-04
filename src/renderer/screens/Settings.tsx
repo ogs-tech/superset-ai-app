@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { callIpc } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
-import type { SyncResult } from '../../shared/artifact.js';
-import type {
-  LinkedRepoView,
-  Settings as SettingsModel,
-} from '../../shared/settings.js';
+import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
+import type { SyncResult } from '../../shared/customization.js';
+import type { LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
+
+const labelFor = (key: 'claude' | 'copilot'): string =>
+  key === 'claude' ? 'Claude' : 'Copilot';
 
 interface SelectFolderResult {
   canceled: boolean;
@@ -17,19 +18,18 @@ interface PendingLink {
   branch: string | null;
 }
 
-const labelFor = (key: 'claude' | 'copilot'): string =>
-  key === 'claude' ? 'Claude' : 'Copilot';
-
 interface SettingsProps {
   onBack?: () => void;
 }
 
 export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [settings, setSettings] = useState<SettingsModel | null>(null);
-  const [repos, setRepos] = useState<LinkedRepoView[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<PendingLink | null>(null);
   const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
+  const [disableModal, setDisableModal] = useState<{ key: 'claude' | 'copilot'; count: number } | null>(null);
+  const [disableToast, setDisableToast] = useState<string | null>(null);
+  const [repos, setRepos] = useState<LinkedRepoView[]>([]);
+  const [repoError, setRepoError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingLink | null>(null);
 
   const refreshRepos = async (): Promise<void> => {
     const list = await callIpc<LinkedRepoView[]>('repo.list', {});
@@ -44,24 +44,58 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     })();
   }, []);
 
+  const handleExclusiveSkillsToggle = async (value: boolean): Promise<void> => {
+    if (value) {
+      // Remove copilot destinations first (while resolveDestinations still returns them), then save flag
+      await callIpc('adapter.removeAll', { adapterId: 'copilot' });
+      await callIpc('settings.merge', { adapters: { copilot: { exclusiveSkillsWithClaude: true } } });
+    } else {
+      // Save flag first so resolveDestinations resolves destinations again, then recreate
+      await callIpc('settings.merge', { adapters: { copilot: { exclusiveSkillsWithClaude: false } } });
+      await callIpc('adapter.syncAll', { adapterId: 'copilot' });
+    }
+    const current = await callIpc<SettingsModel | null>('settings.get', {});
+    if (current !== null) setSettings(current);
+  };
+
   const handleAdapterToggle = async (
     key: 'claude' | 'copilot',
     enabled: boolean,
   ): Promise<void> => {
-    const next = await callIpc<SettingsModel>('settings.merge', {
-      adapters: { [key]: { enabled } },
-    });
-    setSettings(next);
-    const report = enabled
-      ? await callIpc<SyncResult[]>('adapter.syncAll', { adapterId: key })
-      : await callIpc<SyncResult[]>('adapter.removeAll', { adapterId: key });
-    if (report.some((entry) => entry.status !== 'ok')) {
-      setSyncReport(report);
+    if (enabled) {
+      const result = await callIpc<{ syncReport: SyncResult[] }>('adapter.setEnabled', {
+        adapterId: key,
+        enabled: true,
+      });
+      const current = await callIpc<SettingsModel | null>('settings.get', {});
+      if (current !== null) setSettings(current);
+      if (result.syncReport.some((e) => e.status !== 'ok')) {
+        setSyncReport(result.syncReport);
+      }
+    } else {
+      const { count } = await callIpc<{ count: number }>('adapter.countDestinations', { adapterId: key });
+      setDisableModal({ key, count });
+    }
+  };
+
+  const handleDisableConfirm = async (removeSymlinks: boolean): Promise<void> => {
+    if (!disableModal) return;
+    const { key } = disableModal;
+    setDisableModal(null);
+    const result = await callIpc<{ removed: number; skipped: number; errors: unknown[] }>(
+      'adapter.setEnabled',
+      { adapterId: key, enabled: false, removeSymlinks },
+    );
+    const current = await callIpc<SettingsModel | null>('settings.get', {});
+    if (current !== null) setSettings(current);
+    if (removeSymlinks) {
+      setDisableToast(`${result.removed} removidos, ${result.skipped} ignorados`);
+      setTimeout(() => setDisableToast(null), 4000);
     }
   };
 
   const handleAddRepo = async (): Promise<void> => {
-    setError(null);
+    setRepoError(null);
     try {
       const picked = await callIpc<SelectFolderResult>('dialog.selectFolder', {});
       if (picked.canceled || !picked.path) return;
@@ -74,14 +108,14 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
       const isGit = await callIpc<boolean>('repo.detectGit', { path });
       if (!isGit) {
-        setError(`Not a git repository: ${path}`);
+        setRepoError(`Not a git repository: ${path}`);
         return;
       }
 
       const branch = await callIpc<string | null>('repo.getCurrentBranch', { path });
       setPending({ path, branch });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'I/O error');
+      setRepoError(err instanceof Error ? err.message : 'I/O error');
     }
   };
 
@@ -92,7 +126,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       setPending(null);
       await refreshRepos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'I/O error');
+      setRepoError(err instanceof Error ? err.message : 'I/O error');
       setPending(null);
     }
   };
@@ -137,13 +171,24 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             <label htmlFor={`adapter-${key}`}>{labelFor(key)}</label>
           </div>
         ))}
+        {settings.adapters.copilot.enabled && (
+          <div style={{ marginTop: '0.5rem' }}>
+            <input
+              id="copilot-exclusive-skills"
+              type="checkbox"
+              checked={settings.adapters.copilot.exclusiveSkillsWithClaude}
+              onChange={(e) => void handleExclusiveSkillsToggle(e.target.checked)}
+            />
+            <label htmlFor="copilot-exclusive-skills" title="Avoids duplicates in VS Code Copilot when Claude is also enabled">
+              Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)
+            </label>
+          </div>
+        )}
       </section>
 
       <section>
         <h2>Linked repos</h2>
-        {error !== null ? (
-          <p role="alert">{error}</p>
-        ) : null}
+        {repoError !== null ? <p role="alert">{repoError}</p> : null}
         <button type="button" onClick={() => void handleAddRepo()}>
           Add repo
         </button>
@@ -182,6 +227,19 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           </div>
         </div>
       ) : null}
+
+      {disableModal !== null && (
+        <ConfirmDisableModal
+          adapterName={labelFor(disableModal.key)}
+          count={disableModal.count}
+          onConfirmRemove={() => void handleDisableConfirm(true)}
+          onConfirmNoRemove={() => void handleDisableConfirm(false)}
+          onCancel={() => setDisableModal(null)}
+        />
+      )}
+      {disableToast !== null && (
+        <p data-testid="disable-toast" role="status">{disableToast}</p>
+      )}
       <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />
     </main>
   );

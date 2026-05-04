@@ -6,13 +6,13 @@ describe('AdapterManager.syncOne — multi-scope + empty linkedRepos', () => {
   it('still syncs personal destinations and emits skipped entry for project when scopes includes both', async () => {
     const claude = new FakeAdapter('claude', '/personal/claude/skills/multi');
     const settings = { ...defaultSettings, linkedRepos: [] };
-    const { manager, registerArtifact, fs } = await setupAdapterManager([claude], settings);
-    const artifact = {
+    const { manager, registerCustomization, fs } = await setupAdapterManager([claude], settings);
+    const customization = {
       id: 'skill/multi',
       frontmatter: {
         name: 'multi',
         type: 'skill' as const,
-        description: 'multi-scope artifact',
+        description: 'multi-scope customization',
         scopes: ['personal', 'project'] as Array<'personal' | 'project'>,
         version: '1.0.0',
         createdAt: '',
@@ -20,10 +20,10 @@ describe('AdapterManager.syncOne — multi-scope + empty linkedRepos', () => {
       },
       body: '# multi',
     };
-    await registerArtifact(artifact);
+    await registerCustomization(customization);
     fs.createFile('/workspace/skills/multi/SKILL.md', '# multi');
 
-    const results = await manager.syncOne({ artifact });
+    const results = await manager.syncOne({ customization });
 
     expect(results).toHaveLength(2);
     const personal = results.find((r) => r.destination === '/personal/claude/skills/multi');

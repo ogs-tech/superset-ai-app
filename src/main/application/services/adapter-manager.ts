@@ -1,20 +1,35 @@
 import { join } from 'node:path';
-import type { Artifact, SyncResult, SyncResultDetails } from '../../../shared/artifact.js';
+import type { Customization, SyncResult, SyncResultDetails } from '../../../shared/customization.js';
 import type { SettingsService } from './settings-service.js';
-import type { ArtifactRepository } from '../ports/artifact-repository.js';
+import type { CustomizationRepository } from '../ports/customization-repository.js';
 import type { Adapter } from '../ports/adapter.js';
 import type { SymlinkManager } from './symlink-manager.js';
+import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import { DomainError } from '../../domain/errors.js';
+
+export interface SymlinkError {
+  destination: string;
+  kind: string;
+  message: string;
+}
+
+export interface RemoveAdapterResult {
+  removed: number;
+  skipped: number;
+  errors: SymlinkError[];
+}
 
 export interface AdapterManagerDeps {
   settingsService: SettingsService;
-  artifactRepository: ArtifactRepository;
+  customizationRepository: CustomizationRepository;
   symlinkManager: SymlinkManager;
   adapters: Map<string, Adapter>;
+  workspacePath: string;
+  workspaceFs?: WritableFileSystemPort;
 }
 
 export interface SyncOneCommand {
-  artifact: Artifact;
+  customization: Customization;
 }
 
 export interface SyncAllCommand {
@@ -26,7 +41,7 @@ export interface RemoveAllCommand {
 }
 
 export interface RemoveOneCommand {
-  artifact: Artifact;
+  customization: Customization;
 }
 
 export class AdapterManager {
@@ -37,11 +52,11 @@ export class AdapterManager {
     const enabledAdapters = this.enabledAdapters(settings);
     const results: SyncResult[] = [];
 
-    const source = this.artifactSourcePath(command.artifact, settings.workspacePath);
-    const includesProject = command.artifact.frontmatter.scopes.includes('project');
+    const source = this.customizationSourcePath(command.customization, this.deps.workspacePath);
+    const includesProject = command.customization.frontmatter.scopes.includes('project');
     for (const adapter of enabledAdapters) {
-      const destinations = adapter.resolveDestinations({
-        artifact: command.artifact,
+      const destinations = await adapter.resolveDestinations({
+        customization: command.customization,
         linkedRepos: settings.linkedRepos,
       });
 
@@ -70,19 +85,19 @@ export class AdapterManager {
       command.adapterId ? adapter.adapterId === command.adapterId : true,
     );
 
-    const artifacts = await this.deps.artifactRepository.list();
+    const customizations = await this.deps.customizationRepository.list();
     const results: SyncResult[] = [];
-    for (const artifact of artifacts) {
-      const includesProject = artifact.frontmatter.scopes.includes('project');
+    for (const customization of customizations) {
+      const includesProject = customization.frontmatter.scopes.includes('project');
       for (const adapter of enabledAdapters) {
-        const destinations = adapter.resolveDestinations({
-          artifact,
+        const destinations = await adapter.resolveDestinations({
+          customization,
           linkedRepos: settings.linkedRepos,
         });
 
         for (const destination of destinations) {
           results.push(
-            await this.syncDestination(adapter.adapterId, this.artifactSourcePath(artifact, settings.workspacePath), destination.destination),
+            await this.syncDestination(adapter.adapterId, this.customizationSourcePath(customization, this.deps.workspacePath), destination.destination),
           );
         }
 
@@ -104,8 +119,8 @@ export class AdapterManager {
     const results: SyncResult[] = [];
 
     for (const adapter of this.deps.adapters.values()) {
-      const destinations = adapter.resolveDestinations({
-        artifact: command.artifact,
+      const destinations = await adapter.resolveDestinations({
+        customization: command.customization,
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
@@ -120,12 +135,12 @@ export class AdapterManager {
     if (!adapter) return [];
 
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
-    const artifacts = await this.deps.artifactRepository.list();
+    const customizations = await this.deps.customizationRepository.list();
     const results: SyncResult[] = [];
 
-    for (const artifact of artifacts) {
-      const destinations = adapter.resolveDestinations({
-        artifact,
+    for (const customization of customizations) {
+      const destinations = await adapter.resolveDestinations({
+        customization,
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
@@ -133,6 +148,86 @@ export class AdapterManager {
       }
     }
     return results;
+  }
+
+  async removeAdapterSymlinks(adapterId: string): Promise<RemoveAdapterResult> {
+    const adapter = this.deps.adapters.get(adapterId);
+    if (!adapter) return { removed: 0, skipped: 0, errors: [] };
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const workspacePath = this.deps.workspacePath;
+    const customizations = await this.deps.customizationRepository.list();
+    let removed = 0;
+    let skipped = 0;
+    const errors: SymlinkError[] = [];
+
+    for (const customization of customizations) {
+      const destinations = await adapter.resolveDestinations({
+        customization,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const dest of destinations) {
+        try {
+          const result = await this.deps.symlinkManager.removeIfPointsToWorkspace(dest.destination, workspacePath);
+          if (result === 'removed') {
+            removed++;
+          } else {
+            skipped++;
+          }
+        } catch (err) {
+          errors.push({
+            destination: dest.destination,
+            kind: err instanceof DomainError ? err.kind : 'internal',
+            message: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
+    if (adapterId === 'copilot' && this.deps.workspaceFs) {
+      const generatedPath = join(workspacePath, '_generated/copilot-instructions.md');
+      const stat = await this.deps.workspaceFs.stat(generatedPath);
+      if (stat !== null) {
+        try {
+          await this.deps.workspaceFs.chmod(generatedPath, 0o644);
+          await this.deps.workspaceFs.unlink(generatedPath);
+        } catch (err) {
+          errors.push({
+            destination: generatedPath,
+            kind: 'io',
+            message: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
+    return { removed, skipped, errors };
+  }
+
+  async countDestinations(adapterId: string): Promise<number> {
+    const adapter = this.deps.adapters.get(adapterId);
+    if (!adapter) return 0;
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const workspacePath = this.deps.workspacePath;
+    const customizations = await this.deps.customizationRepository.list();
+    let count = 0;
+
+    for (const customization of customizations) {
+      const destinations = await adapter.resolveDestinations({
+        customization,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const dest of destinations) {
+        try {
+          const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
+          if (isWorkspaceLink) count++;
+        } catch {
+          // skip
+        }
+      }
+    }
+    return count;
   }
 
   private async removeDestination(adapterId: string, destination: string): Promise<SyncResult> {
@@ -180,9 +275,9 @@ export class AdapterManager {
     return adapters;
   }
 
-  private artifactSourcePath(artifact: Artifact, workspacePath: string): string {
-    const name = artifact.frontmatter.name;
-    const type = artifact.frontmatter.type;
+  private customizationSourcePath(customization: Customization, workspacePath: string): string {
+    const name = customization.frontmatter.name;
+    const type = customization.frontmatter.type;
     if (type === 'skill') {
       return join(workspacePath, 'skills', name);
     }
@@ -191,9 +286,7 @@ export class AdapterManager {
         ? 'references'
         : type === 'agent'
           ? 'agents'
-          : type === 'global-instruction'
-            ? 'global-instructions'
-            : 'agents';
+          : 'global-instructions';
     return join(workspacePath, folder, `${name}.md`);
   }
 

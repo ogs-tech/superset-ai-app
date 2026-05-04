@@ -3,13 +3,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Settings as SettingsScreen } from '../../../src/renderer/screens/Settings.js';
 import { mockApi, ok, type CallSpy } from '../test-utils.js';
-import type { LinkedRepoView, Settings } from '../../../src/shared/settings.js';
+import type { Settings } from '../../../src/shared/settings.js';
 
 const baseSettings: Settings = {
-  workspacePath: '/ws',
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -23,21 +22,22 @@ beforeEach(() => {
 
 const setupRoute = (
   initial: Settings = baseSettings,
-  list: LinkedRepoView[] = [],
   overrides: Record<string, unknown> = {},
 ) => {
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
     if (method === 'settings.get') return Promise.resolve(ok(initial));
-    if (method === 'repo.list') return Promise.resolve(ok(list));
+    if (method === 'repo.list') return Promise.resolve(ok([]));
     if (method === 'settings.merge') return Promise.resolve(ok(initial));
+    if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [] }));
+    if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));
     if (method === 'adapter.syncAll' || method === 'adapter.removeAll') return Promise.resolve(ok([]));
     return Promise.resolve(ok(undefined));
   });
 };
 
 describe('<Settings> — toggles', () => {
-  it('toggling claude off calls settings.merge then adapter.removeAll', async () => {
+  it('toggling claude off calls adapter.countDestinations and opens modal', async () => {
     const user = userEvent.setup();
     setupRoute();
     render(<SettingsScreen />);
@@ -46,22 +46,20 @@ describe('<Settings> — toggles', () => {
     await user.click(toggle);
 
     await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('settings.merge', {
-        adapters: { claude: { enabled: false } },
-      }),
+      expect(call).toHaveBeenCalledWith('adapter.countDestinations', { adapterId: 'claude' }),
     );
     await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('adapter.removeAll', { adapterId: 'claude' }),
+      expect(screen.getByTestId('confirm-disable-modal')).toBeInTheDocument(),
     );
   });
 
-  it('toggling claude on calls settings.merge then adapter.syncAll', async () => {
+  it('toggling claude on calls adapter.setEnabled with enabled:true', async () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
       adapters: {
         claude: { enabled: false },
-        copilot: { enabled: false },
+        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
     };
     setupRoute(initial);
@@ -71,12 +69,7 @@ describe('<Settings> — toggles', () => {
     await user.click(toggle);
 
     await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('settings.merge', {
-        adapters: { claude: { enabled: true } },
-      }),
-    );
-    await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('adapter.syncAll', { adapterId: 'claude' }),
+      expect(call).toHaveBeenCalledWith('adapter.setEnabled', expect.objectContaining({ adapterId: 'claude', enabled: true })),
     );
   });
 });
@@ -92,131 +85,27 @@ describe('<Settings> — no per-adapter default scope', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
-  it('toggling adapters never sends defaultScope to settings.merge', async () => {
+  it('toggling adapters never sends defaultScope to adapter.setEnabled', async () => {
     const user = userEvent.setup();
-    setupRoute();
+    const initial: Settings = {
+      ...baseSettings,
+      adapters: { claude: { enabled: false }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+    };
+    setupRoute(initial);
     render(<SettingsScreen />);
 
     await user.click(await screen.findByLabelText('Claude'));
 
     await waitFor(() =>
       expect(
-        call.mock.calls.find((c) => c[0] === 'settings.merge'),
+        call.mock.calls.find((c) => c[0] === 'adapter.setEnabled'),
       ).toBeDefined(),
     );
     for (const c of call.mock.calls) {
-      if (c[0] !== 'settings.merge') continue;
-      const payload = c[1] as { adapters?: Record<string, Record<string, unknown>> };
-      const claudePatch = payload.adapters?.claude ?? {};
-      const copilotPatch = payload.adapters?.copilot ?? {};
-      expect(claudePatch).not.toHaveProperty('defaultScope');
-      expect(copilotPatch).not.toHaveProperty('defaultScope');
+      if (c[0] !== 'adapter.setEnabled') continue;
+      const payload = c[1] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('defaultScope');
     }
   });
 });
 
-describe('<Settings> — repo linking', () => {
-  it('adding a repo whose path lacks .git/ shows error and does not call repo.link', async () => {
-    const user = userEvent.setup();
-    setupRoute(baseSettings, [], {
-      'dialog.selectFolder': ok({ canceled: false, path: '/not-a-repo' }),
-      'repo.detectGit': ok(false),
-    });
-    render(<SettingsScreen />);
-
-    await user.click(await screen.findByRole('button', { name: /add repo/i }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(/not a git/i),
-    );
-    expect(
-      call.mock.calls.find((c) => c[0] === 'repo.link'),
-    ).toBeUndefined();
-  });
-
-  it('valid repo opens confirmation modal; confirm calls repo.link, cancel does not', async () => {
-    const user = userEvent.setup();
-    const linked: LinkedRepoView = {
-      id: 'x',
-      name: 'foo',
-      path: '/repos/foo',
-      branch: 'main',
-    };
-    setupRoute(baseSettings, [], {
-      'dialog.selectFolder': ok({ canceled: false, path: '/repos/foo' }),
-      'repo.detectGit': ok(true),
-      'repo.link': ok(linked),
-    });
-    render(<SettingsScreen />);
-
-    await user.click(await screen.findByRole('button', { name: /add repo/i }));
-
-    await screen.findByRole('dialog');
-    await user.click(screen.getByRole('button', { name: /cancelar/i }));
-
-    expect(
-      call.mock.calls.find((c) => c[0] === 'repo.link'),
-    ).toBeUndefined();
-
-    await user.click(screen.getByRole('button', { name: /add repo/i }));
-    await screen.findByRole('dialog');
-    await user.click(screen.getByRole('button', { name: /confirmar/i }));
-
-    await waitFor(() =>
-      expect(
-        call.mock.calls.find((c) => c[0] === 'repo.link'),
-      ).toBeDefined(),
-    );
-  });
-
-  it('adding the same path twice results in a single entry in the list', async () => {
-    const user = userEvent.setup();
-    const linked: LinkedRepoView = {
-      id: 'x',
-      name: 'foo',
-      path: '/repos/foo',
-      branch: 'main',
-    };
-
-    let listCallCount = 0;
-    call.mockImplementation((method: string) => {
-      if (method === 'settings.get') return Promise.resolve(ok(baseSettings));
-      if (method === 'dialog.selectFolder')
-        return Promise.resolve(ok({ canceled: false, path: '/repos/foo' }));
-      if (method === 'repo.detectGit') return Promise.resolve(ok(true));
-      if (method === 'repo.link') return Promise.resolve(ok(linked));
-      if (method === 'repo.list') {
-        listCallCount += 1;
-        return Promise.resolve(ok(listCallCount === 1 ? [] : [linked]));
-      }
-      return Promise.resolve(ok(undefined));
-    });
-
-    render(<SettingsScreen />);
-
-    for (let i = 0; i < 2; i += 1) {
-      await user.click(await screen.findByRole('button', { name: /add repo/i }));
-      await screen.findByRole('dialog');
-      await user.click(screen.getByRole('button', { name: /confirmar/i }));
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    }
-
-    const items = screen.getAllByTestId('linked-repo-item');
-    expect(items).toHaveLength(1);
-  });
-
-  it('confirmation modal mentions "symlink" and "commit"', async () => {
-    const user = userEvent.setup();
-    setupRoute(baseSettings, [], {
-      'dialog.selectFolder': ok({ canceled: false, path: '/repos/foo' }),
-      'repo.detectGit': ok(true),
-    });
-    render(<SettingsScreen />);
-
-    await user.click(await screen.findByRole('button', { name: /add repo/i }));
-
-    const dialog = await screen.findByRole('dialog');
-    expect(dialog).toHaveTextContent(/symlink/i);
-    expect(dialog).toHaveTextContent(/commit/i);
-  });
-});

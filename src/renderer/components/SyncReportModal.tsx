@@ -1,4 +1,4 @@
-import type { SyncResult } from '../../shared/artifact.js';
+import type { SyncResult } from '../../shared/customization.js';
 
 interface SyncReportModalProps {
   report: SyncResult[];

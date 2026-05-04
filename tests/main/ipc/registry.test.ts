@@ -2,28 +2,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
-import { WorkspaceBootstrapService } from '../../../src/main/application/services/workspace-bootstrap.js';
-import { ArtifactService } from '../../../src/main/application/services/artifact-service.js';
+import { CustomizationService } from '../../../src/main/application/services/customization-service.js';
 import { TemplateService } from '../../../src/main/application/services/template-service.js';
-import { InMemoryArtifactRepository } from '../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
-import type { FileSystemMutator } from '../../../src/main/application/ports/file-system-mutator.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
-import type { EnvironmentPort } from '../../../src/main/application/ports/environment-port.js';
-import type { PathProber } from '../../../src/main/application/ports/path-prober.js';
 import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
-import type { Template } from '../../../src/shared/artifact.js';
+import type { Template, TemplateFrontmatter } from '../../../src/shared/template.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
+import type { SearchService } from '../../../src/main/application/services/search-service.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
 const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
-  workspacePath: '/tmp/workspace',
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -33,10 +29,10 @@ const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
 interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
-  workspaceBootstrap: WorkspaceBootstrapService;
-  artifactService: ArtifactService;
+  customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
+  searchService: SearchService;
   dialogPort: DialogPort;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
@@ -46,24 +42,17 @@ interface Deps {
     exists: ReturnType<typeof vi.fn>;
     readFile: ReturnType<typeof vi.fn>;
   };
-  fsMutatorSpy: {
-    mkdirRecursive: ReturnType<typeof vi.fn>;
-  };
   dialogSpy: {
     selectFolder: ReturnType<typeof vi.fn>;
   };
-  pathProberSpy: {
-    exists: ReturnType<typeof vi.fn>;
-  };
-  pathProber: PathProber;
-  environmentPort: EnvironmentPort;
-  environmentSpy: {
-    getHomeDir: ReturnType<typeof vi.fn>;
-  };
-  artifactRepo: InMemoryArtifactRepository;
+  customizationRepo: InMemoryCustomizationRepository;
   clock: FixedClock;
   templateRepoSpy: {
     list: ReturnType<typeof vi.fn>;
+    get: ReturnType<typeof vi.fn>;
+    save: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+    exists: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -86,13 +75,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     readFile: repoReaderSpy.readFile,
   };
 
-  const fsMutatorSpy = {
-    mkdirRecursive: vi.fn().mockResolvedValue(undefined),
-  };
-  const mutator: FileSystemMutator = {
-    mkdirRecursive: fsMutatorSpy.mkdirRecursive,
-  };
-
   const dialogSpy = {
     selectFolder: vi.fn().mockResolvedValue({ canceled: false, path: '/picked' }),
   };
@@ -100,60 +82,64 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     selectFolder: dialogSpy.selectFolder,
   };
 
-  const pathProberSpy = {
-    exists: vi.fn().mockResolvedValue(true),
-  };
-  const pathProber: PathProber = {
-    exists: pathProberSpy.exists,
-  };
-
-  const environmentSpy = {
-    getHomeDir: vi.fn().mockReturnValue('/Users/test'),
-  };
-  const environmentPort: EnvironmentPort = {
-    getHomeDir: environmentSpy.getHomeDir,
-  };
-
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const adapterManager: AdapterManager = {
     syncAll: vi.fn().mockResolvedValue([]),
     syncOne: vi.fn().mockResolvedValue([]),
     removeOne: vi.fn().mockResolvedValue([]),
+    removeAll: vi.fn().mockResolvedValue([]),
+    removeAdapterSymlinks: vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] }),
+    countDestinations: vi.fn().mockResolvedValue(0),
   } as unknown as AdapterManager;
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
+  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
 
-  const templateFixture: Template = {
-    id: 'skill/default',
-    type: 'skill',
-    name: 'Default Skill',
+  const templateFrontmatter: TemplateFrontmatter = {
+    name: 'default',
+    targetType: 'skill',
     description: 'sample',
-    frontmatter: { type: 'skill' },
-    body: '# Default Skill\n',
+    scopes: ['personal'],
+    version: '0.1.0',
+    createdAt: '2026-04-26T10:00:00.000Z',
+    updatedAt: '2026-04-26T10:00:00.000Z',
+  };
+  const templateFixture: Template = {
+    id: 'template/default',
+    frontmatter: templateFrontmatter,
+    body: '# Default\n',
   };
   const templateRepoSpy = {
     list: vi.fn().mockResolvedValue([templateFixture]),
+    get: vi.fn().mockResolvedValue(templateFixture),
+    save: vi.fn().mockResolvedValue(templateFixture),
+    delete: vi.fn().mockResolvedValue(undefined),
+    exists: vi.fn().mockResolvedValue(false),
   };
-  const templateRepo: TemplateRepository = { list: templateRepoSpy.list };
-  const templateService = new TemplateService(templateRepo);
+  const templateRepo: TemplateRepository = {
+    list: templateRepoSpy.list,
+    get: templateRepoSpy.get,
+    save: templateRepoSpy.save,
+    delete: templateRepoSpy.delete,
+    exists: templateRepoSpy.exists,
+  };
+  const templateService = new TemplateService(templateRepo, clock);
+
+  const searchService: Partial<SearchService> = {
+    search: vi.fn().mockResolvedValue({ results: [], total: 0, truncated: false }),
+  };
 
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
-    workspaceBootstrap: new WorkspaceBootstrapService(mutator),
-    artifactService,
+    customizationService,
     templateService,
     adapterManager,
+    searchService: searchService as unknown as SearchService,
     dialogPort,
-    pathProber,
-    environmentPort,
     settingsRepoSpy,
     repoReaderSpy,
-    fsMutatorSpy,
     dialogSpy,
-    pathProberSpy,
-    environmentSpy,
-    artifactRepo,
+    customizationRepo,
     clock,
     templateRepoSpy,
   };
@@ -174,7 +160,7 @@ describe('buildHandlers', () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const next = baseSettings({ workspacePath: '/new' });
+    const next = baseSettings({ ui: { theme: 'dark' } });
     const result = await handlers['settings.save']?.(next);
 
     expect(result).toBeUndefined();
@@ -193,6 +179,7 @@ describe('buildHandlers', () => {
     expect(merged.adapters.claude.enabled).toBe(false);
     expect(merged.adapters.copilot).toEqual({
       enabled: false,
+      exclusiveSkillsWithClaude: false,
     });
     expect(merged.ui.theme).toBe('dark');
     expect(deps.settingsRepoSpy.save).toHaveBeenCalledWith(merged);
@@ -305,42 +292,6 @@ describe('buildHandlers', () => {
     ]);
   });
 
-  it('workspace.bootstrap delegates to WorkspaceBootstrapService.create', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    const result = await handlers['workspace.bootstrap']?.({
-      workspacePath: '/ws',
-    });
-
-    expect(result).toBeUndefined();
-    expect(deps.fsMutatorSpy.mkdirRecursive).toHaveBeenCalled();
-    const firstCall = deps.fsMutatorSpy.mkdirRecursive.mock.calls[0]?.[0] as string;
-    expect(firstCall.startsWith('/ws/')).toBe(true);
-  });
-
-  it('workspace.exists delegates to PathProber.exists', async () => {
-    const deps = buildDeps();
-    deps.pathProberSpy.exists.mockResolvedValueOnce(false);
-    const handlers = buildHandlers(deps);
-
-    const result = await handlers['workspace.exists']?.({ path: '/missing' });
-
-    expect(result).toBe(false);
-    expect(deps.pathProberSpy.exists).toHaveBeenCalledWith('/missing');
-  });
-
-  it('app.getHomeDir delegates to EnvironmentPort.getHomeDir', async () => {
-    const deps = buildDeps();
-    deps.environmentSpy.getHomeDir.mockReturnValueOnce('/Users/odenir');
-    const handlers = buildHandlers(deps);
-
-    const result = await handlers['app.getHomeDir']?.({});
-
-    expect(result).toBe('/Users/odenir');
-    expect(deps.environmentSpy.getHomeDir).toHaveBeenCalledTimes(1);
-  });
-
   it('dialog.selectFolder delegates to DialogPort.selectFolder', async () => {
     const deps = buildDeps();
     deps.dialogSpy.selectFolder.mockResolvedValueOnce({
@@ -360,8 +311,8 @@ describe('buildHandlers', () => {
   });
 });
 
-describe('buildHandlers — artifact', () => {
-  const sampleArtifact = {
+describe('buildHandlers — customization', () => {
+  const sampleCustomization = {
     id: 'skill/foo',
     frontmatter: {
       name: 'foo',
@@ -375,120 +326,120 @@ describe('buildHandlers — artifact', () => {
     body: '# Foo\n',
   };
 
-  it('artifact.save returns { artifact, syncReport: [] }', async () => {
+  it('customization.save returns { customization, syncReport: [] }', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const result = (await handlers['artifact.save']?.({
-      artifact: sampleArtifact,
-    })) as { artifact: { id: string }; syncReport: unknown[] };
+    const result = (await handlers['customization.save']?.({
+      customization: sampleCustomization,
+    })) as { customization: { id: string }; syncReport: unknown[] };
 
-    expect(result.artifact.id).toBe('skill/foo');
+    expect(result.customization.id).toBe('skill/foo');
     expect(result.syncReport).toEqual([]);
   });
 
-  it('artifact.save validation error surfaces as DomainError (envelope-mapped by dispatcher)', async () => {
+  it('customization.save validation error surfaces as DomainError (envelope-mapped by dispatcher)', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     const broken = {
-      ...sampleArtifact,
-      frontmatter: { ...sampleArtifact.frontmatter, name: '' },
+      ...sampleCustomization,
+      frontmatter: { ...sampleCustomization.frontmatter, name: '' },
     };
-    await expect(handlers['artifact.save']?.({ artifact: broken })).rejects.toMatchObject({
+    await expect(handlers['customization.save']?.({ customization: broken })).rejects.toMatchObject({
       kind: 'validation',
     });
   });
 
-  it('artifact.list filters by type when provided', async () => {
+  it('customization.list filters by type when provided', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.list']?.({ type: 'skill' })) as Array<{
+    const result = (await handlers['customization.list']?.({ type: 'skill' })) as Array<{
       id: string;
     }>;
     expect(result.map((a) => a.id)).toEqual(['skill/foo']);
   });
 
-  it('artifact.list returns all when type is omitted', async () => {
+  it('customization.list returns all when type is omitted', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.list']?.({})) as Array<{ id: string }>;
+    const result = (await handlers['customization.list']?.({})) as Array<{ id: string }>;
     expect(result).toHaveLength(1);
   });
 
-  it('artifact.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
+  it('customization.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const result = (await handlers['artifact.list']?.({
+    const result = (await handlers['customization.list']?.({
       type: 'global-instruction',
     })) as Array<{ id: string }>;
     expect(result).toEqual([]);
   });
 
-  it('template.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
+  it('template.list accepts targetType "global-instruction" without rejection', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     await expect(
-      handlers['template.list']?.({ type: 'global-instruction' }),
+      handlers['template.list']?.({ targetType: 'global-instruction' }),
     ).resolves.toBeDefined();
   });
 
-  it('artifact.get returns the artifact', async () => {
+  it('customization.get returns the customization', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.get']?.({ id: 'skill/foo' })) as {
+    const result = (await handlers['customization.get']?.({ id: 'skill/foo' })) as {
       id: string;
     };
     expect(result.id).toBe('skill/foo');
   });
 
-  it('artifact.delete removes the artifact and accepts removeSymlinks flag', async () => {
+  it('customization.delete removes the customization and accepts removeSymlinks flag', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.delete']?.({
+    const result = (await handlers['customization.delete']?.({
       id: 'skill/foo',
       removeSymlinks: true,
     })) as { ok: true; syncReport: unknown[] };
     expect(result).toEqual({ ok: true, syncReport: [] });
 
-    expect(await deps.artifactRepo.exists({ id: 'skill/foo' })).toBe(false);
+    expect(await deps.customizationRepo.exists({ id: 'skill/foo' })).toBe(false);
   });
 
-  it('artifact.delete rejects when removeSymlinks is missing', async () => {
+  it('customization.delete rejects when removeSymlinks is missing', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     await expect(
-      handlers['artifact.delete']?.({ id: 'skill/foo' }),
+      handlers['customization.delete']?.({ id: 'skill/foo' }),
     ).rejects.toBeInstanceOf(DomainError);
   });
 
-  it('template.list delegates to TemplateService with the requested type', async () => {
+  it('template.list delegates to TemplateService with the requested targetType', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const result = (await handlers['template.list']?.({ type: 'skill' })) as Template[];
-    expect(deps.templateRepoSpy.list).toHaveBeenCalledWith({ type: 'skill' });
+    const result = (await handlers['template.list']?.({ targetType: 'skill' })) as Template[];
+    expect(deps.templateRepoSpy.list).toHaveBeenCalledWith({ targetType: 'skill' });
     expect(result).toHaveLength(1);
-    expect(result[0]!.type).toBe('skill');
+    expect(result[0]!.frontmatter.targetType).toBe('skill');
   });
 
-  it('template.list rejects unknown type with kind=validation', async () => {
+  it('template.list rejects unknown targetType with kind=validation', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     await expect(
-      handlers['template.list']?.({ type: 'unknown' }),
+      handlers['template.list']?.({ targetType: 'unknown' }),
     ).rejects.toMatchObject({ kind: 'validation' });
   });
 });

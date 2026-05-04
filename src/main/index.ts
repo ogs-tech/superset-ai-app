@@ -6,21 +6,24 @@ import { IPC_CHANNEL } from '../shared/ipc-contract.js';
 import { SettingsService } from './application/services/settings-service.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
-import { ArtifactService } from './application/services/artifact-service.js';
+import { CustomizationService } from './application/services/customization-service.js';
 import { TemplateService } from './application/services/template-service.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
-import { FsArtifactRepository } from './infrastructure/artifact/fs-artifact-repository.js';
-import { BuiltInTemplateRepository } from './infrastructure/template/built-in-template-repository.js';
+import { FsCustomizationRepository } from './infrastructure/customization/fs-customization-repository.js';
+import { FsTemplateRepository } from './infrastructure/template/fs-template-repository.js';
+import { TemplateSeeder } from './application/services/template-seeder.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
-import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from './infrastructure/adapters/copilot-adapter.js';
+import { CopilotInstructionsGen } from './application/services/copilot-instructions-gen.js';
+import { SchemaValidator } from './application/services/schema-validator.js';
+import { SearchService } from './application/services/search-service.js';
 import type { Adapter } from './application/ports/adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
@@ -42,48 +45,60 @@ function isCallPayload(value: unknown): value is IpcCallPayload {
 }
 
 async function wireIpc(): Promise<void> {
+  const workspacePath = join(homedir(), '.sde-ai-app');
+
+  const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
+  await workspaceBootstrap.create(workspacePath);
+
   const settingsService = new SettingsService(
-    new FsSettingsRepository(join(app.getPath('userData'), 'settings.json')),
+    new FsSettingsRepository(join(workspacePath, 'settings.json')),
   );
   const repoReader = new FsRepoReader();
   const repoService = new RepoService(repoReader);
-  const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
   const dialogPort = new ElectronDialogAdapter();
-  const environmentPort = new ElectronEnvironmentAdapter();
 
   const clock = new SystemClock();
-  const artifactRepo = new FsArtifactRepository(async () => {
-    const current = await settingsService.load();
-    return current?.workspacePath ?? app.getPath('userData');
-  });
+  const customizationRepo = new FsCustomizationRepository(workspacePath);
 
-  const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false }, copilot: { enabled: false } }, linkedRepos: [], ui: { theme: 'system' } };
-  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, settings.workspacePath || app.getPath('userData'));
+  const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
+  const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
-  const copilotAdapter = new CopilotAdapter({ homedir: homedir() });
+  const copilotInstructionsGen = new CopilotInstructionsGen({
+    customizationRepository: customizationRepo,
+    workspaceFs: nodeFsAdapter,
+    workspacePath,
+  });
+  const copilotAdapter = new CopilotAdapter({
+    homedir: homedir(),
+    workspacePath,
+    copilotInstructionsGen,
+  });
   const adapterManager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
+    workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
       [copilotAdapter.adapterId, copilotAdapter],
     ]),
   });
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
-  const templatesDir = join(process.cwd(), 'src', 'main', 'templates');
-  const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir));
+  const schemaValidator = new SchemaValidator();
+  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
+  const searchService = new SearchService({ customizationRepository: customizationRepo });
+  const templatesSeedDir = join(process.cwd(), 'src', 'main', 'templates');
+  await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(workspacePath);
+  const templateRepo = new FsTemplateRepository(workspacePath);
+  const templateService = new TemplateService(templateRepo, clock, schemaValidator);
 
   const handlers = buildHandlers({
     settingsService,
     repoService,
-    workspaceBootstrap,
-    artifactService,
+    customizationService,
     templateService,
     adapterManager,
+    searchService,
     dialogPort,
-    pathProber: repoReader,
-    environmentPort,
   });
   const dispatch = createDispatcher(handlers);
 
