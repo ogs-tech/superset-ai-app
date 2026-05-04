@@ -121,7 +121,16 @@ export class ArtifactService {
     const fm = artifact.frontmatter;
 
     if (this.schemaValidator) {
-      const result = this.schemaValidator.validate(fm);
+      // Empty timestamps signal "not yet stamped" — the service will fill them in
+      // before persisting. Substitute the current clock so the schema sees a valid
+      // ISO datetime and validates the rest of the frontmatter.
+      const placeholder = this.clock.now().toISOString();
+      const fmForValidation = {
+        ...fm,
+        createdAt: fm.createdAt === '' ? placeholder : fm.createdAt,
+        updatedAt: fm.updatedAt === '' ? placeholder : fm.updatedAt,
+      };
+      const result = this.schemaValidator.validate(fmForValidation);
       if (!result.ok) {
         throw validationError({
           message: `${result.errors.length} validation error(s)`,

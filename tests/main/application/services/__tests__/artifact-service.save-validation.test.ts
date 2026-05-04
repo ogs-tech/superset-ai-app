@@ -51,4 +51,27 @@ describe('ArtifactService.save — SchemaValidator integration (AC#14)', () => {
 
     expect(saveSpy).not.toHaveBeenCalled();
   });
+
+  it('accepts empty createdAt/updatedAt on create (service stamps them) when SchemaValidator is wired', async () => {
+    const { service } = setup();
+    const fresh: Artifact = {
+      id: '',
+      frontmatter: {
+        name: 'default',
+        type: 'global-instruction',
+        description: 'unified global instructions',
+        scopes: ['personal'],
+        version: '0.1.0',
+        createdAt: '',
+        updatedAt: '',
+      },
+      body: '# Global instructions\n',
+    };
+
+    const result = await service.save({ artifact: fresh, isCreate: true });
+
+    expect(result.artifact.frontmatter.createdAt).not.toBe('');
+    expect(result.artifact.frontmatter.updatedAt).not.toBe('');
+    expect(result.artifact.frontmatter.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
 });
