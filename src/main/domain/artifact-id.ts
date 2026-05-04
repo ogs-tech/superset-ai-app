@@ -7,7 +7,6 @@ const ARTIFACT_TYPES: readonly ArtifactType[] = [
   'reference',
   'agent',
   'global-instruction',
-  'template',
 ];
 
 export interface ParsedArtifactId {

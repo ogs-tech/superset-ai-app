@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ArtifactEditor } from '../../../../src/renderer/screens/artifacts/ArtifactEditor.js';
 import { mockApi, ok, fail, type CallSpy } from '../../test-utils.js';
 import type { Artifact } from '../../../../src/shared/artifact.js';
+import type { Template } from '../../../../src/shared/template.js';
 
 const baseArtifact = (): Artifact => ({
   id: '',
@@ -146,6 +147,130 @@ describe('<ArtifactEditor>', () => {
     await user.click(screen.getByRole('checkbox', { name: /personal/i }));
     expect(screen.getByRole('checkbox', { name: /personal/i })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: /project/i })).not.toBeChecked();
+  });
+
+  describe('apply template', () => {
+    const skillTemplate: Template = {
+      id: 'template/default-skill',
+      frontmatter: {
+        name: 'default-skill',
+        targetType: 'skill',
+        description: 'starter skill template',
+        scopes: ['project'],
+        version: '9.9.9',
+        createdAt: '2026-05-04T00:00:00.000Z',
+        updatedAt: '2026-05-04T00:00:00.000Z',
+      },
+      body: '# Template body\n',
+    };
+
+    it('shows "Aplicar template" for non-template artifacts and lists templates by current type', async () => {
+      const user = userEvent.setup();
+      call.mockImplementation((method: string) => {
+        if (method === 'template.list') return Promise.resolve(ok([skillTemplate]));
+        return Promise.resolve(ok(undefined));
+      });
+
+      render(
+        <ArtifactEditor
+          initial={baseArtifact()}
+          isCreate={false}
+          onSaved={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+
+      await waitFor(() =>
+        expect(call).toHaveBeenCalledWith('template.list', { targetType: 'skill' }),
+      );
+      expect(await screen.findByText(/default-skill/)).toBeInTheDocument();
+    });
+
+    it('replaces only the body and preserves frontmatter after confirmation', async () => {
+      const user = userEvent.setup();
+      call.mockImplementation((method: string) => {
+        if (method === 'template.list') return Promise.resolve(ok([skillTemplate]));
+        return Promise.resolve(ok(undefined));
+      });
+
+      render(
+        <ArtifactEditor
+          initial={baseArtifact()}
+          isCreate={false}
+          onSaved={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(await screen.findByRole('button', { name: /default-skill/i }));
+      await user.click(
+        await screen.findByRole('button', { name: /substituir body/i }),
+      );
+
+      expect(screen.getByTestId('body-textarea')).toHaveValue('# Template body\n');
+      // frontmatter preserved
+      expect(screen.getByDisplayValue('foo')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('sample')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('0.1.0')).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /personal/i })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: /project/i })).not.toBeChecked();
+    });
+
+    it('cancelling the confirmation keeps the original body', async () => {
+      const user = userEvent.setup();
+      call.mockImplementation((method: string) => {
+        if (method === 'template.list') return Promise.resolve(ok([skillTemplate]));
+        return Promise.resolve(ok(undefined));
+      });
+
+      render(
+        <ArtifactEditor
+          initial={baseArtifact()}
+          isCreate={false}
+          onSaved={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(await screen.findByRole('button', { name: /default-skill/i }));
+      await user.click(
+        await screen.findByRole('button', { name: /manter body atual/i }),
+      );
+
+      expect(screen.getByTestId('body-textarea')).toHaveValue(baseArtifact().body);
+    });
+
+    it('skips confirmation when the body is empty', async () => {
+      const user = userEvent.setup();
+      call.mockImplementation((method: string) => {
+        if (method === 'template.list') return Promise.resolve(ok([skillTemplate]));
+        return Promise.resolve(ok(undefined));
+      });
+
+      const initial = baseArtifact();
+      initial.body = '';
+
+      render(
+        <ArtifactEditor
+          initial={initial}
+          isCreate={true}
+          onSaved={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /aplicar template/i }));
+      await user.click(await screen.findByRole('button', { name: /default-skill/i }));
+
+      expect(
+        screen.queryByRole('button', { name: /substituir body/i }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('body-textarea')).toHaveValue('# Template body\n');
+    });
   });
 
   it('shows error toast with the validation message when save fails', async () => {

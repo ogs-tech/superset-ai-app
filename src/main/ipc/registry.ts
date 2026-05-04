@@ -14,7 +14,8 @@ import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
 import type { ArtifactListParams } from '../../shared/ipc-contract.js';
-import type { Artifact, ArtifactType, TemplateTargetType } from '../../shared/artifact.js';
+import type { Artifact, ArtifactType } from '../../shared/artifact.js';
+import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
 
 export interface IpcDeps {
@@ -36,7 +37,6 @@ const ARTIFACT_TYPES: readonly ArtifactType[] = [
   'reference',
   'agent',
   'global-instruction',
-  'template',
 ];
 
 const TEMPLATE_TARGET_TYPES: readonly TemplateTargetType[] = [
@@ -61,6 +61,13 @@ const asArtifact = (value: unknown): Artifact => {
     throw new DomainError('validation', `Invalid 'artifact' payload`);
   }
   return value as Artifact;
+};
+
+const asTemplate = (value: unknown): Template => {
+  if (typeof value !== 'object' || value === null) {
+    throw new DomainError('validation', `Invalid 'template' payload`);
+  }
+  return value as Template;
 };
 
 const asArtifactType = (value: unknown, field: string): ArtifactType => {
@@ -282,8 +289,33 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'template.list': async (params) => {
-      const raw = asObject(params, 'template.list');
-      return templateService.list({ type: asTemplateTargetType(raw['type'], 'type') });
+      const raw = params === undefined || params === null ? {} : asObject(params, 'template.list');
+      const query: { targetType?: TemplateTargetType } = {};
+      if (raw['targetType'] !== undefined) {
+        query.targetType = asTemplateTargetType(raw['targetType'], 'targetType');
+      }
+      return templateService.list(query);
+    },
+
+    'template.get': async (params) => {
+      const raw = asObject(params, 'template.get');
+      return templateService.get({ id: asString(raw['id'], 'id') });
+    },
+
+    'template.save': async (params) => {
+      const raw = asObject(params, 'template.save');
+      const template = asTemplate(raw['template']);
+      const isCreate = raw['isCreate'];
+      return templateService.save({
+        template,
+        ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
+      });
+    },
+
+    'template.delete': async (params) => {
+      const raw = asObject(params, 'template.delete');
+      await templateService.delete({ id: asString(raw['id'], 'id') });
+      return { ok: true };
     },
 
     'adapter.setEnabled': async (params) => {

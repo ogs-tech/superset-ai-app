@@ -1,4 +1,5 @@
-import type { Artifact, ArtifactType, SyncResult, Template } from './artifact.js';
+import type { Artifact, ArtifactType, SyncResult } from './artifact.js';
+import type { Template, TemplateTargetType } from './template.js';
 
 export type IpcErrorKind =
   | 'validation'
@@ -52,9 +53,28 @@ export interface ArtifactDeleteResult {
 }
 
 export interface TemplateListParams {
-  type: ArtifactType;
+  targetType?: TemplateTargetType;
+}
+
+export interface TemplateGetParams {
+  id: string;
+}
+
+export interface TemplateSaveParams {
+  template: Template;
+  isCreate?: boolean;
+}
+
+export interface TemplateDeleteParams {
+  id: string;
+}
+
+export interface TemplateDeleteResult {
+  ok: true;
 }
 
 export type ArtifactListResult = Artifact[];
 export type ArtifactGetResult = Artifact;
 export type TemplateListResult = Template[];
+export type TemplateGetResult = Template;
+export type TemplateSaveResult = Template;

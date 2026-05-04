@@ -1,6 +1,6 @@
 ---
-type: reference
 name: new-reference
+targetType: reference
 description: One-line summary of the knowledge captured here.
 scopes:
   - personal

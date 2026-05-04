@@ -2,56 +2,41 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
-import { SyncReportModal } from '../../components/SyncReportModal.js';
-import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
+import type { ArtifactScope } from '../../../shared/artifact.js';
 import type {
-  Artifact,
-  ArtifactFrontmatter,
-  ArtifactScope,
-  SyncResult,
-} from '../../../shared/artifact.js';
-import type { Template } from '../../../shared/template.js';
+  Template,
+  TemplateFrontmatter,
+  TemplateTargetType,
+} from '../../../shared/template.js';
 
-interface ArtifactEditorProps {
-  initial: Artifact;
+const TARGET_TYPES: TemplateTargetType[] = [
+  'skill',
+  'reference',
+  'agent',
+  'global-instruction',
+];
+
+interface TemplateEditorProps {
+  initial: Template;
   isCreate: boolean;
-  onSaved: (artifact: Artifact) => void | Promise<void>;
+  onSaved: (template: Template) => void | Promise<void>;
   onCancel: () => void;
 }
 
-export function ArtifactEditor({
+export function TemplateEditor({
   initial,
   isCreate,
   onSaved,
   onCancel,
-}: ArtifactEditorProps): React.ReactElement {
-  const [frontmatter, setFrontmatter] = useState<ArtifactFrontmatter>(initial.frontmatter);
+}: TemplateEditorProps): React.ReactElement {
+  const [frontmatter, setFrontmatter] = useState<TemplateFrontmatter>(initial.frontmatter);
   const [body, setBody] = useState(initial.body);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [saving, setSaving] = useState(false);
-  const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-  const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null);
 
-  const handleTemplateSelected = (template: Template): void => {
-    setTemplateDialogOpen(false);
-    if (body.trim() === '') {
-      setBody(template.body);
-      return;
-    }
-    setPendingTemplate(template);
-  };
-
-  const confirmApplyTemplate = (): void => {
-    if (pendingTemplate) {
-      setBody(pendingTemplate.body);
-    }
-    setPendingTemplate(null);
-  };
-
-  const update = <K extends keyof ArtifactFrontmatter>(
+  const update = <K extends keyof TemplateFrontmatter>(
     key: K,
-    value: ArtifactFrontmatter[K],
+    value: TemplateFrontmatter[K],
   ): void => {
     setFrontmatter((fm) => ({ ...fm, [key]: value }));
   };
@@ -59,18 +44,12 @@ export function ArtifactEditor({
   const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
-      const result = await callIpc<{ artifact: Artifact; syncReport: SyncResult[] }>(
-        'artifact.save',
-        {
-          artifact: { id: initial.id, frontmatter, body },
-          isCreate,
-        },
-      );
-      setToast({ variant: 'success', message: `${result.artifact.frontmatter.name} salvo` });
-      if (result.syncReport.some((entry) => entry.status !== 'ok')) {
-        setSyncReport(result.syncReport);
-      }
-      await onSaved(result.artifact);
+      const result = await callIpc<Template>('template.save', {
+        template: { id: initial.id, frontmatter, body },
+        isCreate,
+      });
+      setToast({ variant: 'success', message: `${result.frontmatter.name} salvo` });
+      await onSaved(result);
     } catch (err) {
       if (err instanceof IpcCallError && err.kind === 'validation' && Array.isArray(err.details?.errors)) {
         const errors = err.details.errors as Array<{ path: string; message: string }>;
@@ -88,15 +67,12 @@ export function ArtifactEditor({
 
   return (
     <main
-      data-testid="artifact-editor"
+      data-testid="template-editor"
       style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}
     >
       <header style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <h1>{isCreate ? 'Novo artifact' : `Editar ${initial.frontmatter.name}`}</h1>
+        <h1>{isCreate ? 'Novo template' : `Editar ${initial.frontmatter.name}`}</h1>
         <span>
-          <button type="button" onClick={() => setTemplateDialogOpen(true)}>
-            Aplicar template
-          </button>{' '}
           <button type="button" onClick={onCancel}>
             Cancelar
           </button>{' '}
@@ -120,6 +96,20 @@ export function ArtifactEditor({
             />
           </label>
           <label style={{ display: 'block' }}>
+            Tipo alvo
+            <select
+              data-testid="target-type-select"
+              value={frontmatter.targetType}
+              onChange={(e) => update('targetType', e.target.value as TemplateTargetType)}
+            >
+              {TARGET_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: 'block' }}>
             Descrição
             <input
               type="text"
@@ -137,7 +127,7 @@ export function ArtifactEditor({
             />
           </label>
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend>Escopo</legend>
+            <legend>Escopo padrão</legend>
             {(['personal', 'project'] as const).map((value) => (
               <label
                 key={value}
@@ -177,35 +167,7 @@ export function ArtifactEditor({
         </div>
       </section>
 
-      {templateDialogOpen && (
-        <NewFromTemplateDialog
-          targetType={frontmatter.type}
-          onCancel={() => setTemplateDialogOpen(false)}
-          onSelect={handleTemplateSelected}
-        />
-      )}
-
-      {pendingTemplate && (
-        <div
-          role="dialog"
-          aria-label="Confirmar substituição de body"
-          data-testid="confirm-apply-template-dialog"
-        >
-          <p>
-            Substituir o body atual pelo template <strong>{pendingTemplate.frontmatter.name}</strong>? O
-            frontmatter será preservado.
-          </p>
-          <button type="button" onClick={confirmApplyTemplate}>
-            Substituir body
-          </button>
-          <button type="button" onClick={() => setPendingTemplate(null)}>
-            Manter body atual
-          </button>
-        </div>
-      )}
-
       <Toast toast={toast} onDismiss={() => setToast(null)} />
-      <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />
     </main>
   );
 }

@@ -18,7 +18,8 @@ import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repo
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
 import { FsArtifactRepository } from './infrastructure/artifact/fs-artifact-repository.js';
-import { BuiltInTemplateRepository } from './infrastructure/template/built-in-template-repository.js';
+import { FsTemplateRepository } from './infrastructure/template/fs-template-repository.js';
+import { TemplateSeeder } from './application/services/template-seeder.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { ElectronEnvironmentAdapter } from './infrastructure/environment/electron-environment-adapter.js';
@@ -123,8 +124,10 @@ async function wireIpc(): Promise<void> {
   const schemaValidator = new SchemaValidator();
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager, schemaValidator);
   const searchService = new SearchService({ artifactRepository: artifactRepo });
-  const templatesDir = join(process.cwd(), 'src', 'main', 'templates');
-  const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir), artifactRepo);
+  const templatesSeedDir = join(process.cwd(), 'src', 'main', 'templates');
+  await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(activeWorkspacePath);
+  const templateRepo = new FsTemplateRepository(async () => workspaceLocator.resolve());
+  const templateService = new TemplateService(templateRepo, clock, schemaValidator);
 
   const handlers = buildHandlers({
     settingsService,

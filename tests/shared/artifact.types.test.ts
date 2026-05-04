@@ -56,25 +56,9 @@ describe('ArtifactType union (spec 014)', () => {
   });
 });
 
-describe('Template artifact type', () => {
-  it('includes "template" in ArtifactType', () => {
-    const value: ArtifactType = 'template';
-    expect(value).toBe('template');
-  });
-
-  it('accepts a template artifact frontmatter with targetType', () => {
-    const fm = {
-      name: 'my-skill-template',
-      type: 'template',
-      description: 'desc',
-      scopes: ['personal'] as ArtifactScope[],
-      version: '0.1.0',
-      targetType: 'skill',
-      createdAt: '',
-      updatedAt: '',
-    } satisfies ArtifactFrontmatter;
-
-    expect(fm.type).toBe('template');
-    expect(fm.targetType).toBe('skill');
+describe('ArtifactType excludes "template" (template is now first-class entity)', () => {
+  it('does not include "template"', () => {
+    const valid: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction'];
+    expect(valid).toHaveLength(4);
   });
 });

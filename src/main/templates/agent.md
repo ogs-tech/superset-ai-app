@@ -1,6 +1,6 @@
 ---
-type: agent
 name: new-agent
+targetType: agent
 description: One-line summary of what this agent specializes in.
 scopes:
   - personal

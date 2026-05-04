@@ -1,13 +1,26 @@
 import { z } from 'zod';
-import { commonFrontmatterSchema } from './common.js';
+import {
+  descriptionSchema,
+  isoDatetimeSchema,
+  scopesSchema,
+  slugSchema,
+  tagsSchema,
+  versionSchema,
+} from './common.js';
 
-export const templateSchema = commonFrontmatterSchema
-  .extend({
-    type: z.literal('template'),
+export const templateSchema = z
+  .object({
+    name: slugSchema,
     targetType: z.enum(['skill', 'reference', 'agent', 'global-instruction'], {
-      message: 'targetType is required and must be one of skill | reference | agent | global-instruction',
+      message: 'targetType must be one of skill | reference | agent | global-instruction',
     }),
+    description: descriptionSchema,
+    scopes: scopesSchema,
+    version: versionSchema,
+    createdAt: isoDatetimeSchema,
+    updatedAt: isoDatetimeSchema,
+    tags: tagsSchema,
   })
   .passthrough();
 
-export type TemplateFrontmatter = z.infer<typeof templateSchema>;
+export type TemplateFrontmatterValidated = z.infer<typeof templateSchema>;

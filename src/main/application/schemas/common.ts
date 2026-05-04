@@ -25,7 +25,7 @@ export const isoDatetimeSchema = z.string().datetime({ message: 'must be a valid
 
 export const commonFrontmatterSchema = z.object({
   name: slugSchema,
-  type: z.enum(['skill', 'reference', 'agent', 'global-instruction', 'template']),
+  type: z.enum(['skill', 'reference', 'agent', 'global-instruction']),
   description: descriptionSchema,
   scopes: scopesSchema,
   version: versionSchema,

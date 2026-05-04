@@ -3,7 +3,8 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ArtifactList } from '../../../../src/renderer/screens/artifacts/ArtifactList.js';
 import { mockApi, ok, type CallSpy } from '../../test-utils.js';
-import type { Artifact, ArtifactType, Template } from '../../../../src/shared/artifact.js';
+import type { Artifact, ArtifactType } from '../../../../src/shared/artifact.js';
+import type { Template } from '../../../../src/shared/template.js';
 
 const buildArtifact = (type: ArtifactType, name: string): Artifact => ({
   id: `${type}/${name}`,
@@ -167,19 +168,17 @@ describe('<ArtifactList>', () => {
 
   describe('global-instruction tab', () => {
     const defaultTemplate: Template = {
-      id: 'global-instruction/default',
-      type: 'global-instruction',
-      name: 'default',
-      description: 'Personal global instructions',
+      id: 'template/default',
       frontmatter: {
         name: 'default',
-        type: 'global-instruction',
+        targetType: 'global-instruction',
         description: 'Personal global instructions',
         scopes: ['personal'],
         version: '0.1.0',
+        createdAt: '2026-05-04T00:00:00.000Z',
+        updatedAt: '2026-05-04T00:00:00.000Z',
       },
       body: '# Global instructions template\n',
-      isBuiltIn: true,
     };
 
     const setupGlobalInstruction = (existing: Artifact[] = []): void => {
@@ -250,7 +249,7 @@ describe('<ArtifactList>', () => {
       await user.click(within(slot).getByRole('button', { name: /editar/i }));
 
       await waitFor(() =>
-        expect(call).toHaveBeenCalledWith('template.list', { type: 'global-instruction' }),
+        expect(call).toHaveBeenCalledWith('template.list', { targetType: 'global-instruction' }),
       );
 
       const editor = await screen.findByTestId('artifact-editor');
@@ -281,97 +280,89 @@ describe('<ArtifactList>', () => {
   });
 
   describe('template tab', () => {
-    const builtInSkillTemplate: Template = {
-      id: 'skill/default',
-      type: 'skill',
-      name: 'default',
-      description: 'starter skill template',
-      frontmatter: { type: 'skill', name: 'default', scopes: ['personal'], version: '0.1.0' },
+    const skillTemplate: Template = {
+      id: 'template/new-skill',
+      frontmatter: {
+        name: 'new-skill',
+        targetType: 'skill',
+        description: 'starter skill template',
+        scopes: ['personal'],
+        version: '0.1.0',
+        createdAt: '2026-05-04T00:00:00.000Z',
+        updatedAt: '2026-05-04T00:00:00.000Z',
+      },
       body: '# default skill\n',
-      isBuiltIn: true,
     };
-    const builtInAgentTemplate: Template = {
-      id: 'agent/default',
-      type: 'agent',
-      name: 'default',
-      description: 'starter agent template',
-      frontmatter: { type: 'agent', name: 'default', scopes: ['personal'], version: '0.1.0' },
+    const agentTemplate: Template = {
+      id: 'template/new-agent',
+      frontmatter: {
+        name: 'new-agent',
+        targetType: 'agent',
+        description: 'starter agent template',
+        scopes: ['personal'],
+        version: '0.1.0',
+        createdAt: '2026-05-04T00:00:00.000Z',
+        updatedAt: '2026-05-04T00:00:00.000Z',
+      },
       body: '# default agent\n',
-      isBuiltIn: true,
-    };
-    const userSkillTemplate: Template = {
-      id: 'template/my-skill-tpl',
-      type: 'skill',
-      name: 'my-skill-tpl',
-      description: 'user-managed skill template',
-      frontmatter: { type: 'skill', name: 'my-skill-tpl', scopes: ['personal'], version: '0.1.0' },
-      body: '# user skill template\n',
-      isBuiltIn: false,
     };
 
-    const setupTemplateTab = (userTemplates: Artifact[] = []): void => {
-      call.mockImplementation((method: string, params: unknown) => {
-        if (method === 'artifact.list') {
-          const type = (params as { type: ArtifactType }).type;
-          return Promise.resolve(ok(type === 'template' ? userTemplates : []));
-        }
-        if (method === 'template.list') {
-          const type = (params as { type: string }).type;
-          if (type === 'skill') return Promise.resolve(ok([userSkillTemplate, builtInSkillTemplate]));
-          if (type === 'agent') return Promise.resolve(ok([builtInAgentTemplate]));
-          return Promise.resolve(ok([]));
-        }
+    const setupTemplateTab = (templates: Template[] = [skillTemplate, agentTemplate]): void => {
+      call.mockImplementation((method: string) => {
+        if (method === 'artifact.list') return Promise.resolve(ok([]));
+        if (method === 'template.list') return Promise.resolve(ok(templates));
+        if (method === 'template.delete') return Promise.resolve(ok({ ok: true }));
         return Promise.resolve(ok(undefined));
       });
     };
 
-    it('lists built-in templates as read-only on the template tab', async () => {
+    it('lists templates from template.list (no isBuiltIn distinction) on the template tab', async () => {
       const user = userEvent.setup();
       setupTemplateTab();
       render(<ArtifactList />);
 
       await user.click(await screen.findByRole('tab', { name: /^templates$/i }));
 
-      const list = await screen.findByTestId('built-in-template-list');
-      const skillRow = within(list).getByTestId('built-in-template-skill/default');
-      expect(within(skillRow).getByText('default')).toBeInTheDocument();
-      expect(within(skillRow).getByText(/built-in · skill/)).toBeInTheDocument();
-      expect(within(skillRow).queryByRole('button', { name: /editar/i })).not.toBeInTheDocument();
-      expect(within(skillRow).queryByRole('button', { name: /deletar/i })).not.toBeInTheDocument();
+      const list = await screen.findByTestId('template-list');
+      const skillRow = within(list).getByTestId('template-item-template/new-skill');
+      expect(within(skillRow).getByText('new-skill')).toBeInTheDocument();
+      expect(within(skillRow).getByText('(skill)')).toBeInTheDocument();
+      expect(within(skillRow).getByRole('button', { name: /editar/i })).toBeInTheDocument();
+      expect(within(skillRow).getByRole('button', { name: /deletar/i })).toBeInTheDocument();
 
-      const agentRow = within(list).getByTestId('built-in-template-agent/default');
-      expect(within(agentRow).getByText(/built-in · agent/)).toBeInTheDocument();
+      const agentRow = within(list).getByTestId('template-item-template/new-agent');
+      expect(within(agentRow).getByText('(agent)')).toBeInTheDocument();
     });
 
-    it('renders user templates as editable alongside built-ins on the template tab', async () => {
+    it('clicking "Novo template" opens TemplateEditor in create mode', async () => {
       const user = userEvent.setup();
-      const userArtifact: Artifact = {
-        id: 'template/my-skill-tpl',
-        frontmatter: {
-          name: 'my-skill-tpl',
-          type: 'template',
-          description: 'user template',
-          scopes: ['personal'],
-          version: '0.1.0',
-          targetType: 'skill',
-          createdAt: '2026-05-04T00:00:00.000Z',
-          updatedAt: '2026-05-04T00:00:00.000Z',
-        },
-        body: '# user skill template\n',
-      };
-      setupTemplateTab([userArtifact]);
+      setupTemplateTab([]);
       render(<ArtifactList />);
 
       await user.click(await screen.findByRole('tab', { name: /^templates$/i }));
+      await user.click(await screen.findByTestId('new-template-button'));
 
-      const userRow = await screen.findByTestId('artifact-item-template/my-skill-tpl');
-      expect(within(userRow).getByRole('button', { name: /editar/i })).toBeInTheDocument();
-      expect(within(userRow).getByRole('button', { name: /deletar/i })).toBeInTheDocument();
-
-      expect(await screen.findByTestId('built-in-template-skill/default')).toBeInTheDocument();
+      expect(await screen.findByTestId('template-editor')).toBeInTheDocument();
     });
 
-    it('does not fetch built-ins for non-template tabs', async () => {
+    it('confirms before deleting a template and calls template.delete on confirm', async () => {
+      const user = userEvent.setup();
+      setupTemplateTab([skillTemplate]);
+      render(<ArtifactList />);
+
+      await user.click(await screen.findByRole('tab', { name: /^templates$/i }));
+      const row = await screen.findByTestId('template-item-template/new-skill');
+      await user.click(within(row).getByRole('button', { name: /deletar/i }));
+
+      expect(screen.getByTestId('confirm-delete-template-dialog')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /confirmar/i }));
+
+      await waitFor(() =>
+        expect(call).toHaveBeenCalledWith('template.delete', { id: 'template/new-skill' }),
+      );
+    });
+
+    it('does not fetch templates on non-template tabs', async () => {
       setupTemplateTab();
       render(<ArtifactList />);
 

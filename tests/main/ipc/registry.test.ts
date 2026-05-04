@@ -14,7 +14,7 @@ import type { DialogPort } from '../../../src/main/application/ports/dialog-port
 import type { EnvironmentPort } from '../../../src/main/application/ports/environment-port.js';
 import type { PathProber } from '../../../src/main/application/ports/path-prober.js';
 import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
-import type { Template } from '../../../src/shared/artifact.js';
+import type { Template, TemplateFrontmatter } from '../../../src/shared/template.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import type { SearchService } from '../../../src/main/application/services/search-service.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
@@ -66,6 +66,10 @@ interface Deps {
   clock: FixedClock;
   templateRepoSpy: {
     list: ReturnType<typeof vi.fn>;
+    get: ReturnType<typeof vi.fn>;
+    save: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+    exists: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -128,20 +132,35 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   } as unknown as AdapterManager;
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
 
-  const templateFixture: Template = {
-    id: 'skill/default',
-    type: 'skill',
-    name: 'Default Skill',
+  const templateFrontmatter: TemplateFrontmatter = {
+    name: 'default',
+    targetType: 'skill',
     description: 'sample',
-    frontmatter: { type: 'skill' },
-    body: '# Default Skill\n',
-    isBuiltIn: true,
+    scopes: ['personal'],
+    version: '0.1.0',
+    createdAt: '2026-04-26T10:00:00.000Z',
+    updatedAt: '2026-04-26T10:00:00.000Z',
+  };
+  const templateFixture: Template = {
+    id: 'template/default',
+    frontmatter: templateFrontmatter,
+    body: '# Default\n',
   };
   const templateRepoSpy = {
     list: vi.fn().mockResolvedValue([templateFixture]),
+    get: vi.fn().mockResolvedValue(templateFixture),
+    save: vi.fn().mockResolvedValue(templateFixture),
+    delete: vi.fn().mockResolvedValue(undefined),
+    exists: vi.fn().mockResolvedValue(false),
   };
-  const templateRepo: TemplateRepository = { list: templateRepoSpy.list };
-  const templateService = new TemplateService(templateRepo);
+  const templateRepo: TemplateRepository = {
+    list: templateRepoSpy.list,
+    get: templateRepoSpy.get,
+    save: templateRepoSpy.save,
+    delete: templateRepoSpy.delete,
+    exists: templateRepoSpy.exists,
+  };
+  const templateService = new TemplateService(templateRepo, clock);
 
   const searchService: Partial<SearchService> = {
     search: vi.fn().mockResolvedValue({ results: [], total: 0, truncated: false }),
@@ -442,12 +461,12 @@ describe('buildHandlers — artifact', () => {
     expect(result).toEqual([]);
   });
 
-  it('template.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
+  it('template.list accepts targetType "global-instruction" without rejection', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     await expect(
-      handlers['template.list']?.({ type: 'global-instruction' }),
+      handlers['template.list']?.({ targetType: 'global-instruction' }),
     ).resolves.toBeDefined();
   });
 
@@ -485,22 +504,22 @@ describe('buildHandlers — artifact', () => {
     ).rejects.toBeInstanceOf(DomainError);
   });
 
-  it('template.list delegates to TemplateService with the requested type', async () => {
+  it('template.list delegates to TemplateService with the requested targetType', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const result = (await handlers['template.list']?.({ type: 'skill' })) as Template[];
-    expect(deps.templateRepoSpy.list).toHaveBeenCalledWith({ type: 'skill' });
+    const result = (await handlers['template.list']?.({ targetType: 'skill' })) as Template[];
+    expect(deps.templateRepoSpy.list).toHaveBeenCalledWith({ targetType: 'skill' });
     expect(result).toHaveLength(1);
-    expect(result[0]!.type).toBe('skill');
+    expect(result[0]!.frontmatter.targetType).toBe('skill');
   });
 
-  it('template.list rejects unknown type with kind=validation', async () => {
+  it('template.list rejects unknown targetType with kind=validation', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     await expect(
-      handlers['template.list']?.({ type: 'unknown' }),
+      handlers['template.list']?.({ targetType: 'unknown' }),
     ).rejects.toMatchObject({ kind: 'validation' });
   });
 });

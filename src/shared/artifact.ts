@@ -1,6 +1,4 @@
-export type ArtifactType = 'skill' | 'reference' | 'agent' | 'global-instruction' | 'template';
-
-export type TemplateTargetType = Exclude<ArtifactType, 'template'>;
+export type ArtifactType = 'skill' | 'reference' | 'agent' | 'global-instruction';
 
 export type ArtifactScope = 'personal' | 'project';
 
@@ -11,7 +9,6 @@ export interface ArtifactFrontmatter {
   scopes: ArtifactScope[];
   version: string;
   tags?: string[];
-  targetType?: TemplateTargetType;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,16 +17,6 @@ export interface Artifact {
   id: string;
   frontmatter: ArtifactFrontmatter;
   body: string;
-}
-
-export interface Template {
-  id: string;
-  type: TemplateTargetType;
-  name: string;
-  description: string;
-  frontmatter: Partial<ArtifactFrontmatter>;
-  body: string;
-  isBuiltIn: boolean;
 }
 
 export type SyncStatus = 'ok' | 'conflict' | 'error';

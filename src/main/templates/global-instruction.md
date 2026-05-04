@@ -1,6 +1,6 @@
 ---
-type: global-instruction
 name: default
+targetType: global-instruction
 description: Personal global instructions distributed to every enabled assistant.
 scopes:
   - personal

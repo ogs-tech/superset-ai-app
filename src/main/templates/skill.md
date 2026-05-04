@@ -1,6 +1,6 @@
 ---
-type: skill
 name: new-skill
+targetType: skill
 description: One-line summary of when to use this skill.
 scopes:
   - personal

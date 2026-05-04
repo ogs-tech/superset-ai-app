@@ -1,122 +1,151 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { TemplateService } from '../../../../src/main/application/services/template-service.js';
-import { InMemoryArtifactRepository } from '../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
 import type {
+  TemplateDeleteCommand,
+  TemplateExistsQuery,
+  TemplateGetQuery,
   TemplateListQuery,
   TemplateRepository,
+  TemplateSaveCommand,
 } from '../../../../src/main/application/ports/template-repository.js';
-import type { Artifact, Template, TemplateTargetType } from '../../../../src/shared/artifact.js';
+import type { Template, TemplateFrontmatter, TemplateTargetType } from '../../../../src/shared/template.js';
+import type { ClockPort } from '../../../../src/main/application/ports/clock-port.js';
 
-const fixture = (type: TemplateTargetType, name: string): Template => ({
-  id: `${type}/${name}`,
-  type,
-  name: `${type} ${name}`,
-  description: `Template for ${type}`,
-  frontmatter: { type },
-  body: `# ${type}\n`,
-  isBuiltIn: true,
+const ISO = '2026-05-04T10:00:00.000Z';
+
+const fixedClock: ClockPort = { now: () => new Date(ISO) };
+
+const buildFrontmatter = (overrides: Partial<TemplateFrontmatter> = {}): TemplateFrontmatter => ({
+  name: 'new-skill',
+  targetType: 'skill',
+  description: 'a sample',
+  scopes: ['personal'],
+  version: '0.1.0',
+  createdAt: ISO,
+  updatedAt: ISO,
+  ...overrides,
+});
+
+const fixture = (
+  targetType: TemplateTargetType,
+  name: string,
+  overrides: Partial<TemplateFrontmatter> = {},
+): Template => ({
+  id: `template/${name}`,
+  frontmatter: buildFrontmatter({ name, targetType, ...overrides }),
+  body: `# ${targetType}\n`,
 });
 
 class InMemoryTemplateRepository implements TemplateRepository {
-  constructor(private readonly all: Template[]) {}
-  list(query: TemplateListQuery): Promise<Template[]> {
-    return Promise.resolve(this.all.filter((t) => t.type === query.type));
+  private store = new Map<string, Template>();
+
+  constructor(initial: Template[] = []) {
+    for (const t of initial) this.store.set(t.id, t);
+  }
+
+  list(query: TemplateListQuery = {}): Promise<Template[]> {
+    const all = [...this.store.values()];
+    if (query.targetType) {
+      return Promise.resolve(all.filter((t) => t.frontmatter.targetType === query.targetType));
+    }
+    return Promise.resolve(all);
+  }
+
+  get(query: TemplateGetQuery): Promise<Template> {
+    const t = this.store.get(query.id);
+    if (!t) throw new Error(`not found: ${query.id}`);
+    return Promise.resolve(t);
+  }
+
+  save(command: TemplateSaveCommand): Promise<Template> {
+    this.store.set(command.template.id, command.template);
+    return Promise.resolve(command.template);
+  }
+
+  delete(command: TemplateDeleteCommand): Promise<void> {
+    this.store.delete(command.id);
+    return Promise.resolve();
+  }
+
+  exists(query: TemplateExistsQuery): Promise<boolean> {
+    return Promise.resolve(this.store.has(query.id));
   }
 }
 
+let repo: InMemoryTemplateRepository;
+let service: TemplateService;
+
+beforeEach(() => {
+  repo = new InMemoryTemplateRepository();
+  service = new TemplateService(repo, fixedClock);
+});
+
 describe('TemplateService.list', () => {
-  it('returns ≥1 template for skill', async () => {
-    const repo = new InMemoryTemplateRepository([fixture('skill', 'default')]);
-    const service = new TemplateService(repo);
-    const list = await service.list({ type: 'skill' });
-    expect(list.length).toBeGreaterThanOrEqual(1);
+  it('returns all templates when no filter', async () => {
+    repo = new InMemoryTemplateRepository([
+      fixture('skill', 'new-skill'),
+      fixture('reference', 'new-reference'),
+    ]);
+    service = new TemplateService(repo, fixedClock);
+    const list = await service.list();
+    expect(list).toHaveLength(2);
   });
 
-  it('returns ≥1 template for reference', async () => {
-    const repo = new InMemoryTemplateRepository([fixture('reference', 'default')]);
-    const service = new TemplateService(repo);
-    const list = await service.list({ type: 'reference' });
-    expect(list.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('returns ≥1 template for agent', async () => {
-    const repo = new InMemoryTemplateRepository([fixture('agent', 'default')]);
-    const service = new TemplateService(repo);
-    const list = await service.list({ type: 'agent' });
-    expect(list.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('each returned template carries frontmatter.type matching the filter', async () => {
-    const repo = new InMemoryTemplateRepository([
+  it('filters by targetType', async () => {
+    repo = new InMemoryTemplateRepository([
       fixture('skill', 'a'),
       fixture('skill', 'b'),
       fixture('reference', 'c'),
     ]);
-    const service = new TemplateService(repo);
-    const skills = await service.list({ type: 'skill' });
-    expect(skills.every((t) => t.frontmatter.type === 'skill')).toBe(true);
-    expect(skills.length).toBe(2);
+    service = new TemplateService(repo, fixedClock);
+    const skills = await service.list({ targetType: 'skill' });
+    expect(skills.map((t) => t.frontmatter.name).sort()).toEqual(['a', 'b']);
   });
+});
 
-  it('returns 1 unified global-instruction template', async () => {
-    const repo = new InMemoryTemplateRepository([
-      fixture('global-instruction', 'default'),
-      fixture('skill', 'noise'),
-    ]);
-    const service = new TemplateService(repo);
-    const list = await service.list({ type: 'global-instruction' });
-    expect(list).toHaveLength(1);
-    expect(list[0]!.id).toBe('global-instruction/default');
-    expect(list[0]!.body.length).toBeGreaterThan(0);
-  });
-
-  it('merges user-managed template artifacts with built-ins, filtered by targetType', async () => {
-    const builtIns = new InMemoryTemplateRepository([fixture('skill', 'default')]);
-    const artifacts = new InMemoryArtifactRepository();
-    const userSkillTemplate: Artifact = {
-      id: 'template/my-skill-template',
-      frontmatter: {
-        name: 'my-skill-template',
-        type: 'template',
-        description: 'A custom skill template',
-        scopes: ['personal'],
-        version: '0.1.0',
-        targetType: 'skill',
-        createdAt: '2026-05-04T00:00:00.000Z',
-        updatedAt: '2026-05-04T00:00:00.000Z',
-      },
-      body: '# my custom skill body',
+describe('TemplateService.save', () => {
+  it('creates a new template with stamped timestamps', async () => {
+    const tpl: Template = {
+      id: '',
+      frontmatter: { ...buildFrontmatter({ name: 'fresh' }), createdAt: '', updatedAt: '' },
+      body: '# fresh\n',
     };
-    const userAgentTemplate: Artifact = {
-      id: 'template/agent-tpl',
-      frontmatter: {
-        name: 'agent-tpl',
-        type: 'template',
-        description: 'An agent template',
-        scopes: ['personal'],
-        version: '0.1.0',
-        targetType: 'agent',
-        createdAt: '2026-05-04T00:00:00.000Z',
-        updatedAt: '2026-05-04T00:00:00.000Z',
-      },
-      body: '# agent body',
-    };
-    await artifacts.save({ artifact: userSkillTemplate });
-    await artifacts.save({ artifact: userAgentTemplate });
-
-    const service = new TemplateService(builtIns, artifacts);
-    const skillTemplates = await service.list({ type: 'skill' });
-
-    expect(skillTemplates.map((t) => t.name)).toEqual(['my-skill-template', 'skill default']);
-    expect(skillTemplates[0]!.frontmatter.type).toBe('skill');
-    expect(skillTemplates[0]!.body).toBe('# my custom skill body');
+    const saved = await service.save({ template: tpl, isCreate: true });
+    expect(saved.id).toBe('template/fresh');
+    expect(saved.frontmatter.createdAt).toBe(ISO);
+    expect(saved.frontmatter.updatedAt).toBe(ISO);
   });
 
-  it('returns only built-ins when no artifact repository is provided', async () => {
-    const builtIns = new InMemoryTemplateRepository([fixture('skill', 'default')]);
-    const service = new TemplateService(builtIns);
-    const list = await service.list({ type: 'skill' });
-    expect(list).toHaveLength(1);
-    expect(list[0]!.id).toBe('skill/default');
+  it('rejects creating an existing template id', async () => {
+    repo = new InMemoryTemplateRepository([fixture('skill', 'dup')]);
+    service = new TemplateService(repo, fixedClock);
+    await expect(
+      service.save({
+        template: { id: '', frontmatter: buildFrontmatter({ name: 'dup' }), body: '' },
+        isCreate: true,
+      }),
+    ).rejects.toMatchObject({ kind: 'validation' });
+  });
+
+  it('preserves createdAt on update', async () => {
+    const original: Template = fixture('skill', 'foo', { createdAt: '2026-01-01T00:00:00.000Z' });
+    repo = new InMemoryTemplateRepository([original]);
+    service = new TemplateService(repo, fixedClock);
+    const updated: Template = {
+      ...original,
+      body: '# updated\n',
+    };
+    const saved = await service.save({ template: updated });
+    expect(saved.frontmatter.createdAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(saved.frontmatter.updatedAt).toBe(ISO);
+  });
+});
+
+describe('TemplateService.delete', () => {
+  it('removes the template', async () => {
+    repo = new InMemoryTemplateRepository([fixture('skill', 'foo')]);
+    service = new TemplateService(repo, fixedClock);
+    await service.delete({ id: 'template/foo' });
+    expect(await repo.exists({ id: 'template/foo' })).toBe(false);
   });
 });

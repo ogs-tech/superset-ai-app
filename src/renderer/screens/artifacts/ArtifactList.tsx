@@ -3,27 +3,22 @@ import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { ArtifactEditor } from './ArtifactEditor.js';
+import { TemplateEditor } from './TemplateEditor.js';
 import type {
   Artifact,
   ArtifactType,
-  Template,
-  TemplateTargetType,
 } from '../../../shared/artifact.js';
+import type { Template, TemplateTargetType } from '../../../shared/template.js';
 import type { SearchOutput } from '../../../shared/search.js';
 
-const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction', 'template'];
+type Tab = ArtifactType | 'template';
 
-const TEMPLATE_TARGET_TYPES: TemplateTargetType[] = [
-  'skill',
-  'reference',
-  'agent',
-  'global-instruction',
-];
+const TABS: Tab[] = ['skill', 'reference', 'agent', 'global-instruction', 'template'];
 
 const GLOBAL_INSTRUCTION_NAME = 'default';
 
-const tabLabel = (type: ArtifactType): string => {
-  switch (type) {
+const tabLabel = (tab: Tab): string => {
+  switch (tab) {
     case 'skill':
       return 'skills';
     case 'reference':
@@ -46,16 +41,19 @@ type Editor =
   | { kind: 'closed' }
   | { kind: 'new'; template: Template; type: ArtifactType }
   | { kind: 'create'; artifact: Artifact }
-  | { kind: 'edit'; artifact: Artifact };
+  | { kind: 'edit'; artifact: Artifact }
+  | { kind: 'template-create'; template: Template }
+  | { kind: 'template-edit'; template: Template };
 
 export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {}): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<ArtifactType>('skill');
+  const [activeTab, setActiveTab] = useState<Tab>('skill');
   const [items, setItems] = useState<Artifact[]>([]);
-  const [builtInTemplates, setBuiltInTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [editor, setEditor] = useState<Editor>({ kind: 'closed' });
   const [confirmDelete, setConfirmDelete] = useState<Artifact | null>(null);
+  const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState<Template | null>(null);
 
   const loadList = async (type: ArtifactType): Promise<void> => {
     try {
@@ -67,14 +65,10 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
     }
   };
 
-  const loadBuiltInTemplates = async (): Promise<void> => {
+  const loadTemplates = async (): Promise<void> => {
     try {
-      const lists = await Promise.all(
-        TEMPLATE_TARGET_TYPES.map((type) =>
-          callIpc<Template[]>('template.list', { type }),
-        ),
-      );
-      setBuiltInTemplates(lists.flat().filter((t) => t.isBuiltIn));
+      const list = await callIpc<Template[]>('template.list', {});
+      setTemplates(list);
     } catch (err) {
       const message = err instanceof IpcCallError ? err.message : String(err);
       setToast({ variant: 'error', message });
@@ -83,9 +77,10 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
 
   useEffect(() => {
     void (async () => {
-      await loadList(activeTab);
       if (activeTab === 'template') {
-        await loadBuiltInTemplates();
+        await loadTemplates();
+      } else {
+        await loadList(activeTab);
       }
     })();
   }, [activeTab]);
@@ -93,7 +88,13 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
   const handleSaved = async (saved: Artifact): Promise<void> => {
     setEditor({ kind: 'closed' });
     setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
-    await loadList(activeTab);
+    if (activeTab !== 'template') await loadList(activeTab);
+  };
+
+  const handleTemplateSaved = async (saved: Template): Promise<void> => {
+    setEditor({ kind: 'closed' });
+    setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
+    await loadTemplates();
   };
 
   const openGlobalInstructionEditor = async (): Promise<void> => {
@@ -103,8 +104,8 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
       return;
     }
     try {
-      const templates = await callIpc<Template[]>('template.list', { type: 'global-instruction' });
-      const template = templates[0];
+      const list = await callIpc<Template[]>('template.list', { targetType: 'global-instruction' });
+      const template = list[0];
       if (!template) {
         setToast({
           variant: 'error',
@@ -139,6 +140,34 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
     }
   };
 
+  const handleDeleteTemplateConfirmed = async (): Promise<void> => {
+    if (!confirmDeleteTemplate) return;
+    try {
+      await callIpc('template.delete', { id: confirmDeleteTemplate.id });
+      setTemplates((prev) => prev.filter((t) => t.id !== confirmDeleteTemplate.id));
+      setToast({
+        variant: 'success',
+        message: `${confirmDeleteTemplate.frontmatter.name} removido`,
+      });
+    } catch (err) {
+      const message = err instanceof IpcCallError ? err.message : String(err);
+      setToast({ variant: 'error', message });
+    } finally {
+      setConfirmDeleteTemplate(null);
+    }
+  };
+
+  if (editor.kind === 'template-create' || editor.kind === 'template-edit') {
+    return (
+      <TemplateEditor
+        initial={editor.template}
+        isCreate={editor.kind === 'template-create'}
+        onSaved={handleTemplateSaved}
+        onCancel={() => setEditor({ kind: 'closed' })}
+      />
+    );
+  }
+
   if (editor.kind !== 'closed') {
     const initial =
       editor.kind === 'edit' || editor.kind === 'create'
@@ -153,6 +182,10 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
       />
     );
   }
+
+  const isTemplateTab = activeTab === 'template';
+  const isArtifactTabWithPicker =
+    activeTab !== 'global-instruction' && activeTab !== 'template';
 
   return (
     <main
@@ -186,18 +219,16 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
         ))}
       </nav>
 
-      {activeTab !== 'global-instruction' && activeTab !== 'template' && (
+      {isArtifactTabWithPicker && (
         <button type="button" onClick={() => setShowTemplateDialog(true)}>
           Novo a partir de template
         </button>
       )}
 
-      {activeTab === 'template' && (
+      {isTemplateTab && (
         <button
           type="button"
-          onClick={() =>
-            setEditor({ kind: 'create', artifact: blankTemplateArtifact() })
-          }
+          onClick={() => setEditor({ kind: 'template-create', template: blankTemplate() })}
           data-testid="new-template-button"
         >
           Novo template
@@ -238,88 +269,105 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
             </li>
           </ul>
         );
-      })() : (() => {
+      })() : isTemplateTab && searchResults === undefined ? (
+        <ul
+          data-testid="template-list"
+          style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}
+        >
+          {templates.length === 0 && <li>Nenhum template ainda.</li>}
+          {templates.map((tpl) => (
+            <li
+              key={tpl.id}
+              data-testid={`template-item-${tpl.id}`}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '0.5rem 0',
+                borderBottom: '1px solid #ddd',
+              }}
+            >
+              <span>
+                <strong>{tpl.frontmatter.name}</strong>{' '}
+                <small>({tpl.frontmatter.targetType})</small>
+              </span>
+              <span>
+                <button
+                  type="button"
+                  onClick={() => setEditor({ kind: 'template-edit', template: tpl })}
+                >
+                  Editar
+                </button>{' '}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditor({
+                      kind: 'template-create',
+                      template: duplicateTemplate(tpl, templates),
+                    })
+                  }
+                >
+                  Duplicar
+                </button>{' '}
+                <button type="button" onClick={() => setConfirmDeleteTemplate(tpl)}>
+                  Deletar
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (() => {
         const displayItems = searchResults !== undefined
           ? searchResults.results.map((r) => r.artifact)
           : items;
-        const showBuiltInTemplates =
-          activeTab === 'template' && searchResults === undefined && builtInTemplates.length > 0;
         return (
-          <>
-            <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
-              {displayItems.length === 0 && searchResults !== undefined && <li>No search results.</li>}
-              {displayItems.length === 0 && searchResults === undefined && !showBuiltInTemplates && (
-                <li>Nenhum {tabLabel(activeTab)} ainda.</li>
-              )}
-              {displayItems.map((artifact) => (
-                <li
-                  key={artifact.id}
-                  data-testid={`artifact-item-${artifact.id}`}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '0.5rem 0',
-                    borderBottom: '1px solid #ddd',
-                  }}
-                >
-                  <span>
-                    <strong>{artifact.frontmatter.name}</strong>
-                  </span>
-                  <span>
-                    <button type="button" onClick={() => setEditor({ kind: 'edit', artifact })}>
-                      Editar
-                    </button>{' '}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditor({ kind: 'create', artifact: duplicateArtifact(artifact, items) })
-                      }
-                    >
-                      Duplicar
-                    </button>{' '}
-                    <button type="button" onClick={() => setConfirmDelete(artifact)}>
-                      Deletar
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {showBuiltInTemplates && (
-              <ul
-                data-testid="built-in-template-list"
-                style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}
-              >
-                {builtInTemplates.map((template) => (
-                  <li
-                    key={template.id}
-                    data-testid={`built-in-template-${template.id}`}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '0.5rem 0',
-                      borderBottom: '1px solid #ddd',
-                      opacity: 0.85,
-                    }}
-                  >
-                    <span>
-                      <strong>{template.name}</strong>{' '}
-                      <small>(built-in · {template.type})</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+          <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
+            {displayItems.length === 0 && searchResults !== undefined && <li>No search results.</li>}
+            {displayItems.length === 0 && searchResults === undefined && (
+              <li>Nenhum {tabLabel(activeTab)} ainda.</li>
             )}
-          </>
+            {displayItems.map((artifact) => (
+              <li
+                key={artifact.id}
+                data-testid={`artifact-item-${artifact.id}`}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '0.5rem 0',
+                  borderBottom: '1px solid #ddd',
+                }}
+              >
+                <span>
+                  <strong>{artifact.frontmatter.name}</strong>
+                </span>
+                <span>
+                  <button type="button" onClick={() => setEditor({ kind: 'edit', artifact })}>
+                    Editar
+                  </button>{' '}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditor({ kind: 'create', artifact: duplicateArtifact(artifact, items) })
+                    }
+                  >
+                    Duplicar
+                  </button>{' '}
+                  <button type="button" onClick={() => setConfirmDelete(artifact)}>
+                    Deletar
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
         );
       })()}
 
-      {showTemplateDialog && (
+      {showTemplateDialog && isArtifactTabWithPicker && (
         <NewFromTemplateDialog
-          type={activeTab}
+          targetType={activeTab as TemplateTargetType}
           onCancel={() => setShowTemplateDialog(false)}
           onSelect={(template) => {
             setShowTemplateDialog(false);
-            setEditor({ kind: 'new', template, type: activeTab });
+            setEditor({ kind: 'new', template, type: activeTab as ArtifactType });
           }}
         />
       )}
@@ -338,6 +386,24 @@ export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {})
         </div>
       )}
 
+      {confirmDeleteTemplate && (
+        <div
+          role="dialog"
+          aria-label="Confirmar exclusão de template"
+          data-testid="confirm-delete-template-dialog"
+        >
+          <p>
+            Remover template <strong>{confirmDeleteTemplate.frontmatter.name}</strong>?
+          </p>
+          <button type="button" onClick={handleDeleteTemplateConfirmed}>
+            Confirmar
+          </button>
+          <button type="button" onClick={() => setConfirmDeleteTemplate(null)}>
+            Cancelar
+          </button>
+        </div>
+      )}
+
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </main>
   );
@@ -348,9 +414,9 @@ function artifactFromTemplate(template: Template, type: ArtifactType): Artifact 
   return {
     id: '',
     frontmatter: {
-      name: fm.name ?? '',
+      name: fm.name,
       type,
-      description: fm.description ?? '',
+      description: fm.description,
       scopes: fm.scopes ?? ['personal'],
       version: fm.version ?? '0.1.0',
       createdAt: '',
@@ -382,16 +448,36 @@ function duplicateArtifact(source: Artifact, siblings: Artifact[]): Artifact {
   };
 }
 
-function blankTemplateArtifact(): Artifact {
+function duplicateTemplate(source: Template, siblings: Template[]): Template {
+  const taken = new Set(siblings.map((t) => t.frontmatter.name));
+  const base = source.frontmatter.name;
+  let candidate = `${base}-copy`;
+  let i = 2;
+  while (taken.has(candidate)) {
+    candidate = `${base}-copy-${i}`;
+    i++;
+  }
+  return {
+    id: '',
+    frontmatter: {
+      ...source.frontmatter,
+      name: candidate,
+      createdAt: '',
+      updatedAt: '',
+    },
+    body: source.body,
+  };
+}
+
+function blankTemplate(): Template {
   return {
     id: '',
     frontmatter: {
       name: '',
-      type: 'template',
+      targetType: 'skill',
       description: '',
       scopes: ['personal'],
       version: '0.1.0',
-      targetType: 'skill',
       createdAt: '',
       updatedAt: '',
     },
