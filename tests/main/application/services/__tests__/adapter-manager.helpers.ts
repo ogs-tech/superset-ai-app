@@ -13,7 +13,7 @@ export const defaultSettings: Settings = {
   workspacePath: '/workspace',
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: true },
+    copilot: { enabled: true, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

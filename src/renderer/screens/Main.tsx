@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ArtifactList } from './artifacts/ArtifactList.js';
+import { TopbarSearch } from '../components/TopbarSearch.js';
 import type { Settings } from '../../shared/settings.js';
+import type { SearchOutput } from '../../shared/search.js';
 
 interface MainProps {
   settings: Settings;
@@ -9,9 +11,20 @@ interface MainProps {
 
 export function Main({ settings, onOpenSettings }: MainProps): React.ReactElement {
   const [view, setView] = useState<'home' | 'artifacts'>('home');
+  const [searchResults, setSearchResults] = useState<SearchOutput | undefined>(undefined);
 
   if (view === 'artifacts') {
-    return <ArtifactList onClose={() => setView('home')} />;
+    return (
+      <div>
+        <header
+          data-testid="topbar"
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 1.5rem', borderBottom: '1px solid #ddd' }}
+        >
+          <TopbarSearch onResults={setSearchResults} />
+        </header>
+        <ArtifactList onClose={() => setView('home')} searchResults={searchResults} />
+      </div>
+    );
   }
 
   return (

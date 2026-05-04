@@ -1,7 +1,7 @@
 ---
 id: "008"
 title: Copilot instructions generator
-status: draft
+status: review
 priority: later
 created_at: 2026-05-03
 updated_at: 2026-05-03
@@ -9,7 +9,7 @@ depends_on: ["007"]
 labels: [must-have, core, adapter]
 related_prd: "§4"
 related_arch: "§6.4, §5.3"
-branch: ""
+branch: "008-copilot-instructions-gen"
 ---
 
 # 008 — Copilot instructions generator
@@ -41,7 +41,7 @@ PRD §4 marca "`copilot-instructions.md` generated from flagged references" como
   1. Lista todos os artifacts via `ArtifactRepository.list({ type: "reference" })`.
   2. Filtra por `frontmatter.includeInCopilotInstructions === true`.
   3. Ordena por `name` (case-insensitive, locale-aware via `Intl.Collator('en')` para evitar não-determinismo entre máquinas).
-  4. Concatena em ordem com separador entre referências `[NEEDS CLARIFICATION: separador entre referências — `\n\n` puro vs `\n\n## <name>\n\n` vs `\n\n---\n\n`?]`.
+  4. Concatena em ordem com separador `\n\n---\n\n` entre referências (HR em Markdown — neutro, não muta o body, visualmente claro no preview do Copilot).
   5. Prepende o header literal `<!-- GENERATED — edit references in the app -->\n\n` (ARCH §6.4 fixou o texto).
   6. Escreve atomicamente em `<workspace>/_generated/copilot-instructions.md` (ADR-15: tempfile + `rename`). Antes do `rename`, garante que o destino é escrita-permitida — se já existir como `0o444`, faz `chmod 0o644` no destino atual, sobrescreve via rename, depois `chmod 0o444`.
   7. Devolve `{ path, refsIncluded }` para o caller logar/exibir.
@@ -49,7 +49,7 @@ PRD §4 marca "`copilot-instructions.md` generated from flagged references" como
   - Branch `type === "reference"` deixa de devolver `[]` (AC#6 da 007); passa a:
     - Disparar `CopilotInstructionsGen.generate()` (com short-circuit: se nenhum reference está flagged, ver clarification abaixo).
     - Devolver os destinos do arquivo agregado:
-      - personal: `[NEEDS CLARIFICATION: filename canônico do destino personal — `~/.copilot/copilot-instructions.md` (legado/ARCH §6.4) vs `~/.copilot/instructions/copilot-instructions.md` (paridade com a 014, que já usa `~/.copilot/instructions/global.instructions.md`)?]`.
+      - personal: `~/.copilot/instructions/copilot-instructions.md` (paridade com a 014, que já fixou `~/.copilot/instructions/global.instructions.md`; centraliza tudo em `instructions/` e simplifica cleanup massivo da 009).
       - project (por repo em `linkedRepos`): `<repo.path>/.github/copilot-instructions.md` (ARCH §6.4 fixou).
   - O symlink aponta para `<workspace>/_generated/copilot-instructions.md` (file-level).
   - Se `_generated/copilot-instructions.md` ainda não existe ao resolver (cold start), o adapter dispara `generate()` antes de devolver os destinos.
@@ -57,8 +57,8 @@ PRD §4 marca "`copilot-instructions.md` generated from flagged references" como
   - **Save de reference** (qualquer reference, flagged ou não): `ArtifactService.save` → após `AdapterManager.syncOne`, dispara `CopilotInstructionsGen.generate()` se Copilot está enabled e algum reference está flagged. Para reference flagged que mudou conteúdo, o trigger é direto via o branch `reference` do `CopilotAdapter`.
   - **Toggle do flag** (`includeInCopilotInstructions` true↔false): coberto pelo trigger anterior (toggle implica save).
   - **"Sync all"**: a 008 expõe `CopilotInstructionsGen.generate()` para o `AdapterManager.syncAll` chamar uma vez por execução.
-  - **Botão manual em Settings**: novo IPC method `[NEEDS CLARIFICATION: nome do método IPC — `copilot.regenerateInstructions` vs `adapter.copilot.regenerate` vs reuse de `artifact.save` com flag]`.
-- Comportamento quando **0 references flagged**: `[NEEDS CLARIFICATION: gerar arquivo vazio (só com header)? pular geração e remover `_generated/copilot-instructions.md` se existir? manter o arquivo prévio (stale)?]`.
+  - **Botão manual em Settings**: novo IPC method `copilot.regenerateInstructions` (sem params; result `{ path, refsIncluded }`). Domain-explicit, segue pattern de `tokens.claude.stats`/`tokens.copilot.stats`.
+- Comportamento quando **0 references flagged**: pular geração; se `<workspace>/_generated/copilot-instructions.md` existir, fazer `chmod 0o644` → `unlink` (remove). Em paralelo, `CopilotAdapter` para `type === "reference"` devolve `[]` (sem destinos) — symlinks pré-existentes ficam órfãos e são limpos pela 009 quando o adapter for desligado, ou substituídos na próxima geração quando alguma reference voltar a ser flagged. Rationale: idempotência e cleanup honesto; arquivo só com header polui o destino sem conteúdo legítimo; manter stale viola "fonte de verdade no disco".
 - Testes:
   - Unit: ordenação alfabética estável (`Intl.Collator('en')`); empate por `name` é tratado por `slug` como tiebreaker.
   - Unit: filtro inclui só `type === "reference"` com `includeInCopilotInstructions === true`.
@@ -91,6 +91,10 @@ PRD §4 marca "`copilot-instructions.md` generated from flagged references" como
 | Header com timestamp | **Header fixo sem timestamp** (literal de ARCH §6.4) | (b) Header com `Generated at: <ISO>` para auditabilidade | Timestamp quebra idempotência byte-a-byte (re-escrita gera diff mesmo sem mudança real). Auditabilidade vem do `mtime` do arquivo no FS; mais barato. |
 | Re-escrita em arquivo `0o444` | **`chmod 0o644` → write atômico → `chmod 0o444`** | (b) `unlink` + write + chmod; (c) Falhar e exigir delete manual | `unlink` + write quebra atomicidade (janela com arquivo ausente); (c) é hostil. Sequência chmod-write-chmod é local ao serviço e testável. |
 | Localização do `_generated/` | **`<workspace>/_generated/copilot-instructions.md`** | (b) `<workspace>/copilot-instructions.md` (raiz); (c) `<workspace>/references/_generated/`; (d) Pasta separada fora do workspace | ARCH §7.2 fixa `_generated/` como pasta dedicada no workspace; raiz polui listagem; pasta dentro de `references/` confunde "source vs generated"; fora do workspace quebra portabilidade. |
+| Separador entre references no agregado | **`\n\n---\n\n`** (HR Markdown) | (b) `\n\n` puro; (c) `\n\n## <name>\n\n` injetado | HR é neutro: não muta o body da reference (que pode ter próprios headings) e produz separação visual clara no preview do Copilot. `\n\n` puro junta sem separação; injetar `## <name>` reescreve estrutura do conteúdo. |
+| Filename canônico do destino personal | **`~/.copilot/instructions/copilot-instructions.md`** | (b) `~/.copilot/copilot-instructions.md` (legado/ARCH §6.4 implícito) | Paridade com a 014 (`~/.copilot/instructions/global.instructions.md`). Centralizar em `instructions/` simplifica cleanup massivo da 009 (uma única pasta a varrer). |
+| IPC method do botão manual | **`copilot.regenerateInstructions`** (sem params) | (b) `adapter.copilot.regenerate`; (c) reuse de `artifact.save` com flag | Domain-explicit; segue pattern de `tokens.claude.stats`/`tokens.copilot.stats` (dois níveis). `adapter.copilot.regenerate` adiciona terceiro nível sem ganho. Reuso de `artifact.save` mistura semânticas e força payload artificial. |
+| 0 references flagged | **Pular geração + remover `_generated/copilot-instructions.md` se existir; `resolveDestinations` devolve `[]`** | (b) Gerar arquivo só com header; (c) Manter arquivo prévio (stale) | Idempotência e cleanup honesto: sem references contribuintes não há output legítimo. Arquivo só com header polui o destino sem conteúdo. Manter stale viola "fonte de verdade no disco" (PRD). |
 
 ## Acceptance criteria
 
@@ -104,20 +108,20 @@ PRD §4 marca "`copilot-instructions.md` generated from flagged references" como
 8. Escrita é atômica via tempfile + `rename` (ADR-15). Verificável por inspeção de código (uso explícito de `fs.rename` ou helper compartilhado).
 9. Para `artifact.type === "reference"` (qualquer scope, qualquer flag), `CopilotAdapter.resolveDestinations` deixa de retornar `[]` (atual AC#6 da 007) e passa a:
    - 9a. Disparar `CopilotInstructionsGen.generate()` antes de resolver (ou garantir que o `_generated/copilot-instructions.md` existe).
-   - 9b. Devolver `1 destino personal` em `[NEEDS CLARIFICATION: filename canônico personal — ver In scope]` quando `scopes.includes("personal")`.
+   - 9b. Devolver `1 destino personal` em `~/.copilot/instructions/copilot-instructions.md` quando `scopes.includes("personal")`.
    - 9c. Devolver `N destinos project` (`<repo.path>/.github/copilot-instructions.md`) quando `scopes.includes("project")` com N repos linkados.
    - 9d. Cada destino tem `destination` absoluto, `scope` correto, e o symlink aponta para `<workspace>/_generated/copilot-instructions.md`.
 10. Save end-to-end de uma reference com `includeInCopilotInstructions: true`, scope `personal`, Copilot enabled, sobre `InMemoryFilesystem` → produz no FS fake (a) `<workspace>/_generated/copilot-instructions.md` com header + conteúdo da reference + `chmod 444`, e (b) symlink no destino personal apontando para o arquivo gerado.
 11. Save end-to-end de uma reference flagged com `scopes: ["personal", "project"]` e 2 repos linkados → produz 1 arquivo gerado + 3 symlinks (1 personal + 2 project), todos resolvendo para o mesmo arquivo gerado.
 12. Toggle de `includeInCopilotInstructions: true → false` em uma reference + save → próxima geração **não inclui** essa reference no agregado; `refsIncluded` decresce em 1.
-13. Comportamento quando 0 references estão flagged: `[NEEDS CLARIFICATION: gerar arquivo só com header? pular geração e remover arquivo prévio? manter stale?]` — após resolver, AC adicional descrevendo a observação verificável.
-14. Botão manual "Regenerate Copilot instructions" em Settings dispara `CopilotInstructionsGen.generate()` via novo IPC method `[NEEDS CLARIFICATION: nome do método]`. Verificável por teste integração no dispatcher.
+13. Comportamento quando 0 references estão flagged: `generate()` pula a escrita e, se `<workspace>/_generated/copilot-instructions.md` existir, faz `chmod 0o644` + `unlink` (devolve `{ path, refsIncluded: 0 }`). Verificável por unit test que pre-popula o arquivo gerado, des-flagga todas as references, dispara `generate()` e checa `lstat` ENOENT no path. Em paralelo, `CopilotAdapter.resolveDestinations` para `type === "reference"` devolve `[]` quando 0 refs flagged.
+14. Botão manual "Regenerate Copilot instructions" em Settings dispara `CopilotInstructionsGen.generate()` via novo IPC method `copilot.regenerateInstructions` (sem params; result `{ path, refsIncluded }`). Verificável por teste integração no dispatcher.
 15. Comportamento existente da 007 permanece intacto para `skill`, `agent` e `global-instruction` (ACs 2-5 e 9 da 007 continuam verdes).
 
 ## Risks & assumptions
 
 - **ASSUMPTION:** Source canônico de reference no workspace é `<workspace>/references/<slug>.md` (ARCH §7.2). O conteúdo lido para concatenação é o **body** do arquivo (sem o frontmatter). Confirmar no `ArtifactRepository` da 003 antes de Phase 1.
-- **ASSUMPTION:** O VS Code Copilot lê `~/.copilot/copilot-instructions.md` (ou `~/.copilot/instructions/copilot-instructions.md` — pendente de clarification) e `<repo>/.github/copilot-instructions.md` automaticamente. Validar via smoke manual em Phase Verification.
+- **ASSUMPTION:** O VS Code Copilot lê `~/.copilot/instructions/copilot-instructions.md` (path fixado nesta spec, paridade 014) e `<repo>/.github/copilot-instructions.md` (ARCH §6.4) automaticamente. Validar via smoke manual em Phase Verification — se o path personal não for reconhecido, débito imediato (mover para `~/.copilot/copilot-instructions.md`).
 - **ASSUMPTION:** Nenhum reference tem nome duplicado **dentro do escopo flagged** — `name` por si é estável o suficiente para ordenação. Caso colida, `slug` desempata (sempre único por type — ADR-21).
 - **RISCO baixo:** `Intl.Collator('en')` pode dar ordens diferentes para nomes com caracteres não-latinos. **Mitigação:** o spike é dogfooding em pt-BR; nomes serão majoritariamente ASCII/Latin-1. Se aparecer caso, trocar locale ou normalizar via `Intl.Collator(undefined)`.
 - **RISCO médio:** Header em formato HTML comment (`<!-- ... -->`) pode ser **renderizado como conteúdo** em alguns parsers Copilot. **Mitigação:** ARCH §6.4 já registrou que header + chmod 444 são "friction only, not security". Validar no smoke se o header polui o contexto na palette do Copilot; se sim, abrir débito para mudar formato.

@@ -26,7 +26,7 @@ describe('AdapterManager.removeAll', () => {
       ...defaultSettings,
       adapters: {
         claude: { enabled: false },
-        copilot: { enabled: false },
+        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
     };
     const { manager, registerArtifact, fs } = await setupAdapterManager([adapter], disabled);

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact } from '../../../../../src/shared/artifact.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
+import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
+import { makeGen } from './copilot-adapter.helpers.js';
 
-const HOMEDIR = '/Users/José Silva';
+const HOMEDIR_SPECIAL = '/Users/José Silva';
 const REPO_PATH = '/Users/x/My Repo (work)';
 
 const skillBoth: Artifact = {
@@ -37,10 +38,14 @@ const agentBoth: Artifact = {
 const repos: LinkedRepo[] = [{ id: 'r', name: 'r', path: REPO_PATH }];
 
 describe('CopilotAdapter — paths with spaces/accents (AC#16)', () => {
-  it('preserves spaces and accents for skill (personal + project)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('preserves spaces and accents for skill (personal + project)', async () => {
+    const adapter = new CopilotAdapter({
+      homedir: HOMEDIR_SPECIAL,
+      workspacePath: '/workspace',
+      copilotInstructionsGen: makeGen(),
+    });
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: skillBoth,
       linkedRepos: repos,
     });
@@ -57,10 +62,14 @@ describe('CopilotAdapter — paths with spaces/accents (AC#16)', () => {
     ]);
   });
 
-  it('preserves spaces and accents for agent (personal + project)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('preserves spaces and accents for agent (personal + project)', async () => {
+    const adapter = new CopilotAdapter({
+      homedir: HOMEDIR_SPECIAL,
+      workspacePath: '/workspace',
+      copilotInstructionsGen: makeGen(),
+    });
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: agentBoth,
       linkedRepos: repos,
     });

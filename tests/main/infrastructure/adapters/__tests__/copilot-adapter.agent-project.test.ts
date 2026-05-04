@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute, join } from 'node:path';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact } from '../../../../../src/shared/artifact.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
-
-const HOMEDIR = '/Users/alice';
+import { makeAdapter } from './copilot-adapter.helpers.js';
 
 const agentProject: Artifact = {
   id: 'agent/triage',
@@ -26,10 +24,10 @@ const repos: LinkedRepo[] = [
 ];
 
 describe('CopilotAdapter — agent + project (AC#5, AC#7, AC#8)', () => {
-  it('returns one destination per linkedRepo under <repo>/.github/agents/<slug>.agent.md', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns one destination per linkedRepo under <repo>/.github/agents/<slug>.agent.md', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: agentProject,
       linkedRepos: repos,
     });
@@ -40,10 +38,10 @@ describe('CopilotAdapter — agent + project (AC#5, AC#7, AC#8)', () => {
     ]);
   });
 
-  it('returns absolute destinations', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns absolute destinations', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: agentProject,
       linkedRepos: repos,
     });
@@ -53,10 +51,10 @@ describe('CopilotAdapter — agent + project (AC#5, AC#7, AC#8)', () => {
     }
   });
 
-  it('returns [] when scope is project and linkedRepos is empty', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns [] when scope is project and linkedRepos is empty', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: agentProject,
       linkedRepos: [],
     });

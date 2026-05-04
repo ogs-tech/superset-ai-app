@@ -16,6 +16,8 @@ import type { PathProber } from '../../../src/main/application/ports/path-prober
 import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
 import type { Template } from '../../../src/shared/artifact.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
+import type { CopilotInstructionsGenPort } from '../../../src/main/application/ports/copilot-instructions-gen.js';
+import type { SearchService } from '../../../src/main/application/services/search-service.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
@@ -23,7 +25,7 @@ const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
   workspacePath: '/tmp/workspace',
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -37,6 +39,8 @@ interface Deps {
   artifactService: ArtifactService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
+  copilotInstructionsGen: CopilotInstructionsGenPort;
+  searchService: SearchService;
   dialogPort: DialogPort;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
@@ -120,6 +124,9 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     syncAll: vi.fn().mockResolvedValue([]),
     syncOne: vi.fn().mockResolvedValue([]),
     removeOne: vi.fn().mockResolvedValue([]),
+    removeAll: vi.fn().mockResolvedValue([]),
+    removeAdapterSymlinks: vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] }),
+    countDestinations: vi.fn().mockResolvedValue(0),
   } as unknown as AdapterManager;
   const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
 
@@ -137,6 +144,14 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const templateRepo: TemplateRepository = { list: templateRepoSpy.list };
   const templateService = new TemplateService(templateRepo);
 
+  const copilotInstructionsGen: CopilotInstructionsGenPort = {
+    generate: vi.fn().mockResolvedValue({ path: '/workspace/_generated/copilot-instructions.md', refsIncluded: 0 }),
+  };
+
+  const searchService: Partial<SearchService> = {
+    search: vi.fn().mockResolvedValue({ results: [], total: 0, truncated: false }),
+  };
+
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
@@ -144,6 +159,8 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     artifactService,
     templateService,
     adapterManager,
+    copilotInstructionsGen,
+    searchService: searchService as unknown as SearchService,
     dialogPort,
     pathProber,
     environmentPort,
@@ -193,6 +210,7 @@ describe('buildHandlers', () => {
     expect(merged.adapters.claude.enabled).toBe(false);
     expect(merged.adapters.copilot).toEqual({
       enabled: false,
+      exclusiveSkillsWithClaude: false,
     });
     expect(merged.ui.theme).toBe('dark');
     expect(deps.settingsRepoSpy.save).toHaveBeenCalledWith(merged);

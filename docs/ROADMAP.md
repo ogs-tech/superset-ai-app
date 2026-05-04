@@ -43,8 +43,9 @@ updated_at: 2026-04-29
 
 | Spec                   | Description                                                 | Status |
 | ---------------------- | ----------------------------------------------------------- | ------ |
-| `010-schema-validator` | frontmatter validation against per-type schema (ARCH §5.3). | —      |
-| `011-search-service`   | in-memory text search (ARCH §5.3).                          | —      |
+| `010-schema-validator`          | frontmatter validation against per-type schema (ARCH §5.3). | —      |
+| `011-search-service`            | in-memory text search (ARCH §5.3).                          | —      |
+| `015-copilot-exclusive-skills`  | flag `exclusiveSkillsWithClaude` para evitar dedup de skills no VS Code Copilot (ARCH §5.3). | `review` |
 
 ### Nice-to-have (PRD §4)
 

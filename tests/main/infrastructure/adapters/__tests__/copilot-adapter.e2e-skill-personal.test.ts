@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
@@ -9,6 +9,7 @@ import { SymlinkManager } from '../../../../../src/main/application/services/sym
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
+import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
 import type { Artifact } from '../../../../../src/shared/artifact.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
@@ -33,7 +34,7 @@ const buildSettings = (): Settings => ({
   workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: false },
-    copilot: { enabled: true },
+    copilot: { enabled: true, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -48,7 +49,8 @@ const setup = async () => {
   fs.createFile(join(WORKSPACE, 'skills/review'), '# review\n');
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
-  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR });
+  const gen: CopilotInstructionsGenPort = { generate: vi.fn().mockResolvedValue({ path: `${WORKSPACE}/_generated/copilot-instructions.md`, refsIncluded: 0 }) };
+  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const manager = new AdapterManager({
     settingsService,
     artifactRepository: artifactRepo,

@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute, join } from 'node:path';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact } from '../../../../../src/shared/artifact.js';
-
-const HOMEDIR = '/Users/alice';
+import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
 const skillPersonal: Artifact = {
   id: 'skill/review',
@@ -20,10 +18,10 @@ const skillPersonal: Artifact = {
 };
 
 describe('CopilotAdapter — skill + personal (AC#2, AC#8)', () => {
-  it('returns exactly one destination under <homedir>/.copilot/skills/<slug>', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns exactly one destination under <homedir>/.copilot/skills/<slug>', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: skillPersonal,
       linkedRepos: [],
     });
@@ -33,14 +31,15 @@ describe('CopilotAdapter — skill + personal (AC#2, AC#8)', () => {
     ]);
   });
 
-  it('returns an absolute destination', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns an absolute destination', async () => {
+    const adapter = makeAdapter();
 
-    const [destination] = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: skillPersonal,
       linkedRepos: [],
     });
 
+    const [destination] = destinations;
     expect(destination?.destination).toBeDefined();
     expect(isAbsolute(destination!.destination)).toBe(true);
   });

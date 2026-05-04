@@ -46,7 +46,7 @@ const buildSettings = (linkedRepos: LinkedRepo[] = []): Settings => ({
   workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos,
   ui: { theme: 'system' },

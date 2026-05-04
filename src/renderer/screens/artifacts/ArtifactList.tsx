@@ -4,6 +4,7 @@ import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { ArtifactEditor } from './ArtifactEditor.js';
 import type { Artifact, ArtifactType, Template } from '../../../shared/artifact.js';
+import type { SearchOutput } from '../../../shared/search.js';
 
 const TABS: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction'];
 
@@ -22,6 +23,7 @@ const tabLabel = (type: ArtifactType): string => {
 
 interface ArtifactListProps {
   onClose?: () => void;
+  searchResults?: SearchOutput | undefined;
 }
 
 type Editor =
@@ -29,7 +31,7 @@ type Editor =
   | { kind: 'new'; template: Template; type: ArtifactType }
   | { kind: 'edit'; artifact: Artifact };
 
-export function ArtifactList({ onClose }: ArtifactListProps = {}): React.ReactElement {
+export function ArtifactList({ onClose, searchResults }: ArtifactListProps = {}): React.ReactElement {
   const [activeTab, setActiveTab] = useState<ArtifactType>('skill');
   const [items, setItems] = useState<Artifact[]>([]);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -130,9 +132,21 @@ export function ArtifactList({ onClose }: ArtifactListProps = {}): React.ReactEl
         Novo a partir de template
       </button>
 
-      <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
-        {items.length === 0 && <li>Nenhum {tabLabel(activeTab)} ainda.</li>}
-        {items.map((artifact) => (
+      {searchResults !== undefined && (
+        <p data-testid="search-results-count">
+          {searchResults.total} results{searchResults.truncated ? ' (truncated)' : ''}
+        </p>
+      )}
+
+      {(() => {
+        const displayItems = searchResults !== undefined
+          ? searchResults.results.map((r) => r.artifact)
+          : items;
+        return (
+          <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0 }}>
+            {displayItems.length === 0 && searchResults !== undefined && <li>No search results.</li>}
+            {displayItems.length === 0 && searchResults === undefined && <li>Nenhum {tabLabel(activeTab)} ainda.</li>}
+            {displayItems.map((artifact) => (
           <li
             key={artifact.id}
             data-testid={`artifact-item-${artifact.id}`}
@@ -155,8 +169,10 @@ export function ArtifactList({ onClose }: ArtifactListProps = {}): React.ReactEl
               </button>
             </span>
           </li>
-        ))}
-      </ul>
+            ))}
+          </ul>
+        );
+      })()}
 
       {showTemplateDialog && (
         <NewFromTemplateDialog

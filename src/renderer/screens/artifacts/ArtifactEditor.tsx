@@ -52,8 +52,15 @@ export function ArtifactEditor({
       }
       await onSaved(result.artifact);
     } catch (err) {
-      const message = err instanceof IpcCallError ? err.message : String(err);
-      setToast({ variant: 'error', message });
+      if (err instanceof IpcCallError && err.kind === 'validation' && Array.isArray(err.details?.errors)) {
+        const errors = err.details.errors as Array<{ path: string; message: string }>;
+        const count = errors.length;
+        const list = errors.map((e) => `${e.path}: ${e.message}`).join('\n');
+        setToast({ variant: 'error', message: `${count} validation error(s)\n${list}` });
+      } else {
+        const message = err instanceof IpcCallError ? err.message : String(err);
+        setToast({ variant: 'error', message });
+      }
     } finally {
       setSaving(false);
     }

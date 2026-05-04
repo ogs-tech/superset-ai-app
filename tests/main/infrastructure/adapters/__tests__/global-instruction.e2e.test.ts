@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { isAbsolute } from 'node:path';
+import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
@@ -37,7 +38,7 @@ const baseSettings = (
   workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: true },
+    copilot: { enabled: true, exclusiveSkillsWithClaude: false },
     ...overrides,
   },
   linkedRepos: [],
@@ -53,7 +54,10 @@ const setup = async () => {
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
-  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR });
+  const gen: CopilotInstructionsGenPort = {
+    generate: vi.fn().mockResolvedValue({ path: `${WORKSPACE}/_generated/copilot-instructions.md`, refsIncluded: 0 }),
+  };
+  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const adapterManager = new AdapterManager({
     settingsService,
     artifactRepository: artifactRepo,

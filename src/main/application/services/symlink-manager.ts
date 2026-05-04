@@ -1,7 +1,13 @@
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { ClockPort } from '../ports/clock-port.js';
 import type { FileSystemPort } from '../ports/filesystem-port.js';
 import { DomainError, ioError } from '../../domain/errors.js';
+
+export type RemoveIfPointsResult =
+  | 'removed'
+  | 'skipped-not-found'
+  | 'skipped-real-file'
+  | 'skipped-out-of-workspace';
 
 export type SymlinkValidateState =
   | 'none'
@@ -187,6 +193,38 @@ export class SymlinkManager {
       }
     }
     return items;
+  }
+
+  async isSymlinkToWorkspace(destination: string, workspacePath: string): Promise<boolean> {
+    const destinationPath = resolve(destination);
+    const stat = await this.fs.lstat(destinationPath);
+    if (stat.kind !== 'symlink') return false;
+    const rawTarget = await this.fs.readlink(destinationPath);
+    const resolvedTarget = resolve(dirname(destinationPath), rawTarget);
+    const resolvedWorkspace = resolve(workspacePath);
+    return resolvedTarget.startsWith(resolvedWorkspace + sep) || resolvedTarget === resolvedWorkspace;
+  }
+
+  async removeIfPointsToWorkspace(
+    destination: string,
+    workspacePath: string,
+  ): Promise<RemoveIfPointsResult> {
+    const destinationPath = resolve(destination);
+    const stat = await this.fs.lstat(destinationPath);
+
+    if (stat.kind === 'none') return 'skipped-not-found';
+    if (stat.kind !== 'symlink') return 'skipped-real-file';
+
+    const rawTarget = await this.fs.readlink(destinationPath);
+    const resolvedTarget = resolve(dirname(destinationPath), rawTarget);
+    const resolvedWorkspace = resolve(workspacePath);
+
+    if (!resolvedTarget.startsWith(resolvedWorkspace + sep) && resolvedTarget !== resolvedWorkspace) {
+      return 'skipped-out-of-workspace';
+    }
+
+    await this.fs.unlink(destinationPath);
+    return 'removed';
   }
 
   private timestampForNow(): string {

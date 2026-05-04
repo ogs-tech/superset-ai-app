@@ -11,5 +11,5 @@ export interface Adapter {
   resolveDestinations(args: {
     artifact: Artifact;
     linkedRepos: LinkedRepo[];
-  }): AdapterDestination[];
+  }): Promise<AdapterDestination[]> | AdapterDestination[];
 }

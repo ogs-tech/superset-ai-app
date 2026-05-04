@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type { FileSystemEntry, FileSystemPort } from '../../application/ports/filesystem-port.js';
+import type { FileSystemEntry } from '../../application/ports/filesystem-port.js';
+import type { FileStat, WritableFileSystemPort } from '../../application/ports/writable-filesystem-port.js';
 
 const toEntryKind = async (path: string): Promise<FileSystemEntry['kind']> => {
   const stat = await fs.lstat(path);
@@ -17,7 +18,7 @@ const resolveLinkTarget = (linkPath: string, target: string): string => {
   return resolve(dirname(linkPath), target);
 };
 
-export class NodeFsAdapter implements FileSystemPort {
+export class NodeFsAdapter implements WritableFileSystemPort {
   async lstat(path: string): Promise<FileSystemEntry> {
     try {
       const kind = await toEntryKind(path);
@@ -64,6 +65,27 @@ export class NodeFsAdapter implements FileSystemPort {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  async writeFile(path: string, content: string): Promise<void> {
+    await fs.writeFile(path, content, 'utf-8');
+  }
+
+  async rename(oldPath: string, newPath: string): Promise<void> {
+    await fs.rename(oldPath, newPath);
+  }
+
+  async chmod(path: string, mode: number): Promise<void> {
+    await fs.chmod(path, mode);
+  }
+
+  async stat(path: string): Promise<FileStat | null> {
+    try {
+      const s = await fs.stat(path);
+      return { mode: s.mode };
+    } catch {
+      return null;
     }
   }
 }

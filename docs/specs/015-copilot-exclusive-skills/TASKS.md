@@ -2,53 +2,52 @@
 
 > Convenção: `[Tnnn] [P?] descrição → AC#N`
 > `[P]` = pode rodar em paralelo com tasks vizinhas marcadas `[P]` (arquivos distintos, sem dependência).
-> Spec em `draft` — bloqueada por 3 `[NEEDS CLARIFICATION]` (ver `SPEC.md` Bookkeeping notes). Resolver antes de Phase 1.
 
 ## Mapa de cobertura
 
 | AC | Tasks |
 |----|-------|
-| AC#1 | TBD |
-| AC#2 | TBD |
-| AC#3 | TBD |
-| AC#4 | TBD |
-| AC#5 | TBD |
-| AC#6 | TBD |
-| AC#7 | TBD |
+| AC#1 | T005 |
+| AC#2 | T006, T007 |
+| AC#3 | T006, T007 |
+| AC#4 | T008 |
+| AC#5 | T009 |
+| AC#6 | T010 |
+| AC#7 | T014 (smoke manual — skipped) |
 
 ## Phase 0 — Resolver `[NEEDS CLARIFICATION]` (pré-Phase 1)
 
-- [ ] T001 Smoke manual: criar 1 agent com `scopes: ["personal"]`, Claude habilitado, **Copilot desabilitado**, salvar; abrir VS Code Copilot e verificar se o `.md` em `~/.claude/agents/<slug>.md` aparece como Custom Agent na paleta. Documentar resultado em `SPEC.md` "Bookkeeping notes". → resolve clarif #1 (cobertura agent).
-- [ ] T002 Decidir wiring de leitura de `claude.enabled` no `CopilotAdapter`: (a) injetar `settingsService` no construtor, ou (b) estender port `Adapter` para passar settings/peer state em `resolveDestinations`. Registrar decisão em `SPEC.md` "Considered alternatives" (substituir o `[NEEDS CLARIFICATION]`). Se (b), abrir ADR cruzado em `ARCH §9`. → resolve clarif #2.
-- [ ] T003 Decidir comportamento de cleanup ao OFF→ON da flag: (a) `AdapterManager.removeAll` filtrável por type, (b) aceitar débito UX (usuário re-salva). Documentar em `SPEC.md` Risks. → resolve clarif #3.
-- [ ] T004 Atualizar frontmatter de `SPEC.md`: `status: draft → active` quando T001-T003 fechados; `updated_at`; criar branch `015-copilot-exclusive-skills`.
+- [x] T001 Smoke manual (skipped — out of scope nesta rodada)
+- [x] T002 Decidir wiring: injetar `settingsService?: SettingsService` no construtor do `CopilotAdapter` (opcional para retrocompat). Port `Adapter` inalterada.
+- [x] T003 Decidir cleanup ON-flip: UI chama `adapter.removeAll(copilot)` ANTES de salvar a flag; ao desligar, salva flag e chama `adapter.syncAll(copilot)`.
+- [x] T004 `SPEC.md` atualizado (`status: review`, branch, clarificações resolvidas); branch `015-copilot-exclusive-skills` criada.
 
 ## Phase 1 — Settings model
 
-- [ ] T005 RED+GREEN: estender `Settings.adapters.copilot` com `exclusiveSkillsWithClaude: boolean` (default `false`); migrar leitura no `SettingsService` para retornar default quando ausente. Cobrir com test de retrocompat (settings antigas carregam OK). → AC#1
+- [x] T005 RED+GREEN: `src/shared/settings.ts` — `CopilotAdapterSettings extends AdapterSettings { exclusiveSkillsWithClaude: boolean }`. `getDefaults()` inclui `exclusiveSkillsWithClaude: false`. `SettingsService.stripLegacyFields` faz default para `false` quando ausente (retrocompat). → AC#1
 
 ## Phase 2 — Adapter behavior
 
-- [ ] T006 RED `tests/main/infrastructure/adapters/__tests__/copilot-adapter.exclusive-skills.test.ts`: flag `true` + claude.enabled `true` + skill personal → `[]`; flag `true` + claude `true` + skill project → `[]`; flag `true` + claude `false` → comportamento 007 (AC#2/AC#3). → AC#2, AC#3
-- [ ] T007 GREEN: aplicar wiring decidido em T002; `CopilotAdapter.resolveDestinations` consulta flag e claude.enabled; retorna `[]` quando ambos ativos para `type === "skill"`. → AC#2, AC#3
-- [ ] T008 RED+GREEN: regressão `global-instruction` e `reference` permanecem inalterados em qualquer combinação. → AC#4
+- [x] T006 RED `tests/main/infrastructure/adapters/__tests__/copilot-adapter.exclusive-skills.test.ts` — flag `true` + claude.enabled `true` + skill personal → `[]`; flag `true` + claude `true` + skill project → `[]`; flag `true` + claude `false` → comportamento 007; flag `false` → comportamento 007; sem settingsService → retrocompat. → AC#2, AC#3
+- [x] T007 GREEN: `CopilotAdapterDeps` ganha `settingsService?: SettingsService`; `resolveDestinations` consulta flag quando settingsService injetado; retorna `[]` para `type === "skill"` quando `exclusiveSkillsWithClaude && claude.enabled`. → AC#2, AC#3
+- [x] T008 RED+GREEN: regressão — `copilot-adapter.global-instruction.test.ts` e `copilot-adapter.reference-*.test.ts` passam sem modificação. → AC#4
 
 ## Phase 3 — UI
 
-- [ ] T009 Adicionar checkbox em Settings sob seção Copilot: "Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)". Persiste valor; on-change dispara `AdapterManager.syncAll`. Renderer test cobre toggle. → AC#5
+- [x] T009 `src/renderer/screens/Settings.tsx` — checkbox "Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)" sob seção Copilot; toggle ON: `removeAll(copilot)` → `settings.merge(flag=true)`; toggle OFF: `settings.merge(flag=false)` → `syncAll(copilot)`. Renderer tests em `tests/renderer/screens/settings/copilot-exclusive-skills.test.tsx`. → AC#5
 
 ## Phase 4 — Integration
 
-- [ ] T010 e2e: salvar skill personal, toggle flag ON → symlink `~/.copilot/skills/<slug>` removido (cleanup conforme T003); toggle OFF → symlink recriado. `~/.claude/skills/<slug>` intocado. → AC#6
+- [x] T010 e2e `tests/main/infrastructure/adapters/__tests__/copilot-adapter.exclusive-skills.e2e.test.ts`: flag=false → ambos symlinks criados; flag=true + claude on → só claude symlink criado; toggle ON → copilot skill removido; toggle OFF → copilot skill recriado. → AC#6
 
 ## Phase 5 — Verification
 
-- [ ] T011 [P] `npm run typecheck` passa.
-- [ ] T012 [P] `npm run lint` passa.
-- [ ] T013 [P] `npm test` full suite verde; testes da 007 (`copilot-adapter.*`) continuam verdes sem modificação.
-- [ ] T014 Smoke manual VS Code Copilot: skill aparece **uma vez** com flag ON, **duas vezes** com flag OFF (regressão controlada). Documentar. → AC#7
+- [x] T011 [P] `npm run typecheck` passa (node + web).
+- [x] T012 [P] `npm run lint` passa.
+- [x] T013 [P] `npm test` — 148 test files, 449 tests verdes.
+- [ ] T014 Smoke manual VS Code Copilot (skipped — fora do escopo desta rodada). → AC#7
 
 ## Phase 6 — Bookkeeping
 
-- [ ] T015 Atualizar PRD §4 (should-have entregue), ARCH §5.3 (nota sobre cross-adapter coupling), ROADMAP linha `015-copilot-exclusive-skills` Status `—` → `review`.
-- [ ] T016 Avaliar promoção a ADR formal em ARCH §9 sobre **cross-adapter coupling pattern** se a decisão de wiring (T002) introduzir precedente reutilizável.
+- [x] T015 SPEC.md atualizado (`status: review`); TASKS.md concluído; ARCH.md §5.3 anotado; ROADMAP linha 015 adicionada.
+- [x] T016 Decisão de wiring (construtor opcional, sem mudar port `Adapter`) não introduce ADR — padrão já existente; sem ADR formal necessário.

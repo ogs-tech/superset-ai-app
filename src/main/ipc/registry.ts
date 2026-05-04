@@ -6,6 +6,8 @@ import type { WorkspaceBootstrapService } from '../application/services/workspac
 import type { ArtifactService } from '../application/services/artifact-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
+import type { CopilotInstructionsGenPort } from '../application/ports/copilot-instructions-gen.js';
+import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
 import type { EnvironmentPort } from '../application/ports/environment-port.js';
 import type { PathProber } from '../application/ports/path-prober.js';
@@ -22,6 +24,8 @@ export interface IpcDeps {
   artifactService: ArtifactService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
+  copilotInstructionsGen: CopilotInstructionsGenPort;
+  searchService: SearchService;
   dialogPort: DialogPort;
   pathProber: PathProber;
   environmentPort: EnvironmentPort;
@@ -97,6 +101,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     artifactService,
     templateService,
     adapterManager,
+    copilotInstructionsGen,
+    searchService,
     dialogPort,
     pathProber,
     environmentPort,
@@ -245,6 +251,50 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     'template.list': async (params) => {
       const raw = asObject(params, 'template.list');
       return templateService.list({ type: asArtifactType(raw['type'], 'type') });
+    },
+
+    'copilot.regenerateInstructions': () => copilotInstructionsGen.generate(),
+
+    'adapter.setEnabled': async (params) => {
+      const raw = asObject(params, 'adapter.setEnabled');
+      const adapterId = asString(raw['adapterId'], 'adapterId');
+      if (typeof raw['enabled'] !== 'boolean') {
+        throw new DomainError('validation', "Missing or invalid 'enabled'");
+      }
+      const enabled = raw['enabled'];
+      const removeSymlinks = raw['removeSymlinks'] !== false;
+      const runSyncAll = raw['runSyncAll'] !== false;
+
+      if (!enabled) {
+        const removeResult = removeSymlinks
+          ? await adapterManager.removeAdapterSymlinks(adapterId)
+          : { removed: 0, skipped: 0, errors: [] };
+        await settingsService.merge({ adapters: { [adapterId]: { enabled: false } } });
+        return removeResult;
+      } else {
+        await settingsService.merge({ adapters: { [adapterId]: { enabled: true } } });
+        const syncReport = runSyncAll
+          ? await adapterManager.syncAll({ adapterId })
+          : [];
+        return { syncReport };
+      }
+    },
+
+    'adapter.countDestinations': async (params) => {
+      const raw = asObject(params, 'adapter.countDestinations');
+      const adapterId = asString(raw['adapterId'], 'adapterId');
+      const count = await adapterManager.countDestinations(adapterId);
+      return { count };
+    },
+
+    'artifact.search': async (params) => {
+      const raw = params === undefined || params === null ? {} : asObject(params, 'artifact.search');
+      const query = asString(raw['query'], 'query');
+      let options: SearchOptions | undefined;
+      if (raw['options'] !== undefined) {
+        options = raw['options'] as SearchOptions;
+      }
+      return searchService.search(query, options);
     },
   };
 }

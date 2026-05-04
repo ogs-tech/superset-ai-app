@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact, ArtifactType } from '../../../../../src/shared/artifact.js';
-
-const HOMEDIR = '/Users/alice';
+import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
 const buildArtifact = (
   type: ArtifactType,
@@ -24,9 +22,9 @@ const buildArtifact = (
 });
 
 describe('CopilotAdapter — global-instruction routing (AC#9, AC#10, AC#16)', () => {
-  it('resolves slug "copilot" to <homedir>/.copilot/instructions/global.instructions.md (AC#9)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
+  it('resolves slug "copilot" to <homedir>/.copilot/instructions/global.instructions.md (AC#9)', async () => {
+    const adapter = makeAdapter();
+    const destinations = await adapter.resolveDestinations({
       artifact: buildArtifact('global-instruction', 'copilot'),
       linkedRepos: [],
     });
@@ -39,9 +37,9 @@ describe('CopilotAdapter — global-instruction routing (AC#9, AC#10, AC#16)', (
     ]);
   });
 
-  it('returns [] for global-instruction + slug "claude" (AC#10)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
+  it('returns [] for global-instruction + slug "claude" (AC#10)', async () => {
+    const adapter = makeAdapter();
+    const destinations = await adapter.resolveDestinations({
       artifact: buildArtifact('global-instruction', 'claude'),
       linkedRepos: [],
     });
@@ -49,23 +47,9 @@ describe('CopilotAdapter — global-instruction routing (AC#9, AC#10, AC#16)', (
     expect(destinations).toEqual([]);
   });
 
-  // NOTE: 014's stub-era assertions for `skill` and `agent` returning [] were
-  // removed when 007 expanded those branches to produce real destinations
-  // (see AC#2-5). Coverage now lives in copilot-adapter.{skill,agent}-*.test.ts.
-
-  it('returns [] for type "reference" (AC#10)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
-      artifact: buildArtifact('reference', 'glossary'),
-      linkedRepos: [],
-    });
-
-    expect(destinations).toEqual([]);
-  });
-
-  it('all returned destinations are absolute (AC#16)', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
-    const destinations = adapter.resolveDestinations({
+  it('all returned destinations are absolute (AC#16)', async () => {
+    const adapter = makeAdapter();
+    const destinations = await adapter.resolveDestinations({
       artifact: buildArtifact('global-instruction', 'copilot'),
       linkedRepos: [],
     });

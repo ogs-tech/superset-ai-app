@@ -6,17 +6,11 @@ import type {
   ArtifactRepository,
 } from '../../application/ports/artifact-repository.js';
 import type { AdapterManager } from './adapter-manager.js';
+import type { SchemaValidator } from './schema-validator.js';
 import { formatArtifactId } from '../../domain/artifact-id.js';
 import { isValidArtifactName } from '../../domain/artifact-name.js';
 import { DomainError, validationError } from '../../domain/errors.js';
 
-const REQUIRED_FIELDS: Array<keyof ArtifactFrontmatter> = [
-  'name',
-  'type',
-  'description',
-  'version',
-];
-const DESCRIPTION_MAX_LENGTH = 200;
 const GLOBAL_INSTRUCTION_ALLOWED_SLUGS: ReadonlyArray<string> = ['claude', 'copilot'];
 
 export interface SaveArtifactCommand {
@@ -44,6 +38,7 @@ export class ArtifactService {
     private readonly repository: ArtifactRepository,
     private readonly clock: ClockPort,
     private readonly adapterManager: AdapterManager,
+    private readonly schemaValidator?: SchemaValidator,
   ) {}
 
   list(query: ArtifactListQuery = {}): Promise<Artifact[]> {
@@ -56,7 +51,7 @@ export class ArtifactService {
 
   async save(command: SaveArtifactCommand): Promise<SaveArtifactResult> {
     const { artifact, isCreate = false } = command;
-    this.validate(artifact);
+    this.validateArtifact(artifact);
 
     const id = formatArtifactId(artifact.frontmatter.type, artifact.frontmatter.name);
     const previousId = artifact.id;
@@ -122,14 +117,26 @@ export class ArtifactService {
     return syncReport === undefined ? { ok: true } : { ok: true, syncReport };
   }
 
-  private validate(artifact: Artifact): void {
+  private validateArtifact(artifact: Artifact): void {
     const fm = artifact.frontmatter;
+
+    if (this.schemaValidator) {
+      const result = this.schemaValidator.validate(fm);
+      if (!result.ok) {
+        throw validationError({
+          message: `${result.errors.length} validation error(s)`,
+          details: { errors: result.errors },
+        });
+      }
+      return;
+    }
 
     if (fm.type === 'global-instruction') {
       this.validateGlobalInstruction(fm);
     }
 
     const missing: string[] = [];
+    const REQUIRED_FIELDS: Array<keyof ArtifactFrontmatter> = ['name', 'type', 'description', 'version'];
     for (const field of REQUIRED_FIELDS) {
       const value = fm[field];
       if (value === undefined || value === null || value === '') {
@@ -145,8 +152,8 @@ export class ArtifactService {
 
     const invalid: string[] = [];
     if (!isValidArtifactName(fm.name)) invalid.push('name');
-    if (fm.description.length > DESCRIPTION_MAX_LENGTH) invalid.push('description');
     if (!Array.isArray(fm.scopes) || fm.scopes.length === 0) invalid.push('scopes');
+    if (fm.description && fm.description.length > 200) invalid.push('description');
     if (invalid.length > 0) {
       throw validationError({
         message: `Invalid field(s): ${invalid.join(', ')}`,

@@ -50,7 +50,7 @@ describe('<Onboarding>', () => {
             workspacePath: '/picked',
             adapters: {
               claude: { enabled: true },
-              copilot: { enabled: false },
+              copilot: { enabled: false, exclusiveSkillsWithClaude: false },
             },
             linkedRepos: [],
             ui: { theme: 'system' },
@@ -74,7 +74,7 @@ describe('<Onboarding>', () => {
       workspacePath: '/picked',
       adapters: {
         claude: { enabled: true },
-        copilot: { enabled: false },
+        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
       linkedRepos: [],
       ui: { theme: 'system' },
@@ -117,7 +117,7 @@ describe('<Onboarding>', () => {
             workspacePath: '/Users/test/sde-ai-app',
             adapters: {
               claude: { enabled: true },
-              copilot: { enabled: false },
+              copilot: { enabled: false, exclusiveSkillsWithClaude: false },
             },
             linkedRepos: [],
             ui: { theme: 'system' },

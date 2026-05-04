@@ -21,6 +21,9 @@ import { ElectronEnvironmentAdapter } from './infrastructure/environment/electro
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from './infrastructure/adapters/copilot-adapter.js';
+import { CopilotInstructionsGen } from './application/services/copilot-instructions-gen.js';
+import { SchemaValidator } from './application/services/schema-validator.js';
+import { SearchService } from './application/services/search-service.js';
 import type { Adapter } from './application/ports/adapter.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
@@ -59,8 +62,18 @@ async function wireIpc(): Promise<void> {
 
   const settings = (await settingsService.load()) ?? { workspacePath: app.getPath('userData'), adapters: { claude: { enabled: false }, copilot: { enabled: false } }, linkedRepos: [], ui: { theme: 'system' } };
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, settings.workspacePath || app.getPath('userData'));
+  const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
-  const copilotAdapter = new CopilotAdapter({ homedir: homedir() });
+  const copilotInstructionsGen = new CopilotInstructionsGen({
+    artifactRepository: artifactRepo,
+    workspaceFs: nodeFsAdapter,
+    workspacePath: settings.workspacePath || app.getPath('userData'),
+  });
+  const copilotAdapter = new CopilotAdapter({
+    homedir: homedir(),
+    workspacePath: settings.workspacePath || app.getPath('userData'),
+    copilotInstructionsGen,
+  });
   const adapterManager = new AdapterManager({
     settingsService,
     artifactRepository: artifactRepo,
@@ -70,7 +83,9 @@ async function wireIpc(): Promise<void> {
       [copilotAdapter.adapterId, copilotAdapter],
     ]),
   });
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
+  const schemaValidator = new SchemaValidator();
+  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager, schemaValidator);
+  const searchService = new SearchService({ artifactRepository: artifactRepo });
   const templatesDir = join(process.cwd(), 'src', 'main', 'templates');
   const templateService = new TemplateService(new BuiltInTemplateRepository(templatesDir));
 
@@ -81,6 +96,8 @@ async function wireIpc(): Promise<void> {
     artifactService,
     templateService,
     adapterManager,
+    copilotInstructionsGen,
+    searchService,
     dialogPort,
     pathProber: repoReader,
     environmentPort,

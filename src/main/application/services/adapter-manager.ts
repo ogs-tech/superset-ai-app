@@ -4,13 +4,27 @@ import type { SettingsService } from './settings-service.js';
 import type { ArtifactRepository } from '../ports/artifact-repository.js';
 import type { Adapter } from '../ports/adapter.js';
 import type { SymlinkManager } from './symlink-manager.js';
+import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import { DomainError } from '../../domain/errors.js';
+
+export interface SymlinkError {
+  destination: string;
+  kind: string;
+  message: string;
+}
+
+export interface RemoveAdapterResult {
+  removed: number;
+  skipped: number;
+  errors: SymlinkError[];
+}
 
 export interface AdapterManagerDeps {
   settingsService: SettingsService;
   artifactRepository: ArtifactRepository;
   symlinkManager: SymlinkManager;
   adapters: Map<string, Adapter>;
+  workspaceFs?: WritableFileSystemPort;
 }
 
 export interface SyncOneCommand {
@@ -40,7 +54,7 @@ export class AdapterManager {
     const source = this.artifactSourcePath(command.artifact, settings.workspacePath);
     const includesProject = command.artifact.frontmatter.scopes.includes('project');
     for (const adapter of enabledAdapters) {
-      const destinations = adapter.resolveDestinations({
+      const destinations = await adapter.resolveDestinations({
         artifact: command.artifact,
         linkedRepos: settings.linkedRepos,
       });
@@ -75,7 +89,7 @@ export class AdapterManager {
     for (const artifact of artifacts) {
       const includesProject = artifact.frontmatter.scopes.includes('project');
       for (const adapter of enabledAdapters) {
-        const destinations = adapter.resolveDestinations({
+        const destinations = await adapter.resolveDestinations({
           artifact,
           linkedRepos: settings.linkedRepos,
         });
@@ -104,7 +118,7 @@ export class AdapterManager {
     const results: SyncResult[] = [];
 
     for (const adapter of this.deps.adapters.values()) {
-      const destinations = adapter.resolveDestinations({
+      const destinations = await adapter.resolveDestinations({
         artifact: command.artifact,
         linkedRepos: settings.linkedRepos,
       });
@@ -124,7 +138,7 @@ export class AdapterManager {
     const results: SyncResult[] = [];
 
     for (const artifact of artifacts) {
-      const destinations = adapter.resolveDestinations({
+      const destinations = await adapter.resolveDestinations({
         artifact,
         linkedRepos: settings.linkedRepos,
       });
@@ -133,6 +147,86 @@ export class AdapterManager {
       }
     }
     return results;
+  }
+
+  async removeAdapterSymlinks(adapterId: string): Promise<RemoveAdapterResult> {
+    const adapter = this.deps.adapters.get(adapterId);
+    if (!adapter) return { removed: 0, skipped: 0, errors: [] };
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const workspacePath = settings.workspacePath;
+    const artifacts = await this.deps.artifactRepository.list();
+    let removed = 0;
+    let skipped = 0;
+    const errors: SymlinkError[] = [];
+
+    for (const artifact of artifacts) {
+      const destinations = await adapter.resolveDestinations({
+        artifact,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const dest of destinations) {
+        try {
+          const result = await this.deps.symlinkManager.removeIfPointsToWorkspace(dest.destination, workspacePath);
+          if (result === 'removed') {
+            removed++;
+          } else {
+            skipped++;
+          }
+        } catch (err) {
+          errors.push({
+            destination: dest.destination,
+            kind: err instanceof DomainError ? err.kind : 'internal',
+            message: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
+    if (adapterId === 'copilot' && this.deps.workspaceFs) {
+      const generatedPath = join(workspacePath, '_generated/copilot-instructions.md');
+      const stat = await this.deps.workspaceFs.stat(generatedPath);
+      if (stat !== null) {
+        try {
+          await this.deps.workspaceFs.chmod(generatedPath, 0o644);
+          await this.deps.workspaceFs.unlink(generatedPath);
+        } catch (err) {
+          errors.push({
+            destination: generatedPath,
+            kind: 'io',
+            message: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
+    return { removed, skipped, errors };
+  }
+
+  async countDestinations(adapterId: string): Promise<number> {
+    const adapter = this.deps.adapters.get(adapterId);
+    if (!adapter) return 0;
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const workspacePath = settings.workspacePath;
+    const artifacts = await this.deps.artifactRepository.list();
+    let count = 0;
+
+    for (const artifact of artifacts) {
+      const destinations = await adapter.resolveDestinations({
+        artifact,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const dest of destinations) {
+        try {
+          const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
+          if (isWorkspaceLink) count++;
+        } catch {
+          // skip
+        }
+      }
+    }
+    return count;
   }
 
   private async removeDestination(adapterId: string, destination: string): Promise<SyncResult> {

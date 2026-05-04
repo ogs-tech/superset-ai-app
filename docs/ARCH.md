@@ -157,7 +157,7 @@ Domain logic organized as TypeScript modules inside the Main process. No subproc
 | `ArtifactService`               | CRUD of `.md` with YAML frontmatter; reads/writes in the workspace.           | Sync, symlink, UI.                            |
 | `AdapterManager`                | Orchestrates active adapters; requests sync from the right one(s) after Save. | Per-tool logic.                               |
 | `ClaudeAdapter`                 | Maps artifact → Claude paths (personal and project); delegates to SymlinkManager. | HTTP, API, tokens.                         |
-| `CopilotAdapter`                | Maps artifact → Copilot paths (personal e project) for `skill`, `agent` e `global-instruction:copilot`; delegates to `SymlinkManager`. Stub introduzido pela 014, expandido pela 007. Triggers `copilot-instructions` generator (008). | Tokens, references individuais (vão via aggregation). |
+| `CopilotAdapter`                | Maps artifact → Copilot paths (personal e project) for `skill`, `agent` e `global-instruction:copilot`; delegates to `SymlinkManager`. Stub introduzido pela 014, expandido pela 007. Triggers `copilot-instructions` generator (008). Lê `Settings.adapters.copilot.exclusiveSkillsWithClaude` via `settingsService` injetado (opcional): quando `true` e `claude.enabled`, retorna `[]` para `type=skill` para evitar dedup no VS Code Copilot (015). Coupling controlado: porta `Adapter` inalterada; settingsService é dep opcional no construtor. | Tokens, references individuais (vão via aggregation). |
 | `SymlinkManager`                | Creates, removes and validates symlinks; detects conflicts (real file at destination). Normalizes paths via `path.resolve` to handle spaces and special characters. | Content copy, git.                   |
 | `TemplateService`               | Provides templates by type (skill/reference/agent).                           | Rendering.                                    |
 | `RepoService`                   | Detects `.git/`, reads current branch; lists linked repos.                    | Git write, commit, push.                      |
@@ -286,6 +286,10 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 - **Global instructions** (spec 014 — sempre `personal`):
   - `global-instruction:claude` → `~/.claude/CLAUDE.md` ← `<workspace>/global-instructions/claude.md`.
   - `global-instruction:copilot` → `~/.copilot/instructions/global.instructions.md` ← `<workspace>/global-instructions/copilot.md`.
+- **Aggregated reference destinations** (spec 008 — `reference` with `includeInCopilotInstructions: true`):
+  - `reference` personal → `~/.copilot/instructions/copilot-instructions.md` ← `<workspace>/_generated/copilot-instructions.md`.
+  - `reference` project → `<repo>/.github/copilot-instructions.md` ← `<workspace>/_generated/copilot-instructions.md` (one symlink per linked repo).
+  - When 0 references are flagged, destinations return `[]`; existing `_generated/copilot-instructions.md` is removed.
 - **Generation:** `<workspace>/_generated/copilot-instructions.md` is the source of the Copilot symlink; `chmod 444` after each generation.
 
 ---
@@ -312,6 +316,10 @@ Dynamic scenarios: how the blocks collaborate in critical flows.
 | `repo.list` / `repo.unlink`     | —                                        | —                                   |
 | `settings.get` / `settings.set` | —                                        | `Settings`                          |
 | `adapter.syncAll`               | `{ adapterId? }`                         | `SyncResult[]`                      |
+| `copilot.regenerateInstructions` | —                                       | `{ path: string, refsIncluded: number }` |
+| `artifact.search`               | `{ query: string, options?: SearchOptions }` | `SearchOutput` (results, total, truncated) |
+| `adapter.setEnabled`            | `{ adapterId, enabled, removeSymlinks?, runSyncAll? }` | disable: `RemoveAdapterResult`; enable: `{ syncReport }` |
+| `adapter.countDestinations`     | `{ adapterId }`                          | `{ count: number }` |
 | `tokens.claude.stats`           | `{ from, to, groupBy }`                  | `TokenStats[]`                      |
 | `tokens.copilot.stats`          | `{ from, to }` (PAT resolved by Main from Keychain) | `CopilotUsage`            |
 

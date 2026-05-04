@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact } from '../../../../../src/shared/artifact.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
-
-const HOMEDIR = '/Users/alice';
+import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
 const skillMultiScope: Artifact = {
   id: 'skill/review',
@@ -23,10 +21,10 @@ const skillMultiScope: Artifact = {
 const oneRepo: LinkedRepo[] = [{ id: 'r1', name: 'r1', path: '/r1' }];
 
 describe('CopilotAdapter — skill + multi-scope (AC#2, AC#3, AC#7)', () => {
-  it('returns the union of personal + project destinations when both scopes are set', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns the union of personal + project destinations when both scopes are set', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: skillMultiScope,
       linkedRepos: oneRepo,
     });
@@ -37,10 +35,10 @@ describe('CopilotAdapter — skill + multi-scope (AC#2, AC#3, AC#7)', () => {
     ]);
   });
 
-  it('returns only the personal destination when scopes include "project" but linkedRepos is empty', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns only the personal destination when scopes include "project" but linkedRepos is empty', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: skillMultiScope,
       linkedRepos: [],
     });

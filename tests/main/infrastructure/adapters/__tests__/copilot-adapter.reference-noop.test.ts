@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact, ArtifactScope } from '../../../../../src/shared/artifact.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
+import { makeAdapter, makeGen } from './copilot-adapter.helpers.js';
 
 const reference = (scopes: ArtifactScope[]): Artifact => ({
   id: 'reference/style-guide',
@@ -22,7 +22,7 @@ const repos: LinkedRepo[] = [
   { id: 'r2', name: 'r2', path: '/r2' },
 ];
 
-describe('CopilotAdapter — reference (no-op)', () => {
+describe('CopilotAdapter — reference returns [] when 0 refs flagged (AC#13)', () => {
   it.each<[ArtifactScope[], LinkedRepo[]]>([
     [['personal'], []],
     [['personal'], repos],
@@ -32,10 +32,11 @@ describe('CopilotAdapter — reference (no-op)', () => {
     [['personal', 'project'], repos],
   ])(
     'returns [] for reference (scopes=%j, linkedRepos.length=%i)',
-    (scopes, linkedRepos) => {
-      const adapter = new CopilotAdapter({ homedir: '/Users/alice' });
+    async (scopes, linkedRepos) => {
+      const gen = makeGen({ refsIncluded: 0 });
+      const adapter = makeAdapter(gen);
 
-      const destinations = adapter.resolveDestinations({
+      const destinations = await adapter.resolveDestinations({
         artifact: reference(scopes),
         linkedRepos,
       });

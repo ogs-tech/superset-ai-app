@@ -19,6 +19,7 @@ export interface ValidationDetails {
   invalid?: string[];
   conflict?: string;
   reason?: string;
+  errors?: Array<{ path: string; kind: string; message: string }>;
 }
 
 export function validationError(args: {

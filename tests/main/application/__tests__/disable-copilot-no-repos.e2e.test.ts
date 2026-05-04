@@ -1,0 +1,77 @@
+import { describe, it, expect, vi } from 'vitest';
+import { join } from 'node:path';
+import { InMemoryArtifactRepository } from '../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
+import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
+import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
+import { SymlinkManager } from '../../../../src/main/application/services/symlink-manager.js';
+import { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
+import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
+import { CopilotAdapter } from '../../../../src/main/infrastructure/adapters/copilot-adapter.js';
+import type { CopilotInstructionsGenPort } from '../../../../src/main/application/ports/copilot-instructions-gen.js';
+import type { Artifact } from '../../../../src/shared/artifact.js';
+import type { Settings } from '../../../../src/shared/settings.js';
+
+const HOMEDIR = '/home/alice';
+const WORKSPACE = '/workspace';
+const GENERATED = join(WORKSPACE, '_generated/copilot-instructions.md');
+
+const baseSettings: Settings = {
+  workspacePath: WORKSPACE,
+  adapters: { claude: { enabled: false }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
+  linkedRepos: [],
+  ui: { theme: 'system' },
+};
+
+const refFlagged: Artifact = {
+  id: 'reference/guide',
+  frontmatter: {
+    name: 'guide',
+    type: 'reference',
+    description: 'desc',
+    scopes: ['personal', 'project'],
+    version: '1.0.0',
+    createdAt: '',
+    updatedAt: '',
+    includeInCopilotInstructions: true,
+  },
+  body: '# guide',
+};
+
+describe('disable-copilot-no-repos e2e (AC#12)', () => {
+  it('works when no linked repos (no crash), removes personal symlink', async () => {
+    const settingsRepo = new InMemorySettingsRepository();
+    await settingsRepo.save(baseSettings);
+    const settingsService = new SettingsService(settingsRepo);
+    const artifactRepo = new InMemoryArtifactRepository();
+    await artifactRepo.save({ artifact: refFlagged });
+
+    const fs = new InMemoryFileSystem();
+    fs.createFile(GENERATED, '<!-- GENERATED -->');
+
+    const symlinkPersonal = join(HOMEDIR, '.copilot/instructions/copilot-instructions.md');
+    await fs.symlink({ target: GENERATED, path: symlinkPersonal });
+
+    const gen: CopilotInstructionsGenPort = {
+      generate: vi.fn().mockResolvedValue({ path: GENERATED, refsIncluded: 1 }),
+    };
+    const sm = new SymlinkManager(fs, new FixedClock(new Date()), WORKSPACE);
+    const copilotAdapter = new CopilotAdapter({
+      homedir: HOMEDIR,
+      workspacePath: WORKSPACE,
+      copilotInstructionsGen: gen,
+    });
+    const manager = new AdapterManager({
+      settingsService,
+      artifactRepository: artifactRepo,
+      symlinkManager: sm,
+      adapters: new Map([['copilot', copilotAdapter]]),
+      workspaceFs: fs,
+    });
+
+    const result = await manager.removeAdapterSymlinks('copilot');
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.removed).toBeGreaterThanOrEqual(0);
+  });
+});

@@ -31,7 +31,7 @@ const buildSettings = (claudeEnabled: boolean): Settings => ({
   workspacePath: WORKSPACE,
   adapters: {
     claude: { enabled: claudeEnabled },
-    copilot: { enabled: false },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

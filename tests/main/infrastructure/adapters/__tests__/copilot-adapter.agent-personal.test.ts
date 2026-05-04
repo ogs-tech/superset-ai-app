@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute, join } from 'node:path';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { Artifact } from '../../../../../src/shared/artifact.js';
-
-const HOMEDIR = '/Users/alice';
+import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
 const agentPersonal: Artifact = {
   id: 'agent/triage',
@@ -20,10 +18,10 @@ const agentPersonal: Artifact = {
 };
 
 describe('CopilotAdapter — agent + personal (AC#4, AC#8)', () => {
-  it('returns exactly one destination under <homedir>/.copilot/agents/<slug>.agent.md', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns exactly one destination under <homedir>/.copilot/agents/<slug>.agent.md', async () => {
+    const adapter = makeAdapter();
 
-    const destinations = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: agentPersonal,
       linkedRepos: [],
     });
@@ -36,14 +34,15 @@ describe('CopilotAdapter — agent + personal (AC#4, AC#8)', () => {
     ]);
   });
 
-  it('returns an absolute destination', () => {
-    const adapter = new CopilotAdapter({ homedir: HOMEDIR });
+  it('returns an absolute destination', async () => {
+    const adapter = makeAdapter();
 
-    const [destination] = adapter.resolveDestinations({
+    const destinations = await adapter.resolveDestinations({
       artifact: agentPersonal,
       linkedRepos: [],
     });
 
+    const [destination] = destinations;
     expect(destination?.destination).toBeDefined();
     expect(isAbsolute(destination!.destination)).toBe(true);
   });

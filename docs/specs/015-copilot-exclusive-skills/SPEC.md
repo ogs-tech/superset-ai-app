@@ -1,7 +1,7 @@
 ---
 id: "015"
 title: Copilot exclusive skills (dedup com Claude)
-status: draft
+status: review
 priority: later
 created_at: 2026-05-03
 updated_at: 2026-05-03
@@ -9,7 +9,7 @@ depends_on: ["007"]
 labels: [should-have, adapter, ui]
 related_prd: "§4"
 related_arch: "§5.3, §7.4"
-branch: ""
+branch: "015-copilot-exclusive-skills"
 ---
 
 # 015 — Copilot exclusive skills (dedup com Claude)
@@ -58,7 +58,7 @@ Smoke da 007 (2026-05-03) confirmou que o VS Code Copilot escaneia 6 well-known 
 | Decisão | Escolhida | Alternativas descartadas | Motivo |
 |---|---|---|---|
 | Local da flag | **`Settings.adapters.copilot.exclusiveSkillsWithClaude`** | (b) Setting global `adapters.dedupSkills`; (c) Per-adapter pair (`copilot.exclusiveWith: ["claude"]`) | (b) confunde escopo: a flag é cross-adapter mas a leitura natural é "do lado do Copilot". (c) over-engineered para um pair único hoje. |
-| Forma de ler claude.enabled no CopilotAdapter | **[NEEDS CLARIFICATION]** — via construtor (`CopilotAdapter` ganha `settingsService` injetado) **ou** via parâmetro novo de `resolveDestinations({ artifact, linkedRepos, peerAdapters })` | (b) `AdapterManager` filtra o `SyncResult[]` posterior — feio, ignora a port; (c) ambos adapters compartilham bus de eventos | Decisão de wiring impacta a port `Adapter`. Resolver antes de Phase 1. |
+| Forma de ler claude.enabled no CopilotAdapter | **Injeção via construtor** — `CopilotAdapter` ganha `settingsService?: SettingsService` (opcional) | (b) `AdapterManager` filtra o `SyncResult[]` posterior — feio, ignora a port; (c) ambos adapters compartilham bus de eventos | Opcional para retrocompat com testes; sem mudança na port `Adapter`. |
 | Default da flag | **`false`** (preserva 007) | (b) `true` por default | Mudar default vira breaking change para usuários que esperam ambos paths. `false` é seguro. |
 | Cobertura `agent` | **[NEEDS CLARIFICATION]** — depende da smoke confirmar se Copilot lê `.md` em paths `agents/` do Claude | (b) Incluir agent na flag desde já; (c) Excluir explicitamente | Custom Agents exigem `.agent.md`; Claude usa `.md` puro. Provavelmente Copilot ignora; precisa verificar. |
 
@@ -76,10 +76,7 @@ Smoke da 007 (2026-05-03) confirmou que o VS Code Copilot escaneia 6 well-known 
 
 - **ASSUMPTION:** flag controla apenas o que escrevemos no FS; não tenta editar `chat.agentSkillsLocations` do VS Code (que é setting do usuário, fora do escopo).
 - **ASSUMPTION:** ao desligar a flag (ON → OFF), `AdapterManager.syncAll` é disparado pelo handler de settings e recria os symlinks sumidos em `~/.copilot/skills/`. Sem isso, o FS fica em estado intermediário até o próximo save.
-- **ASSUMPTION:** ao ligar a flag (OFF → ON), os symlinks órfãos em `~/.copilot/skills/` e `<repo>/.github/skills/` precisam ser **removidos** ativamente. Caminhos:
-  - (a) `AdapterManager.removeAll({ adapterId: 'copilot', types: ['skill'] })` chamado pelo handler de settings — exige extender a port se ainda não suportar filtragem por type.
-  - (b) Aguardar o usuário deletar/re-saltar a skill — UX ruim, documentar.
-  - **[NEEDS CLARIFICATION]:** decidir antes de Phase 1.
+- **ASSUMPTION:** ao ligar a flag (OFF → ON), a UI chama `adapter.removeAll(copilot)` **antes** de salvar a flag (enquanto `resolveDestinations` ainda retorna os destinos), garantindo remoção dos symlinks órfãos. Em seguida salva a flag via `settings.merge`. Ao desligar (ON → OFF), salva a flag primeiro e chama `adapter.syncAll(copilot)` para recriar os symlinks.
 - **RISCO médio:** Copilot pode mudar a lista de scan paths em versões futuras (`~/.claude/skills/` poderia sair). **Mitigação:** flag é opt-in; usuário pode desligar. Smoke periódica confirma comportamento.
 - **RISCO baixo:** usuário com Claude habilitado **mas** sem usar Claude na prática espera que skills apareçam no Copilot via `~/.copilot/skills/` (paths Copilot-only). Flag ON faz a skill sumir do scan path Copilot-only — mas Copilot ainda lê de `~/.claude/skills/`. **Mitigação:** tooltip da checkbox explicita "Claude paths cover Copilot too".
 - **DEBT consciente:** sem dedup automático para `agent` até validar comportamento real do Copilot com `.md` puro do Claude (ver Out of scope).

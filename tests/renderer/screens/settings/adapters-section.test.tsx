@@ -1,0 +1,97 @@
+import { beforeEach, describe, it, expect } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Settings as SettingsScreen } from '../../../../src/renderer/screens/Settings.js';
+import { mockApi, ok, type CallSpy } from '../../test-utils.js';
+import type { Settings } from '../../../../src/shared/settings.js';
+import type { SyncResult } from '../../../../src/shared/artifact.js';
+
+const baseSettings: Settings = {
+  workspacePath: '/ws',
+  adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+  linkedRepos: [],
+  ui: { theme: 'system' },
+};
+
+const stubSyncResult: SyncResult = { adapter: 'claude', destination: '/dest', status: 'ok' };
+
+let call: CallSpy;
+
+beforeEach(() => {
+  call = mockApi();
+});
+
+const setupRoute = (overrides: Record<string, unknown> = {}): void => {
+  call.mockImplementation((method: string) => {
+    if (method in overrides) return Promise.resolve(overrides[method]);
+    if (method === 'settings.get') return Promise.resolve(ok(baseSettings));
+    if (method === 'repo.list') return Promise.resolve(ok([]));
+    if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [stubSyncResult] }));
+    if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 5 }));
+    if (method === 'adapter.removeAll') return Promise.resolve(ok([]));
+    return Promise.resolve(ok(undefined));
+  });
+};
+
+describe('<Settings> — adapters section toggle-on (AC#15)', () => {
+  it('toggling claude on calls adapter.setEnabled with enabled:true', async () => {
+    const user = userEvent.setup();
+    const initial: Settings = {
+      ...baseSettings,
+      adapters: { claude: { enabled: false }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+    };
+    call.mockImplementation((method: string) => {
+      if (method === 'settings.get') return Promise.resolve(ok(initial));
+      if (method === 'repo.list') return Promise.resolve(ok([]));
+      if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [stubSyncResult] }));
+      if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));
+      return Promise.resolve(ok(undefined));
+    });
+    render(<SettingsScreen />);
+
+    const toggle = await screen.findByLabelText('Claude');
+    await user.click(toggle);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adapter.setEnabled', expect.objectContaining({ adapterId: 'claude', enabled: true })),
+    );
+  });
+});
+
+describe('<Settings> — adapters section toggle-off (AC#14)', () => {
+  it('toggling claude off opens ConfirmDisableModal', async () => {
+    const user = userEvent.setup();
+    setupRoute();
+    render(<SettingsScreen />);
+
+    const toggle = await screen.findByLabelText('Claude');
+    await user.click(toggle);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adapter.countDestinations', { adapterId: 'claude' }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('confirm-disable-modal')).toBeInTheDocument(),
+    );
+  });
+
+  it('clicking "Sim" calls adapter.setEnabled with removeSymlinks:true', async () => {
+    const user = userEvent.setup();
+    setupRoute();
+    render(<SettingsScreen />);
+
+    const toggle = await screen.findByLabelText('Claude');
+    await user.click(toggle);
+
+    const confirmBtn = await screen.findByTestId('confirm-remove-btn');
+    await user.click(confirmBtn);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'adapter.setEnabled',
+        expect.objectContaining({ adapterId: 'claude', enabled: false, removeSymlinks: true }),
+      ),
+    );
+  });
+});

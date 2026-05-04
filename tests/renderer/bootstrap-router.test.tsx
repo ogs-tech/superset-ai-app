@@ -8,7 +8,7 @@ const validSettings: Settings = {
   workspacePath: '/ws',
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
