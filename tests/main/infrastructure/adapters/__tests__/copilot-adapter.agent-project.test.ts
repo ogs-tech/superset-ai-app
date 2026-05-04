@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute, join } from 'node:path';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 import { makeAdapter } from './copilot-adapter.helpers.js';
 
-const agentProject: Artifact = {
+const agentProject: Customization = {
   id: 'agent/triage',
   frontmatter: {
     name: 'triage',
@@ -28,7 +28,7 @@ describe('CopilotAdapter — agent + project (AC#5, AC#7, AC#8)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: repos,
     });
 
@@ -42,7 +42,7 @@ describe('CopilotAdapter — agent + project (AC#5, AC#7, AC#8)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: repos,
     });
 
@@ -55,7 +55,7 @@ describe('CopilotAdapter — agent + project (AC#5, AC#7, AC#8)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: agentProject,
+      customization: agentProject,
       linkedRepos: [],
     });
 

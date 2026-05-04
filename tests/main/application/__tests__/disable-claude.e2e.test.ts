@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryArtifactRepository } from '../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -8,7 +8,7 @@ import { SymlinkManager } from '../../../../src/main/application/services/symlin
 import { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 import { ClaudeAdapter } from '../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../src/shared/customization.js';
 import type { Settings } from '../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -21,25 +21,25 @@ const baseSettings: Settings = {
   ui: { theme: 'system' },
 };
 
-const skillPersonal: Artifact = {
+const skillPersonal: Customization = {
   id: 'skill/my-skill',
   frontmatter: { name: 'my-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
   body: '# skill',
 };
 
-const agentPersonal: Artifact = {
+const agentPersonal: Customization = {
   id: 'agent/my-agent',
   frontmatter: { name: 'my-agent', type: 'agent', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
   body: '# agent',
 };
 
-const skillProject: Artifact = {
+const skillProject: Customization = {
   id: 'skill/proj-skill',
   frontmatter: { name: 'proj-skill', type: 'skill', description: 'desc', scopes: ['project'], version: '1.0.0', createdAt: '', updatedAt: '' },
   body: '# proj skill',
 };
 
-const skillRealFile: Artifact = {
+const skillRealFile: Customization = {
   id: 'skill/real-skill',
   frontmatter: { name: 'real-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
   body: '# real skill',
@@ -50,11 +50,11 @@ describe('disable-claude e2e (AC#10)', () => {
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const artifactRepo = new InMemoryArtifactRepository();
-    await artifactRepo.save({ artifact: skillPersonal });
-    await artifactRepo.save({ artifact: agentPersonal });
-    await artifactRepo.save({ artifact: skillProject });
-    await artifactRepo.save({ artifact: skillRealFile });
+    const customizationRepo = new InMemoryCustomizationRepository();
+    await customizationRepo.save({ customization: skillPersonal });
+    await customizationRepo.save({ customization: agentPersonal });
+    await customizationRepo.save({ customization: skillProject });
+    await customizationRepo.save({ customization: skillRealFile });
 
     const fs = new InMemoryFileSystem();
     const symlinkPersonalSkill = join(HOMEDIR, '.claude/skills/my-skill');
@@ -71,7 +71,7 @@ describe('disable-claude e2e (AC#10)', () => {
     const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const manager = new AdapterManager({
       settingsService,
-      artifactRepository: artifactRepo,
+      customizationRepository: customizationRepo,
       symlinkManager: sm,
       adapters: new Map([['claude', claudeAdapter]]),
     });

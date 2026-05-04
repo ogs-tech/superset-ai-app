@@ -1,5 +1,5 @@
 import type { ZodIssue, ZodError } from 'zod';
-import type { ArtifactFrontmatter } from '../../../shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../shared/customization.js';
 import type { TemplateFrontmatter } from '../../../shared/template.js';
 import { skillSchema } from '../schemas/skill.js';
 import { referenceSchema } from '../schemas/reference.js';
@@ -64,7 +64,7 @@ const zodErrorToValidationErrors = (error: ZodError): ValidationError[] =>
   }));
 
 export class SchemaValidator {
-  validate(frontmatter: ArtifactFrontmatter): ValidationResult {
+  validate(frontmatter: CustomizationFrontmatter): ValidationResult {
     const type = frontmatter.type;
 
     if (!type) {

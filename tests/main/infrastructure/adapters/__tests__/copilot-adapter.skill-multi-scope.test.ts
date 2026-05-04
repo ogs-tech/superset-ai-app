@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
-const skillMultiScope: Artifact = {
+const skillMultiScope: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -25,7 +25,7 @@ describe('CopilotAdapter — skill + multi-scope (AC#2, AC#3, AC#7)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: skillMultiScope,
+      customization: skillMultiScope,
       linkedRepos: oneRepo,
     });
 
@@ -39,7 +39,7 @@ describe('CopilotAdapter — skill + multi-scope (AC#2, AC#3, AC#7)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: skillMultiScope,
+      customization: skillMultiScope,
       linkedRepos: [],
     });
 

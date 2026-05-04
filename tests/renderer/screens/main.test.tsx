@@ -12,17 +12,17 @@ beforeEach(() => {
 const setupRoute = (overrides: Record<string, unknown> = {}) => {
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
-    if (method === 'artifact.list') return Promise.resolve(ok([]));
+    if (method === 'customization.list') return Promise.resolve(ok([]));
     return Promise.resolve(ok(undefined));
   });
 };
 
 describe('<Main> — home view', () => {
-  it('renders the artifact list and the topbar with a settings button', async () => {
+  it('renders the customization list and the topbar with a settings button', async () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
-    expect(await screen.findByTestId('artifact-list')).toBeInTheDocument();
+    expect(await screen.findByTestId('customization-list')).toBeInTheDocument();
     expect(screen.getByTestId('topbar')).toBeInTheDocument();
     expect(screen.getByTestId('topbar-search-input')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /abrir settings/i })).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('<Main> — home view', () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
-    await screen.findByTestId('artifact-list');
+    await screen.findByTestId('customization-list');
     expect(screen.queryByRole('button', { name: /add repo/i })).toBeNull();
     expect(screen.queryByText(/linked repos/i)).toBeNull();
   });

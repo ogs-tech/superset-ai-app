@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { CopilotInstructionsGen } from '../../../../src/main/application/services/copilot-instructions-gen.js';
 import { CopilotAdapter } from '../../../../src/main/infrastructure/adapters/copilot-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
-import type { Artifact } from '../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../src/shared/customization.js';
 import type { Settings } from '../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -17,7 +17,7 @@ const WORKSPACE = '/workspace';
 const GENERATED = join(WORKSPACE, '_generated/copilot-instructions.md');
 const SYMLINK_PERSONAL = join(HOMEDIR, '.copilot/instructions/copilot-instructions.md');
 
-const refMultiScope: Artifact = {
+const refMultiScope: Customization = {
   id: 'reference/guide',
   frontmatter: {
     name: 'guide',
@@ -45,29 +45,29 @@ const setup = async () => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(buildSettings());
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile(join(WORKSPACE, 'references/guide.md'), '# My Guide');
 
-  const gen = new CopilotInstructionsGen({ artifactRepository: artifactRepo, workspaceFs: fs, workspacePath: WORKSPACE });
+  const gen = new CopilotInstructionsGen({ customizationRepository: customizationRepo, workspaceFs: fs, workspacePath: WORKSPACE });
   const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const clock = new FixedClock(new Date('2026-05-03T00:00:00Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const adapterManager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
   });
-  return { artifactRepo, fs, adapterManager };
+  return { customizationRepo, fs, adapterManager };
 };
 
 describe('save-reference-multi-scope e2e (AC#11)', () => {
   it('produces 1 generated file + 3 symlinks (personal + 2 project)', async () => {
-    const { artifactRepo, fs, adapterManager } = await setup();
+    const { customizationRepo, fs, adapterManager } = await setup();
 
-    await artifactRepo.save({ artifact: refMultiScope });
-    const results = await adapterManager.syncOne({ artifact: refMultiScope });
+    await customizationRepo.save({ customization: refMultiScope });
+    const results = await adapterManager.syncOne({ customization: refMultiScope });
 
     const okResults = results.filter((r) => r.status === 'ok');
     expect(okResults).toHaveLength(3);

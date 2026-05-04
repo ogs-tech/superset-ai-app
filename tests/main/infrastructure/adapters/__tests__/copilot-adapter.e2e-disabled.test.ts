@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -10,13 +10,13 @@ import { AdapterManager } from '../../../../../src/main/application/services/ada
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
-import type { Artifact, ArtifactType } from '../../../../../src/shared/artifact.js';
+import type { Customization, CustomizationType } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const buildArtifact = (type: ArtifactType, name: string): Artifact => ({
+const buildCustomization = (type: CustomizationType, name: string): Customization => ({
   id: `${type}/${name}`,
   frontmatter: {
     name,
@@ -30,11 +30,11 @@ const buildArtifact = (type: ArtifactType, name: string): Artifact => ({
   body: `# ${name}`,
 });
 
-const artifacts: Artifact[] = [
-  buildArtifact('skill', 'review'),
-  buildArtifact('agent', 'triage'),
-  buildArtifact('reference', 'glossary'),
-  buildArtifact('global-instruction', 'default'),
+const customizations: Customization[] = [
+  buildCustomization('skill', 'review'),
+  buildCustomization('agent', 'triage'),
+  buildCustomization('reference', 'glossary'),
+  buildCustomization('global-instruction', 'default'),
 ];
 
 const buildSettings = (): Settings => ({
@@ -51,7 +51,7 @@ const setup = async () => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(buildSettings());
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile(join(WORKSPACE, 'skills/review'), '# review\n');
   fs.createFile(join(WORKSPACE, 'agents/triage.md'), '# triage\n');
@@ -63,12 +63,12 @@ const setup = async () => {
   const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const manager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map<string, Adapter>([[copilotAdapter.adapterId, copilotAdapter]]),
   });
-  for (const artifact of artifacts) {
-    await artifactRepo.save({ artifact });
+  for (const customization of customizations) {
+    await customizationRepo.save({ customization });
   }
   return { manager };
 };
@@ -83,11 +83,11 @@ describe('CopilotAdapter — e2e disabled (AC#11)', () => {
     expect(copilotResults).toHaveLength(0);
   });
 
-  it('syncOne produces zero copilot SyncResults for any artifact type when copilot is disabled', async () => {
+  it('syncOne produces zero copilot SyncResults for any customization type when copilot is disabled', async () => {
     const { manager } = await setup();
 
-    for (const artifact of artifacts) {
-      const results = await manager.syncOne({ artifact });
+    for (const customization of customizations) {
+      const results = await manager.syncOne({ customization });
       const copilotResults = results.filter((r) => r.adapter === 'copilot');
       expect(copilotResults).toHaveLength(0);
     }

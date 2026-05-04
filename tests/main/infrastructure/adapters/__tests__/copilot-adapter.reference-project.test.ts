@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { join } from 'node:path';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
 
@@ -9,7 +9,7 @@ const HOMEDIR = '/home/alice';
 const WORKSPACE = '/workspace';
 const GENERATED_PATH = join(WORKSPACE, '_generated/copilot-instructions.md');
 
-const referenceProject: Artifact = {
+const referenceProject: Customization = {
   id: 'reference/my-ref',
   frontmatter: {
     name: 'my-ref',
@@ -37,7 +37,7 @@ describe('CopilotAdapter — reference + project (AC#9c)', () => {
     const adapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
 
     const destinations = await adapter.resolveDestinations({
-      artifact: referenceProject,
+      customization: referenceProject,
       linkedRepos,
     });
 

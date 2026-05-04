@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Artifact, ArtifactScope } from '../../../../../src/shared/artifact.js';
+import type { Customization, CustomizationScope } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 import { makeAdapter, makeGen } from './copilot-adapter.helpers.js';
 
-const reference = (scopes: ArtifactScope[]): Artifact => ({
+const reference = (scopes: CustomizationScope[]): Customization => ({
   id: 'reference/style-guide',
   frontmatter: {
     name: 'style-guide',
@@ -23,7 +23,7 @@ const repos: LinkedRepo[] = [
 ];
 
 describe('CopilotAdapter — reference returns [] when 0 refs flagged (AC#13)', () => {
-  it.each<[ArtifactScope[], LinkedRepo[]]>([
+  it.each<[CustomizationScope[], LinkedRepo[]]>([
     [['personal'], []],
     [['personal'], repos],
     [['project'], []],
@@ -37,7 +37,7 @@ describe('CopilotAdapter — reference returns [] when 0 refs flagged (AC#13)', 
       const adapter = makeAdapter(gen);
 
       const destinations = await adapter.resolveDestinations({
-        artifact: reference(scopes),
+        customization: reference(scopes),
         linkedRepos,
       });
 

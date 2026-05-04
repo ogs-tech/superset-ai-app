@@ -3,9 +3,9 @@ import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
 import { WorkspaceBootstrapService } from '../../../src/main/application/services/workspace-bootstrap.js';
-import { ArtifactService } from '../../../src/main/application/services/artifact-service.js';
+import { CustomizationService } from '../../../src/main/application/services/customization-service.js';
 import { TemplateService } from '../../../src/main/application/services/template-service.js';
-import { InMemoryArtifactRepository } from '../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
@@ -35,7 +35,7 @@ interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
   workspaceBootstrap: WorkspaceBootstrapService;
-  artifactService: ArtifactService;
+  customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
   searchService: SearchService;
@@ -62,7 +62,7 @@ interface Deps {
   environmentSpy: {
     getHomeDir: ReturnType<typeof vi.fn>;
   };
-  artifactRepo: InMemoryArtifactRepository;
+  customizationRepo: InMemoryCustomizationRepository;
   clock: FixedClock;
   templateRepoSpy: {
     list: ReturnType<typeof vi.fn>;
@@ -120,7 +120,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     getHomeDir: environmentSpy.getHomeDir,
   };
 
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const adapterManager: AdapterManager = {
     syncAll: vi.fn().mockResolvedValue([]),
@@ -130,7 +130,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     removeAdapterSymlinks: vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] }),
     countDestinations: vi.fn().mockResolvedValue(0),
   } as unknown as AdapterManager;
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
+  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
 
   const templateFrontmatter: TemplateFrontmatter = {
     name: 'default',
@@ -170,7 +170,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
     workspaceBootstrap: new WorkspaceBootstrapService(mutator),
-    artifactService,
+    customizationService,
     templateService,
     adapterManager,
     searchService: searchService as unknown as SearchService,
@@ -183,7 +183,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     dialogSpy,
     pathProberSpy,
     environmentSpy,
-    artifactRepo,
+    customizationRepo,
     clock,
     templateRepoSpy,
   };
@@ -391,8 +391,8 @@ describe('buildHandlers', () => {
   });
 });
 
-describe('buildHandlers — artifact', () => {
-  const sampleArtifact = {
+describe('buildHandlers — customization', () => {
+  const sampleCustomization = {
     id: 'skill/foo',
     frontmatter: {
       name: 'foo',
@@ -406,56 +406,56 @@ describe('buildHandlers — artifact', () => {
     body: '# Foo\n',
   };
 
-  it('artifact.save returns { artifact, syncReport: [] }', async () => {
+  it('customization.save returns { customization, syncReport: [] }', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const result = (await handlers['artifact.save']?.({
-      artifact: sampleArtifact,
-    })) as { artifact: { id: string }; syncReport: unknown[] };
+    const result = (await handlers['customization.save']?.({
+      customization: sampleCustomization,
+    })) as { customization: { id: string }; syncReport: unknown[] };
 
-    expect(result.artifact.id).toBe('skill/foo');
+    expect(result.customization.id).toBe('skill/foo');
     expect(result.syncReport).toEqual([]);
   });
 
-  it('artifact.save validation error surfaces as DomainError (envelope-mapped by dispatcher)', async () => {
+  it('customization.save validation error surfaces as DomainError (envelope-mapped by dispatcher)', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     const broken = {
-      ...sampleArtifact,
-      frontmatter: { ...sampleArtifact.frontmatter, name: '' },
+      ...sampleCustomization,
+      frontmatter: { ...sampleCustomization.frontmatter, name: '' },
     };
-    await expect(handlers['artifact.save']?.({ artifact: broken })).rejects.toMatchObject({
+    await expect(handlers['customization.save']?.({ customization: broken })).rejects.toMatchObject({
       kind: 'validation',
     });
   });
 
-  it('artifact.list filters by type when provided', async () => {
+  it('customization.list filters by type when provided', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.list']?.({ type: 'skill' })) as Array<{
+    const result = (await handlers['customization.list']?.({ type: 'skill' })) as Array<{
       id: string;
     }>;
     expect(result.map((a) => a.id)).toEqual(['skill/foo']);
   });
 
-  it('artifact.list returns all when type is omitted', async () => {
+  it('customization.list returns all when type is omitted', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.list']?.({})) as Array<{ id: string }>;
+    const result = (await handlers['customization.list']?.({})) as Array<{ id: string }>;
     expect(result).toHaveLength(1);
   });
 
-  it('artifact.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
+  it('customization.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
-    const result = (await handlers['artifact.list']?.({
+    const result = (await handlers['customization.list']?.({
       type: 'global-instruction',
     })) as Array<{ id: string }>;
     expect(result).toEqual([]);
@@ -470,37 +470,37 @@ describe('buildHandlers — artifact', () => {
     ).resolves.toBeDefined();
   });
 
-  it('artifact.get returns the artifact', async () => {
+  it('customization.get returns the customization', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.get']?.({ id: 'skill/foo' })) as {
+    const result = (await handlers['customization.get']?.({ id: 'skill/foo' })) as {
       id: string;
     };
     expect(result.id).toBe('skill/foo');
   });
 
-  it('artifact.delete removes the artifact and accepts removeSymlinks flag', async () => {
+  it('customization.delete removes the customization and accepts removeSymlinks flag', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
-    await handlers['artifact.save']?.({ artifact: sampleArtifact });
+    await handlers['customization.save']?.({ customization: sampleCustomization });
 
-    const result = (await handlers['artifact.delete']?.({
+    const result = (await handlers['customization.delete']?.({
       id: 'skill/foo',
       removeSymlinks: true,
     })) as { ok: true; syncReport: unknown[] };
     expect(result).toEqual({ ok: true, syncReport: [] });
 
-    expect(await deps.artifactRepo.exists({ id: 'skill/foo' })).toBe(false);
+    expect(await deps.customizationRepo.exists({ id: 'skill/foo' })).toBe(false);
   });
 
-  it('artifact.delete rejects when removeSymlinks is missing', async () => {
+  it('customization.delete rejects when removeSymlinks is missing', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
 
     await expect(
-      handlers['artifact.delete']?.({ id: 'skill/foo' }),
+      handlers['customization.delete']?.({ id: 'skill/foo' }),
     ).rejects.toBeInstanceOf(DomainError);
   });
 

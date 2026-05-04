@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -11,13 +11,13 @@ import { AdapterManager } from '../../../../../src/main/application/services/ada
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo, Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const skillBoth: Artifact = {
+const skillBoth: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -47,7 +47,7 @@ const setup = async () => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(buildSettings());
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile(join(WORKSPACE, 'skills/review'), '# review\n');
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
@@ -57,14 +57,14 @@ const setup = async () => {
   const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const manager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
       [copilotAdapter.adapterId, copilotAdapter],
     ]),
   });
-  await artifactRepo.save({ artifact: skillBoth });
+  await customizationRepo.save({ customization: skillBoth });
   return { manager };
 };
 
@@ -72,7 +72,7 @@ describe('CopilotAdapter — e2e multi-adapter (AC#14)', () => {
   it('syncOne with both adapters enabled produces 2 claude + 2 copilot SyncResults (personal + project each)', async () => {
     const { manager } = await setup();
 
-    const results = await manager.syncOne({ artifact: skillBoth });
+    const results = await manager.syncOne({ customization: skillBoth });
 
     const claudePersonal = results.find(
       (r) =>

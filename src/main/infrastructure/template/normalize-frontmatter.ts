@@ -1,7 +1,7 @@
-import type { ArtifactScope } from '../../../shared/artifact.js';
+import type { CustomizationScope } from '../../../shared/customization.js';
 import type { TemplateFrontmatter, TemplateTargetType } from '../../../shared/template.js';
 
-const VALID_SCOPES: readonly ArtifactScope[] = ['personal', 'project'];
+const VALID_SCOPES: readonly CustomizationScope[] = ['personal', 'project'];
 const VALID_TARGET_TYPES: readonly TemplateTargetType[] = [
   'skill',
   'reference',
@@ -9,7 +9,7 @@ const VALID_TARGET_TYPES: readonly TemplateTargetType[] = [
   'global-instruction',
 ];
 
-const isArtifactScope = (value: unknown): value is ArtifactScope =>
+const isCustomizationScope = (value: unknown): value is CustomizationScope =>
   typeof value === 'string' && (VALID_SCOPES as readonly string[]).includes(value);
 
 const isTargetType = (value: unknown): value is TemplateTargetType =>
@@ -19,8 +19,8 @@ export function normalizeTemplateFrontmatter(raw: unknown): TemplateFrontmatter 
   const fm = { ...(raw as Record<string, unknown>) };
 
   if (Array.isArray(fm.scopes)) {
-    fm.scopes = fm.scopes.filter(isArtifactScope);
-  } else if (isArtifactScope(fm.scope)) {
+    fm.scopes = fm.scopes.filter(isCustomizationScope);
+  } else if (isCustomizationScope(fm.scope)) {
     fm.scopes = [fm.scope];
   } else {
     fm.scopes = [];

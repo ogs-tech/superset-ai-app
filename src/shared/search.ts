@@ -1,13 +1,13 @@
-import type { Artifact, ArtifactType, ArtifactScope } from './artifact.js';
+import type { Customization, CustomizationType, CustomizationScope } from './customization.js';
 
 export interface SearchOptions {
-  types?: ArtifactType[];
-  scopes?: ArtifactScope[];
+  types?: CustomizationType[];
+  scopes?: CustomizationScope[];
   limit?: number;
 }
 
 export interface SearchResult {
-  artifact: Artifact;
+  customization: Customization;
   matchedFields: Array<'name' | 'description' | 'content'>;
 }
 

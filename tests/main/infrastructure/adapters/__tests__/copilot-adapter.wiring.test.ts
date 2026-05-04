@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const globalInstructionDefault: Artifact = {
+const globalInstructionDefault: Customization = {
   id: 'global-instruction/default',
   frontmatter: {
     name: 'default',
@@ -46,7 +46,7 @@ const setup = async (settings: Settings) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile('/workspace/global-instructions/default.md', '# default\n');
   const symlinkManager = new SymlinkManager(
@@ -61,11 +61,11 @@ const setup = async (settings: Settings) => {
   });
   const manager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map([[copilotAdapter.adapterId, copilotAdapter]]),
   });
-  await artifactRepo.save({ artifact: globalInstructionDefault });
+  await customizationRepo.save({ customization: globalInstructionDefault });
   return { manager, fs };
 };
 

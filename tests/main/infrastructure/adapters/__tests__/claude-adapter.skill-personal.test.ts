@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute } from 'node:path';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 
-const skillPersonal: Artifact = {
+const skillPersonal: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -22,7 +22,7 @@ describe('ClaudeAdapter — skill + personal', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: skillPersonal,
+      customization: skillPersonal,
       linkedRepos: [],
     });
 
@@ -35,7 +35,7 @@ describe('ClaudeAdapter — skill + personal', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const [destination] = adapter.resolveDestinations({
-      artifact: skillPersonal,
+      customization: skillPersonal,
       linkedRepos: [],
     });
 

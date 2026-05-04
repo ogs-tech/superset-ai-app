@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { SearchService } from '../../../../../src/main/application/services/search-service.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 
 const BODY_SIZE = 350;
 const ARTIFACT_COUNT = 100;
 
-const makeArtifact = (i: number): Artifact => ({
+const makeCustomization = (i: number): Customization => ({
   id: `skill/art-${i}`,
   frontmatter: {
     name: `art-${i}`,
     type: 'skill',
-    description: `Description for artifact ${i}`,
+    description: `Description for customization ${i}`,
     scopes: ['personal'],
     version: '1.0.0',
     createdAt: '',
@@ -21,12 +21,12 @@ const makeArtifact = (i: number): Artifact => ({
 });
 
 describe('SearchService — perf benchmark (AC#17)', () => {
-  it('search over 100 artifacts with 300+ LOC bodies completes in < 100ms', async () => {
-    const repo = new InMemoryArtifactRepository();
+  it('search over 100 customizations with 300+ LOC bodies completes in < 100ms', async () => {
+    const repo = new InMemoryCustomizationRepository();
     for (let i = 0; i < ARTIFACT_COUNT; i++) {
-      await repo.save({ artifact: makeArtifact(i) });
+      await repo.save({ customization: makeCustomization(i) });
     }
-    const svc = new SearchService({ artifactRepository: repo });
+    const svc = new SearchService({ customizationRepository: repo });
 
     const start = performance.now();
     await svc.search('review');

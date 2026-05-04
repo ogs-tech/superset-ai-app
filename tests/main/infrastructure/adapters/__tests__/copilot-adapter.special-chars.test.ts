@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import { makeGen } from './copilot-adapter.helpers.js';
@@ -7,7 +7,7 @@ import { makeGen } from './copilot-adapter.helpers.js';
 const HOMEDIR_SPECIAL = '/Users/José Silva';
 const REPO_PATH = '/Users/x/My Repo (work)';
 
-const skillBoth: Artifact = {
+const skillBoth: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -21,7 +21,7 @@ const skillBoth: Artifact = {
   body: '# review',
 };
 
-const agentBoth: Artifact = {
+const agentBoth: Customization = {
   id: 'agent/triage',
   frontmatter: {
     name: 'triage',
@@ -46,7 +46,7 @@ describe('CopilotAdapter — paths with spaces/accents (AC#16)', () => {
     });
 
     const destinations = await adapter.resolveDestinations({
-      artifact: skillBoth,
+      customization: skillBoth,
       linkedRepos: repos,
     });
 
@@ -70,7 +70,7 @@ describe('CopilotAdapter — paths with spaces/accents (AC#16)', () => {
     });
 
     const destinations = await adapter.resolveDestinations({
-      artifact: agentBoth,
+      customization: agentBoth,
       linkedRepos: repos,
     });
 

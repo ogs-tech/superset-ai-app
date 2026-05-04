@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
-import type { Artifact, ArtifactType } from '../../../../../src/shared/artifact.js';
+import type { Customization, CustomizationType } from '../../../../../src/shared/customization.js';
 import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
-const buildArtifact = (
-  type: ArtifactType,
+const buildCustomization = (
+  type: CustomizationType,
   name: string,
   scopes: Array<'personal' | 'project'> = ['personal'],
-): Artifact => ({
+): Customization => ({
   id: `${type}/${name}`,
   frontmatter: {
     name,
@@ -25,7 +25,7 @@ describe('CopilotAdapter — global-instruction routing', () => {
   it('resolves to <homedir>/.copilot/instructions/global.instructions.md', async () => {
     const adapter = makeAdapter();
     const destinations = await adapter.resolveDestinations({
-      artifact: buildArtifact('global-instruction', 'default'),
+      customization: buildCustomization('global-instruction', 'default'),
       linkedRepos: [],
     });
 
@@ -40,7 +40,7 @@ describe('CopilotAdapter — global-instruction routing', () => {
   it('all returned destinations are absolute', async () => {
     const adapter = makeAdapter();
     const destinations = await adapter.resolveDestinations({
-      artifact: buildArtifact('global-instruction', 'default'),
+      customization: buildCustomization('global-instruction', 'default'),
       linkedRepos: [],
     });
 

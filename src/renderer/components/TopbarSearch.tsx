@@ -35,7 +35,7 @@ export function TopbarSearch({ onResults }: TopbarSearchProps): React.ReactEleme
     }
 
     timerRef.current = setTimeout(() => {
-      void callIpc<SearchOutput>('artifact.search', { query: q }).then((out) => {
+      void callIpc<SearchOutput>('customization.search', { query: q }).then((out) => {
         onResults(out);
       });
     }, 250);
@@ -46,7 +46,7 @@ export function TopbarSearch({ onResults }: TopbarSearchProps): React.ReactEleme
       <input
         data-testid="topbar-search-input"
         type="search"
-        placeholder="Search artifacts..."
+        placeholder="Search customizations..."
         value={value}
         onChange={handleChange}
       />

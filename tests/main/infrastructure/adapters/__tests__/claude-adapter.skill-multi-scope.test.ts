@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 
-const skill = (scopes: Array<'personal' | 'project'>): Artifact => ({
+const skill = (scopes: Array<'personal' | 'project'>): Customization => ({
   id: 'skill/multi',
   frontmatter: {
     name: 'multi',
@@ -27,7 +27,7 @@ describe('ClaudeAdapter — skill with multiple scopes', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: skill(['personal', 'project']),
+      customization: skill(['personal', 'project']),
       linkedRepos,
     });
 
@@ -42,7 +42,7 @@ describe('ClaudeAdapter — skill with multiple scopes', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: skill(['personal']),
+      customization: skill(['personal']),
       linkedRepos,
     });
 
@@ -55,7 +55,7 @@ describe('ClaudeAdapter — skill with multiple scopes', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: skill(['project']),
+      customization: skill(['project']),
       linkedRepos,
     });
 

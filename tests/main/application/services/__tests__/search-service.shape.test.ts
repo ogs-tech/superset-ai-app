@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { SearchService } from '../../../../../src/main/application/services/search-service.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 
-const makeArtifact = (name: string): Artifact => ({
+const makeCustomization = (name: string): Customization => ({
   id: `skill/${name}`,
   frontmatter: {
     name,
@@ -18,16 +18,16 @@ const makeArtifact = (name: string): Artifact => ({
 });
 
 describe('SearchService — shape (AC#2)', () => {
-  it('each SearchResult has { artifact, matchedFields } where matchedFields is subset of ["name","description","content"]', async () => {
-    const artifactRepository = new InMemoryArtifactRepository();
-    await artifactRepository.save({ artifact: makeArtifact('review') });
-    const svc = new SearchService({ artifactRepository });
+  it('each SearchResult has { customization, matchedFields } where matchedFields is subset of ["name","description","content"]', async () => {
+    const customizationRepository = new InMemoryCustomizationRepository();
+    await customizationRepository.save({ customization: makeCustomization('review') });
+    const svc = new SearchService({ customizationRepository });
 
     const output = await svc.search('review');
 
     expect(output.results.length).toBeGreaterThan(0);
     for (const result of output.results) {
-      expect(result.artifact).toBeDefined();
+      expect(result.customization).toBeDefined();
       expect(Array.isArray(result.matchedFields)).toBe(true);
       for (const field of result.matchedFields) {
         expect(['name', 'description', 'content']).toContain(field);

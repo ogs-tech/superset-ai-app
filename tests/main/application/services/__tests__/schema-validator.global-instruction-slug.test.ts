@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
 
-const validGI: ArtifactFrontmatter = {
+const validGI: CustomizationFrontmatter = {
   name: 'default',
   type: 'global-instruction',
   description: 'A valid global instruction',

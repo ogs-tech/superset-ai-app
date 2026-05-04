@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
 
-const validRef: ArtifactFrontmatter = {
+const validRef: CustomizationFrontmatter = {
   name: 'my-ref',
   type: 'reference',
   description: 'A valid reference',

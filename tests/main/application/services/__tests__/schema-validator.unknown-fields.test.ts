@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
 
-const validBase: ArtifactFrontmatter = {
+const validBase: CustomizationFrontmatter = {
   name: 'my-skill',
   type: 'skill',
   description: 'A valid skill',
@@ -14,7 +14,7 @@ const validBase: ArtifactFrontmatter = {
 
 describe('SchemaValidator — unknown fields (AC#13)', () => {
   it('valid frontmatter with unknown field "author" → ok: true (lax)', () => {
-    const withExtra = { ...validBase, author: 'me' } as ArtifactFrontmatter;
+    const withExtra = { ...validBase, author: 'me' } as CustomizationFrontmatter;
     const result = new SchemaValidator().validate(withExtra);
     expect(result.ok).toBe(true);
   });

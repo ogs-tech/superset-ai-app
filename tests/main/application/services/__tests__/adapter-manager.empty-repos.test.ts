@@ -3,19 +3,19 @@ import { FakeAdapter } from '../../../../../src/main/application/services/__fixt
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
 
 describe('AdapterManager.syncOne with empty linkedRepos', () => {
-  it('returns a skipped SyncResult for project artifacts when no linked repos exist', async () => {
+  it('returns a skipped SyncResult for project customizations when no linked repos exist', async () => {
     const adapters = [
       new FakeAdapter('claude', '/workspace/personal/claude'),
       new FakeAdapter('copilot', '/workspace/personal/copilot'),
     ];
     const settings = { ...defaultSettings, linkedRepos: [] };
-    const { manager, registerArtifact } = await setupAdapterManager(adapters, settings);
-    const artifact = {
+    const { manager, registerCustomization } = await setupAdapterManager(adapters, settings);
+    const customization = {
       id: 'reference/empty',
       frontmatter: {
         name: 'empty',
         type: 'reference' as const,
-        description: 'empty artifact',
+        description: 'empty customization',
         scopes: ['project' as const],
         version: '1.0.0',
         createdAt: '',
@@ -23,9 +23,9 @@ describe('AdapterManager.syncOne with empty linkedRepos', () => {
       },
       body: '# empty',
     };
-    await registerArtifact(artifact);
+    await registerCustomization(customization);
 
-    const result = await manager.syncOne({ artifact });
+    const result = await manager.syncOne({ customization });
 
     expect(result).toHaveLength(2);
     for (const item of result) {

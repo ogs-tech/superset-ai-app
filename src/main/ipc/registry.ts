@@ -4,7 +4,7 @@ import type { SettingsService } from '../application/services/settings-service.j
 import type { RepoService } from '../application/services/repo-service.js';
 import type { WorkspaceBootstrapService } from '../application/services/workspace-bootstrap.js';
 import type { WorkspaceLocator } from '../application/services/workspace-locator.js';
-import type { ArtifactService } from '../application/services/artifact-service.js';
+import type { CustomizationService } from '../application/services/customization-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
 import type { SearchService, SearchOptions } from '../application/services/search-service.js';
@@ -13,8 +13,8 @@ import type { EnvironmentPort } from '../application/ports/environment-port.js';
 import type { PathProber } from '../application/ports/path-prober.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
-import type { ArtifactListParams } from '../../shared/ipc-contract.js';
-import type { Artifact, ArtifactType } from '../../shared/artifact.js';
+import type { CustomizationListParams } from '../../shared/ipc-contract.js';
+import type { Customization, CustomizationType } from '../../shared/customization.js';
 import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
 
@@ -22,7 +22,7 @@ export interface IpcDeps {
   settingsService: SettingsService;
   repoService: RepoService;
   workspaceBootstrap: WorkspaceBootstrapService;
-  artifactService: ArtifactService;
+  customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
   searchService: SearchService;
@@ -32,7 +32,7 @@ export interface IpcDeps {
   workspaceLocator?: WorkspaceLocator;
 }
 
-const ARTIFACT_TYPES: readonly ArtifactType[] = [
+const ARTIFACT_TYPES: readonly CustomizationType[] = [
   'skill',
   'reference',
   'agent',
@@ -56,11 +56,11 @@ const asTemplateTargetType = (value: unknown, field: string): TemplateTargetType
   return value as TemplateTargetType;
 };
 
-const asArtifact = (value: unknown): Artifact => {
+const asCustomization = (value: unknown): Customization => {
   if (typeof value !== 'object' || value === null) {
-    throw new DomainError('validation', `Invalid 'artifact' payload`);
+    throw new DomainError('validation', `Invalid 'customization' payload`);
   }
-  return value as Artifact;
+  return value as Customization;
 };
 
 const asTemplate = (value: unknown): Template => {
@@ -70,14 +70,14 @@ const asTemplate = (value: unknown): Template => {
   return value as Template;
 };
 
-const asArtifactType = (value: unknown, field: string): ArtifactType => {
+const asCustomizationType = (value: unknown, field: string): CustomizationType => {
   if (typeof value !== 'string' || !(ARTIFACT_TYPES as readonly string[]).includes(value)) {
     throw new DomainError(
       'validation',
       `Invalid '${field}' (must be ${ARTIFACT_TYPES.join(' | ')})`,
     );
   }
-  return value as ArtifactType;
+  return value as CustomizationType;
 };
 
 const asBoolean = (value: unknown, field: string): boolean => {
@@ -123,7 +123,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     settingsService,
     repoService,
     workspaceBootstrap,
-    artifactService,
+    customizationService,
     templateService,
     adapterManager,
     searchService,
@@ -237,34 +237,34 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return dialogPort.selectFolder(dialogParams);
     },
 
-    'artifact.list': async (params) => {
+    'customization.list': async (params) => {
       const raw =
-        params === undefined || params === null ? {} : asObject(params, 'artifact.list');
-      const query: ArtifactListParams = {};
+        params === undefined || params === null ? {} : asObject(params, 'customization.list');
+      const query: CustomizationListParams = {};
       if (raw['type'] !== undefined) {
-        query.type = asArtifactType(raw['type'], 'type');
+        query.type = asCustomizationType(raw['type'], 'type');
       }
-      return artifactService.list(query);
+      return customizationService.list(query);
     },
 
-    'artifact.get': async (params) => {
-      const raw = asObject(params, 'artifact.get');
-      return artifactService.get({ id: asString(raw['id'], 'id') });
+    'customization.get': async (params) => {
+      const raw = asObject(params, 'customization.get');
+      return customizationService.get({ id: asString(raw['id'], 'id') });
     },
 
-    'artifact.save': async (params) => {
-      const raw = asObject(params, 'artifact.save');
-      const artifact = asArtifact(raw['artifact']);
+    'customization.save': async (params) => {
+      const raw = asObject(params, 'customization.save');
+      const customization = asCustomization(raw['customization']);
       const isCreate = raw['isCreate'];
-      return artifactService.save({
-        artifact,
+      return customizationService.save({
+        customization,
         ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
       });
     },
 
-    'artifact.delete': async (params) => {
-      const raw = asObject(params, 'artifact.delete');
-      return artifactService.delete({
+    'customization.delete': async (params) => {
+      const raw = asObject(params, 'customization.delete');
+      return customizationService.delete({
         id: asString(raw['id'], 'id'),
         removeSymlinks: asBoolean(raw['removeSymlinks'], 'removeSymlinks'),
       });
@@ -350,8 +350,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return { count };
     },
 
-    'artifact.search': async (params) => {
-      const raw = params === undefined || params === null ? {} : asObject(params, 'artifact.search');
+    'customization.search': async (params) => {
+      const raw = params === undefined || params === null ? {} : asObject(params, 'customization.search');
       const query = asString(raw['query'], 'query');
       let options: SearchOptions | undefined;
       if (raw['options'] !== undefined) {

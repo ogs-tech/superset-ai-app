@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
 
-const validSkill: ArtifactFrontmatter = {
+const validSkill: CustomizationFrontmatter = {
   name: 'my-skill',
   type: 'skill',
   description: 'A valid skill description',
@@ -19,7 +19,7 @@ describe('SchemaValidator — skill (AC#3, AC#4)', () => {
   });
 
   it('valid skill with optional tags → ok: true', () => {
-    const result = new SchemaValidator().validate({ ...validSkill, tags: ['tag-a', 'tag-b'] } as ArtifactFrontmatter);
+    const result = new SchemaValidator().validate({ ...validSkill, tags: ['tag-a', 'tag-b'] } as CustomizationFrontmatter);
     expect(result.ok).toBe(true);
   });
 });

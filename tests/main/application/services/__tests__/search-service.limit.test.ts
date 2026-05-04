@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { SearchService } from '../../../../../src/main/application/services/search-service.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 
-const makeArtifact = (i: number): Artifact => ({
+const makeCustomization = (i: number): Customization => ({
   id: `skill/art-${i}`,
   frontmatter: {
     name: `art-${i}`,
@@ -18,10 +18,10 @@ const makeArtifact = (i: number): Artifact => ({
 });
 
 describe('SearchService — limit (AC#9)', () => {
-  it('10 matching artifacts with limit 5 → { results[5], total:10, truncated:true }', async () => {
-    const repo = new InMemoryArtifactRepository();
-    for (let i = 0; i < 10; i++) await repo.save({ artifact: makeArtifact(i) });
-    const svc = new SearchService({ artifactRepository: repo });
+  it('10 matching customizations with limit 5 → { results[5], total:10, truncated:true }', async () => {
+    const repo = new InMemoryCustomizationRepository();
+    for (let i = 0; i < 10; i++) await repo.save({ customization: makeCustomization(i) });
+    const svc = new SearchService({ customizationRepository: repo });
 
     const out = await svc.search('x-limit', { limit: 5 });
 
@@ -31,9 +31,9 @@ describe('SearchService — limit (AC#9)', () => {
   });
 
   it('search without limit uses default 50', async () => {
-    const repo = new InMemoryArtifactRepository();
-    for (let i = 0; i < 10; i++) await repo.save({ artifact: makeArtifact(i) });
-    const svc = new SearchService({ artifactRepository: repo });
+    const repo = new InMemoryCustomizationRepository();
+    for (let i = 0; i < 10; i++) await repo.save({ customization: makeCustomization(i) });
+    const svc = new SearchService({ customizationRepository: repo });
 
     const out = await svc.search('x-limit');
 

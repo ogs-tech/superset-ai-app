@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -10,7 +10,7 @@ import { SymlinkManager } from '../../../../../src/main/application/services/sym
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
@@ -18,7 +18,7 @@ const WORKSPACE = '/workspace';
 const COPILOT_SKILL_PATH = join(HOMEDIR, '.copilot/skills/my-skill');
 const CLAUDE_SKILL_PATH = join(HOMEDIR, '.claude/skills/my-skill');
 
-const skillPersonal: Artifact = {
+const skillPersonal: Customization = {
   id: 'skill/my-skill',
   frontmatter: {
     name: 'my-skill',
@@ -46,7 +46,7 @@ const setup = async (settings: Settings) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile(join(WORKSPACE, 'skills/my-skill'), '# my-skill\n');
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
@@ -63,14 +63,14 @@ const setup = async (settings: Settings) => {
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const manager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map<string, import('../../../../../src/main/application/ports/adapter.js').Adapter>([
       [copilotAdapter.adapterId, copilotAdapter],
       [claudeAdapter.adapterId, claudeAdapter],
     ]),
   });
-  await artifactRepo.save({ artifact: skillPersonal });
+  await customizationRepo.save({ customization: skillPersonal });
   return { manager, fs, settingsService, settingsRepo };
 };
 

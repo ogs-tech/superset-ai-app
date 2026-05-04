@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArtifactList } from './artifacts/ArtifactList.js';
+import { CustomizationList } from './customizations/CustomizationList.js';
 import { TopbarSearch } from '../components/TopbarSearch.js';
 import type { SearchOutput } from '../../shared/search.js';
 
@@ -28,7 +28,7 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
           Abrir Settings
         </button>
       </header>
-      <ArtifactList searchResults={searchResults} />
+      <CustomizationList searchResults={searchResults} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -27,7 +27,7 @@ describe('AdapterManager.removeAdapterSymlinks — Copilot _generated cleanup (A
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const artifactRepo = new InMemoryArtifactRepository();
+    const customizationRepo = new InMemoryCustomizationRepository();
     const fs = new InMemoryFileSystem();
 
     fs.createFile(GENERATED, '<!-- GENERATED -->');
@@ -44,7 +44,7 @@ describe('AdapterManager.removeAdapterSymlinks — Copilot _generated cleanup (A
     });
     const manager = new AdapterManager({
       settingsService,
-      artifactRepository: artifactRepo,
+      customizationRepository: customizationRepo,
       symlinkManager: sm,
       adapters: new Map([['copilot', copilotAdapter]]),
       workspaceFs: fs,

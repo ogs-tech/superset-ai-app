@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 
 const HOMEDIR = '/Users/alice';
 
-const globalInstructionArtifact = (): Artifact => ({
+const globalInstructionCustomization = (): Customization => ({
   id: `global-instruction/default`,
   frontmatter: {
     name: 'default',
@@ -23,7 +23,7 @@ describe('ClaudeAdapter — global-instruction', () => {
   it('resolves to <homedir>/.claude/CLAUDE.md', () => {
     const adapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const destinations = adapter.resolveDestinations({
-      artifact: globalInstructionArtifact(),
+      customization: globalInstructionCustomization(),
       linkedRepos: [],
     });
 
@@ -35,7 +35,7 @@ describe('ClaudeAdapter — global-instruction', () => {
   it('all returned destinations are absolute', () => {
     const adapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const destinations = adapter.resolveDestinations({
-      artifact: globalInstructionArtifact(),
+      customization: globalInstructionCustomization(),
       linkedRepos: [],
     });
 

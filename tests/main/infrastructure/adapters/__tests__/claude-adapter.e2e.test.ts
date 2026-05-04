@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
-import { ArtifactService } from '../../../../../src/main/application/services/artifact-service.js';
+import { CustomizationService } from '../../../../../src/main/application/services/customization-service.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo, Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const skillPersonal: Artifact = {
+const skillPersonal: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -28,7 +28,7 @@ const skillPersonal: Artifact = {
   body: '# review',
 };
 
-const agentProject: Artifact = {
+const agentProject: Customization = {
   id: 'agent/triage',
   frontmatter: {
     name: 'triage',
@@ -56,26 +56,26 @@ const setup = async (settings: Settings) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
-  const artifactRepo = new InMemoryArtifactRepository();
+  const customizationRepo = new InMemoryCustomizationRepository();
   const fs = new InMemoryFileSystem();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, settings.workspacePath);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const adapterManager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager);
-  return { artifactService, fs, settingsService };
+  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
+  return { customizationService, fs, settingsService };
 };
 
-describe('ClaudeAdapter — end-to-end via ArtifactService', () => {
+describe('ClaudeAdapter — end-to-end via CustomizationService', () => {
   it('save(skill, scope=personal) creates symlink at <homedir>/.claude/skills/<slug> resolving to <workspace>/skills/<slug>', async () => {
-    const { artifactService, fs } = await setup(buildSettings());
+    const { customizationService, fs } = await setup(buildSettings());
 
-    const result = await artifactService.save({ artifact: skillPersonal, isCreate: true });
+    const result = await customizationService.save({ customization: skillPersonal, isCreate: true });
 
     expect(result.syncReport).toHaveLength(1);
     expect(result.syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });
@@ -92,9 +92,9 @@ describe('ClaudeAdapter — end-to-end via ArtifactService', () => {
       { id: 'r1', name: 'r1', path: '/repos/r1' },
       { id: 'r2', name: 'r2', path: '/repos/r2' },
     ];
-    const { artifactService, fs } = await setup(buildSettings(repos));
+    const { customizationService, fs } = await setup(buildSettings(repos));
 
-    const result = await artifactService.save({ artifact: agentProject, isCreate: true });
+    const result = await customizationService.save({ customization: agentProject, isCreate: true });
 
     const okResults = result.syncReport.filter((r) => r.adapter === 'claude' && r.status === 'ok');
     expect(okResults).toHaveLength(2);
@@ -110,14 +110,14 @@ describe('ClaudeAdapter — end-to-end via ArtifactService', () => {
   });
 
   it('re-save without changes is idempotent: no new backups, symlink target unchanged', async () => {
-    const { artifactService, fs } = await setup(buildSettings());
-    await artifactService.save({ artifact: skillPersonal, isCreate: true });
+    const { customizationService, fs } = await setup(buildSettings());
+    await customizationService.save({ customization: skillPersonal, isCreate: true });
 
     const destination = '/Users/alice/.claude/skills/review';
     const targetBefore = await fs.readlink(destination);
     const backupsBefore = await fs.pathExists('/workspace/_backups');
 
-    const result = await artifactService.save({ artifact: skillPersonal });
+    const result = await customizationService.save({ customization: skillPersonal });
 
     expect(result.syncReport).toHaveLength(1);
     expect(result.syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });

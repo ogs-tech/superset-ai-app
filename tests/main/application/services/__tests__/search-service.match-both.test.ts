@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { SearchService } from '../../../../../src/main/application/services/search-service.js';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 
-const makeArtifact = (): Artifact => ({
+const makeCustomization = (): Customization => ({
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -18,10 +18,10 @@ const makeArtifact = (): Artifact => ({
 });
 
 describe('SearchService — match both (AC#6)', () => {
-  it('artifact where query matches both name and content has matchedFields === ["name","content"] (fixed order)', async () => {
-    const artifactRepository = new InMemoryArtifactRepository();
-    await artifactRepository.save({ artifact: makeArtifact() });
-    const svc = new SearchService({ artifactRepository });
+  it('customization where query matches both name and content has matchedFields === ["name","content"] (fixed order)', async () => {
+    const customizationRepository = new InMemoryCustomizationRepository();
+    await customizationRepository.save({ customization: makeCustomization() });
+    const svc = new SearchService({ customizationRepository });
 
     const output = await svc.search('review');
 

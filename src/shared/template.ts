@@ -1,12 +1,12 @@
-import type { ArtifactScope, ArtifactType } from './artifact.js';
+import type { CustomizationScope, CustomizationType } from './customization.js';
 
-export type TemplateTargetType = ArtifactType;
+export type TemplateTargetType = CustomizationType;
 
 export interface TemplateFrontmatter {
   name: string;
   targetType: TemplateTargetType;
   description: string;
-  scopes: ArtifactScope[];
+  scopes: CustomizationScope[];
   version: string;
   tags?: string[];
   createdAt: string;

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact, ArtifactScope } from '../../../../../src/shared/artifact.js';
+import type { Customization, CustomizationScope } from '../../../../../src/shared/customization.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
 
-const reference = (scope: ArtifactScope): Artifact => ({
+const reference = (scope: CustomizationScope): Customization => ({
   id: 'reference/style-guide',
   frontmatter: {
     name: 'style-guide',
@@ -23,7 +23,7 @@ const repos: LinkedRepo[] = [
 ];
 
 describe('ClaudeAdapter — reference (no-op)', () => {
-  it.each<[ArtifactScope, LinkedRepo[]]>([
+  it.each<[CustomizationScope, LinkedRepo[]]>([
     ['personal', []],
     ['personal', repos],
     ['project', []],
@@ -32,7 +32,7 @@ describe('ClaudeAdapter — reference (no-op)', () => {
     const adapter = new ClaudeAdapter({ homedir: '/Users/alice' });
 
     const destinations = adapter.resolveDestinations({
-      artifact: reference(scope),
+      customization: reference(scope),
       linkedRepos,
     });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryArtifactRepository } from '../../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -8,7 +8,7 @@ import { SymlinkManager } from '../../../../../src/main/application/services/sym
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -21,7 +21,7 @@ const baseSettings: Settings = {
   ui: { theme: 'system' },
 };
 
-const makeArtifact = (name: string): Artifact => ({
+const makeCustomization = (name: string): Customization => ({
   id: `skill/${name}`,
   frontmatter: {
     name,
@@ -40,9 +40,9 @@ describe('AdapterManager.countDestinations (AC#17)', () => {
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const artifactRepo = new InMemoryArtifactRepository();
-    await artifactRepo.save({ artifact: makeArtifact('art1') });
-    await artifactRepo.save({ artifact: makeArtifact('art2') });
+    const customizationRepo = new InMemoryCustomizationRepository();
+    await customizationRepo.save({ customization: makeCustomization('art1') });
+    await customizationRepo.save({ customization: makeCustomization('art2') });
 
     const fs = new InMemoryFileSystem();
     const dest1 = join(HOMEDIR, '.claude/skills/art1');
@@ -54,7 +54,7 @@ describe('AdapterManager.countDestinations (AC#17)', () => {
     const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const manager = new AdapterManager({
       settingsService,
-      artifactRepository: artifactRepo,
+      customizationRepository: customizationRepo,
       symlinkManager: sm,
       adapters: new Map([['claude', claudeAdapter]]),
     });

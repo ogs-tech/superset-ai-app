@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { callIpc } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
-import type { SyncResult } from '../../shared/artifact.js';
+import type { SyncResult } from '../../shared/customization.js';
 import type { LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
 
 const labelFor = (key: 'claude' | 'copilot'): string =>

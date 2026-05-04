@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SyncReportModal } from '../../../src/renderer/components/SyncReportModal.js';
-import type { SyncResult } from '../../../src/shared/artifact.js';
+import type { SyncResult } from '../../../src/shared/customization.js';
 
 const okResult: SyncResult = {
   adapter: 'claude',

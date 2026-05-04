@@ -10,14 +10,14 @@ import { WorkspaceLocator } from './application/services/workspace-locator.js';
 import { FsWorkspacePointerRepository } from './infrastructure/workspace/fs-workspace-pointer-repository.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
-import { ArtifactService } from './application/services/artifact-service.js';
+import { CustomizationService } from './application/services/customization-service.js';
 import { TemplateService } from './application/services/template-service.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
-import { FsArtifactRepository } from './infrastructure/artifact/fs-artifact-repository.js';
+import { FsCustomizationRepository } from './infrastructure/customization/fs-customization-repository.js';
 import { FsTemplateRepository } from './infrastructure/template/fs-template-repository.js';
 import { TemplateSeeder } from './application/services/template-seeder.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
@@ -96,14 +96,14 @@ async function wireIpc(): Promise<void> {
   const environmentPort = new ElectronEnvironmentAdapter();
 
   const clock = new SystemClock();
-  const artifactRepo = new FsArtifactRepository(async () => workspaceLocator.resolve());
+  const customizationRepo = new FsCustomizationRepository(async () => workspaceLocator.resolve());
 
   const activeWorkspacePath = await workspaceLocator.resolve();
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, activeWorkspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
   const copilotInstructionsGen = new CopilotInstructionsGen({
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     workspaceFs: nodeFsAdapter,
     workspacePath: activeWorkspacePath,
   });
@@ -114,7 +114,7 @@ async function wireIpc(): Promise<void> {
   });
   const adapterManager = new AdapterManager({
     settingsService,
-    artifactRepository: artifactRepo,
+    customizationRepository: customizationRepo,
     symlinkManager,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
@@ -122,8 +122,8 @@ async function wireIpc(): Promise<void> {
     ]),
   });
   const schemaValidator = new SchemaValidator();
-  const artifactService = new ArtifactService(artifactRepo, clock, adapterManager, schemaValidator);
-  const searchService = new SearchService({ artifactRepository: artifactRepo });
+  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
+  const searchService = new SearchService({ customizationRepository: customizationRepo });
   const templatesSeedDir = join(process.cwd(), 'src', 'main', 'templates');
   await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(activeWorkspacePath);
   const templateRepo = new FsTemplateRepository(async () => workspaceLocator.resolve());
@@ -133,7 +133,7 @@ async function wireIpc(): Promise<void> {
     settingsService,
     repoService,
     workspaceBootstrap,
-    artifactService,
+    customizationService,
     templateService,
     adapterManager,
     searchService,

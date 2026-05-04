@@ -1,5 +1,5 @@
 import type { Adapter, AdapterDestination } from '../../ports/adapter.js';
-import type { Artifact } from '../../../../shared/artifact.js';
+import type { Customization } from '../../../../shared/customization.js';
 import type { LinkedRepo } from '../../../../shared/settings.js';
 
 export class FakeAdapter implements Adapter {
@@ -10,10 +10,10 @@ export class FakeAdapter implements Adapter {
   ) {}
 
   resolveDestinations(args: {
-    artifact: Artifact;
+    customization: Customization;
     linkedRepos: LinkedRepo[];
   }): AdapterDestination[] {
-    const { scopes } = args.artifact.frontmatter;
+    const { scopes } = args.customization.frontmatter;
     const out: AdapterDestination[] = [];
 
     if (scopes.includes('personal')) {

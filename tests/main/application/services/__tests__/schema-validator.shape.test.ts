@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
 
-const validSkill: ArtifactFrontmatter = {
+const validSkill: CustomizationFrontmatter = {
   name: 'my-skill',
   type: 'skill',
   description: 'A valid skill',
@@ -12,7 +12,7 @@ const validSkill: ArtifactFrontmatter = {
   updatedAt: '2026-05-03T00:00:00.000Z',
 };
 
-const invalidSkill: ArtifactFrontmatter = {
+const invalidSkill: CustomizationFrontmatter = {
   name: '',
   type: 'skill',
   description: '',

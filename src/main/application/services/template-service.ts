@@ -7,7 +7,7 @@ import type {
   TemplateRepository,
 } from '../../application/ports/template-repository.js';
 import type { SchemaValidator } from './schema-validator.js';
-import { isValidArtifactName } from '../../domain/artifact-name.js';
+import { isValidCustomizationName } from '../../domain/customization-name.js';
 import { formatTemplateId } from '../../domain/template-id.js';
 import { validationError } from '../../domain/errors.js';
 
@@ -116,7 +116,7 @@ export class TemplateService {
       });
     }
     const invalid: string[] = [];
-    if (!isValidArtifactName(fm.name)) invalid.push('name');
+    if (!isValidCustomizationName(fm.name)) invalid.push('name');
     if (!Array.isArray(fm.scopes) || fm.scopes.length === 0) invalid.push('scopes');
     if (invalid.length > 0) {
       throw validationError({

@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import type { Adapter, AdapterDestination } from '../../application/ports/adapter.js';
-import type { Artifact } from '../../../shared/artifact.js';
+import type { Customization } from '../../../shared/customization.js';
 import type { LinkedRepo } from '../../../shared/settings.js';
 import { DomainError } from '../../domain/errors.js';
 
@@ -29,10 +29,10 @@ export class ClaudeAdapter implements Adapter {
   }
 
   resolveDestinations(args: {
-    artifact: Artifact;
+    customization: Customization;
     linkedRepos: LinkedRepo[];
   }): AdapterDestination[] {
-    const { type, scopes, name } = args.artifact.frontmatter;
+    const { type, scopes, name } = args.customization.frontmatter;
 
     if (type === 'global-instruction') {
       return [

@@ -1,5 +1,5 @@
 import { DomainError } from './errors.js';
-import { validateArtifactName } from './artifact-name.js';
+import { validateCustomizationName } from './customization-name.js';
 
 const TEMPLATE_PREFIX = 'template';
 
@@ -28,7 +28,7 @@ export function parseTemplateId(id: string): ParsedTemplateId {
       invalid: ['id'],
     });
   }
-  validateArtifactName(name);
+  validateCustomizationName(name);
   return { name };
 }
 

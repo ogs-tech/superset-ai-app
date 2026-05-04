@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { ArtifactRepository } from '../ports/artifact-repository.js';
+import type { CustomizationRepository } from '../ports/customization-repository.js';
 import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import type { GenerateResult } from '../ports/copilot-instructions-gen.js';
 
@@ -12,18 +12,18 @@ const READ_ONLY_MODE = 0o444;
 const READ_WRITE_MODE = 0o644;
 
 export interface CopilotInstructionsGenDeps {
-  artifactRepository: ArtifactRepository;
+  customizationRepository: CustomizationRepository;
   workspaceFs: WritableFileSystemPort;
   workspacePath: string;
 }
 
 export class CopilotInstructionsGen {
-  private readonly artifactRepository: ArtifactRepository;
+  private readonly customizationRepository: CustomizationRepository;
   private readonly workspaceFs: WritableFileSystemPort;
   private readonly workspacePath: string;
 
   constructor(deps: CopilotInstructionsGenDeps) {
-    this.artifactRepository = deps.artifactRepository;
+    this.customizationRepository = deps.customizationRepository;
     this.workspaceFs = deps.workspaceFs;
     this.workspacePath = deps.workspacePath;
   }
@@ -31,7 +31,7 @@ export class CopilotInstructionsGen {
   async generate(): Promise<GenerateResult> {
     const path = join(this.workspacePath, GENERATED_FILENAME);
 
-    const refs = await this.artifactRepository.list({ type: 'reference' });
+    const refs = await this.customizationRepository.list({ type: 'reference' });
 
     if (refs.length === 0) {
       const existing = await this.workspaceFs.stat(path);

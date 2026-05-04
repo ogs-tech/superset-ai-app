@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryArtifactRepository } from '../../../../src/main/infrastructure/artifact/in-memory-artifact-repository.js';
+import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -9,7 +9,7 @@ import { AdapterManager } from '../../../../src/main/application/services/adapte
 import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 import { CopilotAdapter } from '../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import type { CopilotInstructionsGenPort } from '../../../../src/main/application/ports/copilot-instructions-gen.js';
-import type { Artifact } from '../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../src/shared/customization.js';
 import type { Settings } from '../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -26,7 +26,7 @@ const baseSettings: Settings = {
   ui: { theme: 'system' },
 };
 
-const refFlagged: Artifact = {
+const refFlagged: Customization = {
   id: 'reference/guide',
   frontmatter: {
     name: 'guide',
@@ -45,8 +45,8 @@ describe('disable-copilot-aggregate e2e (AC#11)', () => {
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const artifactRepo = new InMemoryArtifactRepository();
-    await artifactRepo.save({ artifact: refFlagged });
+    const customizationRepo = new InMemoryCustomizationRepository();
+    await customizationRepo.save({ customization: refFlagged });
 
     const fs = new InMemoryFileSystem();
     fs.createFile(GENERATED, '<!-- GENERATED -->');
@@ -69,7 +69,7 @@ describe('disable-copilot-aggregate e2e (AC#11)', () => {
     });
     const manager = new AdapterManager({
       settingsService,
-      artifactRepository: artifactRepo,
+      customizationRepository: customizationRepo,
       symlinkManager: sm,
       adapters: new Map([['copilot', copilotAdapter]]),
       workspaceFs: fs,

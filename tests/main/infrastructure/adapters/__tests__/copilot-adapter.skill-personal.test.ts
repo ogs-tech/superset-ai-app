@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { isAbsolute, join } from 'node:path';
-import type { Artifact } from '../../../../../src/shared/artifact.js';
+import type { Customization } from '../../../../../src/shared/customization.js';
 import { HOMEDIR, makeAdapter } from './copilot-adapter.helpers.js';
 
-const skillPersonal: Artifact = {
+const skillPersonal: Customization = {
   id: 'skill/review',
   frontmatter: {
     name: 'review',
@@ -22,7 +22,7 @@ describe('CopilotAdapter — skill + personal (AC#2, AC#8)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: skillPersonal,
+      customization: skillPersonal,
       linkedRepos: [],
     });
 
@@ -35,7 +35,7 @@ describe('CopilotAdapter — skill + personal (AC#2, AC#8)', () => {
     const adapter = makeAdapter();
 
     const destinations = await adapter.resolveDestinations({
-      artifact: skillPersonal,
+      customization: skillPersonal,
       linkedRepos: [],
     });
 

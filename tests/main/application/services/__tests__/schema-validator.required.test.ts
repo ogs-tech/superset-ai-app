@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
 
-const validBase: ArtifactFrontmatter = {
+const validBase: CustomizationFrontmatter = {
   name: 'my-skill',
   type: 'skill',
   description: 'A valid skill',
@@ -12,7 +12,7 @@ const validBase: ArtifactFrontmatter = {
   updatedAt: '2026-05-03T00:00:00.000Z',
 };
 
-const requiredFields: Array<keyof ArtifactFrontmatter> = [
+const requiredFields: Array<keyof CustomizationFrontmatter> = [
   'name', 'type', 'description', 'scopes', 'version', 'createdAt', 'updatedAt',
 ];
 
@@ -21,7 +21,7 @@ describe('SchemaValidator — required fields (AC#5)', () => {
     it(`missing ${field} → error with kind "required" at frontmatter.${field}`, () => {
       const incomplete = { ...validBase } as Record<string, unknown>;
       delete incomplete[field];
-      const result = new SchemaValidator().validate(incomplete as unknown as ArtifactFrontmatter);
+      const result = new SchemaValidator().validate(incomplete as unknown as CustomizationFrontmatter);
       expect(result.ok).toBe(false);
       if (result.ok) return;
       const err = result.errors.find((e) => e.path === `frontmatter.${field}`);

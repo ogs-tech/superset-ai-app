@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Settings as SettingsScreen } from '../../../../src/renderer/screens/Settings.js';
 import { mockApi, ok, type CallSpy } from '../../test-utils.js';
 import type { Settings } from '../../../../src/shared/settings.js';
-import type { SyncResult } from '../../../../src/shared/artifact.js';
+import type { SyncResult } from '../../../../src/shared/customization.js';
 
 const baseSettings: Settings = {
   workspacePath: '/ws',

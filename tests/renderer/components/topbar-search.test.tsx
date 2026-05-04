@@ -16,7 +16,7 @@ let call: CallSpy;
 beforeEach(() => {
   call = mockApi();
   call.mockImplementation((method: string) => {
-    if (method === 'artifact.search') return Promise.resolve(ok(stubOutput));
+    if (method === 'customization.search') return Promise.resolve(ok(stubOutput));
     return Promise.resolve(ok(undefined));
   });
   vi.useFakeTimers({ shouldAdvanceTime: false });
@@ -44,7 +44,7 @@ describe('<TopbarSearch>', () => {
 
     await vi.runAllTimersAsync();
 
-    const searchCalls = call.mock.calls.filter((c) => c[0] === 'artifact.search');
+    const searchCalls = call.mock.calls.filter((c) => c[0] === 'customization.search');
     expect(searchCalls.length).toBeGreaterThanOrEqual(0);
   });
 

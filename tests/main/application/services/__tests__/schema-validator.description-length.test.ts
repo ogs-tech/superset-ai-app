@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { ArtifactFrontmatter, ArtifactType } from '../../../../../src/shared/artifact.js';
+import type { CustomizationFrontmatter, CustomizationType } from '../../../../../src/shared/customization.js';
 
-const validBase = (type: ArtifactType): ArtifactFrontmatter => ({
-  name: type === 'global-instruction' ? 'default' : 'my-artifact',
+const validBase = (type: CustomizationType): CustomizationFrontmatter => ({
+  name: type === 'global-instruction' ? 'default' : 'my-customization',
   type,
   description: 'A valid description',
   scopes: ['personal'],
@@ -12,7 +12,7 @@ const validBase = (type: ArtifactType): ArtifactFrontmatter => ({
   updatedAt: '2026-05-03T00:00:00.000Z',
 });
 
-const types: ArtifactType[] = ['skill', 'reference', 'agent', 'global-instruction'];
+const types: CustomizationType[] = ['skill', 'reference', 'agent', 'global-instruction'];
 
 describe('SchemaValidator — description length (AC#7)', () => {
   it.each(types)('%s: description > 1024 chars → kind "max-length"', (type) => {
