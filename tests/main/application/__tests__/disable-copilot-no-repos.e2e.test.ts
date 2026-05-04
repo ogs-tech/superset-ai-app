@@ -33,7 +33,6 @@ const refFlagged: Artifact = {
     version: '1.0.0',
     createdAt: '',
     updatedAt: '',
-    includeInCopilotInstructions: true,
   },
   body: '# guide',
 };

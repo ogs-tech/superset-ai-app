@@ -27,7 +27,6 @@ const refPersonal: Artifact = {
     version: '1.0.0',
     createdAt: '',
     updatedAt: '',
-    includeInCopilotInstructions: true,
   },
   body: '# My Guide',
 };

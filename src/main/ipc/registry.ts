@@ -7,7 +7,6 @@ import type { WorkspaceLocator } from '../application/services/workspace-locator
 import type { ArtifactService } from '../application/services/artifact-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
-import type { CopilotInstructionsGenPort } from '../application/ports/copilot-instructions-gen.js';
 import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
 import type { EnvironmentPort } from '../application/ports/environment-port.js';
@@ -25,7 +24,6 @@ export interface IpcDeps {
   artifactService: ArtifactService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
-  copilotInstructionsGen: CopilotInstructionsGenPort;
   searchService: SearchService;
   dialogPort: DialogPort;
   pathProber: PathProber;
@@ -103,7 +101,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     artifactService,
     templateService,
     adapterManager,
-    copilotInstructionsGen,
     searchService,
     dialogPort,
     pathProber,
@@ -270,8 +267,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       const raw = asObject(params, 'template.list');
       return templateService.list({ type: asArtifactType(raw['type'], 'type') });
     },
-
-    'copilot.regenerateInstructions': () => copilotInstructionsGen.generate(),
 
     'adapter.setEnabled': async (params) => {
       const raw = asObject(params, 'adapter.setEnabled');

@@ -31,10 +31,9 @@ export class CopilotInstructionsGen {
   async generate(): Promise<GenerateResult> {
     const path = join(this.workspacePath, GENERATED_FILENAME);
 
-    const all = await this.artifactRepository.list({ type: 'reference' });
-    const flagged = all.filter((a) => a.frontmatter.includeInCopilotInstructions === true);
+    const refs = await this.artifactRepository.list({ type: 'reference' });
 
-    if (flagged.length === 0) {
+    if (refs.length === 0) {
       const existing = await this.workspaceFs.stat(path);
       if (existing !== null) {
         await this.workspaceFs.chmod(path, READ_WRITE_MODE);
@@ -44,7 +43,7 @@ export class CopilotInstructionsGen {
     }
 
     const collator = new Intl.Collator('en');
-    const sorted = [...flagged].sort((a, b) => {
+    const sorted = [...refs].sort((a, b) => {
       const byName = collator.compare(a.frontmatter.name, b.frontmatter.name);
       if (byName !== 0) return byName;
       return collator.compare(a.id, b.id);
@@ -53,7 +52,7 @@ export class CopilotInstructionsGen {
     const content = HEADER + sorted.map((a) => a.body).join(SEPARATOR);
     await this.writeReadOnly(path, content);
 
-    return { path, refsIncluded: flagged.length };
+    return { path, refsIncluded: refs.length };
   }
 
   private async writeReadOnly(path: string, content: string): Promise<void> {

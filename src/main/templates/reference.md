@@ -5,7 +5,6 @@ description: One-line summary of the knowledge captured here.
 scopes:
   - personal
 version: 0.1.0
-includeInCopilotInstructions: false
 ---
 
 # new-reference

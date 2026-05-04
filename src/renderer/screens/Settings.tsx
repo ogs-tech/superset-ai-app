@@ -15,7 +15,6 @@ interface SettingsProps {
 export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [settings, setSettings] = useState<SettingsModel | null>(null);
   const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
-  const [regenToast, setRegenToast] = useState<string | null>(null);
   const [disableModal, setDisableModal] = useState<{ key: 'claude' | 'copilot'; count: number } | null>(null);
   const [disableToast, setDisableToast] = useState<string | null>(null);
 
@@ -38,12 +37,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     }
     const current = await callIpc<SettingsModel | null>('settings.get', {});
     if (current !== null) setSettings(current);
-  };
-
-  const handleRegenerateCopilot = async (): Promise<void> => {
-    const result = await callIpc<{ path: string; refsIncluded: number }>('copilot.regenerateInstructions', {});
-    setRegenToast(`${result.refsIncluded} references aggregated`);
-    setTimeout(() => setRegenToast(null), 3000);
   };
 
   const handleAdapterToggle = async (
@@ -124,29 +117,15 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         ))}
         {settings.adapters.copilot.enabled && (
           <div style={{ marginTop: '0.5rem' }}>
-            <div style={{ marginBottom: '0.5rem' }}>
-              <input
-                id="copilot-exclusive-skills"
-                type="checkbox"
-                checked={settings.adapters.copilot.exclusiveSkillsWithClaude}
-                onChange={(e) => void handleExclusiveSkillsToggle(e.target.checked)}
-              />
-              <label htmlFor="copilot-exclusive-skills" title="Avoids duplicates in VS Code Copilot when Claude is also enabled">
-                Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)
-              </label>
-            </div>
-            <button
-              type="button"
-              data-testid="regen-copilot-btn"
-              onClick={() => void handleRegenerateCopilot()}
-            >
-              Regenerate Copilot instructions
-            </button>
-            {regenToast !== null && (
-              <span data-testid="regen-copilot-toast" style={{ marginLeft: '0.5rem' }}>
-                {regenToast}
-              </span>
-            )}
+            <input
+              id="copilot-exclusive-skills"
+              type="checkbox"
+              checked={settings.adapters.copilot.exclusiveSkillsWithClaude}
+              onChange={(e) => void handleExclusiveSkillsToggle(e.target.checked)}
+            />
+            <label htmlFor="copilot-exclusive-skills" title="Avoids duplicates in VS Code Copilot when Claude is also enabled">
+              Skip Copilot skills when Claude is enabled (avoids duplicates in VS Code Copilot)
+            </label>
           </div>
         )}
       </section>

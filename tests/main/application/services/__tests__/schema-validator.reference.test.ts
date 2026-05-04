@@ -12,19 +12,9 @@ const validRef: ArtifactFrontmatter = {
   updatedAt: '2026-05-03T00:00:00.000Z',
 };
 
-describe('SchemaValidator — reference (AC#3, AC#4)', () => {
-  it('valid reference without includeInCopilotInstructions → ok: true', () => {
+describe('SchemaValidator — reference', () => {
+  it('valid reference → ok: true', () => {
     const result = new SchemaValidator().validate(validRef);
-    expect(result.ok).toBe(true);
-  });
-
-  it('valid reference with includeInCopilotInstructions: true → ok: true', () => {
-    const result = new SchemaValidator().validate({ ...validRef, includeInCopilotInstructions: true } as ArtifactFrontmatter);
-    expect(result.ok).toBe(true);
-  });
-
-  it('valid reference with includeInCopilotInstructions: false → ok: true', () => {
-    const result = new SchemaValidator().validate({ ...validRef, includeInCopilotInstructions: false } as ArtifactFrontmatter);
     expect(result.ok).toBe(true);
   });
 });

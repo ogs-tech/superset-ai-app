@@ -217,9 +217,6 @@ function artifactFromTemplate(template: Template, type: ArtifactType): Artifact 
       createdAt: '',
       updatedAt: '',
       ...(fm.tags ? { tags: fm.tags } : {}),
-      ...(typeof fm.includeInCopilotInstructions === 'boolean'
-        ? { includeInCopilotInstructions: fm.includeInCopilotInstructions }
-        : {}),
     },
     body: template.body,
   };

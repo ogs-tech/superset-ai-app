@@ -133,7 +133,6 @@ async function wireIpc(): Promise<void> {
     artifactService,
     templateService,
     adapterManager,
-    copilotInstructionsGen,
     searchService,
     dialogPort,
     pathProber: repoReader,

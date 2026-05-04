@@ -13,12 +13,6 @@ export interface ValidationError {
 
 export type ValidationResult = { ok: true } | { ok: false; errors: ValidationError[] };
 
-const DISALLOWED_FIELDS: Record<string, string[]> = {
-  skill: ['includeInCopilotInstructions'],
-  agent: ['includeInCopilotInstructions'],
-  'global-instruction': ['includeInCopilotInstructions'],
-};
-
 type ExtendedIssue = ZodIssue & { origin?: string; maximum?: number; minimum?: number };
 
 const zodKindToValidationKind = (issue: ExtendedIssue): string => {
@@ -71,18 +65,6 @@ export class SchemaValidator {
   validate(frontmatter: ArtifactFrontmatter): ValidationResult {
     const type = frontmatter.type;
 
-    const extraErrors: ValidationError[] = [];
-    const disallowed = DISALLOWED_FIELDS[type] ?? [];
-    for (const field of disallowed) {
-      if (field in frontmatter && (frontmatter as unknown as Record<string, unknown>)[field] !== undefined) {
-        extraErrors.push({
-          path: `frontmatter.${field}`,
-          kind: 'not-allowed',
-          message: `Field '${field}' is not allowed for type '${type}'`,
-        });
-      }
-    }
-
     if (!type) {
       return {
         ok: false,
@@ -108,11 +90,8 @@ export class SchemaValidator {
         return { ok: false, errors: [{ path: 'frontmatter.type', kind: 'enum', message: `Unknown type: ${String(type)}` }] };
     }
 
-    const schemaErrors = result.success ? [] : zodErrorToValidationErrors(result.error);
-    const allErrors = [...extraErrors, ...schemaErrors];
-
-    if (allErrors.length > 0) {
-      return { ok: false, errors: allErrors };
+    if (!result.success) {
+      return { ok: false, errors: zodErrorToValidationErrors(result.error) };
     }
     return { ok: true };
   }

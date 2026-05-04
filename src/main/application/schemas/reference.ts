@@ -4,7 +4,6 @@ import { commonFrontmatterSchema } from './common.js';
 export const referenceSchema = commonFrontmatterSchema
   .extend({
     type: z.literal('reference'),
-    includeInCopilotInstructions: z.boolean().optional(),
   })
   .passthrough();
 

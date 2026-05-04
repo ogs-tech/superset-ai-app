@@ -11,7 +11,6 @@ export interface ArtifactFrontmatter {
   tags?: string[];
   createdAt: string;
   updatedAt: string;
-  includeInCopilotInstructions?: boolean;
 }
 
 export interface Artifact {
