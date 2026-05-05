@@ -1,11 +1,44 @@
 import { z } from 'zod';
 
+const directorySourceSchema = z
+  .object({
+    source: z.literal('directory'),
+    path: z.string(),
+  })
+  .passthrough();
+
+const githubSourceSchema = z
+  .object({
+    source: z.literal('github'),
+    repo: z.string(),
+  })
+  .passthrough();
+
+const gitSourceSchema = z
+  .object({
+    source: z.literal('git'),
+    url: z.string(),
+    ref: z.string().optional(),
+  })
+  .passthrough();
+
+const urlSourceSchema = z
+  .object({
+    source: z.literal('url'),
+    url: z.string(),
+  })
+  .passthrough();
+
+const marketplaceInnerSourceSchema = z.union([
+  directorySourceSchema,
+  githubSourceSchema,
+  gitSourceSchema,
+  urlSourceSchema,
+]);
+
 const marketplaceSourceSchema = z
   .object({
-    source: z.object({
-      source: z.literal('directory'),
-      path: z.string(),
-    }),
+    source: marketplaceInnerSourceSchema,
   })
   .passthrough();
 

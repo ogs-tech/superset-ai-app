@@ -12,7 +12,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
-import { CustomizationEditor } from '../customizations/CustomizationEditor.js';
+import { CustomizationEditor } from '../../components/CustomizationEditor.js';
 import type { Customization } from '../../../shared/customization.js';
 import type { Template } from '../../../shared/template.js';
 

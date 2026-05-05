@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CustomizationEditor } from '../../../../src/renderer/screens/customizations/CustomizationEditor.js';
-import { mockApi, ok, fail, type CallSpy } from '../../test-utils.js';
-import type { Customization } from '../../../../src/shared/customization.js';
-import type { Template } from '../../../../src/shared/template.js';
+import { CustomizationEditor } from '../../../src/renderer/components/CustomizationEditor.js';
+import { mockApi, ok, fail, type CallSpy } from '../test-utils.js';
+import type { Customization } from '../../../src/shared/customization.js';
+import type { Template } from '../../../src/shared/template.js';
 
 const baseCustomization = (): Customization => ({
   id: '',
@@ -53,12 +53,20 @@ describe('<CustomizationEditor>', () => {
     expect(preview.querySelector('strong')?.textContent).toBe('markdown');
   });
 
-  it('clicking Save dispatches customization.save and shows success toast on ok envelope', async () => {
+  it('clicking Save dispatches skill.save (workspace flow) and shows success toast on ok envelope', async () => {
     const user = userEvent.setup();
     const onSaved = vi.fn();
     const initial = baseCustomization();
     call.mockResolvedValue(
-      ok({ customization: { ...initial, id: 'skill/foo' }, syncReport: [] }),
+      ok({
+        skill: {
+          id: 'foo',
+          frontmatter: { ...initial.frontmatter },
+          source: { kind: 'workspace' },
+          body: initial.body,
+        },
+        syncReport: [],
+      }),
     );
 
     render(
@@ -74,7 +82,7 @@ describe('<CustomizationEditor>', () => {
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
-        'customization.save',
+        'skill.save',
         expect.objectContaining({ isCreate: true }),
       ),
     );
@@ -104,7 +112,15 @@ describe('<CustomizationEditor>', () => {
     const user = userEvent.setup();
     const initial = baseCustomization();
     call.mockResolvedValue(
-      ok({ customization: { ...initial, id: 'skill/foo' }, syncReport: [] }),
+      ok({
+        skill: {
+          id: 'foo',
+          frontmatter: { ...initial.frontmatter, scopes: ['personal', 'project'] },
+          source: { kind: 'workspace' },
+          body: initial.body,
+        },
+        syncReport: [],
+      }),
     );
 
     render(
@@ -121,9 +137,9 @@ describe('<CustomizationEditor>', () => {
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
-        'customization.save',
+        'skill.save',
         expect.objectContaining({
-          customization: expect.objectContaining({
+          skill: expect.objectContaining({
             frontmatter: expect.objectContaining({ scopes: ['personal', 'project'] }),
           }),
         }),

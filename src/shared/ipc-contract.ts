@@ -1,4 +1,4 @@
-import type { Customization, CustomizationType, SyncResult } from './customization.js';
+import type { SyncResult } from './customization.js';
 import type { Template, TemplateTargetType } from './template.js';
 
 export type IpcErrorKind =
@@ -22,37 +22,11 @@ export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: IpcError 
 
 export const IPC_CHANNEL = 'ipc:call' as const;
 
-export interface CustomizationListParams {
-  type?: CustomizationType;
-}
-
-export interface CustomizationGetParams {
-  id: string;
-}
-
-export interface CustomizationSaveParams {
-  customization: Customization;
-}
-
-export interface CustomizationSaveResult {
-  customization: Customization;
-  syncReport: SyncResult[];
-}
-
 export interface AdapterSyncAllParams {
   adapterId?: string;
 }
 
 export type AdapterSyncAllResult = SyncResult[];
-
-export interface CustomizationDeleteParams {
-  id: string;
-  removeSymlinks: boolean;
-}
-
-export interface CustomizationDeleteResult {
-  ok: true;
-}
 
 export interface TemplateListParams {
   targetType?: TemplateTargetType;
@@ -75,8 +49,6 @@ export interface TemplateDeleteResult {
   ok: true;
 }
 
-export type CustomizationListResult = Customization[];
-export type CustomizationGetResult = Customization;
 export type TemplateListResult = Template[];
 export type TemplateGetResult = Template;
 export type TemplateSaveResult = Template;

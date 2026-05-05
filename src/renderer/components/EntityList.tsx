@@ -21,17 +21,17 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { callIpc, IpcCallError } from '../../lib/ipc.js';
-import { Toast, type ToastMessage } from '../../components/Toast.js';
-import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
+import { callIpc, IpcCallError } from '../lib/ipc.js';
+import { Toast, type ToastMessage } from './Toast.js';
+import { PluginOriginBadge } from './PluginOriginBadge.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { CustomizationEditor } from './CustomizationEditor.js';
 import { EntityViewer } from './EntityViewer.js';
 import type {
   Customization,
   CustomizationType,
-} from '../../../shared/customization.js';
-import type { Template, TemplateTargetType } from '../../../shared/template.js';
+} from '../../shared/customization.js';
+import type { Template, TemplateTargetType } from '../../shared/template.js';
 
 interface EntityWithSource {
   id: string;

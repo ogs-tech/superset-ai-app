@@ -1,16 +1,12 @@
 import { useState } from 'react';
 import { AppBar, Box, IconButton, Tab, Tabs, Toolbar, Tooltip } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { CustomizationList } from './customizations/CustomizationList.js';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
 import { ReferenceList } from './references/ReferenceList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
-import { TopbarSearch } from '../components/TopbarSearch.js';
 import { PluginList } from './plugins/PluginList.js';
-import { PluginEditor } from './plugins/PluginEditor.js';
-import type { SearchOutput } from '../../shared/search.js';
 
 type MainTab =
   | 'skills'
@@ -18,27 +14,14 @@ type MainTab =
   | 'references'
   | 'global-instructions'
   | 'plugins'
-  | 'marketplaces'
-  | 'customizations';
+  | 'marketplaces';
 
 interface MainProps {
   onOpenSettings: () => void;
 }
 
 export function Main({ onOpenSettings }: MainProps): React.ReactElement {
-  const [searchResults, setSearchResults] = useState<SearchOutput | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<MainTab>('skills');
-  const [editingPlugin, setEditingPlugin] = useState<string | null>(null);
-
-  // If editing a plugin, show the editor instead
-  if (editingPlugin) {
-    return (
-      <PluginEditor
-        pluginId={editingPlugin}
-        onBack={() => setEditingPlugin(null)}
-      />
-    );
-  }
 
   return (
     <Box data-testid="main-screen" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -54,7 +37,6 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         }}
       >
         <Toolbar sx={{ gap: 2 }}>
-          <TopbarSearch onResults={setSearchResults} />
           <Box sx={{ flexGrow: 1 }} />
           <Tooltip title="Open settings">
             <IconButton
@@ -79,16 +61,14 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
           <Tab label="Global Instructions" value="global-instructions" />
           <Tab label="Plugins" value="plugins" />
           <Tab label="Marketplaces" value="marketplaces" />
-          <Tab label="Search (legacy)" value="customizations" />
         </Tabs>
       </AppBar>
       {activeTab === 'skills' && <SkillList />}
       {activeTab === 'agents' && <AgentList />}
       {activeTab === 'references' && <ReferenceList />}
       {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
-      {activeTab === 'plugins' && <PluginList scope="personal" onOpenEditor={setEditingPlugin} />}
+      {activeTab === 'plugins' && <PluginList scope="personal" />}
       {activeTab === 'marketplaces' && <MarketplaceList />}
-      {activeTab === 'customizations' && <CustomizationList searchResults={searchResults} />}
     </Box>
   );
 }

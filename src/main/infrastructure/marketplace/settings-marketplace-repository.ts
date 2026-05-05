@@ -30,7 +30,7 @@ export class SettingsMarketplaceRepository implements MarketplaceRepository {
       ...s,
       extraKnownMarketplaces: {
         ...s.extraKnownMarketplaces,
-        [record.id]: { source: { source: 'directory', path: record.source.path } },
+        [record.id]: { source: fromSource(record.source) },
       },
     }));
   }
@@ -44,10 +44,71 @@ export class SettingsMarketplaceRepository implements MarketplaceRepository {
   }
 }
 
-function toSource(raw: { source: string; path?: string } | unknown): MarketplaceSourceRecord {
-  const obj = raw as { source?: string; path?: string };
-  if (obj?.source !== 'directory' || typeof obj.path !== 'string') {
-    throw new Error(`Unsupported marketplace source: ${JSON.stringify(raw)}`);
+function toSource(raw: unknown): MarketplaceSourceRecord {
+  const obj = raw as {
+    source?: string;
+    path?: string;
+    repo?: string;
+    url?: string;
+    ref?: string;
+    cachePath?: string;
+  };
+  if (obj?.source === 'directory' && typeof obj.path === 'string') {
+    return { kind: 'directory', path: obj.path };
   }
-  return { kind: 'directory', path: obj.path };
+  if (obj?.source === 'github' && typeof obj.repo === 'string') {
+    const out: { kind: 'github'; repo: string; cachePath?: string } = {
+      kind: 'github',
+      repo: obj.repo,
+    };
+    if (typeof obj.cachePath === 'string') out.cachePath = obj.cachePath;
+    return out;
+  }
+  if (obj?.source === 'git' && typeof obj.url === 'string') {
+    const out: { kind: 'git'; url: string; ref?: string; cachePath?: string } = {
+      kind: 'git',
+      url: obj.url,
+    };
+    if (typeof obj.ref === 'string') out.ref = obj.ref;
+    if (typeof obj.cachePath === 'string') out.cachePath = obj.cachePath;
+    return out;
+  }
+  if (obj?.source === 'url' && typeof obj.url === 'string') {
+    const out: { kind: 'url'; url: string; cachePath?: string } = {
+      kind: 'url',
+      url: obj.url,
+    };
+    if (typeof obj.cachePath === 'string') out.cachePath = obj.cachePath;
+    return out;
+  }
+  throw new Error(`Unsupported marketplace source: ${JSON.stringify(raw)}`);
+}
+
+type StoredSource =
+  | { source: 'directory'; path: string }
+  | { source: 'github'; repo: string; cachePath?: string }
+  | { source: 'git'; url: string; ref?: string; cachePath?: string }
+  | { source: 'url'; url: string; cachePath?: string };
+
+function fromSource(source: MarketplaceSourceRecord): StoredSource {
+  if (source.kind === 'directory') {
+    return { source: 'directory', path: source.path };
+  }
+  if (source.kind === 'github') {
+    return source.cachePath != null
+      ? { source: 'github', repo: source.repo, cachePath: source.cachePath }
+      : { source: 'github', repo: source.repo };
+  }
+  if (source.kind === 'git') {
+    const out: { source: 'git'; url: string; ref?: string; cachePath?: string } = {
+      source: 'git',
+      url: source.url,
+    };
+    if (source.ref != null) out.ref = source.ref;
+    if (source.cachePath != null) out.cachePath = source.cachePath;
+    return out;
+  }
+  return source.cachePath != null
+    ? { source: 'url', url: source.url, cachePath: source.cachePath }
+    : { source: 'url', url: source.url };
 }

@@ -13,9 +13,7 @@ import {
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type {
   MarketplaceDetectResult,
-  MarketplaceManifestIpc,
   PluginImportRequest,
-  PluginRefIpc,
 } from '../../../shared/plugin-ipc-types.js';
 
 interface PluginImportDialogProps {
@@ -23,7 +21,6 @@ interface PluginImportDialogProps {
   scope: 'personal' | 'project';
   onClose: () => void;
   onSuccess: (pluginId: string) => void;
-  onMarketplace: (marketplace: MarketplaceManifestIpc) => void;
 }
 
 export function PluginImportDialog({
@@ -31,17 +28,18 @@ export function PluginImportDialog({
   scope,
   onClose,
   onSuccess,
-  onMarketplace,
 }: PluginImportDialogProps): React.ReactElement {
   const [urlInput, setUrlInput] = useState('');
   const [refInput, setRefInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [marketplaceWarning, setMarketplaceWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleClose = () => {
     setUrlInput('');
     setRefInput('');
     setError(null);
+    setMarketplaceWarning(null);
     onClose();
   };
 
@@ -52,21 +50,23 @@ export function PluginImportDialog({
     }
 
     setError(null);
+    setMarketplaceWarning(null);
     setLoading(true);
 
     try {
-      // Detect: marketplace vs single plugin
       const detected = await callIpc<MarketplaceDetectResult>('marketplace.detect', {
         url: urlInput.trim(),
       });
 
       if (detected.kind === 'marketplace') {
-        handleClose();
-        onMarketplace(detected.manifest);
+        setMarketplaceWarning(
+          `This URL points to a marketplace${
+            detected.manifest.name ? ` ("${detected.manifest.name}")` : ''
+          }. Import it from the Marketplaces screen.`,
+        );
         return;
       }
 
-      // Single plugin import
       const request: PluginImportRequest = refInput.trim()
         ? { url: urlInput.trim(), ref: { kind: 'branch', value: refInput.trim() }, scope }
         : { url: urlInput.trim(), scope };
@@ -100,13 +100,26 @@ export function PluginImportDialog({
             </Alert>
           )}
 
+          {marketplaceWarning && (
+            <Alert
+              severity="warning"
+              role="alert"
+              data-testid="plugin-import-marketplace-warning"
+            >
+              {marketplaceWarning}
+            </Alert>
+          )}
+
           <TextField
             label="Repository URL or owner/repo"
             placeholder="e.g., https://github.com/user/plugin or user/plugin"
             fullWidth
             required
             value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
+            onChange={(e) => {
+              setUrlInput(e.target.value);
+              if (marketplaceWarning) setMarketplaceWarning(null);
+            }}
             disabled={loading}
             data-testid="plugin-url-input"
           />

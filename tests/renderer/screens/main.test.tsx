@@ -27,7 +27,6 @@ describe('<Main> — home view', () => {
 
     expect(await screen.findByTestId('entity-list-skill')).toBeInTheDocument();
     expect(screen.getByTestId('topbar')).toBeInTheDocument();
-    expect(screen.getByTestId('topbar-search-input')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /open settings/i })).toBeInTheDocument();
   });
 

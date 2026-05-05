@@ -20,21 +20,18 @@ import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DownloadIcon from '@mui/icons-material/Download';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
-import type { MarketplaceManifestIpc, PluginListItemIpc } from '../../../shared/plugin-ipc-types.js';
-import { MarketplaceDialog } from './MarketplaceDialog.js';
+import type { PluginListItemIpc } from '../../../shared/plugin-ipc-types.js';
 import { PluginImportDialog } from './PluginImportDialog.js';
 import { PluginNewDialog } from './PluginNewDialog.js';
 import { PublishPluginDialog } from './PublishPluginDialog.js';
 
 interface PluginListProps {
   scope: 'personal' | 'project';
-  onOpenEditor?: (pluginId: string) => void;
 }
 
 type DialogState =
   | { kind: 'closed' }
   | { kind: 'import' }
-  | { kind: 'marketplace'; data: MarketplaceManifestIpc }
   | { kind: 'new' }
   | { kind: 'publish'; pluginId: string };
 
@@ -43,7 +40,7 @@ interface RowMenuState {
   pluginId: string;
 }
 
-export function PluginList({ scope, onOpenEditor }: PluginListProps): React.ReactElement {
+export function PluginList({ scope }: PluginListProps): React.ReactElement {
   const [items, setItems] = useState<PluginListItemIpc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -237,15 +234,6 @@ export function PluginList({ scope, onOpenEditor }: PluginListProps): React.Reac
         ]}
         {activeItem?.origin === 'owned' && [
           <MenuItem
-            key="open-editor"
-            onClick={() => {
-              closeRowMenu();
-              onOpenEditor?.(activeItem.id);
-            }}
-          >
-            Open editor
-          </MenuItem>,
-          <MenuItem
             key="publish"
             onClick={() => {
               closeRowMenu();
@@ -271,17 +259,6 @@ export function PluginList({ scope, onOpenEditor }: PluginListProps): React.Reac
         onClose={() => setDialog({ kind: 'closed' })}
         onSuccess={() => {
           setDialog({ kind: 'closed' });
-          void loadList();
-        }}
-        onMarketplace={(marketplace) => setDialog({ kind: 'marketplace', data: marketplace })}
-      />
-
-      <MarketplaceDialog
-        open={dialog.kind === 'marketplace'}
-        marketplace={dialog.kind === 'marketplace' ? dialog.data : { name: '', plugins: [] }}
-        scope={scope}
-        onClose={() => setDialog({ kind: 'closed' })}
-        onInstalled={() => {
           void loadList();
         }}
       />

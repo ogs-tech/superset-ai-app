@@ -12,8 +12,8 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
-import { callIpc, IpcCallError } from '../../lib/ipc.js';
-import type { Template, TemplateTargetType } from '../../../shared/template.js';
+import { callIpc, IpcCallError } from '../lib/ipc.js';
+import type { Template, TemplateTargetType } from '../../shared/template.js';
 
 interface NewFromTemplateDialogProps {
   targetType: TemplateTargetType;

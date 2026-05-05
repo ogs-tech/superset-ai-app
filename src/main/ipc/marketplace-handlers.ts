@@ -40,5 +40,13 @@ export function buildMarketplaceHandlers(service: MarketplaceService): IpcHandle
       const id = marketplaceId(asString(raw['id'], 'id'));
       return service.refresh(scope, id);
     },
+
+    'marketplace.addFromUrl': async (params) => {
+      const raw = asObject(params, 'marketplace.addFromUrl');
+      const scope = asScope(raw['scope']);
+      const url = asString(raw['url'], 'url');
+      const result = await service.addFromUrl(scope, url);
+      return { id: result.id, manifest: result.manifest };
+    },
   };
 }

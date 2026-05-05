@@ -21,24 +21,63 @@ import {
   Typography,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import { callIpc, IpcCallError } from '../../lib/ipc.js';
-import { Toast, type ToastMessage } from '../../components/Toast.js';
-import { SyncReportModal } from '../../components/SyncReportModal.js';
+import { callIpc, IpcCallError } from '../lib/ipc.js';
+import { Toast, type ToastMessage } from './Toast.js';
+import { SyncReportModal } from './SyncReportModal.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import type {
   Customization,
   CustomizationFrontmatter,
   CustomizationScope,
+  CustomizationType,
   SyncResult,
-} from '../../../shared/customization.js';
-import type { Template } from '../../../shared/template.js';
+} from '../../shared/customization.js';
+import type { Template } from '../../shared/template.js';
+
+interface TypedEntity {
+  id: string;
+  frontmatter: CustomizationFrontmatter;
+  body: string;
+  source: { kind: 'workspace' };
+}
+
+interface TypedSaveResult {
+  syncReport: SyncResult[];
+  entity: TypedEntity;
+}
+
+const SAVE_BY_TYPE: Record<CustomizationType, { method: string; payloadKey: string; resultKey: string }> = {
+  skill: { method: 'skill.save', payloadKey: 'skill', resultKey: 'skill' },
+  agent: { method: 'agent.save', payloadKey: 'agent', resultKey: 'agent' },
+  reference: { method: 'reference.save', payloadKey: 'reference', resultKey: 'reference' },
+  'global-instruction': {
+    method: 'global-instruction.save',
+    payloadKey: 'globalInstruction',
+    resultKey: 'globalInstruction',
+  },
+};
+
+async function saveTypedEntity(
+  type: CustomizationType,
+  entity: TypedEntity,
+  isCreate: boolean,
+): Promise<TypedSaveResult> {
+  const { method, payloadKey, resultKey } = SAVE_BY_TYPE[type];
+  const result = await callIpc<Record<string, unknown>>(method, {
+    [payloadKey]: entity,
+    isCreate,
+  });
+  return {
+    entity: result[resultKey] as TypedEntity,
+    syncReport: (result['syncReport'] as SyncResult[] | undefined) ?? [],
+  };
+}
 
 interface CustomizationEditorProps {
   initial: Customization;
   isCreate: boolean;
   onSaved: (customization: Customization) => void | Promise<void>;
   onCancel: () => void;
-  root?: string;
 }
 
 type BodyView = 'edit' | 'preview' | 'split';
@@ -48,7 +87,6 @@ export function CustomizationEditor({
   isCreate,
   onSaved,
   onCancel,
-  root,
 }: CustomizationEditorProps): React.ReactElement {
   const [frontmatter, setFrontmatter] = useState<CustomizationFrontmatter>(initial.frontmatter);
   const [body, setBody] = useState(initial.body);
@@ -85,19 +123,27 @@ export function CustomizationEditor({
   const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
-      const result = await callIpc<{ customization: Customization; syncReport: SyncResult[] }>(
-        'customization.save',
+      const typedResult = await saveTypedEntity(
+        frontmatter.type,
         {
-          customization: { id: initial.id, frontmatter, body },
-          isCreate,
-          ...(root ? { root } : {}),
+          id: initial.id || frontmatter.name,
+          frontmatter,
+          body,
+          source: { kind: 'workspace' },
         },
+        isCreate,
       );
-      setToast({ variant: 'success', message: `${result.customization.frontmatter.name} saved` });
-      if (result.syncReport.some((entry) => entry.status !== 'ok')) {
-        setSyncReport(result.syncReport);
+      const saved: Customization = {
+        id: `${frontmatter.type}/${typedResult.entity.frontmatter.name}`,
+        frontmatter: typedResult.entity.frontmatter,
+        body: typedResult.entity.body,
+      };
+
+      setToast({ variant: 'success', message: `${saved.frontmatter.name} saved` });
+      if (typedResult.syncReport.some((entry) => entry.status !== 'ok')) {
+        setSyncReport(typedResult.syncReport);
       }
-      await onSaved(result.customization);
+      await onSaved(saved);
     } catch (err) {
       if (err instanceof IpcCallError && err.kind === 'validation' && Array.isArray(err.details?.errors)) {
         const errors = err.details.errors as Array<{ path: string; message: string }>;

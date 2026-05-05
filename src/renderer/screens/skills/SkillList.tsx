@@ -1,4 +1,4 @@
-import { EntityList } from '../customizations/EntityList.js';
+import { EntityList } from '../../components/EntityList.js';
 
 export function SkillList(): React.ReactElement {
   return (

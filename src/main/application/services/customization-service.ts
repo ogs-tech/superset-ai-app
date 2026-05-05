@@ -1,8 +1,6 @@
-import path from 'node:path';
 import type { Customization, CustomizationFrontmatter, SyncResult } from '../../../shared/customization.js';
 import type { ClockPort } from '../../application/ports/clock-port.js';
 import type {
-  CustomizationDeleteCommand,
   CustomizationListQuery,
   CustomizationRepository,
 } from '../../application/ports/customization-repository.js';
@@ -14,14 +12,9 @@ import { DomainError, validationError } from '../../domain/errors.js';
 
 const GLOBAL_INSTRUCTION_ALLOWED_SLUGS: ReadonlyArray<string> = ['default'];
 
-export type WorkspaceRoot =
-  | { kind: 'customizations' }
-  | { kind: 'plugin'; pluginId: string };
-
 export interface SaveCustomizationCommand {
   customization: Customization;
   isCreate?: boolean;
-  root?: WorkspaceRoot;
 }
 
 export interface SaveCustomizationResult {
@@ -32,7 +25,6 @@ export interface SaveCustomizationResult {
 export interface DeleteCustomizationCommand {
   id: string;
   removeSymlinks: boolean;
-  root?: WorkspaceRoot;
 }
 
 export interface DeleteCustomizationResult {
@@ -41,13 +33,10 @@ export interface DeleteCustomizationResult {
 }
 
 /**
- * @deprecated Internal coordination service that backs `customization.*` IPC and
- * the per-entity facades (SkillService, AgentService, ReferenceService,
- * GlobalInstructionService). Not exposed directly to renderers anymore.
- *
- * Future PRs should split this into a `customization-core` helper and let the
- * typed services own the lifecycle. Until then, treat this class as a private
- * implementation detail of those facades.
+ * Shared engine for customization persistence: validation, ID formatting,
+ * timestamp stamping, rename handling, and adapter sync. Backs the typed
+ * facades (SkillService, AgentService, ReferenceService, GlobalInstructionService).
+ * Renderers go through the typed IPCs, never this service directly.
  */
 export class CustomizationService {
   constructor(
@@ -55,24 +44,13 @@ export class CustomizationService {
     private readonly clock: ClockPort,
     private readonly adapterManager: AdapterManager,
     private readonly schemaValidator?: SchemaValidator,
-    private readonly workspacePath?: string,
   ) {}
 
-  private resolveRoot(root: WorkspaceRoot = { kind: 'customizations' }): string {
-    if (!this.workspacePath) {
-      throw new Error('workspacePath is required for root resolution');
-    }
-    if (root.kind === 'customizations') {
-      return path.join(this.workspacePath, 'customizations');
-    }
-    return path.join(this.workspacePath, 'plugins', root.pluginId);
-  }
-
-  list(query: CustomizationListQuery = {}, _root?: WorkspaceRoot): Promise<Customization[]> {
+  list(query: CustomizationListQuery = {}): Promise<Customization[]> {
     return this.repository.list(query);
   }
 
-  get(query: { id: string; root?: WorkspaceRoot }): Promise<Customization> {
+  get(query: { id: string }): Promise<Customization> {
     return this.repository.get(query);
   }
 
@@ -139,8 +117,7 @@ export class CustomizationService {
       const customization = await this.repository.get({ id: command.id });
       syncReport = await this.adapterManager.removeOne({ customization });
     }
-    const repoCommand: CustomizationDeleteCommand = { id: command.id };
-    await this.repository.delete(repoCommand);
+    await this.repository.delete({ id: command.id });
     return syncReport === undefined ? { ok: true } : { ok: true, syncReport };
   }
 

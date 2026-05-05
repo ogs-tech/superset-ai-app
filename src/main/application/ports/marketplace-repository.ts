@@ -1,10 +1,11 @@
 import type { MarketplaceId } from '../../domain/marketplace-id.js';
 import type { Scope } from './scope.js';
 
-export interface MarketplaceSourceRecord {
-  kind: 'directory';
-  path: string;
-}
+export type MarketplaceSourceRecord =
+  | { kind: 'directory'; path: string }
+  | { kind: 'github'; repo: string; cachePath?: string }
+  | { kind: 'git'; url: string; ref?: string; cachePath?: string }
+  | { kind: 'url'; url: string; cachePath?: string };
 
 export interface MarketplaceRecord {
   id: MarketplaceId;

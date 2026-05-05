@@ -23,7 +23,6 @@ import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
 import { CopilotAdapter } from './infrastructure/adapters/copilot-adapter.js';
 import { CopilotInstructionsGen } from './application/services/copilot-instructions-gen.js';
 import { SchemaValidator } from './application/services/schema-validator.js';
-import { SearchService } from './application/services/search-service.js';
 import type { Adapter } from './application/ports/adapter.js';
 import type { CredentialStorePort } from './application/ports/credential-store-port.js';
 import { SafeStorageCredentials } from './infrastructure/credentials/safe-storage-credentials.js';
@@ -104,7 +103,6 @@ async function wireIpc(): Promise<void> {
   });
   const schemaValidator = new SchemaValidator();
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
-  const searchService = new SearchService({ customizationRepository: customizationRepo });
   const templatesSeedDir = join(process.cwd(), 'src', 'main', 'templates');
   await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(workspacePath);
   const templateRepo = new FsTemplateRepository(workspacePath);
@@ -187,18 +185,22 @@ async function wireIpc(): Promise<void> {
   });
   const referenceService = new ReferenceService(customizationService);
   const globalInstructionService = new GlobalInstructionService(customizationService);
+  const marketplacesCacheRoot = (scope: 'personal' | 'project'): string =>
+    scope === 'personal'
+      ? join(workspacePath, 'marketplaces-cache')
+      : join(process.cwd(), '.sde-ai-app', 'marketplaces-cache');
   const marketplaceService = new MarketplaceService({
     repository: new SettingsMarketplaceRepository(claudeSettingsFile),
     parser: marketplaceParser,
+    git: gitClient,
+    cacheDirRoot: marketplacesCacheRoot,
   });
 
   const handlers = buildHandlers({
     settingsService,
     repoService,
-    customizationService,
     templateService,
     adapterManager,
-    searchService,
     dialogPort,
     pluginService,
     credentialStore,

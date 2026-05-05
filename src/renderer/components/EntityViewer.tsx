@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReactMarkdown from 'react-markdown';
-import { ReadOnlyNotice } from '../../components/ReadOnlyNotice.js';
+import { ReadOnlyNotice } from './ReadOnlyNotice.js';
 
 interface EntityViewerProps {
   entity: {

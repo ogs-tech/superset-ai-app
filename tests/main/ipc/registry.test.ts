@@ -12,7 +12,6 @@ import type { DialogPort } from '../../../src/main/application/ports/dialog-port
 import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
 import type { Template, TemplateFrontmatter } from '../../../src/shared/template.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
-import type { SearchService } from '../../../src/main/application/services/search-service.js';
 import type { PluginService } from '../../../src/main/application/services/plugin-service.js';
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
@@ -39,7 +38,6 @@ interface Deps {
   customizationService: CustomizationService;
   templateService: TemplateService;
   adapterManager: AdapterManager;
-  searchService: SearchService;
   dialogPort: DialogPort;
   pluginService: PluginService;
   credentialStore: CredentialStorePort;
@@ -138,10 +136,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   };
   const templateService = new TemplateService(templateRepo, clock);
 
-  const searchService: Partial<SearchService> = {
-    search: vi.fn().mockResolvedValue({ results: [], total: 0, truncated: false }),
-  };
-
   const pluginService = null as unknown as PluginService;
   const skillService = null as unknown as SkillService;
   const agentService = null as unknown as AgentService;
@@ -161,7 +155,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     customizationService,
     templateService,
     adapterManager,
-    searchService: searchService as unknown as SearchService,
     dialogPort,
     pluginService,
     credentialStore,
@@ -345,76 +338,7 @@ describe('buildHandlers', () => {
   });
 });
 
-describe('buildHandlers — customization', () => {
-  const sampleCustomization = {
-    id: 'skill/foo',
-    frontmatter: {
-      name: 'foo',
-      type: 'skill',
-      description: 'sample',
-      scopes: ['personal'],
-      version: '0.1.0',
-      createdAt: '',
-      updatedAt: '',
-    },
-    body: '# Foo\n',
-  };
-
-  it('customization.save returns { customization, syncReport: [] }', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    const result = (await handlers['customization.save']?.({
-      customization: sampleCustomization,
-    })) as { customization: { id: string }; syncReport: unknown[] };
-
-    expect(result.customization.id).toBe('skill/foo');
-    expect(result.syncReport).toEqual([]);
-  });
-
-  it('customization.save validation error surfaces as DomainError (envelope-mapped by dispatcher)', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    const broken = {
-      ...sampleCustomization,
-      frontmatter: { ...sampleCustomization.frontmatter, name: '' },
-    };
-    await expect(handlers['customization.save']?.({ customization: broken })).rejects.toMatchObject({
-      kind: 'validation',
-    });
-  });
-
-  it('customization.list filters by type when provided', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-    await handlers['customization.save']?.({ customization: sampleCustomization });
-
-    const result = (await handlers['customization.list']?.({ type: 'skill' })) as Array<{
-      id: string;
-    }>;
-    expect(result.map((a) => a.id)).toEqual(['skill/foo']);
-  });
-
-  it('customization.list returns all when type is omitted', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-    await handlers['customization.save']?.({ customization: sampleCustomization });
-
-    const result = (await handlers['customization.list']?.({})) as Array<{ id: string }>;
-    expect(result).toHaveLength(1);
-  });
-
-  it('customization.list accepts type "global-instruction" without rejection (regression: spec 014)', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    const result = (await handlers['customization.list']?.({
-      type: 'global-instruction',
-    })) as Array<{ id: string }>;
-    expect(result).toEqual([]);
-  });
-
+describe('buildHandlers — templates', () => {
   it('template.list accepts targetType "global-instruction" without rejection', async () => {
     const deps = buildDeps();
     const handlers = buildHandlers(deps);
@@ -422,40 +346,6 @@ describe('buildHandlers — customization', () => {
     await expect(
       handlers['template.list']?.({ targetType: 'global-instruction' }),
     ).resolves.toBeDefined();
-  });
-
-  it('customization.get returns the customization', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-    await handlers['customization.save']?.({ customization: sampleCustomization });
-
-    const result = (await handlers['customization.get']?.({ id: 'skill/foo' })) as {
-      id: string;
-    };
-    expect(result.id).toBe('skill/foo');
-  });
-
-  it('customization.delete removes the customization and accepts removeSymlinks flag', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-    await handlers['customization.save']?.({ customization: sampleCustomization });
-
-    const result = (await handlers['customization.delete']?.({
-      id: 'skill/foo',
-      removeSymlinks: true,
-    })) as { ok: true; syncReport: unknown[] };
-    expect(result).toEqual({ ok: true, syncReport: [] });
-
-    expect(await deps.customizationRepo.exists({ id: 'skill/foo' })).toBe(false);
-  });
-
-  it('customization.delete rejects when removeSymlinks is missing', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    await expect(
-      handlers['customization.delete']?.({ id: 'skill/foo' }),
-    ).rejects.toBeInstanceOf(DomainError);
   });
 
   it('template.list delegates to TemplateService with the requested targetType', async () => {
