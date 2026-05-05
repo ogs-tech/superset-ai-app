@@ -437,6 +437,54 @@ describe('claude-settings-mutators', () => {
     });
   });
 
+  describe('per-marketplace attribution', () => {
+    it('enablePlugin uses provided marketplaceId in the key', () => {
+      const result = enablePlugin(emptySettings(), pluginId('feature-dev'), 'claude-plugins-official');
+      expect(result.enabledPlugins['feature-dev@claude-plugins-official']).toBe(true);
+      expect(result.enabledPlugins['feature-dev@skillforge-imports']).toBeUndefined();
+    });
+
+    it('disablePlugin targets the per-marketplace key', () => {
+      const settings: ClaudeSettings = {
+        extraKnownMarketplaces: {},
+        enabledPlugins: {
+          'feature-dev@claude-plugins-official': true,
+          'feature-dev@skillforge-imports': true,
+        },
+      };
+      const result = disablePlugin(settings, pluginId('feature-dev'), 'claude-plugins-official');
+      expect(result.enabledPlugins['feature-dev@claude-plugins-official']).toBe(false);
+      // skillforge-imports key untouched
+      expect(result.enabledPlugins['feature-dev@skillforge-imports']).toBe(true);
+    });
+
+    it('removePlugin removes only the per-marketplace key', () => {
+      const settings: ClaudeSettings = {
+        extraKnownMarketplaces: {},
+        enabledPlugins: {
+          'feature-dev@claude-plugins-official': true,
+          'feature-dev@skillforge-imports': true,
+        },
+      };
+      const result = removePlugin(settings, pluginId('feature-dev'), 'claude-plugins-official');
+      expect('feature-dev@claude-plugins-official' in result.enabledPlugins).toBe(false);
+      expect(result.enabledPlugins['feature-dev@skillforge-imports']).toBe(true);
+    });
+
+    it('cleanupMarketplaceIfEmpty does NOT remove non-skillforge marketplaces (we never registered them)', () => {
+      const settings: ClaudeSettings = {
+        extraKnownMarketplaces: {
+          'claude-plugins-official': {
+            source: { source: 'github', repo: 'anthropics/claude-plugins-official' },
+          } as never,
+        },
+        enabledPlugins: {},
+      };
+      const result = cleanupMarketplaceIfEmpty(settings);
+      expect(result.extraKnownMarketplaces['claude-plugins-official']).toBeDefined();
+    });
+  });
+
   describe('integration scenarios', () => {
     it('add marketplace, enable plugin, disable plugin, remove plugin flow', () => {
       let settings = emptySettings();

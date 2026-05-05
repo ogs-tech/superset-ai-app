@@ -3,6 +3,7 @@ import { AppBar, Box, IconButton, Tab, Tabs, Toolbar, Tooltip } from '@mui/mater
 import SettingsIcon from '@mui/icons-material/Settings';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
+import { CommandList } from './commands/CommandList.js';
 import { ReferenceList } from './references/ReferenceList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
@@ -11,6 +12,7 @@ import { PluginList } from './plugins/PluginList.js';
 type MainTab =
   | 'skills'
   | 'agents'
+  | 'commands'
   | 'references'
   | 'global-instructions'
   | 'plugins'
@@ -57,6 +59,7 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         >
           <Tab label="Skills" value="skills" />
           <Tab label="Agents" value="agents" />
+          <Tab label="Commands" value="commands" />
           <Tab label="References" value="references" />
           <Tab label="Global Instructions" value="global-instructions" />
           <Tab label="Plugins" value="plugins" />
@@ -65,6 +68,7 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
       </AppBar>
       {activeTab === 'skills' && <SkillList />}
       {activeTab === 'agents' && <AgentList />}
+      {activeTab === 'commands' && <CommandList />}
       {activeTab === 'references' && <ReferenceList />}
       {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
       {activeTab === 'plugins' && <PluginList scope="personal" />}

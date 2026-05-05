@@ -18,6 +18,13 @@ describe('parseCustomizationId', () => {
     expect(parseCustomizationId('agent/baz')).toEqual({ type: 'agent', name: 'baz' });
   });
 
+  it('parses command/<name>', () => {
+    expect(parseCustomizationId('command/feature-dev')).toEqual({
+      type: 'command',
+      name: 'feature-dev',
+    });
+  });
+
   it('preserves dashes inside name', () => {
     expect(parseCustomizationId('skill/foo-bar-baz')).toEqual({
       type: 'skill',
@@ -67,5 +74,6 @@ describe('formatCustomizationId', () => {
     expect(formatCustomizationId('skill', 'foo')).toBe('skill/foo');
     expect(formatCustomizationId('reference', 'bar')).toBe('reference/bar');
     expect(formatCustomizationId('agent', 'baz-qux')).toBe('agent/baz-qux');
+    expect(formatCustomizationId('command', 'feature-dev')).toBe('command/feature-dev');
   });
 });

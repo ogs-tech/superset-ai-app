@@ -312,5 +312,35 @@ describe('provenanceKey', () => {
   it('formats key as type/name', () => {
     expect(provenanceKey({ type: 'skill', name: 'foo' })).toBe('skill/foo');
     expect(provenanceKey({ type: 'agent', name: 'reviewer' })).toBe('agent/reviewer');
+    expect(provenanceKey({ type: 'command', name: 'feature-dev' })).toBe('command/feature-dev');
+  });
+});
+
+describe('PluginProvenanceService — commands scan', () => {
+  it('discovers commands from installed plugins (commands/<name>.md)', async () => {
+    const cache = new FakePluginCachePort();
+    const fs = new InMemoryFileSystem();
+    const pid = pluginId('feature-dev');
+    cache.seedMeta('personal', {
+      version: 2,
+      plugins: [
+        {
+          id: pid,
+          origin: 'imported',
+          installedAt: FROZEN.toISOString(),
+          scope: 'personal',
+          enabled: true,
+        },
+      ],
+    });
+    const dir = cache.pluginDir('personal', pid);
+    await fs.writeFile(
+      `${dir}/commands/feature-dev.md`,
+      `---\nname: feature-dev\ntype: command\ndescription: orchestrate feature workflow\nscopes:\n  - personal\nversion: 1.0.0\ncreatedAt: ${FROZEN.toISOString()}\nupdatedAt: ${FROZEN.toISOString()}\n---\nbody\n`,
+    );
+
+    const svc = new PluginProvenanceService({ cache, fs });
+    const map = await svc.forScope('personal');
+    expect(map.get(provenanceKey({ type: 'command', name: 'feature-dev' }))).toBe(pid);
   });
 });

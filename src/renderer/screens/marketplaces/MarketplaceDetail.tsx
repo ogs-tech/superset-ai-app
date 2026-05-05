@@ -114,7 +114,15 @@ export function MarketplaceDetail({
     setInstallStates((s) => ({ ...s, [plugin.name]: 'loading' }));
     setErrors((e) => ({ ...e, [plugin.name]: '' }));
     try {
-      await callIpc('plugin.installFromMarketplace', { plugin, scope: 'personal' });
+      // Attribute the install to the originating marketplace so Claude Code
+      // shows it correctly. The synthetic skillforge-imports marketplace is
+      // only used for owned/raw-URL imports — when installing FROM it, omit
+      // marketplaceId so the installer falls back to the default.
+      const params: Record<string, unknown> = { plugin, scope: 'personal' };
+      if (marketplace.id !== SKILLFORGE_LOCAL_ID) {
+        params['marketplaceId'] = marketplace.id;
+      }
+      await callIpc('plugin.installFromMarketplace', params);
       setInstallStates((s) => ({ ...s, [plugin.name]: 'done' }));
       setToast({ variant: 'success', message: `${plugin.name} installed` });
     } catch (err) {

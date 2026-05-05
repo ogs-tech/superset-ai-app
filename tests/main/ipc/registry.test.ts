@@ -15,6 +15,7 @@ import type { AdapterManager } from '../../../src/main/application/services/adap
 import type { PluginService } from '../../../src/main/application/services/plugin-service.js';
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
+import type { CommandService } from '../../../src/main/application/services/command-service.js';
 import type { ReferenceService } from '../../../src/main/application/services/reference-service.js';
 import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
@@ -43,6 +44,7 @@ interface Deps {
   credentialStore: CredentialStorePort;
   skillService: SkillService;
   agentService: AgentService;
+  commandService: CommandService;
   referenceService: ReferenceService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
@@ -139,6 +141,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const pluginService = null as unknown as PluginService;
   const skillService = null as unknown as SkillService;
   const agentService = null as unknown as AgentService;
+  const commandService = null as unknown as CommandService;
   const referenceService = null as unknown as ReferenceService;
   const globalInstructionService = null as unknown as GlobalInstructionService;
   const marketplaceService = null as unknown as MarketplaceService;
@@ -160,6 +163,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     credentialStore,
     skillService,
     agentService,
+    commandService,
     referenceService,
     globalInstructionService,
     marketplaceService,

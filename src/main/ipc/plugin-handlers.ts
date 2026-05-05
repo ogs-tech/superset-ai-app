@@ -118,7 +118,11 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
       const raw = asObject(params, 'plugin.installFromMarketplace');
       const plugin = raw['plugin'] as MarketplacePlugin;
       const scope = asScope(raw['scope']);
-      return pluginService.importFromMarketplace(plugin, scope);
+      const marketplaceId =
+        typeof raw['marketplaceId'] === 'string' && raw['marketplaceId'].length > 0
+          ? raw['marketplaceId']
+          : undefined;
+      return pluginService.importFromMarketplace(plugin, scope, marketplaceId);
     },
 
     'plugin.publish': async (params) => {

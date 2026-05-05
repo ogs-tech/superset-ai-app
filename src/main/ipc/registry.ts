@@ -10,6 +10,7 @@ import type { SkillService } from '../application/services/skill-service.js';
 import type { AgentService } from '../application/services/agent-service.js';
 import type { ReferenceService } from '../application/services/reference-service.js';
 import type { GlobalInstructionService } from '../application/services/global-instruction-service.js';
+import type { CommandService } from '../application/services/command-service.js';
 import type { MarketplaceService } from '../application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
@@ -20,6 +21,7 @@ import { buildPluginHandlers } from './plugin-handlers.js';
 import { buildCredentialsHandlers } from './credentials-handlers.js';
 import { buildSkillHandlers } from './skill-handlers.js';
 import { buildAgentHandlers } from './agent-handlers.js';
+import { buildCommandHandlers } from './command-handlers.js';
 import { buildReferenceHandlers } from './reference-handlers.js';
 import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
@@ -34,6 +36,7 @@ export interface IpcDeps {
   credentialStore: CredentialStorePort;
   skillService: SkillService;
   agentService: AgentService;
+  commandService: CommandService;
   referenceService: ReferenceService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
@@ -44,6 +47,7 @@ const TEMPLATE_TARGET_TYPES: readonly TemplateTargetType[] = [
   'reference',
   'agent',
   'global-instruction',
+  'command',
 ];
 
 const asTemplateTargetType = (value: unknown, field: string): TemplateTargetType => {
@@ -101,6 +105,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     credentialStore,
     skillService,
     agentService,
+    commandService,
     referenceService,
     globalInstructionService,
     marketplaceService,
@@ -267,6 +272,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     ...buildCredentialsHandlers(credentialStore),
     ...buildSkillHandlers(skillService),
     ...buildAgentHandlers(agentService),
+    ...buildCommandHandlers(commandService),
     ...buildReferenceHandlers(referenceService),
     ...buildGlobalInstructionHandlers(globalInstructionService),
     ...buildMarketplaceHandlers(marketplaceService),

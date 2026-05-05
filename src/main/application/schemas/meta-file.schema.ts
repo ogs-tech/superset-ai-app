@@ -35,6 +35,7 @@ const metaEntryV2Schema = z
     scope: z.enum(['personal', 'project']),
     enabled: z.boolean(),
     publish: publishInfoSchema.optional(),
+    marketplaceId: z.string().min(1).optional(),
   })
   .passthrough();
 

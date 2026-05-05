@@ -20,6 +20,7 @@ const ARTIFACT_TYPES: CustomizationType[] = [
   'reference',
   'agent',
   'global-instruction',
+  'command',
 ];
 
 const FOLDER_BY_TYPE: Record<CustomizationType, string> = {
@@ -27,6 +28,7 @@ const FOLDER_BY_TYPE: Record<CustomizationType, string> = {
   reference: 'references',
   agent: 'agents',
   'global-instruction': 'global-instructions',
+  command: 'commands',
 };
 
 const hasErrnoCode = (err: unknown, code: string): boolean =>

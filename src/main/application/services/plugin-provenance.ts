@@ -5,7 +5,7 @@ import type { FileSystemPort } from '../ports/filesystem-port.js';
 import type { Scope } from '../ports/scope.js';
 
 export interface ProvenanceKey {
-  type: 'skill' | 'agent';
+  type: 'skill' | 'agent' | 'command';
   name: string;
 }
 
@@ -22,9 +22,9 @@ export interface PluginProvenanceDeps {
 
 /**
  * Computes provenance — a map from {type/name} to PluginId — by reading the
- * plugin meta file and scanning each installed plugin's skills/ and agents/
- * subdirectories. Skills and agents shipped by a plugin are read-only from the
- * app's perspective; the plugin lifecycle owns their files.
+ * plugin meta file and scanning each installed plugin's skills/, agents/, and
+ * commands/ subdirectories. Customizations shipped by a plugin are read-only
+ * from the app's perspective; the plugin lifecycle owns their files.
  */
 export class PluginProvenanceService {
   constructor(private readonly deps?: PluginProvenanceDeps) {}
@@ -47,6 +47,7 @@ export class PluginProvenanceService {
       const dir = cache.pluginDir(scope, pid);
       await this.scanSkills(map, fs, dir, pid);
       await this.scanAgents(map, fs, dir, pid);
+      await this.scanCommands(map, fs, dir, pid);
     }
 
     return map;
@@ -85,6 +86,26 @@ export class PluginProvenanceService {
         if (entry.startsWith('.') || !entry.endsWith('.md')) continue;
         const name = entry.replace(/\.md$/, '');
         map.set(provenanceKey({ type: 'agent', name }), pid);
+      }
+    } catch {
+      // swallow
+    }
+  }
+
+  private async scanCommands(
+    map: ProvenanceMap,
+    fs: FileSystemPort,
+    pluginDir: string,
+    pid: PluginId,
+  ): Promise<void> {
+    const commandsDir = join(pluginDir, 'commands');
+    try {
+      if (!(await fs.pathExists(commandsDir))) return;
+      const entries = await fs.readdir(commandsDir);
+      for (const entry of entries) {
+        if (entry.startsWith('.') || !entry.endsWith('.md')) continue;
+        const name = entry.replace(/\.md$/, '');
+        map.set(provenanceKey({ type: 'command', name }), pid);
       }
     } catch {
       // swallow

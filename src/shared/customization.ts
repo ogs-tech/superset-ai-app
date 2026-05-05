@@ -1,4 +1,4 @@
-export type CustomizationType = 'skill' | 'reference' | 'agent' | 'global-instruction';
+export type CustomizationType = 'skill' | 'reference' | 'agent' | 'global-instruction' | 'command';
 
 export type CustomizationScope = 'personal' | 'project';
 

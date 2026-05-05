@@ -55,6 +55,7 @@ const SAVE_BY_TYPE: Record<CustomizationType, { method: string; payloadKey: stri
     payloadKey: 'globalInstruction',
     resultKey: 'globalInstruction',
   },
+  command: { method: 'command.save', payloadKey: 'command', resultKey: 'command' },
 };
 
 async function saveTypedEntity(

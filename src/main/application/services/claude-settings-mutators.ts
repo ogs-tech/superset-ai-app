@@ -1,21 +1,20 @@
 import type { ClaudeSettings } from '../schemas/claude-settings.schema.js';
 import type { PluginId } from '../../domain/plugin-id.js';
 
-const SKILLFORGE_MARKETPLACE = 'skillforge-imports';
+export const SKILLFORGE_MARKETPLACE = 'skillforge-imports';
 
 /**
- * Adds the skillforge-imports marketplace to settings if not already present
- * @param s - The current ClaudeSettings
- * @param marketplacePath - The workspace/plugins directory path
- * @returns A new ClaudeSettings object with the marketplace added (or unchanged if already present)
+ * Adds the skillforge-imports synthetic marketplace to settings if absent. Used
+ * only for plugins this app owns (authored locally) or imported via raw URL,
+ * where there is no upstream marketplace registered with Claude Code. For
+ * plugins installed from a known marketplace (e.g. claude-plugins-official)
+ * the marketplace is assumed to already be registered by the user/Claude.
  */
 export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: string): ClaudeSettings {
-  // If marketplace already exists, return unchanged
   if (s.extraKnownMarketplaces?.[SKILLFORGE_MARKETPLACE]) {
     return s;
   }
 
-  // Create new settings with the marketplace added
   return {
     ...s,
     extraKnownMarketplaces: {
@@ -31,13 +30,15 @@ export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: stri
 }
 
 /**
- * Enables a plugin by setting enabledPlugins['<id>@skillforge-imports'] = true
- * @param s - The current ClaudeSettings
- * @param id - The PluginId to enable
- * @returns A new ClaudeSettings object with the plugin enabled
+ * Sets enabledPlugins['<id>@<marketplaceId>'] = true. When marketplaceId is
+ * omitted, defaults to skillforge-imports for back-compat.
  */
-export function enablePlugin(s: ClaudeSettings, id: PluginId): ClaudeSettings {
-  const pluginKey = `${id}@${SKILLFORGE_MARKETPLACE}`;
+export function enablePlugin(
+  s: ClaudeSettings,
+  id: PluginId,
+  marketplaceId: string = SKILLFORGE_MARKETPLACE,
+): ClaudeSettings {
+  const pluginKey = `${id}@${marketplaceId}`;
 
   return {
     ...s,
@@ -49,15 +50,16 @@ export function enablePlugin(s: ClaudeSettings, id: PluginId): ClaudeSettings {
 }
 
 /**
- * Disables a plugin by setting enabledPlugins['<id>@skillforge-imports'] = false
- * @param s - The current ClaudeSettings
- * @param id - The PluginId to disable
- * @returns A new ClaudeSettings object with the plugin disabled
+ * Sets enabledPlugins['<id>@<marketplaceId>'] = false. No-op if the key is
+ * absent.
  */
-export function disablePlugin(s: ClaudeSettings, id: PluginId): ClaudeSettings {
-  const pluginKey = `${id}@${SKILLFORGE_MARKETPLACE}`;
+export function disablePlugin(
+  s: ClaudeSettings,
+  id: PluginId,
+  marketplaceId: string = SKILLFORGE_MARKETPLACE,
+): ClaudeSettings {
+  const pluginKey = `${id}@${marketplaceId}`;
 
-  // If the plugin is not in enabledPlugins, return unchanged (no-op)
   if (!(pluginKey in s.enabledPlugins)) {
     return s;
   }
@@ -72,20 +74,19 @@ export function disablePlugin(s: ClaudeSettings, id: PluginId): ClaudeSettings {
 }
 
 /**
- * Removes a plugin entirely from enabledPlugins by deleting its key
- * @param s - The current ClaudeSettings
- * @param id - The PluginId to remove
- * @returns A new ClaudeSettings object with the plugin removed
+ * Removes the '<id>@<marketplaceId>' key from enabledPlugins entirely.
  */
-export function removePlugin(s: ClaudeSettings, id: PluginId): ClaudeSettings {
-  const pluginKey = `${id}@${SKILLFORGE_MARKETPLACE}`;
+export function removePlugin(
+  s: ClaudeSettings,
+  id: PluginId,
+  marketplaceId: string = SKILLFORGE_MARKETPLACE,
+): ClaudeSettings {
+  const pluginKey = `${id}@${marketplaceId}`;
 
-  // If the plugin is not in enabledPlugins, return unchanged (no-op)
   if (!(pluginKey in s.enabledPlugins)) {
     return s;
   }
 
-  // Remove the plugin key from enabledPlugins
   const newEnabledPlugins = { ...s.enabledPlugins };
   delete newEnabledPlugins[pluginKey];
 
@@ -96,28 +97,23 @@ export function removePlugin(s: ClaudeSettings, id: PluginId): ClaudeSettings {
 }
 
 /**
- * If no plugins remain in enabledPlugins that belong to skillforge-imports,
- * removes the 'skillforge-imports' key from extraKnownMarketplaces
- * @param s - The current ClaudeSettings
- * @returns A new ClaudeSettings object with the marketplace cleaned up if empty
+ * Removes 'skillforge-imports' from extraKnownMarketplaces if no plugin is
+ * still attributed to it. Other marketplaces are left untouched (we did not
+ * register them).
  */
 export function cleanupMarketplaceIfEmpty(s: ClaudeSettings): ClaudeSettings {
-  // Check if any key in enabledPlugins ends with @skillforge-imports
   const hasSkillforgePlugin = Object.keys(s.enabledPlugins).some((key) =>
     key.endsWith(`@${SKILLFORGE_MARKETPLACE}`),
   );
 
-  // If there are still skillforge plugins, no cleanup needed
   if (hasSkillforgePlugin) {
     return s;
   }
 
-  // If marketplace doesn't exist, no cleanup needed
   if (!(SKILLFORGE_MARKETPLACE in s.extraKnownMarketplaces)) {
     return s;
   }
 
-  // Remove the marketplace from extraKnownMarketplaces
   const newMarketplaces = { ...s.extraKnownMarketplaces };
   delete newMarketplaces[SKILLFORGE_MARKETPLACE];
 

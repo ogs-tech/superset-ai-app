@@ -21,6 +21,7 @@ export type PluginSummary = {
   installedAt: string;
   source?: PluginSource;
   installedRef?: PluginRef;
+  marketplaceId?: string;
 };
 
 type InstallInput = {
@@ -31,6 +32,7 @@ type InstallInput = {
   source?: PluginSource;
   installedRef?: PluginRef;
   scope: Scope;
+  marketplaceId?: string;
 };
 
 export class PluginInstaller {
@@ -43,8 +45,12 @@ export class PluginInstaller {
 
   async install(input: InstallInput): Promise<PluginSummary> {
     const { cache, settings } = this.deps;
-    const { id, origin, scope, pluginDir, tmpDir, source, installedRef } = input;
+    const { id, origin, scope, pluginDir, tmpDir, source, installedRef, marketplaceId } = input;
     const workspacePluginsDir = path.dirname(pluginDir);
+    // Plugins from a known upstream marketplace are attributed to it directly.
+    // Plugins owned locally or imported via raw URL fall back to the synthetic
+    // skillforge-imports marketplace (which we register).
+    const usingSkillforge = marketplaceId == null;
 
     const compensations: Array<() => Promise<void>> = [];
 
@@ -66,11 +72,15 @@ export class PluginInstaller {
       compensations.push(() => settings.unlink(scope, id));
 
       // Step C
-      await settings.mutate(scope, (s) =>
-        enablePlugin(addMarketplaceIfMissing(s, workspacePluginsDir), id),
-      );
+      await settings.mutate(scope, (s) => {
+        const next = usingSkillforge ? addMarketplaceIfMissing(s, workspacePluginsDir) : s;
+        return enablePlugin(next, id, marketplaceId);
+      });
       compensations.push(() =>
-        settings.mutate(scope, (s) => cleanupMarketplaceIfEmpty(removePlugin(s, id))),
+        settings.mutate(scope, (s) => {
+          const next = removePlugin(s, id, marketplaceId);
+          return usingSkillforge ? cleanupMarketplaceIfEmpty(next) : next;
+        }),
       );
 
       // Step D
@@ -84,6 +94,7 @@ export class PluginInstaller {
         installedAt,
         ...(source != null && { source }),
         ...(installedRef != null && { installedRef }),
+        ...(marketplaceId != null && { marketplaceId }),
       };
       await cache.writeMeta(scope, {
         ...existingMeta,
@@ -98,6 +109,7 @@ export class PluginInstaller {
         installedAt,
         ...(source != null && { source }),
         ...(installedRef != null && { installedRef }),
+        ...(marketplaceId != null && { marketplaceId }),
       };
     } catch (err) {
       for (const comp of compensations.reverse()) {
@@ -114,15 +126,17 @@ export class PluginInstaller {
   async uninstall(id: PluginId, scope: Scope): Promise<void> {
     const { cache, settings } = this.deps;
 
-    // D': remove from meta
+    // D': read entry first to know its marketplace attribution, then remove from meta
     const existingMeta = await cache.readMeta(scope);
+    const entry = existingMeta.plugins.find((p) => p.id === id);
+    const marketplaceId = entry?.marketplaceId;
     await cache.writeMeta(scope, {
       ...existingMeta,
       plugins: existingMeta.plugins.filter((p) => p.id !== id),
     });
 
     // C': remove from settings + cleanup marketplace if empty
-    await settings.mutate(scope, (s) => cleanupMarketplaceIfEmpty(removePlugin(s, id)));
+    await settings.mutate(scope, (s) => cleanupMarketplaceIfEmpty(removePlugin(s, id, marketplaceId)));
 
     // B': unlink symlink
     await settings.unlink(scope, id);

@@ -27,6 +27,7 @@ export interface PluginInstallerLike {
     source?: { kind: 'git'; url: string; ref?: PluginRef };
     installedRef?: PluginRef;
     scope: Scope;
+    marketplaceId?: string;
   }): Promise<PluginSummary>;
   uninstall(id: PluginId, scope: Scope): Promise<void>;
 }
@@ -178,8 +179,17 @@ export class PluginService {
   /**
    * Install a plugin from a marketplace entry. Handles source types:
    * git-subdir, url, github, git. Local-path sources are pre-expanded by detect().
+   *
+   * `marketplaceId` is the upstream marketplace identifier (as registered in
+   * Claude Code's settings). When provided, the plugin is attributed to it in
+   * `enabledPlugins` ('<id>@<marketplaceId>'); otherwise it falls back to the
+   * synthetic skillforge-imports marketplace.
    */
-  async importFromMarketplace(plugin: MarketplacePlugin, scope: Scope): Promise<PluginSummary> {
+  async importFromMarketplace(
+    plugin: MarketplacePlugin,
+    scope: Scope,
+    marketplaceId?: string,
+  ): Promise<PluginSummary> {
     const { git, cache, installer, parser } = this.deps;
 
     const tmpDir = path.join(
@@ -210,6 +220,7 @@ export class PluginService {
       source: { kind: 'git', url: cloneResult.url },
       installedRef: { kind: 'sha', value: cloneResult.sha },
       scope,
+      ...(marketplaceId != null ? { marketplaceId } : {}),
     });
   }
 
@@ -227,7 +238,8 @@ export class PluginService {
 
     // Entries from meta
     for (const entry of meta.plugins) {
-      const pluginKey = `${entry.id}@skillforge-imports`;
+      const marketplaceId = entry.marketplaceId ?? 'skillforge-imports';
+      const pluginKey = `${entry.id}@${marketplaceId}`;
       const inSettings = claudeSettings.enabledPlugins[pluginKey] === true;
 
       // Build source carefully to satisfy exactOptionalPropertyTypes
@@ -247,6 +259,7 @@ export class PluginService {
         installedAt: entry.installedAt,
         ...(entrySource != null && { source: entrySource }),
         ...(entry.installedRef != null && { installedRef: entry.installedRef as PluginRef }),
+        ...(entry.marketplaceId != null && { marketplaceId: entry.marketplaceId }),
       };
 
       // Detect drift: entry says enabled=true but not in settings
@@ -257,7 +270,10 @@ export class PluginService {
       result.push(item);
     }
 
-    // Detect drift: settings has @skillforge-imports entries not in meta
+    // Detect drift: settings has @skillforge-imports entries not in meta. We
+    // only scan the synthetic marketplace because upstream marketplaces are
+    // managed by the user/Claude and may legitimately list plugins we don't
+    // know about.
     const metaIds = new Set(meta.plugins.map((p) => p.id));
     for (const key of Object.keys(claudeSettings.enabledPlugins)) {
       if (!key.endsWith('@skillforge-imports')) continue;
@@ -327,13 +343,17 @@ export class PluginService {
   async toggle(id: PluginId, scope: Scope, enabled: boolean): Promise<void> {
     const { settings, cache } = this.deps;
 
+    // Read meta first to honor the plugin's marketplace attribution
+    const meta = await cache.readMeta(scope);
+    const entry = meta.plugins.find((p) => p.id === id);
+    const marketplaceId = entry?.marketplaceId;
+
     // Update settings
     await settings.mutate(scope, (s) =>
-      enabled ? enablePlugin(s, id) : disablePlugin(s, id),
+      enabled ? enablePlugin(s, id, marketplaceId) : disablePlugin(s, id, marketplaceId),
     );
 
     // Update meta
-    const meta = await cache.readMeta(scope);
     await cache.writeMeta(scope, {
       ...meta,
       plugins: meta.plugins.map((p) =>

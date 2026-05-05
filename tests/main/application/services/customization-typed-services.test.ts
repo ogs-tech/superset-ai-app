@@ -2,18 +2,21 @@ import { describe, it, expect, vi } from 'vitest';
 import { CustomizationService } from '../../../../src/main/application/services/customization-service.js';
 import { SkillService } from '../../../../src/main/application/services/skill-service.js';
 import { AgentService } from '../../../../src/main/application/services/agent-service.js';
+import { CommandService } from '../../../../src/main/application/services/command-service.js';
 import { ReferenceService } from '../../../../src/main/application/services/reference-service.js';
 import { GlobalInstructionService } from '../../../../src/main/application/services/global-instruction-service.js';
 import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { skillId } from '../../../../src/main/domain/skill-id.js';
 import { agentId } from '../../../../src/main/domain/agent-id.js';
+import { commandId } from '../../../../src/main/domain/command-id.js';
 import { referenceId } from '../../../../src/main/domain/reference-id.js';
 import { globalInstructionId } from '../../../../src/main/domain/global-instruction-id.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import type { Customization, CustomizationFrontmatter } from '../../../../src/shared/customization.js';
 import type { SkillFrontmatter } from '../../../../src/main/application/schemas/skill.js';
 import type { AgentFrontmatter } from '../../../../src/main/application/schemas/agent.js';
+import type { CommandFrontmatter } from '../../../../src/main/application/schemas/command.js';
 import type { ReferenceFrontmatter } from '../../../../src/main/application/schemas/reference.js';
 import type { GlobalInstructionFrontmatter } from '../../../../src/main/application/schemas/global-instruction.js';
 
@@ -36,6 +39,7 @@ const setup = () => {
     base,
     skills: new SkillService(base),
     agents: new AgentService(base),
+    commands: new CommandService(base),
     references: new ReferenceService(base),
     globalInstructions: new GlobalInstructionService(base),
   };
@@ -118,6 +122,37 @@ describe('AgentService (facade)', () => {
     });
     const got = await agents.get(agentId('reviewer'));
     expect(got.id).toBe('reviewer');
+  });
+});
+
+describe('CommandService (facade)', () => {
+  it('list filters to commands only', async () => {
+    const { commands, repo } = setup();
+    await seed(repo, {
+      id: 'command/feature-dev',
+      frontmatter: makeFm('command', 'feature-dev'),
+      body: 'c',
+    });
+    await seed(repo, { id: 'skill/foo', frontmatter: makeFm('skill', 'foo'), body: 's' });
+    const list = await commands.list();
+    expect(list).toHaveLength(1);
+    expect(list[0]!.id).toBe('feature-dev');
+  });
+
+  it('save and get round-trip', async () => {
+    const { commands } = setup();
+    await commands.save({
+      command: {
+        id: commandId('feature-dev'),
+        frontmatter: makeFm('command', 'feature-dev') as unknown as CommandFrontmatter,
+        source: { kind: 'workspace' },
+        body: 'workflow body',
+      },
+      isCreate: true,
+    });
+    const got = await commands.get(commandId('feature-dev'));
+    expect(got.id).toBe('feature-dev');
+    expect(got.body).toBe('workflow body');
   });
 });
 

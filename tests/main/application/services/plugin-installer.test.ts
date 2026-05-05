@@ -262,6 +262,69 @@ describe('PluginInstaller', () => {
     });
   });
 
+  describe('marketplace attribution', () => {
+    it('attributes plugin to upstream marketplace when marketplaceId is provided', async () => {
+      await cache.movePluginDir('nowhere', TMP_DIR);
+
+      const summary = await installer.install({
+        origin: 'imported',
+        id: ID,
+        pluginDir: PLUGIN_DIR,
+        tmpDir: TMP_DIR,
+        source: { kind: 'git', url: 'https://github.com/x/y.git' },
+        scope: SCOPE,
+        marketplaceId: 'claude-plugins-official',
+      });
+
+      // enabledPlugins keyed by upstream marketplace, not skillforge-imports
+      const s = settings.getSettings(SCOPE);
+      expect(s.enabledPlugins[`${ID}@claude-plugins-official`]).toBe(true);
+      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBeUndefined();
+
+      // No synthetic marketplace registered for upstream installs
+      expect(s.extraKnownMarketplaces['skillforge-imports']).toBeUndefined();
+
+      // marketplaceId persisted in meta + summary
+      const meta = cache.getMeta(SCOPE);
+      expect(meta?.plugins[0]?.marketplaceId).toBe('claude-plugins-official');
+      expect(summary.marketplaceId).toBe('claude-plugins-official');
+    });
+
+    it('uninstall reads marketplaceId from meta to remove the correct settings key', async () => {
+      await cache.movePluginDir('nowhere', TMP_DIR);
+      await installer.install({
+        origin: 'imported',
+        id: ID,
+        pluginDir: PLUGIN_DIR,
+        tmpDir: TMP_DIR,
+        source: { kind: 'git', url: 'https://github.com/x/y.git' },
+        scope: SCOPE,
+        marketplaceId: 'claude-plugins-official',
+      });
+
+      await installer.uninstall(ID, SCOPE);
+
+      const s = settings.getSettings(SCOPE);
+      expect(s.enabledPlugins[`${ID}@claude-plugins-official`]).toBeUndefined();
+    });
+
+    it('falls back to skillforge-imports when marketplaceId is omitted', async () => {
+      await cache.movePluginDir('nowhere', TMP_DIR);
+
+      await installer.install({
+        origin: 'imported',
+        id: ID,
+        pluginDir: PLUGIN_DIR,
+        tmpDir: TMP_DIR,
+        scope: SCOPE,
+      });
+
+      const s = settings.getSettings(SCOPE);
+      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBe(true);
+      expect(s.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+    });
+  });
+
   describe('multiple plugins', () => {
     it('preserves existing meta entries on install', async () => {
       const otherId = pluginId('other-plugin');

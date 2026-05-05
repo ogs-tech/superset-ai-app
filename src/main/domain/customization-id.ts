@@ -7,6 +7,7 @@ const ARTIFACT_TYPES: readonly CustomizationType[] = [
   'reference',
   'agent',
   'global-instruction',
+  'command',
 ];
 
 export interface ParsedCustomizationId {

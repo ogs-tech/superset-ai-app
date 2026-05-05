@@ -16,6 +16,15 @@ export class AgentIdInvalidError extends Error {
   }
 }
 
+export class CommandIdInvalidError extends Error {
+  override readonly name = 'CommandIdInvalidError';
+  readonly details: { raw?: string } | undefined;
+  constructor(message: string, details?: { raw?: string }) {
+    super(message);
+    this.details = details;
+  }
+}
+
 export class ReferenceIdInvalidError extends Error {
   override readonly name = 'ReferenceIdInvalidError';
   readonly details: { raw?: string } | undefined;
