@@ -1,19 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Chip,
   Container,
+  InputAdornment,
   Link,
   List,
   ListItem,
   ListItemText,
   Paper,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 
@@ -78,6 +81,7 @@ export function MarketplaceDetail({
   const [installStates, setInstallStates] = useState<Record<string, InstallState>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -121,21 +125,24 @@ export function MarketplaceDetail({
   };
 
   const plugins = marketplace.manifest?.plugins ?? [];
-  const isLocal =
-    marketplace.id === SKILLFORGE_LOCAL_ID || marketplace.source.kind === 'directory';
+  const isLocal = marketplace.id === SKILLFORGE_LOCAL_ID || marketplace.source.kind === 'directory';
   const label = sourceLabel(marketplace.source);
 
+  const filteredPlugins = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return plugins;
+    return plugins.filter((p) => {
+      const haystack = [p.name, p.description, p.author?.name, p.category]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [plugins, search]);
+
   return (
-    <Container
-      component="main"
-      data-testid="marketplace-detail"
-      maxWidth="md"
-      sx={{ py: 4 }}
-    >
-      <Stack
-        direction="row"
-        sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}
-      >
+    <Container component="main" data-testid="marketplace-detail" maxWidth="md" sx={{ py: 4 }}>
+      <Stack direction="row" sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Typography variant="h4" component="h1">
@@ -174,23 +181,61 @@ export function MarketplaceDetail({
         </Alert>
       )}
 
-      <Paper variant="outlined">
+      {plugins.length > 0 && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <TextField
+            size="small"
+            placeholder="Search plugins"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            slotProps={{
+              htmlInput: { 'data-testid': 'marketplace-plugin-search' },
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ flex: 1 }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {filteredPlugins.length} of {plugins.length}
+          </Typography>
+        </Stack>
+      )}
+
+      <Paper variant="outlined" sx={{ maxHeight: '52vh', overflowY: 'auto' }}>
         <List disablePadding>
           {plugins.length === 0 && (
             <ListItem>
               <ListItemText primary="No plugins listed in this marketplace." />
             </ListItem>
           )}
-          {plugins.map((plugin) => (
+          {plugins.length > 0 && filteredPlugins.length === 0 && (
+            <ListItem>
+              <ListItemText primary="No plugins match your search." />
+            </ListItem>
+          )}
+          {filteredPlugins.map((plugin) => (
             <ListItem
               key={plugin.name}
               data-testid={`marketplace-plugin-${plugin.name}`}
               divider
+              sx={{ py: 1.5, pr: 14 }}
               secondaryAction={
                 <Button
                   size="small"
                   variant={installStates[plugin.name] === 'done' ? 'outlined' : 'contained'}
-                  disabled={installStates[plugin.name] !== undefined && installStates[plugin.name] !== 'idle'}
+                  disabled={
+                    installStates[plugin.name] !== undefined &&
+                    installStates[plugin.name] !== 'idle'
+                  }
                   onClick={() => void handleInstall(plugin)}
                 >
                   {installStates[plugin.name] === 'done'

@@ -18,7 +18,7 @@ describe('<MarketplaceList>', () => {
     });
     render(<MarketplaceList />);
     expect(await screen.findByText(/No marketplaces configured yet/i)).toBeInTheDocument();
-    expect(screen.getByTestId('add-marketplace-button')).toBeInTheDocument();
+    expect(screen.getByTestId('import-marketplace-button')).toBeInTheDocument();
   });
 
   it('renders marketplace items with manifest info', async () => {
@@ -48,7 +48,7 @@ describe('<MarketplaceList>', () => {
     expect(screen.getByText(/1 plugin/)).toBeInTheDocument();
   });
 
-  it('opens add dialog when Add marketplace clicked', async () => {
+  it('opens import dialog when Import from URL clicked', async () => {
     call.mockImplementation((method: string) => {
       if (method === 'marketplace.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
@@ -56,7 +56,7 @@ describe('<MarketplaceList>', () => {
     const user = userEvent.setup();
     render(<MarketplaceList />);
     await screen.findByText(/No marketplaces/i);
-    await user.click(screen.getByTestId('add-marketplace-button'));
-    expect(screen.getByTestId('add-marketplace-dialog')).toBeInTheDocument();
+    await user.click(screen.getByTestId('import-marketplace-button'));
+    expect(screen.getByTestId('marketplace-import-dialog')).toBeInTheDocument();
   });
 });

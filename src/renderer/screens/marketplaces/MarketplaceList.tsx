@@ -19,13 +19,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
-import { AddMarketplaceDialog } from './AddMarketplaceDialog.js';
 import { MarketplaceDetail } from './MarketplaceDetail.js';
 import { MarketplaceImportDialog } from './MarketplaceImportDialog.js';
 
@@ -79,7 +77,6 @@ function sourceLabel(source: MarketplaceSource): {
 export function MarketplaceList(): React.ReactElement {
   const [items, setItems] = useState<MarketplaceSummary[]>([]);
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<MarketplaceSummary | null>(null);
   const [selected, setSelected] = useState<MarketplaceSummary | null>(null);
@@ -165,14 +162,6 @@ export function MarketplaceList(): React.ReactElement {
             data-testid="import-marketplace-button"
           >
             Import from URL
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setShowAdd(true)}
-            data-testid="add-marketplace-button"
-          >
-            Add marketplace
           </Button>
         </Stack>
       </Stack>
@@ -271,12 +260,6 @@ export function MarketplaceList(): React.ReactElement {
           );
         })}
       </List>
-
-      <AddMarketplaceDialog
-        open={showAdd}
-        onClose={() => setShowAdd(false)}
-        onAdded={() => void load()}
-      />
 
       <MarketplaceImportDialog
         open={showImport}
