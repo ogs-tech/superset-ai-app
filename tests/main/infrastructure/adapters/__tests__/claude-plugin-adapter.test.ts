@@ -118,7 +118,7 @@ describe('ClaudePluginAdapter', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/personal',
             },
           },

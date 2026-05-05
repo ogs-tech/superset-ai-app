@@ -3,7 +3,7 @@ import { z } from 'zod';
 const marketplaceSourceSchema = z
   .object({
     source: z.object({
-      source: z.literal('local'),
+      source: z.literal('directory'),
       path: z.string(),
     }),
   })

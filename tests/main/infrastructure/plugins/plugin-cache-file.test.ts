@@ -142,8 +142,10 @@ describe('PluginCacheFile', () => {
 
     // plugin.json exists and is valid JSON
     const pluginJsonRaw = await readFile(pluginJsonPath, 'utf8');
-    const pluginJson = JSON.parse(pluginJsonRaw) as unknown;
-    expect(pluginJson).toMatchObject({ id: 'my-plugin', version: '1.0.0' });
+    const pluginJson = JSON.parse(pluginJsonRaw) as Record<string, unknown>;
+    expect(pluginJson).toMatchObject({ name: 'my-plugin', version: '1.0.0' });
+    expect(pluginJson).not.toHaveProperty('id');
+    expect(pluginJson).not.toHaveProperty('artifacts');
 
     // Expected subdirectories exist
     for (const subdir of ['skills', 'agents', 'commands']) {
@@ -210,5 +212,92 @@ describe('PluginCacheFile', () => {
   it('removePluginDir does not throw if directory does not exist', async () => {
     const id = pluginId('nonexistent-plugin');
     await expect(cache.removePluginDir(scope, id)).resolves.toBeUndefined();
+  });
+
+  // marketplace.json sidecar is kept in sync with _meta.json
+  it('writeMeta writes a marketplace.json sidecar derived from meta', async () => {
+    const pluginsDir = path.join(tmpDir, scope, 'plugins');
+    const id = pluginId('frontend-design');
+    await cache.scaffoldOwnedPlugin(scope, id, {
+      ...makeManifest('frontend-design'),
+      description: 'UI/UX skill',
+    });
+
+    await cache.writeMeta(scope, {
+      version: 2 as const,
+      plugins: [
+        {
+          id: 'frontend-design',
+          origin: 'imported' as const,
+          installedAt: '2024-01-01T00:00:00Z',
+          scope: 'personal' as const,
+          enabled: true,
+        },
+      ],
+    });
+
+    const raw = await readFile(path.join(pluginsDir, '.claude-plugin', 'marketplace.json'), 'utf8');
+    expect(JSON.parse(raw)).toEqual({
+      name: 'skillforge-imports',
+      owner: { name: 'SDE-AI' },
+      description: 'Plugins managed by SDE-AI',
+      plugins: [
+        {
+          name: 'frontend-design',
+          description: 'UI/UX skill',
+          source: './frontend-design',
+        },
+      ],
+    });
+  });
+
+  it('writeMeta deletes marketplace.json when meta has no plugins', async () => {
+    const pluginsDir = path.join(tmpDir, scope, 'plugins');
+    const marketplacePath = path.join(pluginsDir, '.claude-plugin', 'marketplace.json');
+
+    // Seed: one plugin → marketplace.json exists
+    const id = pluginId('frontend-design');
+    await cache.scaffoldOwnedPlugin(scope, id, makeManifest('frontend-design'));
+    await cache.writeMeta(scope, {
+      version: 2 as const,
+      plugins: [
+        {
+          id: 'frontend-design',
+          origin: 'imported' as const,
+          installedAt: '2024-01-01T00:00:00Z',
+          scope: 'personal' as const,
+          enabled: true,
+        },
+      ],
+    });
+    await expect(access(marketplacePath)).resolves.toBeUndefined();
+
+    // Empty meta → marketplace.json removed
+    await cache.writeMeta(scope, { version: 2 as const, plugins: [] });
+    await expect(access(marketplacePath)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('writeMeta uses empty description when plugin.json is missing', async () => {
+    const pluginsDir = path.join(tmpDir, scope, 'plugins');
+
+    await cache.writeMeta(scope, {
+      version: 2 as const,
+      plugins: [
+        {
+          id: 'orphan-plugin',
+          origin: 'imported' as const,
+          installedAt: '2024-01-01T00:00:00Z',
+          scope: 'personal' as const,
+          enabled: true,
+        },
+      ],
+    });
+
+    const raw = await readFile(path.join(pluginsDir, '.claude-plugin', 'marketplace.json'), 'utf8');
+    expect(JSON.parse(raw).plugins[0]).toEqual({
+      name: 'orphan-plugin',
+      description: '',
+      source: './orphan-plugin',
+    });
   });
 });

@@ -11,13 +11,19 @@ import {
   Typography,
 } from '@mui/material';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
-import type { PluginImportRequest, PluginRefIpc } from '../../../shared/plugin-ipc-types.js';
+import type {
+  MarketplaceDetectResult,
+  MarketplaceManifestIpc,
+  PluginImportRequest,
+  PluginRefIpc,
+} from '../../../shared/plugin-ipc-types.js';
 
 interface PluginImportDialogProps {
   open: boolean;
   scope: 'personal' | 'project';
   onClose: () => void;
   onSuccess: (pluginId: string) => void;
+  onMarketplace: (marketplace: MarketplaceManifestIpc) => void;
 }
 
 export function PluginImportDialog({
@@ -25,6 +31,7 @@ export function PluginImportDialog({
   scope,
   onClose,
   onSuccess,
+  onMarketplace,
 }: PluginImportDialogProps): React.ReactElement {
   const [urlInput, setUrlInput] = useState('');
   const [refInput, setRefInput] = useState('');
@@ -39,7 +46,6 @@ export function PluginImportDialog({
   };
 
   const handleSubmit = async () => {
-    // Validate URL not empty
     if (!urlInput.trim()) {
       setError('Repository URL is required');
       return;
@@ -49,22 +55,23 @@ export function PluginImportDialog({
     setLoading(true);
 
     try {
-      // Build PluginImportRequest
+      // Detect: marketplace vs single plugin
+      const detected = await callIpc<MarketplaceDetectResult>('marketplace.detect', {
+        url: urlInput.trim(),
+      });
+
+      if (detected.kind === 'marketplace') {
+        handleClose();
+        onMarketplace(detected.manifest);
+        return;
+      }
+
+      // Single plugin import
       const request: PluginImportRequest = refInput.trim()
-        ? {
-            url: urlInput.trim(),
-            ref: { kind: 'branch', value: refInput.trim() },
-            scope,
-          }
-        : {
-            url: urlInput.trim(),
-            scope,
-          };
+        ? { url: urlInput.trim(), ref: { kind: 'branch', value: refInput.trim() }, scope }
+        : { url: urlInput.trim(), scope };
 
-      // Call IPC
       const result = await callIpc<{ id: string }>('plugin.import', request);
-
-      // On success
       onSuccess(result.id);
       handleClose();
     } catch (err) {

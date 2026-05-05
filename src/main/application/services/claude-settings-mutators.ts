@@ -22,7 +22,7 @@ export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: stri
       ...s.extraKnownMarketplaces,
       [SKILLFORGE_MARKETPLACE]: {
         source: {
-          source: 'local',
+          source: 'directory',
           path: marketplacePath,
         },
       },

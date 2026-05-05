@@ -17,7 +17,7 @@ describe('claudeSettingsSchema', () => {
       extraKnownMarketplaces: {
         'skillforge-imports': {
           source: {
-            source: 'local',
+            source: 'directory',
             path: '/Users/user/workspace/plugins',
           },
         },
@@ -32,7 +32,7 @@ describe('claudeSettingsSchema', () => {
 
     expect(result.extraKnownMarketplaces['skillforge-imports']).toEqual({
       source: {
-        source: 'local',
+        source: 'directory',
         path: '/Users/user/workspace/plugins',
       },
     });
@@ -101,7 +101,7 @@ describe('claudeSettingsSchema', () => {
       extraKnownMarketplaces: {
         'skillforge-imports': {
           source: {
-            source: 'local',
+            source: 'directory',
             path: '/Users/user/workspace/plugins',
           },
         },
@@ -119,7 +119,7 @@ describe('claudeSettingsSchema', () => {
       extraKnownMarketplaces: {
         'skillforge-imports': {
           source: {
-            source: 'local',
+            source: 'directory',
             path: '/Users/user/workspace/plugins',
           },
           unknownMarketplaceField: 'some-value',
@@ -131,7 +131,7 @@ describe('claudeSettingsSchema', () => {
 
     expect(result.extraKnownMarketplaces['skillforge-imports']).toEqual({
       source: {
-        source: 'local',
+        source: 'directory',
         path: '/Users/user/workspace/plugins',
       },
       unknownMarketplaceField: 'some-value',
@@ -143,7 +143,7 @@ describe('claudeSettingsSchema', () => {
       extraKnownMarketplaces: {
         'skillforge': {
           source: {
-            source: 'local',
+            source: 'directory',
             path: '/path/to/plugins',
           },
         },

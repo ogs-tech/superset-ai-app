@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import simpleGit from 'simple-git';
 import type { GitPort } from '../../application/ports/git-port.js';
 import type { PluginRef } from '../../domain/plugin-ref.js';
@@ -26,6 +28,22 @@ export class SimpleGitClient implements GitPort {
     }
     const sha = await this.currentSha(dest);
     return { sha };
+  }
+
+  async cloneSubdir(url: string, subdir: string, ref: string | undefined, dest: string): Promise<{ sha: string }> {
+    const tmpRepoDir = `${dest}__repo`;
+    try {
+      if (ref) {
+        await simpleGit().clone(url, tmpRepoDir, ['--branch', ref, '--depth', '1']);
+      } else {
+        await simpleGit().clone(url, tmpRepoDir, ['--depth', '1']);
+      }
+      const sha = await this.currentSha(tmpRepoDir);
+      await fs.rename(path.join(tmpRepoDir, subdir), dest);
+      return { sha };
+    } finally {
+      await fs.rm(tmpRepoDir, { recursive: true, force: true }).catch(() => {});
+    }
   }
 
   async pull(dir: string): Promise<{ sha: string }> {

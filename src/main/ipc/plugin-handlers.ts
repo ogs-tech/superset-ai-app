@@ -1,5 +1,6 @@
 import type { IpcHandlers } from './dispatcher.js';
 import type { PluginService } from '../application/services/plugin-service.js';
+import type { MarketplacePlugin } from '../domain/marketplace-manifest.js';
 import { DomainError } from '../domain/errors.js';
 import { pluginId } from '../domain/plugin-id.js';
 import { semVer } from '../domain/semver.js';
@@ -105,6 +106,19 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
       const id = pluginId(asString(raw['id'], 'id'));
       const scope = asScope(raw['scope']);
       await pluginService.deleteOwned(id, scope);
+    },
+
+    'marketplace.detect': async (params) => {
+      const raw = asObject(params, 'marketplace.detect');
+      const url = asString(raw['url'], 'url');
+      return pluginService.detect(url);
+    },
+
+    'plugin.installFromMarketplace': async (params) => {
+      const raw = asObject(params, 'plugin.installFromMarketplace');
+      const plugin = raw['plugin'] as MarketplacePlugin;
+      const scope = asScope(raw['scope']);
+      return pluginService.importFromMarketplace(plugin, scope);
     },
 
     'plugin.publish': async (params) => {

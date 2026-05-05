@@ -5,7 +5,9 @@ import {
   type PluginAuthorServiceLike,
   type PluginPublisherLike,
   type PluginManifestParserLike,
+  type MarketplaceParserLike,
 } from '../../../../src/main/application/services/plugin-service.js';
+import type { MarketplaceManifest } from '../../../../src/main/domain/marketplace-manifest.js';
 import { FakeGitPort } from '../../../../src/main/application/services/__fixtures__/fake-git-port.js';
 import { FakePluginCachePort } from '../../../../src/main/application/services/__fixtures__/fake-plugin-cache-port.js';
 import { FakeClaudeSettingsPort } from '../../../../src/main/application/services/__fixtures__/fake-claude-settings-port.js';
@@ -97,6 +99,19 @@ class FakePublisher implements PluginPublisherLike {
   }
 }
 
+class FakeMarketplaceParser implements MarketplaceParserLike {
+  private manifest: MarketplaceManifest | null = null;
+
+  seed(manifest: MarketplaceManifest): void {
+    this.manifest = manifest;
+  }
+
+  async parse(_dir: string): Promise<MarketplaceManifest> {
+    if (this.manifest == null) throw new Error('No marketplace manifest seeded');
+    return this.manifest;
+  }
+}
+
 class FakeManifestParser implements PluginManifestParserLike {
   private manifests: Map<string, PluginManifest> = new Map();
   private defaultManifest: PluginManifest | null = null;
@@ -176,6 +191,7 @@ describe('PluginService', () => {
   let author: FakeAuthorService;
   let publisher: FakePublisher;
   let parser: FakeManifestParser;
+  let marketplaceParser: FakeMarketplaceParser;
   let service: PluginService;
 
   beforeEach(() => {
@@ -186,6 +202,7 @@ describe('PluginService', () => {
     author = new FakeAuthorService();
     publisher = new FakePublisher();
     parser = new FakeManifestParser();
+    marketplaceParser = new FakeMarketplaceParser();
 
     service = new PluginService({
       installer,
@@ -195,6 +212,7 @@ describe('PluginService', () => {
       cache,
       settings,
       parser,
+      marketplaceParser,
     });
   });
 
@@ -565,6 +583,162 @@ describe('PluginService', () => {
 
       expect(author.deleted).toHaveLength(1);
       expect(author.deleted[0]).toEqual({ id: OWNED_ID, scope: SCOPE });
+    });
+  });
+
+  // ── detect ──────────────────────────────────────────────────────────────────
+
+  describe('detect', () => {
+    const MARKETPLACE_URL = 'https://github.com/anthropics/claude-plugins-official.git';
+
+    it('returns { kind: marketplace } when marketplace.json is present', async () => {
+      marketplaceParser.seed({
+        name: 'test-marketplace',
+        plugins: [
+          {
+            name: 'my-plugin',
+            description: 'A plugin',
+            author: { name: 'Author' },
+            category: 'tools',
+            source: { source: 'git-subdir', url: 'https://github.com/owner/repo.git', path: 'plugins/my-plugin', ref: 'v1.0.0', sha: 'abc123' },
+          },
+        ],
+      });
+
+      const result = await service.detect(MARKETPLACE_URL);
+
+      expect(result.kind).toBe('marketplace');
+    });
+
+    it('expands local-path string sources to git-subdir using the marketplace URL', async () => {
+      marketplaceParser.seed({
+        name: 'test-marketplace',
+        plugins: [
+          {
+            name: 'local-plugin',
+            description: 'A local plugin',
+            author: { name: 'Author' },
+            category: 'tools',
+            source: './plugins/local-plugin',
+          },
+        ],
+      });
+
+      const result = await service.detect(MARKETPLACE_URL);
+
+      expect(result.kind).toBe('marketplace');
+      if (result.kind === 'marketplace') {
+        const p = result.manifest.plugins[0];
+        expect(typeof p?.source).toBe('object');
+        const src = p?.source as { source: string; url: string; path: string };
+        expect(src.source).toBe('git-subdir');
+        expect(src.url).toBe(MARKETPLACE_URL);
+        expect(src.path).toBe('plugins/local-plugin');
+      }
+    });
+
+    it('returns { kind: plugin } when marketplace.json is not present', async () => {
+      // marketplaceParser seeded with nothing → throws → detect returns plugin
+      const result = await service.detect(GIT_URL);
+
+      expect(result.kind).toBe('plugin');
+    });
+  });
+
+  // ── importFromMarketplace ───────────────────────────────────────────────────
+
+  describe('importFromMarketplace', () => {
+    it('installs a git-subdir plugin', async () => {
+      parser.seedById(IMPORTED_ID);
+
+      const result = await service.importFromMarketplace(
+        {
+          name: 'my-imported-plugin',
+          description: 'desc',
+          author: { name: 'Author' },
+          category: 'tools',
+          source: { source: 'git-subdir', url: GIT_URL, path: 'plugins/my-imported-plugin', ref: 'v1.0.0' },
+        },
+        SCOPE,
+      );
+
+      expect(result.origin).toBe('imported');
+      expect(result.id).toBe(IMPORTED_ID);
+      expect(installer.installed).toHaveLength(1);
+    });
+
+    it('installs a url source plugin', async () => {
+      parser.seedById(IMPORTED_ID);
+
+      const result = await service.importFromMarketplace(
+        {
+          name: 'my-imported-plugin',
+          description: 'desc',
+          author: { name: 'Author' },
+          category: 'tools',
+          source: { source: 'url', url: GIT_URL, sha: 'deadbeef' },
+        },
+        SCOPE,
+      );
+
+      expect(result.origin).toBe('imported');
+      expect(result.id).toBe(IMPORTED_ID);
+    });
+
+    it('installs a github source plugin', async () => {
+      parser.seedById(IMPORTED_ID);
+
+      const result = await service.importFromMarketplace(
+        {
+          name: 'my-imported-plugin',
+          description: 'desc',
+          author: { name: 'Author' },
+          category: 'tools',
+          source: { source: 'github', repo: 'some-owner/some-plugin', commit: 'deadbeef' },
+        },
+        SCOPE,
+      );
+
+      expect(result.origin).toBe('imported');
+      expect(result.id).toBe(IMPORTED_ID);
+      const installCall = installer.installed[0];
+      expect(installCall?.source?.url).toContain('github.com/some-owner/some-plugin');
+    });
+
+    it('throws PluginCollisionError when plugin already exists', async () => {
+      parser.seedById(IMPORTED_ID);
+      cache.seedMeta('personal', {
+        version: 2,
+        plugins: [makeImportedEntry(IMPORTED_ID)],
+      });
+
+      await expect(
+        service.importFromMarketplace(
+          {
+            name: 'my-imported-plugin',
+            description: 'desc',
+            author: { name: 'Author' },
+            category: 'tools',
+            source: { source: 'git-subdir', url: GIT_URL, path: 'plugins/my-imported-plugin' },
+          },
+          SCOPE,
+        ),
+      ).rejects.toBeInstanceOf(PluginCollisionError);
+    });
+
+    it('throws on unsupported source type', async () => {
+      await expect(
+        service.importFromMarketplace(
+          {
+            name: 'weird-plugin',
+            description: 'desc',
+            author: { name: 'Author' },
+            category: 'tools',
+            source: { source: 'npm', package: '@org/plugin' },
+          },
+          SCOPE,
+        ),
+      ).rejects.toThrow('Unsupported marketplace plugin source type');
     });
   });
 

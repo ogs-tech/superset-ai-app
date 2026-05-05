@@ -32,6 +32,7 @@ import { PluginCacheFile } from './infrastructure/plugins/plugin-cache-file.js';
 import { ClaudeSettingsFile } from './infrastructure/settings/claude-settings-file.js';
 import { OctokitClient } from './infrastructure/github/octokit-client.js';
 import { PluginManifestParser } from './application/services/plugin-manifest-parser.js';
+import { MarketplaceParser } from './application/services/marketplace-parser.js';
 import { PluginInstaller } from './application/services/plugin-installer.js';
 import { PluginAuthorService } from './application/services/plugin-author-service.js';
 import { PluginPublisher } from './application/services/plugin-publisher.js';
@@ -131,6 +132,7 @@ async function wireIpc(): Promise<void> {
   });
 
   const manifestParser = new PluginManifestParser(nodeFsAdapter);
+  const marketplaceParser = new MarketplaceParser(nodeFsAdapter);
 
   const pluginInstaller = new PluginInstaller({ cache: pluginCache, settings: claudeSettingsFile });
 
@@ -159,6 +161,7 @@ async function wireIpc(): Promise<void> {
     cache: pluginCache,
     settings: claudeSettingsFile,
     parser: manifestParser,
+    marketplaceParser,
   });
 
   const handlers = buildHandlers({

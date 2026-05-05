@@ -59,6 +59,31 @@ export type PluginDetailIpc = PluginListItemIpc & {
   };
 };
 
+// Marketplace types
+export type MarketplacePluginIpc = {
+  name: string;
+  description: string;
+  author?: { name: string };
+  category?: string;
+  source: unknown;
+  homepage?: string;
+};
+
+export type MarketplaceManifestIpc = {
+  name: string;
+  description?: string;
+  plugins: MarketplacePluginIpc[];
+};
+
+export type MarketplaceDetectResult =
+  | { kind: 'marketplace'; manifest: MarketplaceManifestIpc }
+  | { kind: 'plugin' };
+
+export type PluginInstallFromMarketplaceRequest = {
+  plugin: MarketplacePluginIpc;
+  scope: 'personal' | 'project';
+};
+
 // Request types
 export type PluginImportRequest = {
   url: string;

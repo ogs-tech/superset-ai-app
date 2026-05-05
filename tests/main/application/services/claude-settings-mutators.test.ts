@@ -18,7 +18,7 @@ const settingsWithMarketplace = (marketplacePath: string): ClaudeSettings => ({
   extraKnownMarketplaces: {
     'skillforge-imports': {
       source: {
-        source: 'local',
+        source: 'directory',
         path: marketplacePath,
       },
     },
@@ -38,7 +38,7 @@ describe('claude-settings-mutators', () => {
 
       expect(result.extraKnownMarketplaces['skillforge-imports']).toEqual({
         source: {
-          source: 'local',
+          source: 'directory',
           path,
         },
       });
@@ -63,7 +63,7 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'other-marketplace': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/other/path',
             },
           },
@@ -75,7 +75,7 @@ describe('claude-settings-mutators', () => {
 
       expect(result.extraKnownMarketplaces['other-marketplace']).toEqual({
         source: {
-          source: 'local',
+          source: 'directory',
           path: '/other/path',
         },
       });
@@ -309,7 +309,7 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/plugins',
             },
           },
@@ -327,7 +327,7 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/plugins',
             },
           },
@@ -347,7 +347,7 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/plugins',
             },
           },
@@ -377,13 +377,13 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/plugins',
             },
           },
           'other-marketplace': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/other/path',
             },
           },
@@ -402,7 +402,7 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/plugins',
             },
           },
@@ -421,7 +421,7 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {
           'skillforge-imports': {
             source: {
-              source: 'local',
+              source: 'directory',
               path: '/workspace/plugins',
             },
           },

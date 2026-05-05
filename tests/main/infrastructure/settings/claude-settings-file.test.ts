@@ -45,13 +45,13 @@ describe('ClaudeSettingsFile', () => {
       await adapter.mutate('personal', (s) => ({
         ...s,
         extraKnownMarketplaces: {
-          'my-market': { source: { source: 'local', path: '/some/path' } },
+          'my-market': { source: { source: 'directory', path: '/some/path' } },
         },
       }));
 
       const result = await adapter.read('personal');
       expect(result.extraKnownMarketplaces).toEqual({
-        'my-market': { source: { source: 'local', path: '/some/path' } },
+        'my-market': { source: { source: 'directory', path: '/some/path' } },
       });
     });
 

@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { PluginId } from '../../domain/plugin-id.js';
@@ -7,6 +8,7 @@ import type { PluginRef } from '../../domain/plugin-ref.js';
 import type { SemVer } from '../../domain/semver.js';
 import { PluginCollisionError, OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
 import { normalizeGitUrl } from '../../domain/plugin-source.js';
+import type { MarketplaceManifest, MarketplacePlugin } from '../../domain/marketplace-manifest.js';
 import type { GitPort } from '../ports/git-port.js';
 import type { PluginCachePort } from '../ports/plugin-cache-port.js';
 import type { ClaudeSettingsPort } from '../ports/claude-settings-port.js';
@@ -54,6 +56,10 @@ export interface PluginManifestParserLike {
   parse(pluginDir: string): Promise<PluginManifest>;
 }
 
+export interface MarketplaceParserLike {
+  parse(dir: string): Promise<MarketplaceManifest>;
+}
+
 // ── Result types ─────────────────────────────────────────────────────────────
 
 export type PluginListItem = PluginSummary & {
@@ -80,6 +86,7 @@ export class PluginService {
       cache: PluginCachePort;
       settings: ClaudeSettingsPort;
       parser: PluginManifestParserLike;
+      marketplaceParser: MarketplaceParserLike;
     },
   ) {}
 
@@ -131,6 +138,79 @@ export class PluginService {
     });
 
     return summary;
+  }
+
+  /**
+   * Detect whether a URL points to a marketplace or a single plugin.
+   * Local-path plugins (source: "./plugins/xxx") are expanded to git-subdir
+   * entries pointing back at the marketplace URL, so they can be installed
+   * without any special-casing in importFromMarketplace.
+   */
+  async detect(url: string): Promise<
+    { kind: 'marketplace'; manifest: MarketplaceManifest } | { kind: 'plugin' }
+  > {
+    const { git, marketplaceParser } = this.deps;
+    const normalizedUrl = normalizeGitUrl(url);
+
+    const tmpDir = path.join(
+      os.tmpdir(),
+      `plugin-detect-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+
+    try {
+      await git.clone(normalizedUrl, undefined, tmpDir);
+
+      try {
+        const raw = await marketplaceParser.parse(tmpDir);
+        const manifest: MarketplaceManifest = {
+          ...raw,
+          plugins: raw.plugins.map((p) => expandLocalSource(p, normalizedUrl)),
+        };
+        return { kind: 'marketplace', manifest };
+      } catch {
+        return { kind: 'plugin' };
+      }
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  /**
+   * Install a plugin from a marketplace entry. Handles source types:
+   * git-subdir, url, github, git. Local-path sources are pre-expanded by detect().
+   */
+  async importFromMarketplace(plugin: MarketplacePlugin, scope: Scope): Promise<PluginSummary> {
+    const { git, cache, installer, parser } = this.deps;
+
+    const tmpDir = path.join(
+      os.tmpdir(),
+      `plugin-marketplace-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+
+    const cloneResult = await cloneMarketplaceSource(git, plugin.source, tmpDir);
+
+    const manifest = await parser.parse(tmpDir);
+    const id = manifest.id;
+
+    const meta = await cache.readMeta(scope);
+    const existing = meta.plugins.find((p) => p.id === id);
+    if (existing != null) {
+      throw new PluginCollisionError(
+        `Plugin '${id}' already exists (origin: ${existing.origin})`,
+        { id },
+      );
+    }
+
+    const pluginDir = cache.pluginDir(scope, id);
+    return installer.install({
+      origin: 'imported',
+      id,
+      pluginDir,
+      tmpDir,
+      source: { kind: 'git', url: cloneResult.url },
+      installedRef: { kind: 'sha', value: cloneResult.sha },
+      scope,
+    });
   }
 
   /**
@@ -365,4 +445,59 @@ export class PluginService {
   }): Promise<PluginPublishInfo> {
     return this.deps.publisher.publish(input);
   }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function expandLocalSource(
+  plugin: MarketplacePlugin,
+  marketplaceUrl: string,
+): MarketplacePlugin {
+  if (typeof plugin.source !== 'string') return plugin;
+  const localPath = plugin.source.replace(/^\.\//, '');
+  return {
+    ...plugin,
+    source: { source: 'git-subdir', url: marketplaceUrl, path: localPath },
+  };
+}
+
+async function cloneMarketplaceSource(
+  git: GitPort,
+  source: MarketplacePlugin['source'],
+  tmpDir: string,
+): Promise<{ sha: string; url: string }> {
+  if (typeof source === 'string') {
+    throw new Error(
+      `Cannot install local-path plugin without marketplace URL: '${source}'. Use marketplace.detect() first.`,
+    );
+  }
+
+  const s = source as { source?: string; url?: string; path?: string; ref?: string; sha?: string; repo?: string; commit?: string };
+
+  if (s.source === 'git-subdir') {
+    const { sha } = await git.cloneSubdir(s.url!, s.path!, s.ref, tmpDir);
+    return { sha, url: s.url! };
+  }
+
+  if (s.source === 'url' || s.source === 'git') {
+    const ref = s.sha
+      ? ({ kind: 'sha', value: s.sha } as const)
+      : s.ref
+        ? ({ kind: 'branch', value: s.ref } as const)
+        : undefined;
+    const { sha } = await git.clone(s.url!, ref, tmpDir);
+    return { sha, url: s.url! };
+  }
+
+  if (s.source === 'github') {
+    const url = `https://github.com/${s.repo!}.git`;
+    const ref = s.commit ? ({ kind: 'sha', value: s.commit } as const) : undefined;
+    const { sha } = await git.clone(url, ref, tmpDir);
+    return { sha, url };
+  }
+
+  throw new Error(
+    `Unsupported marketplace plugin source type: '${String(s.source)}'. ` +
+      `Supported types: git-subdir, url, git, github.`,
+  );
 }

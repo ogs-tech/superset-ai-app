@@ -3,6 +3,7 @@ import type { PluginRef } from '../../domain/plugin-ref.js';
 export interface GitPort {
   // imported plugins
   clone(url: string, ref: PluginRef | undefined, dest: string): Promise<{ sha: string }>;
+  cloneSubdir(url: string, subdir: string, ref: string | undefined, dest: string): Promise<{ sha: string }>;
   pull(dir: string): Promise<{ sha: string }>;
   currentSha(dir: string): Promise<string>;
   resolveRef(url: string, ref: PluginRef): Promise<string>;
