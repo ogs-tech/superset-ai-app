@@ -1,0 +1,368 @@
+import os from 'node:os';
+import path from 'node:path';
+import type { PluginId } from '../../domain/plugin-id.js';
+import type { PluginManifest } from '../../domain/plugin-manifest.js';
+import type { PluginPublishInfo } from '../../domain/plugin-publish-info.js';
+import type { PluginRef } from '../../domain/plugin-ref.js';
+import type { SemVer } from '../../domain/semver.js';
+import { PluginCollisionError, OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
+import { normalizeGitUrl } from '../../domain/plugin-source.js';
+import type { GitPort } from '../ports/git-port.js';
+import type { PluginCachePort } from '../ports/plugin-cache-port.js';
+import type { ClaudeSettingsPort } from '../ports/claude-settings-port.js';
+import type { Scope } from '../ports/scope.js';
+import type { PluginSummary } from './plugin-installer.js';
+import { enablePlugin, disablePlugin } from './claude-settings-mutators.js';
+
+// ── Structural interfaces ────────────────────────────────────────────────────
+
+export interface PluginInstallerLike {
+  install(input: {
+    origin: 'imported' | 'owned';
+    id: PluginId;
+    pluginDir: string;
+    tmpDir?: string;
+    source?: { kind: 'git'; url: string; ref?: PluginRef };
+    installedRef?: PluginRef;
+    scope: Scope;
+  }): Promise<PluginSummary>;
+  uninstall(id: PluginId, scope: Scope): Promise<void>;
+}
+
+export interface PluginAuthorServiceLike {
+  create(input: {
+    id: PluginId;
+    version: SemVer;
+    description?: string;
+    scope: Scope;
+  }): Promise<PluginSummary>;
+  delete(id: PluginId, scope: Scope): Promise<void>;
+}
+
+export interface PluginPublisherLike {
+  publish(input: {
+    id: PluginId;
+    scope: Scope;
+    repoName?: string;
+    visibility?: 'public' | 'private';
+    version: SemVer;
+    commitMessage?: string;
+  }): Promise<PluginPublishInfo>;
+}
+
+export interface PluginManifestParserLike {
+  parse(pluginDir: string): Promise<PluginManifest>;
+}
+
+// ── Result types ─────────────────────────────────────────────────────────────
+
+export type PluginListItem = PluginSummary & {
+  drift?: {
+    kind: 'not_in_settings' | 'not_in_registry' | 'symlink_missing';
+    details?: string;
+  };
+};
+
+export type PluginDetail = PluginListItem & {
+  manifest?: PluginManifest;
+  publishInfo?: PluginPublishInfo;
+};
+
+// ── PluginService ─────────────────────────────────────────────────────────────
+
+export class PluginService {
+  constructor(
+    private readonly deps: {
+      installer: PluginInstallerLike;
+      author: PluginAuthorServiceLike;
+      publisher: PluginPublisherLike;
+      git: GitPort;
+      cache: PluginCachePort;
+      settings: ClaudeSettingsPort;
+      parser: PluginManifestParserLike;
+    },
+  ) {}
+
+  /**
+   * Import a third-party plugin from a git URL.
+   */
+  async import(input: { url: string; ref?: PluginRef; scope: Scope }): Promise<PluginSummary> {
+    const { git, cache, installer, parser } = this.deps;
+    const { url, ref, scope } = input;
+
+    const normalizedUrl = normalizeGitUrl(url);
+
+    // 1. Clone to a temp dir
+    const tmpDir = path.join(
+      os.tmpdir(),
+      `plugin-import-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+
+    const { sha } = await git.clone(normalizedUrl, ref, tmpDir);
+
+    // 2. Parse manifest to get the id
+    const manifest = await parser.parse(tmpDir);
+    const id = manifest.id;
+
+    // 3. Check for collision in meta
+    const meta = await cache.readMeta(scope);
+    const existing = meta.plugins.find((p) => p.id === id);
+    if (existing != null) {
+      throw new PluginCollisionError(
+        `Plugin '${id}' already exists (origin: ${existing.origin})`,
+        { id },
+      );
+    }
+
+    // 4. Install (moves tmpDir to final dir, registers in settings + meta)
+    const pluginDir = cache.pluginDir(scope, id);
+    const source: { kind: 'git'; url: string; ref?: PluginRef } = { kind: 'git', url: normalizedUrl };
+    if (ref != null) {
+      source.ref = ref;
+    }
+    const summary = await installer.install({
+      origin: 'imported',
+      id,
+      pluginDir,
+      tmpDir,
+      source,
+      installedRef: { kind: 'sha', value: sha },
+      scope,
+    });
+
+    return summary;
+  }
+
+  /**
+   * List all plugins (imported + owned) with drift detection.
+   * SPEC §6.9
+   */
+  async list(scope: Scope): Promise<PluginListItem[]> {
+    const { cache, settings } = this.deps;
+
+    const meta = await cache.readMeta(scope);
+    const claudeSettings = await settings.read(scope);
+
+    const result: PluginListItem[] = [];
+
+    // Entries from meta
+    for (const entry of meta.plugins) {
+      const pluginKey = `${entry.id}@skillforge-imports`;
+      const inSettings = claudeSettings.enabledPlugins[pluginKey] === true;
+
+      // Build source carefully to satisfy exactOptionalPropertyTypes
+      let entrySource: { kind: 'git'; url: string; ref?: PluginRef } | undefined;
+      if (entry.source != null) {
+        entrySource = { kind: 'git', url: entry.source.url };
+        if (entry.source.ref != null) {
+          entrySource.ref = entry.source.ref as PluginRef;
+        }
+      }
+
+      const item: PluginListItem = {
+        id: entry.id as PluginId,
+        origin: entry.origin,
+        scope: entry.scope,
+        enabled: entry.enabled,
+        installedAt: entry.installedAt,
+        ...(entrySource != null && { source: entrySource }),
+        ...(entry.installedRef != null && { installedRef: entry.installedRef as PluginRef }),
+      };
+
+      // Detect drift: entry says enabled=true but not in settings
+      if (entry.enabled && !inSettings) {
+        item.drift = { kind: 'not_in_settings' };
+      }
+
+      result.push(item);
+    }
+
+    // Detect drift: settings has @skillforge-imports entries not in meta
+    const metaIds = new Set(meta.plugins.map((p) => p.id));
+    for (const key of Object.keys(claudeSettings.enabledPlugins)) {
+      if (!key.endsWith('@skillforge-imports')) continue;
+      if (claudeSettings.enabledPlugins[key] !== true) continue;
+
+      const idFromKey = key.slice(0, key.lastIndexOf('@skillforge-imports'));
+      if (!metaIds.has(idFromKey)) {
+        result.push({
+          id: idFromKey as PluginId,
+          // We don't know the real origin, use 'imported' as default
+          origin: 'imported',
+          scope,
+          enabled: true,
+          installedAt: '',
+          drift: { kind: 'not_in_registry' },
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Get details for one plugin.
+   */
+  async get(id: PluginId, scope: Scope): Promise<PluginDetail> {
+    const { cache, parser } = this.deps;
+
+    const listItems = await this.list(scope);
+    const item = listItems.find((p) => p.id === id);
+
+    if (item == null) {
+      throw new Error(`Plugin '${id}' not found in ${scope} scope`);
+    }
+
+    const detail: PluginDetail = { ...item };
+
+    // Try to read manifest from disk
+    try {
+      const pluginDir = cache.pluginDir(scope, id);
+      detail.manifest = await parser.parse(pluginDir);
+    } catch {
+      // Manifest not available (drift case, etc.) — leave undefined
+    }
+
+    // Attach publish info from meta if available
+    const meta = await cache.readMeta(scope);
+    const entry = meta.plugins.find((p) => p.id === id);
+    if (entry?.publish != null) {
+      detail.publishInfo = entry.publish as PluginPublishInfo;
+    }
+
+    return detail;
+  }
+
+  /**
+   * Remove a plugin (both imported and owned origins).
+   */
+  async remove(id: PluginId, scope: Scope): Promise<void> {
+    const { installer } = this.deps;
+    await installer.uninstall(id, scope);
+  }
+
+  /**
+   * Toggle a plugin enabled/disabled.
+   */
+  async toggle(id: PluginId, scope: Scope, enabled: boolean): Promise<void> {
+    const { settings, cache } = this.deps;
+
+    // Update settings
+    await settings.mutate(scope, (s) =>
+      enabled ? enablePlugin(s, id) : disablePlugin(s, id),
+    );
+
+    // Update meta
+    const meta = await cache.readMeta(scope);
+    await cache.writeMeta(scope, {
+      ...meta,
+      plugins: meta.plugins.map((p) =>
+        p.id === id ? { ...p, enabled } : p,
+      ),
+    });
+  }
+
+  /**
+   * Update an imported plugin (pull latest on branch).
+   * SPEC §6.6
+   */
+  async update(id: PluginId, scope: Scope): Promise<PluginSummary> {
+    const { cache, git, parser } = this.deps;
+
+    // 1. Read meta, find entry
+    const meta = await cache.readMeta(scope);
+    const entry = meta.plugins.find((p) => p.id === id);
+
+    if (entry == null) {
+      throw new Error(`Plugin '${id}' not found in ${scope} scope`);
+    }
+
+    // 2. Only imported plugins can be updated
+    if (entry.origin !== 'imported') {
+      throw new OperationNotAllowedForOriginError(
+        `Cannot update plugin with origin '${entry.origin}'; only 'imported' plugins can be updated`,
+        { origin: entry.origin, operation: 'update' },
+      );
+    }
+
+    // 3. Must be pinned to a branch
+    if (entry.installedRef == null || entry.installedRef.kind !== 'branch') {
+      throw new Error(
+        `Can only update plugins pinned to a branch (plugin '${id}' is pinned to ${entry.installedRef?.kind ?? 'nothing'})`,
+      );
+    }
+
+    const pluginDir = cache.pluginDir(scope, id);
+
+    // 4. Pull latest
+    const { sha: newSha } = await git.pull(pluginDir);
+
+    // 5. Parse manifest (sanity check)
+    await parser.parse(pluginDir);
+
+    // 6. Update meta
+    const updatedAt = new Date().toISOString();
+    const updatedEntry = {
+      ...entry,
+      installedRef: { kind: 'sha' as const, value: newSha },
+      installedAt: updatedAt,
+    };
+
+    await cache.writeMeta(scope, {
+      ...meta,
+      plugins: meta.plugins.map((p) => (p.id === id ? updatedEntry : p)),
+    });
+
+    // Build source for return value, satisfying exactOptionalPropertyTypes
+    let returnSource: { kind: 'git'; url: string; ref?: PluginRef } | undefined;
+    if (updatedEntry.source != null) {
+      returnSource = { kind: 'git', url: updatedEntry.source.url };
+      if (updatedEntry.source.ref != null) {
+        returnSource.ref = updatedEntry.source.ref as PluginRef;
+      }
+    }
+
+    return {
+      id: updatedEntry.id as PluginId,
+      origin: updatedEntry.origin,
+      scope: updatedEntry.scope,
+      enabled: updatedEntry.enabled,
+      installedAt: updatedEntry.installedAt,
+      ...(returnSource != null && { source: returnSource }),
+      installedRef: updatedEntry.installedRef as PluginRef,
+    };
+  }
+
+  /**
+   * Create an owned plugin.
+   */
+  async createOwned(input: {
+    id: PluginId;
+    version: SemVer;
+    description?: string;
+    scope: Scope;
+  }): Promise<PluginSummary> {
+    return this.deps.author.create(input);
+  }
+
+  /**
+   * Delete an owned plugin.
+   */
+  async deleteOwned(id: PluginId, scope: Scope): Promise<void> {
+    return this.deps.author.delete(id, scope);
+  }
+
+  /**
+   * Publish an owned plugin to GitHub.
+   */
+  async publish(input: {
+    id: PluginId;
+    scope: Scope;
+    repoName?: string;
+    visibility?: 'public' | 'private';
+    version: SemVer;
+    commitMessage?: string;
+  }): Promise<PluginPublishInfo> {
+    return this.deps.publisher.publish(input);
+  }
+}

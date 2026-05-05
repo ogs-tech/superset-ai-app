@@ -25,6 +25,17 @@ import { CopilotInstructionsGen } from './application/services/copilot-instructi
 import { SchemaValidator } from './application/services/schema-validator.js';
 import { SearchService } from './application/services/search-service.js';
 import type { Adapter } from './application/ports/adapter.js';
+import type { CredentialStorePort } from './application/ports/credential-store-port.js';
+import { SafeStorageCredentials } from './infrastructure/credentials/safe-storage-credentials.js';
+import { SimpleGitClient } from './infrastructure/git/simple-git-client.js';
+import { PluginCacheFile } from './infrastructure/plugins/plugin-cache-file.js';
+import { ClaudeSettingsFile } from './infrastructure/settings/claude-settings-file.js';
+import { OctokitClient } from './infrastructure/github/octokit-client.js';
+import { PluginManifestParser } from './application/services/plugin-manifest-parser.js';
+import { PluginInstaller } from './application/services/plugin-installer.js';
+import { PluginAuthorService } from './application/services/plugin-author-service.js';
+import { PluginPublisher } from './application/services/plugin-publisher.js';
+import { PluginService } from './application/services/plugin-service.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -91,6 +102,65 @@ async function wireIpc(): Promise<void> {
   const templateRepo = new FsTemplateRepository(workspacePath);
   const templateService = new TemplateService(templateRepo, clock, schemaValidator);
 
+  const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));
+
+  // T10.1: wire full PluginService
+  const gitClient = new SimpleGitClient();
+
+  const pluginsWorkspaceDir = join(workspacePath, 'plugins');
+  const pluginCache = new PluginCacheFile({
+    pluginsDir: (scope) =>
+      scope === 'personal'
+        ? pluginsWorkspaceDir
+        : join(process.cwd(), '.sde-ai-app', 'plugins'),
+    cacheDir: (scope) =>
+      scope === 'personal'
+        ? join(homedir(), '.claude', 'plugins', 'cache', 'skillforge-imports')
+        : join(process.cwd(), '.claude', 'plugins', 'cache', 'skillforge-imports'),
+  });
+
+  const claudeSettingsFile = new ClaudeSettingsFile({
+    settingsPath: (scope) =>
+      scope === 'personal'
+        ? join(homedir(), '.claude', 'settings.json')
+        : join(process.cwd(), '.claude', 'settings.json'),
+    symlinkPath: (scope, id) =>
+      scope === 'personal'
+        ? join(homedir(), '.claude', 'plugins', 'cache', 'skillforge-imports', id)
+        : join(process.cwd(), '.claude', 'plugins', 'cache', 'skillforge-imports', id),
+  });
+
+  const manifestParser = new PluginManifestParser(nodeFsAdapter);
+
+  const pluginInstaller = new PluginInstaller({ cache: pluginCache, settings: claudeSettingsFile });
+
+  const pluginAuthor = new PluginAuthorService({
+    cache: pluginCache,
+    installer: pluginInstaller,
+    parser: manifestParser,
+  });
+
+  const octokitClient = new OctokitClient(async () => credentialStore.get('github.pat'));
+
+  const pluginPublisher = new PluginPublisher({
+    cache: pluginCache,
+    git: gitClient,
+    githubApi: octokitClient,
+    credentials: credentialStore,
+    parser: manifestParser,
+    clock,
+  });
+
+  const pluginService = new PluginService({
+    installer: pluginInstaller,
+    author: pluginAuthor,
+    publisher: pluginPublisher,
+    git: gitClient,
+    cache: pluginCache,
+    settings: claudeSettingsFile,
+    parser: manifestParser,
+  });
+
   const handlers = buildHandlers({
     settingsService,
     repoService,
@@ -99,6 +169,8 @@ async function wireIpc(): Promise<void> {
     adapterManager,
     searchService,
     dialogPort,
+    pluginService,
+    credentialStore,
   });
   const dispatch = createDispatcher(handlers);
 

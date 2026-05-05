@@ -31,6 +31,8 @@ type IpcErrorKind =
   | 'not_found'
   | 'external_api'
   | 'unauthorized'
+  | 'auth'
+  | 'conflict'
   | 'internal';
 ```
 
@@ -158,6 +160,71 @@ interface RemoveAdapterResult {
   errors: { destination: string; kind: string; message: string }[];
 }
 ```
+
+### `plugin`
+
+| Method | Params | Result |
+|---|---|---|
+| `plugin.import` | `{ url: string; ref?: string; scope?: string }` | `PluginSummary` |
+| `plugin.list` | `{ scope?: string }` | `PluginListItem[]` |
+| `plugin.get` | `{ id: string; scope?: string }` | `PluginDetail` |
+| `plugin.update` | `{ id: string; scope?: string }` | `PluginSummary` |
+| `plugin.remove` | `{ id: string; scope?: string }` | `void` |
+| `plugin.toggle` | `{ id: string; scope?: string; enabled: boolean }` | `PluginSummary` |
+| `plugin.createOwned` | `{ id: string; version: string; description?: string; scope?: string }` | `PluginSummary` |
+| `plugin.deleteOwned` | `{ id: string; scope?: string }` | `void` |
+| `plugin.publish` | `{ id: string; scope?: string; repoName?: string; visibility?: 'public' \| 'private'; version: string; commitMessage?: string }` | `PluginPublishInfo` |
+
+**Plugin types:**
+
+```ts
+interface PluginListItem {
+  id: string;
+  name: string;
+  version: string;
+  source: 'imported' | 'owned';
+  enabled: boolean;
+}
+
+interface PluginDetail extends PluginListItem {
+  description?: string;
+  author?: string;
+  publishedTo?: Array<{ registry: string; url: string; version: string; publishedAt: string }>;
+}
+
+interface PluginSummary {
+  id: string;
+  version: string;
+  enabled: boolean;
+}
+
+interface PluginPublishInfo {
+  id: string;
+  version: string;
+  registryUrl: string;
+  releaseUrl: string;
+  publishedAt: string;
+}
+```
+
+**Error conditions:**
+
+- `plugin.import` — `{ kind: 'validation' }` if `url` is empty or invalid; `{ kind: 'external_api' }` if the remote registry is unreachable; `{ kind: 'conflict' }` if a plugin with that `id` already exists.
+- `plugin.publish` — `{ kind: 'auth', message: 'PublishAuthMissing' }` if no GitHub PAT is configured; `{ kind: 'conflict' }` if the version already exists or local/remote branches diverge.
+
+### `credentials`
+
+| Method | Params | Result |
+|---|---|---|
+| `credentials.setGithubToken` | `{ token: string }` | `void` |
+| `credentials.clearGithubToken` | — | `void` |
+| `credentials.hasGithubToken` | — | `{ hasToken: boolean }` |
+
+**Credential storage:**
+
+- `setGithubToken` — encrypts the PAT using Electron's `safeStorage` and persists it; the token is **never** returned by any method.
+- `clearGithubToken` — erases the stored credential.
+- `hasGithubToken` — returns only a boolean; never returns the token itself.
 
 ## Validation rules (handler side)
 

@@ -14,4 +14,5 @@ export interface FileSystemPort {
   copyFile(src: string, dest: string): Promise<void>;
   readdir(path: string): Promise<string[]>;
   pathExists(path: string): Promise<boolean>;
+  readFile(path: string): Promise<string>;
 }

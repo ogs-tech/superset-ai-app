@@ -72,6 +72,7 @@ const singularLabel = (tab: CustomizationType): string => {
 interface CustomizationListProps {
   onClose?: () => void;
   searchResults?: SearchOutput | undefined;
+  root?: string;
 }
 
 type Editor =
@@ -82,7 +83,7 @@ type Editor =
   | { kind: 'template-create'; template: Template }
   | { kind: 'template-edit'; template: Template };
 
-export function CustomizationList({ onClose, searchResults }: CustomizationListProps = {}): React.ReactElement {
+export function CustomizationList({ onClose, searchResults, root }: CustomizationListProps = {}): React.ReactElement {
   const [activeTab, setActiveTab] = useState<TabKey>('skill');
   const [items, setItems] = useState<Customization[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -94,7 +95,7 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
 
   const loadList = async (type: CustomizationType): Promise<void> => {
     try {
-      const list = await callIpc<Customization[]>('customization.list', { type });
+      const list = await callIpc<Customization[]>('customization.list', { type, ...(root ? { root } : {}) });
       setItems(list);
     } catch (err) {
       const message = err instanceof IpcCallError ? err.message : String(err);
@@ -163,6 +164,7 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
       await callIpc('customization.delete', {
         id: confirmDelete.id,
         removeSymlinks: true,
+        ...(root ? { root } : {}),
       });
       setItems((prev) => prev.filter((a) => a.id !== confirmDelete.id));
       setToast({
@@ -216,6 +218,7 @@ export function CustomizationList({ onClose, searchResults }: CustomizationListP
         isCreate={editor.kind === 'new' || editor.kind === 'create'}
         onSaved={handleSaved}
         onCancel={() => setEditor({ kind: 'closed' })}
+        {...(root ? { root } : {})}
       />
     );
   }

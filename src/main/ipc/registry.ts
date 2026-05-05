@@ -7,12 +7,17 @@ import type { TemplateService } from '../application/services/template-service.j
 import type { AdapterManager } from '../application/services/adapter-manager.js';
 import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
+import type { PluginService } from '../application/services/plugin-service.js';
+import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
 import type { CustomizationListParams } from '../../shared/ipc-contract.js';
 import type { Customization, CustomizationType } from '../../shared/customization.js';
 import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
+import { buildPluginHandlers } from './plugin-handlers.js';
+import { buildCredentialsHandlers } from './credentials-handlers.js';
+import type { WorkspaceRoot } from '../application/services/customization-service.js';
 
 export interface IpcDeps {
   settingsService: SettingsService;
@@ -22,6 +27,8 @@ export interface IpcDeps {
   adapterManager: AdapterManager;
   searchService: SearchService;
   dialogPort: DialogPort;
+  pluginService: PluginService;
+  credentialStore: CredentialStorePort;
 }
 
 const ARTIFACT_TYPES: readonly CustomizationType[] = [
@@ -106,6 +113,21 @@ const asObject = (value: unknown, label: string): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
+const parseRoot = (raw: Record<string, unknown>): WorkspaceRoot | undefined => {
+  const root = raw['root'];
+  if (root === undefined || root === null) return undefined;
+  if (typeof root !== 'string') {
+    throw new DomainError('validation', "Invalid 'root' (must be 'customizations' or 'plugin:<id>')");
+  }
+  if (root === 'customizations') return { kind: 'customizations' };
+  if (root.startsWith('plugin:')) {
+    const pluginId = root.slice('plugin:'.length);
+    if (!pluginId) throw new DomainError('validation', "Invalid 'root': plugin id cannot be empty");
+    return { kind: 'plugin', pluginId };
+  }
+  throw new DomainError('validation', `Invalid 'root' value: ${root}`);
+};
+
 export function buildHandlers(deps: IpcDeps): IpcHandlers {
   const {
     settingsService,
@@ -115,6 +137,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     adapterManager,
     searchService,
     dialogPort,
+    pluginService,
+    credentialStore,
   } = deps;
 
   return {
@@ -201,29 +225,38 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       if (raw['type'] !== undefined) {
         query.type = asCustomizationType(raw['type'], 'type');
       }
-      return customizationService.list(query);
+      const root = parseRoot(raw);
+      return customizationService.list(query, root);
     },
 
     'customization.get': async (params) => {
       const raw = asObject(params, 'customization.get');
-      return customizationService.get({ id: asString(raw['id'], 'id') });
+      const root = parseRoot(raw);
+      return customizationService.get({
+        id: asString(raw['id'], 'id'),
+        ...(root !== undefined ? { root } : {}),
+      });
     },
 
     'customization.save': async (params) => {
       const raw = asObject(params, 'customization.save');
       const customization = asCustomization(raw['customization']);
       const isCreate = raw['isCreate'];
+      const root = parseRoot(raw);
       return customizationService.save({
         customization,
         ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
+        ...(root !== undefined ? { root } : {}),
       });
     },
 
     'customization.delete': async (params) => {
       const raw = asObject(params, 'customization.delete');
+      const root = parseRoot(raw);
       return customizationService.delete({
         id: asString(raw['id'], 'id'),
         removeSymlinks: asBoolean(raw['removeSymlinks'], 'removeSymlinks'),
+        ...(root !== undefined ? { root } : {}),
       });
     },
 
@@ -316,5 +349,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       }
       return searchService.search(query, options);
     },
+
+    ...buildPluginHandlers(pluginService),
+    ...buildCredentialsHandlers(credentialStore),
   };
 }
