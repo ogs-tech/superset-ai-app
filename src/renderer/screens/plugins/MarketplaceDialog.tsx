@@ -177,7 +177,7 @@ export function MarketplaceDialog({
                       <ListItemText
                         primary={
                           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', pr: 12 }}>
-                            <Typography variant="body2" fontWeight="medium">
+                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                               {plugin.name}
                             </Typography>
                             {plugin.category && <Chip label={plugin.category} size="small" variant="outlined" />}

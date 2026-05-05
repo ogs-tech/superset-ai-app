@@ -37,6 +37,13 @@ import { PluginInstaller } from './application/services/plugin-installer.js';
 import { PluginAuthorService } from './application/services/plugin-author-service.js';
 import { PluginPublisher } from './application/services/plugin-publisher.js';
 import { PluginService } from './application/services/plugin-service.js';
+import { PluginProvenanceService } from './application/services/plugin-provenance.js';
+import { SkillService } from './application/services/skill-service.js';
+import { AgentService } from './application/services/agent-service.js';
+import { ReferenceService } from './application/services/reference-service.js';
+import { GlobalInstructionService } from './application/services/global-instruction-service.js';
+import { MarketplaceService } from './application/services/marketplace-service.js';
+import { SettingsMarketplaceRepository } from './infrastructure/marketplace/settings-marketplace-repository.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -164,6 +171,27 @@ async function wireIpc(): Promise<void> {
     marketplaceParser,
   });
 
+  const pluginProvenance = new PluginProvenanceService({
+    cache: pluginCache,
+    fs: nodeFsAdapter,
+  });
+  const skillService = new SkillService(customizationService, {
+    provenance: pluginProvenance,
+    cache: pluginCache,
+    fs: nodeFsAdapter,
+  });
+  const agentService = new AgentService(customizationService, {
+    provenance: pluginProvenance,
+    cache: pluginCache,
+    fs: nodeFsAdapter,
+  });
+  const referenceService = new ReferenceService(customizationService);
+  const globalInstructionService = new GlobalInstructionService(customizationService);
+  const marketplaceService = new MarketplaceService({
+    repository: new SettingsMarketplaceRepository(claudeSettingsFile),
+    parser: marketplaceParser,
+  });
+
   const handlers = buildHandlers({
     settingsService,
     repoService,
@@ -174,6 +202,11 @@ async function wireIpc(): Promise<void> {
     dialogPort,
     pluginService,
     credentialStore,
+    skillService,
+    agentService,
+    referenceService,
+    globalInstructionService,
+    marketplaceService,
   });
   const dispatch = createDispatcher(handlers);
 

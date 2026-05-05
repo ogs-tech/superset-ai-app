@@ -174,14 +174,13 @@ describe('pluginManifestSchema', () => {
       }
     });
 
-    it('should fail with missing version', () => {
+    it('should default missing version to 0.0.0', () => {
       const input = { id: 'my-plugin' };
       const result = pluginManifestSchema.safeParse(input);
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        const issue = result.error.issues[0];
-        expect(issue?.code).toBe('invalid_type');
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.version).toBe('0.0.0');
       }
     });
 

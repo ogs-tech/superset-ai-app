@@ -58,6 +58,12 @@ No additional fields or constraints. `type` must be the literal `skill`.
 
 No additional fields or constraints. `type` must be the literal `reference`.
 
+> **App-only:** Claude Code has no native concept of "references". The Claude adapter
+> deliberately returns no destinations for `reference` (see `claude-adapter.ts`). They
+> live in the workspace and are aggregated into `copilot-instructions.md` by
+> `CopilotInstructionsGen`. The viewer surfaces a banner stating that references are
+> not synchronized to Claude.
+
 ### `agent`
 
 No additional fields or constraints. `type` must be the literal `agent`.

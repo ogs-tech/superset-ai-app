@@ -14,6 +14,11 @@ import type { Template, TemplateFrontmatter } from '../../../src/shared/template
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import type { SearchService } from '../../../src/main/application/services/search-service.js';
 import type { PluginService } from '../../../src/main/application/services/plugin-service.js';
+import type { SkillService } from '../../../src/main/application/services/skill-service.js';
+import type { AgentService } from '../../../src/main/application/services/agent-service.js';
+import type { ReferenceService } from '../../../src/main/application/services/reference-service.js';
+import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
+import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
@@ -38,6 +43,11 @@ interface Deps {
   dialogPort: DialogPort;
   pluginService: PluginService;
   credentialStore: CredentialStorePort;
+  skillService: SkillService;
+  agentService: AgentService;
+  referenceService: ReferenceService;
+  globalInstructionService: GlobalInstructionService;
+  marketplaceService: MarketplaceService;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
@@ -133,6 +143,11 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   };
 
   const pluginService = null as unknown as PluginService;
+  const skillService = null as unknown as SkillService;
+  const agentService = null as unknown as AgentService;
+  const referenceService = null as unknown as ReferenceService;
+  const globalInstructionService = null as unknown as GlobalInstructionService;
+  const marketplaceService = null as unknown as MarketplaceService;
   const credentialStore: CredentialStorePort = {
     get: vi.fn().mockResolvedValue(null),
     set: vi.fn().mockResolvedValue(undefined),
@@ -150,6 +165,11 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     dialogPort,
     pluginService,
     credentialStore,
+    skillService,
+    agentService,
+    referenceService,
+    globalInstructionService,
+    marketplaceService,
     settingsRepoSpy,
     repoReaderSpy,
     dialogSpy,

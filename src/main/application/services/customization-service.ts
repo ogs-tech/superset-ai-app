@@ -40,6 +40,15 @@ export interface DeleteCustomizationResult {
   syncReport?: SyncResult[];
 }
 
+/**
+ * @deprecated Internal coordination service that backs `customization.*` IPC and
+ * the per-entity facades (SkillService, AgentService, ReferenceService,
+ * GlobalInstructionService). Not exposed directly to renderers anymore.
+ *
+ * Future PRs should split this into a `customization-core` helper and let the
+ * typed services own the lifecycle. Until then, treat this class as a private
+ * implementation detail of those facades.
+ */
 export class CustomizationService {
   constructor(
     private readonly repository: CustomizationRepository,

@@ -8,6 +8,11 @@ import type { AdapterManager } from '../application/services/adapter-manager.js'
 import type { SearchService, SearchOptions } from '../application/services/search-service.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
 import type { PluginService } from '../application/services/plugin-service.js';
+import type { SkillService } from '../application/services/skill-service.js';
+import type { AgentService } from '../application/services/agent-service.js';
+import type { ReferenceService } from '../application/services/reference-service.js';
+import type { GlobalInstructionService } from '../application/services/global-instruction-service.js';
+import type { MarketplaceService } from '../application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
@@ -17,6 +22,11 @@ import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
 import { buildPluginHandlers } from './plugin-handlers.js';
 import { buildCredentialsHandlers } from './credentials-handlers.js';
+import { buildSkillHandlers } from './skill-handlers.js';
+import { buildAgentHandlers } from './agent-handlers.js';
+import { buildReferenceHandlers } from './reference-handlers.js';
+import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
+import { buildMarketplaceHandlers } from './marketplace-handlers.js';
 import type { WorkspaceRoot } from '../application/services/customization-service.js';
 
 export interface IpcDeps {
@@ -29,6 +39,11 @@ export interface IpcDeps {
   dialogPort: DialogPort;
   pluginService: PluginService;
   credentialStore: CredentialStorePort;
+  skillService: SkillService;
+  agentService: AgentService;
+  referenceService: ReferenceService;
+  globalInstructionService: GlobalInstructionService;
+  marketplaceService: MarketplaceService;
 }
 
 const ARTIFACT_TYPES: readonly CustomizationType[] = [
@@ -139,6 +154,11 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     dialogPort,
     pluginService,
     credentialStore,
+    skillService,
+    agentService,
+    referenceService,
+    globalInstructionService,
+    marketplaceService,
   } = deps;
 
   return {
@@ -218,6 +238,9 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return dialogPort.selectFolder(dialogParams);
     },
 
+    // @deprecated The customization.* namespace is preserved for the legacy
+    // CustomizationList screen (used by PluginEditor) and TopbarSearch results.
+    // Prefer skill.*, agent.*, reference.*, global-instruction.* for new code.
     'customization.list': async (params) => {
       const raw =
         params === undefined || params === null ? {} : asObject(params, 'customization.list');
@@ -352,5 +375,10 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
 
     ...buildPluginHandlers(pluginService),
     ...buildCredentialsHandlers(credentialStore),
+    ...buildSkillHandlers(skillService),
+    ...buildAgentHandlers(agentService),
+    ...buildReferenceHandlers(referenceService),
+    ...buildGlobalInstructionHandlers(globalInstructionService),
+    ...buildMarketplaceHandlers(marketplaceService),
   };
 }

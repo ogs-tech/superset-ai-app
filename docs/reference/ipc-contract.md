@@ -114,17 +114,73 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 |---|---|---|
 | `dialog.selectFolder` | `{ defaultPath?: string }` (or `null`) | `{ canceled: boolean; path?: string }` |
 
-### `customization`
+### `skill`
 
 | Method | Params | Result |
 |---|---|---|
-| `customization.list` | `{ type?: CustomizationType }` (or none) | `Customization[]` |
-| `customization.get` | `{ id: string }` | `Customization` |
-| `customization.save` | `{ customization: Customization; isCreate?: boolean }` | `{ customization: Customization; syncReport: SyncResult[] }` |
-| `customization.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+| `skill.list` | `{ scope?: 'personal' \| 'project' }` | `Skill[]` (workspace + plugin-provided, with `source` field) |
+| `skill.get` | `{ id: string }` | `Skill` |
+| `skill.save` | `{ skill: Skill; isCreate?: boolean }` | `{ skill: Skill; syncReport: SyncResult[] }` |
+| `skill.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+
+Saving or deleting a plugin-provided skill (`source.kind === 'plugin'`) raises `OperationNotAllowedForOriginError` (`kind: 'internal'` unless mapped). See [`src/main/application/schemas/skill.ts`](../../src/main/application/schemas/skill.ts).
+
+### `agent`
+
+| Method | Params | Result |
+|---|---|---|
+| `agent.list` | `{ scope?: 'personal' \| 'project' }` | `Agent[]` (workspace + plugin-provided) |
+| `agent.get` | `{ id: string }` | `Agent` |
+| `agent.save` | `{ agent: Agent; isCreate?: boolean }` | `{ agent: Agent; syncReport: SyncResult[] }` |
+| `agent.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+
+Same plugin-source guard as `skill.*`.
+
+### `reference`
+
+| Method | Params | Result |
+|---|---|---|
+| `reference.list` | `{ scope?: 'personal' \| 'project' }` | `Reference[]` |
+| `reference.get` | `{ id: string }` | `Reference` |
+| `reference.save` | `{ reference: Reference; isCreate?: boolean }` | `{ reference: Reference; syncReport: SyncResult[] }` |
+| `reference.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+
+References are app-only — never synced to Claude (see `claude-adapter.ts`).
+
+### `global-instruction`
+
+| Method | Params | Result |
+|---|---|---|
+| `global-instruction.get` | `{ id: 'default' }` | `GlobalInstruction` |
+| `global-instruction.save` | `{ globalInstruction: GlobalInstruction; isCreate?: boolean }` | `{ globalInstruction: GlobalInstruction; syncReport: SyncResult[] }` |
+
+The id is fixed to `'default'`; only one instance per machine.
+
+### `marketplace`
+
+| Method | Params | Result |
+|---|---|---|
+| `marketplace.list` | `{ scope: 'personal' \| 'project' }` | `MarketplaceSummary[]` (record + parsed manifest if available) |
+| `marketplace.get` | `{ scope; id }` | `MarketplaceSummary \| null` |
+| `marketplace.add` | `{ scope; id; source: { path: string } }` | `void` (persists to `extraKnownMarketplaces`) |
+| `marketplace.remove` | `{ scope; id }` | `void` |
+| `marketplace.refresh` | `{ scope; id }` | `MarketplaceSummary \| null` (re-parses manifest from disk) |
+
+Existing `marketplace.detect` and `plugin.installFromMarketplace` (in the `plugin` namespace) handle URL detection and plugin installation from a marketplace entry.
+
+### `customization` *(deprecated)*
+
+Retained for the legacy `CustomizationList` screen used by `PluginEditor` and for cross-type search results.
+
+| Method | Params | Result |
+|---|---|---|
+| `customization.list` | `{ type?: CustomizationType; root?: 'customizations' \| 'plugin:<id>' }` | `Customization[]` |
+| `customization.get` | `{ id: string; root? }` | `Customization` |
+| `customization.save` | `{ customization: Customization; isCreate?: boolean; root? }` | `{ customization: Customization; syncReport: SyncResult[] }` |
+| `customization.delete` | `{ id: string; removeSymlinks: boolean; root? }` | `{ ok: true }` |
 | `customization.search` | `{ query: string; options?: SearchOptions }` | `SearchOutput` |
 
-`CustomizationType`, `Customization`, `SyncResult` — see [`src/shared/customization.ts`](../../src/shared/customization.ts) and [Customization schema](customization-schema.md).
+`CustomizationType`, `Customization`, `SyncResult` — see [`src/shared/customization.ts`](../../src/shared/customization.ts) and [Customization schema](customization-schema.md). Prefer the typed namespaces above for new code.
 
 ### `template`
 

@@ -38,17 +38,32 @@ src/main/
 
 Located at `src/main/application/services/`:
 
-- `customization-service` — CRUD over customizations.
+Per-entity facades (1ª class):
+- `skill-service` — CRUD over skills + provenance merge with installed plugins.
+- `agent-service` — CRUD over agents + provenance merge.
+- `reference-service` — CRUD over references (app-only; not synced to Claude).
+- `global-instruction-service` — single-slot (`default`) global instruction.
+- `marketplace-service` — list/add/remove/refresh marketplaces (`extraKnownMarketplaces`).
+- `plugin-provenance` — scans `_meta.json` and plugin dirs to map skills/agents to their providing plugin.
+
+Plugin lifecycle:
+- `plugin-service` — import, list, get, update, remove, toggle, createOwned, deleteOwned, publish.
+- `plugin-installer`, `plugin-author-service`, `plugin-publisher`, `plugin-manifest-parser`, `marketplace-parser`.
+
+Cross-cutting:
 - `template-service` — built-in and user templates.
 - `template-seeder` — installs built-in templates on bootstrap.
 - `adapter-manager` — orchestrates per-tool adapters (Claude, Copilot).
-- `symlink-manager` — creates and reconciles the symlinks that publish customizations to each tool.
-- `copilot-instructions-gen` — generates `.github/copilot-instructions.md` content.
+- `symlink-manager` — creates and reconciles symlinks.
+- `copilot-instructions-gen` — generates `.github/copilot-instructions.md`.
 - `repo-service` — operations on linked repositories.
 - `search-service` — text search across customizations.
 - `settings-service` — load/merge/persist settings.
-- `schema-validator` — Zod-based validation surface.
+- `schema-validator` — Zod-based validation.
 - `workspace-bootstrap`, `workspace-locator` — workspace lifecycle.
+
+Legacy (deprecated, internal):
+- `customization-service` — umbrella service backing the per-entity facades; retained for the legacy `customization.*` IPC and the `CustomizationList` screen used by `PluginEditor`. Future PRs should split this into a `customization-core` helper and let the facades own the lifecycle.
 
 ### Tool adapters
 

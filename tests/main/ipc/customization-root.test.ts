@@ -34,6 +34,11 @@ const mockDeps = (): IpcDeps => ({
   dialogPort: {} as any,
   pluginService: {} as any,
   credentialStore: {} as any,
+  skillService: {} as any,
+  agentService: {} as any,
+  referenceService: {} as any,
+  globalInstructionService: {} as any,
+  marketplaceService: {} as any,
 });
 
 const getHandler = (handlers: Record<string, IpcHandler>, key: string): IpcHandler => {

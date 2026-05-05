@@ -2,12 +2,24 @@ import { useState } from 'react';
 import { AppBar, Box, IconButton, Tab, Tabs, Toolbar, Tooltip } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { CustomizationList } from './customizations/CustomizationList.js';
+import { SkillList } from './skills/SkillList.js';
+import { AgentList } from './agents/AgentList.js';
+import { ReferenceList } from './references/ReferenceList.js';
+import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
+import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { TopbarSearch } from '../components/TopbarSearch.js';
 import { PluginList } from './plugins/PluginList.js';
 import { PluginEditor } from './plugins/PluginEditor.js';
 import type { SearchOutput } from '../../shared/search.js';
 
-type MainTab = 'customizations' | 'plugins';
+type MainTab =
+  | 'skills'
+  | 'agents'
+  | 'references'
+  | 'global-instructions'
+  | 'plugins'
+  | 'marketplaces'
+  | 'customizations';
 
 interface MainProps {
   onOpenSettings: () => void;
@@ -15,7 +27,7 @@ interface MainProps {
 
 export function Main({ onOpenSettings }: MainProps): React.ReactElement {
   const [searchResults, setSearchResults] = useState<SearchOutput | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<MainTab>('customizations');
+  const [activeTab, setActiveTab] = useState<MainTab>('skills');
   const [editingPlugin, setEditingPlugin] = useState<string | null>(null);
 
   // If editing a plugin, show the editor instead
@@ -58,13 +70,25 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
           value={activeTab}
           onChange={(_, v: MainTab) => setActiveTab(v)}
           sx={{ px: 2 }}
+          variant="scrollable"
+          scrollButtons="auto"
         >
-          <Tab label="Customizations" value="customizations" />
+          <Tab label="Skills" value="skills" />
+          <Tab label="Agents" value="agents" />
+          <Tab label="References" value="references" />
+          <Tab label="Global Instructions" value="global-instructions" />
           <Tab label="Plugins" value="plugins" />
+          <Tab label="Marketplaces" value="marketplaces" />
+          <Tab label="Search (legacy)" value="customizations" />
         </Tabs>
       </AppBar>
-      {activeTab === 'customizations' && <CustomizationList searchResults={searchResults} />}
+      {activeTab === 'skills' && <SkillList />}
+      {activeTab === 'agents' && <AgentList />}
+      {activeTab === 'references' && <ReferenceList />}
+      {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
       {activeTab === 'plugins' && <PluginList scope="personal" onOpenEditor={setEditingPlugin} />}
+      {activeTab === 'marketplaces' && <MarketplaceList />}
+      {activeTab === 'customizations' && <CustomizationList searchResults={searchResults} />}
     </Box>
   );
 }
