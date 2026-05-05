@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { Customization, CustomizationFrontmatter, SyncResult } from '../../../shared/customization.js';
 import type { ClockPort } from '../../application/ports/clock-port.js';
 import type {
@@ -13,9 +14,14 @@ import { DomainError, validationError } from '../../domain/errors.js';
 
 const GLOBAL_INSTRUCTION_ALLOWED_SLUGS: ReadonlyArray<string> = ['default'];
 
+export type WorkspaceRoot =
+  | { kind: 'customizations' }
+  | { kind: 'plugin'; pluginId: string };
+
 export interface SaveCustomizationCommand {
   customization: Customization;
   isCreate?: boolean;
+  root?: WorkspaceRoot;
 }
 
 export interface SaveCustomizationResult {
@@ -26,6 +32,7 @@ export interface SaveCustomizationResult {
 export interface DeleteCustomizationCommand {
   id: string;
   removeSymlinks: boolean;
+  root?: WorkspaceRoot;
 }
 
 export interface DeleteCustomizationResult {
@@ -39,13 +46,24 @@ export class CustomizationService {
     private readonly clock: ClockPort,
     private readonly adapterManager: AdapterManager,
     private readonly schemaValidator?: SchemaValidator,
+    private readonly workspacePath?: string,
   ) {}
 
-  list(query: CustomizationListQuery = {}): Promise<Customization[]> {
+  private resolveRoot(root: WorkspaceRoot = { kind: 'customizations' }): string {
+    if (!this.workspacePath) {
+      throw new Error('workspacePath is required for root resolution');
+    }
+    if (root.kind === 'customizations') {
+      return path.join(this.workspacePath, 'customizations');
+    }
+    return path.join(this.workspacePath, 'plugins', root.pluginId);
+  }
+
+  list(query: CustomizationListQuery = {}, _root?: WorkspaceRoot): Promise<Customization[]> {
     return this.repository.list(query);
   }
 
-  get(query: { id: string }): Promise<Customization> {
+  get(query: { id: string; root?: WorkspaceRoot }): Promise<Customization> {
     return this.repository.get(query);
   }
 

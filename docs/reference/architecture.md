@@ -96,6 +96,54 @@ I/O failures bubble up to the `IoError` screen, which retries the failing step.
 
 No database, no API, no telemetry.
 
+## Plugin system
+
+The plugin system extends the SDE customizations framework with package management: users can import third-party plugins, own and manage them locally, and publish their own contributions back to registries.
+
+**Plugin lifecycle modes:**
+
+- **Imported** — third-party plugins installed from a remote registry (GitHub, npm-compatible URL). Downloaded as `.tar.gz` and extracted into the workspace plugin folder. Identified by `registry` metadata.
+- **Owned** — plugins authored locally and not tied to an external registry. Stored in the workspace plugin folder with `_meta.json` v2 schema (includes author, visibility, publish history).
+- **Publish** — owned plugins pushed to a GitHub repository as a release. Registry entries published to a central manifest (`.tar.gz` + metadata).
+
+**Core adapters** — located at `src/main/infrastructure/adapters/plugins/`:
+
+- `SimpleGitClient` (GitPort) — wraps nodegit for branch tracking, tag creation, remote operations.
+- `PluginCacheFile` (PluginCachePort) — reads/writes `.json` plugin metadata cache.
+- `ClaudeSettingsFile` (ClaudeSettingsPort) — manages `~/.claude/settings.json` to expose plugin modules.
+- `OctokitClient` (GitHubApiPort) — wraps Octokit for GitHub API calls (repos, releases, token auth).
+- `SafeStorageCredentials` (CredentialStorePort) — encrypts/decrypts GitHub PAT using Electron's safeStorage.
+
+**Core services** — located at `src/main/application/services/plugins/`:
+
+- `PluginInstaller` — fetch, validate, extract, and cache imported plugins.
+- `PluginAuthorService` — CRUD for owned plugins; manages `_meta.json` v2 authorship.
+- `PluginPublisher` — tag releases, push to GitHub, publish registry entries.
+- `PluginService` — unified interface for list, get, toggle, remove operations across import/owned modes.
+
+**_meta.json v2 schema** — owned plugins carry full authorship and publish metadata:
+
+```json
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "author": "user@example.com",
+  "description": "Plugin description",
+  "visibility": "private" | "public",
+  "publishedTo": [
+    {
+      "registry": "github",
+      "url": "https://github.com/user/my-plugin-registry",
+      "version": "1.0.0",
+      "publishedAt": "2025-05-04T12:00:00Z"
+    }
+  ]
+}
+```
+
+**ClaudePluginAdapter helper** — utility that wraps plugins as Claude settings adapters, exposing installed plugin modules as `.claude/settings.json` entries so Claude can load and apply them at runtime.
+
 ## See also
 
 - [Getting started](../tutorials/getting-started.md) — to run the app first.

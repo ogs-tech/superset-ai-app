@@ -68,6 +68,10 @@ export class NodeFsAdapter implements WritableFileSystemPort {
     }
   }
 
+  async readFile(path: string): Promise<string> {
+    return fs.readFile(path, 'utf-8');
+  }
+
   async writeFile(path: string, content: string): Promise<void> {
     await fs.writeFile(path, content, 'utf-8');
   }

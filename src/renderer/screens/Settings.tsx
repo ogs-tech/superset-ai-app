@@ -19,13 +19,14 @@ import {
   ListItemText,
   Paper,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import AddIcon from '@mui/icons-material/Add';
-import { callIpc } from '../lib/ipc.js';
+import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
 import type { SyncResult } from '../../shared/customization.js';
@@ -56,6 +57,12 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [repos, setRepos] = useState<LinkedRepoView[]>([]);
   const [repoError, setRepoError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingLink | null>(null);
+  const [patValue, setPatValue] = useState('');
+  const [patHasToken, setPatHasToken] = useState(false);
+  const [patLoading, setPatLoading] = useState(false);
+  const [patError, setPatError] = useState<string | null>(null);
+  const [patSuccess, setPatSuccess] = useState(false);
+  const [safeStorageUnavailable, setSafeStorageUnavailable] = useState(false);
 
   const refreshRepos = async (): Promise<void> => {
     const list = await callIpc<LinkedRepoView[]>('repo.list', {});
@@ -67,6 +74,16 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       const current = await callIpc<SettingsModel | null>('settings.get', {});
       if (current !== null) setSettings(current);
       await refreshRepos();
+
+      // Check PAT status
+      try {
+        const result = await callIpc<{ hasToken: boolean }>('credentials.hasGithubToken', {});
+        setPatHasToken(result.hasToken);
+      } catch (err) {
+        if (err instanceof IpcCallError && err.kind === 'io') {
+          setSafeStorageUnavailable(true);
+        }
+      }
     })();
   }, []);
 
@@ -160,6 +177,36 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const handleUnlink = async (id: string): Promise<void> => {
     await callIpc('repo.unlink', { id });
     await refreshRepos();
+  };
+
+  const handleSavePat = async (): Promise<void> => {
+    setPatLoading(true);
+    setPatError(null);
+    setPatSuccess(false);
+    try {
+      await callIpc('credentials.setGithubToken', { token: patValue });
+      setPatHasToken(true);
+      setPatValue('');
+      setPatSuccess(true);
+      setTimeout(() => setPatSuccess(false), 3000);
+    } catch (err) {
+      setPatError(err instanceof Error ? err.message : 'Failed to save PAT');
+    } finally {
+      setPatLoading(false);
+    }
+  };
+
+  const handleClearPat = async (): Promise<void> => {
+    setPatLoading(true);
+    setPatError(null);
+    try {
+      await callIpc('credentials.clearGithubToken', {});
+      setPatHasToken(false);
+    } catch (err) {
+      setPatError(err instanceof Error ? err.message : 'Failed to clear PAT');
+    } finally {
+      setPatLoading(false);
+    }
   };
 
   if (settings === null) {
@@ -316,6 +363,57 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             ))}
           </List>
         )}
+      </Paper>
+
+      <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" component="h2" gutterBottom>
+          GitHub
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Personal Access Token for publishing plugins to GitHub.
+          {' '}Status: <strong>{patHasToken ? 'Configured' : 'Not configured'}</strong>
+        </Typography>
+
+        {safeStorageUnavailable && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Secure storage is not available on this system. GitHub PAT cannot be stored.
+          </Alert>
+        )}
+
+        {patError !== null && (
+          <Alert severity="error" sx={{ mb: 2 }}>{patError}</Alert>
+        )}
+
+        {patSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>PAT saved successfully.</Alert>
+        )}
+
+        <Stack direction="row" sx={{ gap: 2, alignItems: 'flex-start' }}>
+          <TextField
+            type="password"
+            label="GitHub Personal Access Token"
+            value={patValue}
+            onChange={(e) => setPatValue(e.target.value)}
+            size="small"
+            disabled={safeStorageUnavailable || patLoading}
+            sx={{ flexGrow: 1 }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => void handleSavePat()}
+            disabled={!patValue || safeStorageUnavailable || patLoading}
+          >
+            Save
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => void handleClearPat()}
+            disabled={!patHasToken || safeStorageUnavailable || patLoading}
+          >
+            Clear
+          </Button>
+        </Stack>
       </Paper>
 
       <Dialog
