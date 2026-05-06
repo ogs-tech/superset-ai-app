@@ -16,13 +16,11 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DownloadIcon from '@mui/icons-material/Download';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { PluginListItemIpc } from '../../../shared/plugin-ipc-types.js';
 import { PluginImportDialog } from './PluginImportDialog.js';
-import { PluginNewDialog } from './PluginNewDialog.js';
 import { PublishPluginDialog } from './PublishPluginDialog.js';
 
 interface PluginListProps {
@@ -32,7 +30,6 @@ interface PluginListProps {
 type DialogState =
   | { kind: 'closed' }
   | { kind: 'import' }
-  | { kind: 'new' }
   | { kind: 'publish'; pluginId: string };
 
 interface RowMenuState {
@@ -122,13 +119,6 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
             onClick={() => setDialog({ kind: 'import' })}
           >
             Import plugin
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setDialog({ kind: 'new' })}
-          >
-            New plugin
           </Button>
         </Stack>
       </Stack>
@@ -255,16 +245,6 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
 
       <PluginImportDialog
         open={dialog.kind === 'import'}
-        scope={scope}
-        onClose={() => setDialog({ kind: 'closed' })}
-        onSuccess={() => {
-          setDialog({ kind: 'closed' });
-          void loadList();
-        }}
-      />
-
-      <PluginNewDialog
-        open={dialog.kind === 'new'}
         scope={scope}
         onClose={() => setDialog({ kind: 'closed' })}
         onSuccess={() => {

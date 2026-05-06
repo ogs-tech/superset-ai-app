@@ -48,7 +48,7 @@ class FakePluginManifestParser implements PluginManifestParserLike {
     return {
       id: pluginId('test'),
       version: semVer('0.1.0'),
-      artifacts: { skills: [], agents: [], commands: [], hooks: false, mcp: false, lsp: false },
+      artifacts: { skills: [], agents: [], commands: [], hooks: 0, mcp: false, lsp: false },
     };
   }
 }

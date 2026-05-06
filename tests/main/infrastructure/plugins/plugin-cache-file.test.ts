@@ -19,7 +19,7 @@ function makeManifest(id = 'my-plugin', version = '1.0.0'): PluginManifest {
       skills: ['skill-a'],
       agents: [],
       commands: [],
-      hooks: false,
+      hooks: 0,
       mcp: false,
       lsp: false,
     },
