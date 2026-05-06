@@ -276,3 +276,4 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
     </Container>
   );
 }
+

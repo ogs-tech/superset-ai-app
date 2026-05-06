@@ -23,12 +23,14 @@ import WebhookIcon from '@mui/icons-material/Webhook';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 export type SidebarTab =
   | 'home'
+  | 'starter-pack'
   | 'skills'
   | 'agents'
   | 'commands'
@@ -47,6 +49,7 @@ interface SidebarItem {
 
 const PRIMARY_ITEMS: ReadonlyArray<SidebarItem> = [
   { id: 'home', label: 'Home', icon: <HomeIcon fontSize="small" /> },
+  { id: 'starter-pack', label: 'Starter Pack', icon: <RocketLaunchIcon fontSize="small" /> },
   { id: 'skills', label: 'Skills', icon: <AutoAwesomeIcon fontSize="small" /> },
   { id: 'agents', label: 'Agents', icon: <SmartToyIcon fontSize="small" /> },
   { id: 'commands', label: 'Commands', icon: <TerminalIcon fontSize="small" /> },

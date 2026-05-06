@@ -11,6 +11,7 @@ import { GlobalInstructionScreen } from './global-instructions/GlobalInstruction
 import { TemplateList } from './templates/TemplateList.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
+import { StarterPackScreen } from './starter-pack/StarterPackScreen.js';
 
 interface MainProps {
   onOpenSettings: () => void;
@@ -38,6 +39,7 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         }}
       >
         {activeTab === 'home' && <HomeScreen onNavigate={setActiveTab} />}
+        {activeTab === 'starter-pack' && <StarterPackScreen onNavigate={setActiveTab} />}
         {activeTab === 'skills' && <SkillList />}
         {activeTab === 'agents' && <AgentList />}
         {activeTab === 'commands' && <CommandList />}

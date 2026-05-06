@@ -24,8 +24,11 @@ import ExtensionIcon from '@mui/icons-material/Extension';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { SidebarTab } from '../../components/Sidebar.js';
+import { RECOMMENDED_PLUGIN_NAMES } from '../starter-pack/StarterPackScreen.js';
 
 interface CustomizationLite {
   id: string;
@@ -86,9 +89,11 @@ const MANAGEMENT_CARDS: ReadonlyArray<ManagementCardSpec> = [
 export function HomeScreen({ onNavigate }: HomeScreenProps): React.ReactElement {
   const [counts, setCounts] = useState<Record<SidebarTab, number | null>>({
     home: 0,
+    'starter-pack': null,
     skills: null,
     agents: null,
     commands: null,
+    hooks: null,
     references: null,
     'global-instructions': null,
     templates: null,
@@ -129,9 +134,11 @@ export function HomeScreen({ onNavigate }: HomeScreenProps): React.ReactElement 
 
         setCounts({
           home: 0,
+          'starter-pack': null,
           skills: skills.length,
           agents: agents.length,
           commands: commands.length,
+          hooks: null,
           references: refs.length,
           'global-instructions': gi ? 1 : 0,
           templates: 0,
@@ -155,6 +162,13 @@ export function HomeScreen({ onNavigate }: HomeScreenProps): React.ReactElement 
   const officialMarketplace = useMemo(
     () => marketplaces.find((m) => m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO),
     [marketplaces],
+  );
+
+  const recommendedTotal = useMemo(
+    () =>
+      officialMarketplace?.manifest?.plugins.filter((p) => RECOMMENDED_PLUGIN_NAMES.has(p.name))
+        .length ?? 0,
+    [officialMarketplace],
   );
 
   return (
@@ -207,6 +221,61 @@ export function HomeScreen({ onNavigate }: HomeScreenProps): React.ReactElement 
           </Button>
         </Paper>
       )}
+
+      <Paper
+        variant="outlined"
+        data-testid="starter-pack-widegate"
+        onClick={() => onNavigate('starter-pack')}
+        sx={{
+          mb: 4,
+          p: 2.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          cursor: 'pointer',
+          transition: 'border-color 120ms',
+          '&:hover': { borderColor: 'primary.main' },
+        }}
+      >
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 1.5,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#2b5cff',
+            backgroundColor: '#2b5cff1a',
+          }}
+        >
+          <RocketLaunchIcon />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+            SDE Starter Pack
+          </Typography>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+            {hasGlobalInstruction !== null && (
+              <Chip
+                size="small"
+                label={hasGlobalInstruction ? 'Profile ready' : 'Profile not set'}
+                color={hasGlobalInstruction ? 'success' : 'warning'}
+                {...(hasGlobalInstruction
+                  ? { icon: <CheckCircleIcon fontSize="small" /> }
+                  : {})}
+              />
+            )}
+            {recommendedTotal > 0 ? (
+              <Typography variant="caption" color="text.secondary">
+                {counts.plugins ?? '…'} of {recommendedTotal} plugins installed
+              </Typography>
+            ) : null}
+          </Stack>
+        </Box>
+        <ArrowForwardIcon fontSize="small" sx={{ color: 'text.disabled', flexShrink: 0 }} />
+      </Paper>
 
       <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
         Manage
