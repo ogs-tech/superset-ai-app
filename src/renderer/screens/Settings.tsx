@@ -32,8 +32,7 @@ import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
 import type { SyncResult } from '../../shared/customization.js';
 import type { LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
 
-const labelFor = (key: 'claude' | 'copilot'): string =>
-  key === 'claude' ? 'Claude' : 'Copilot';
+const labelFor = (key: 'claude' | 'copilot'): string => (key === 'claude' ? 'Claude' : 'Copilot');
 
 interface SelectFolderResult {
   canceled: boolean;
@@ -52,7 +51,10 @@ interface SettingsProps {
 export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [settings, setSettings] = useState<SettingsModel | null>(null);
   const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
-  const [disableModal, setDisableModal] = useState<{ key: 'claude' | 'copilot'; count: number } | null>(null);
+  const [disableModal, setDisableModal] = useState<{
+    key: 'claude' | 'copilot';
+    count: number;
+  } | null>(null);
   const [disableToast, setDisableToast] = useState<string | null>(null);
   const [repos, setRepos] = useState<LinkedRepoView[]>([]);
   const [repoError, setRepoError] = useState<string | null>(null);
@@ -90,9 +92,13 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const handleExclusiveSkillsToggle = async (value: boolean): Promise<void> => {
     if (value) {
       await callIpc('adapter.removeAll', { adapterId: 'copilot' });
-      await callIpc('settings.merge', { adapters: { copilot: { exclusiveSkillsWithClaude: true } } });
+      await callIpc('settings.merge', {
+        adapters: { copilot: { exclusiveSkillsWithClaude: true } },
+      });
     } else {
-      await callIpc('settings.merge', { adapters: { copilot: { exclusiveSkillsWithClaude: false } } });
+      await callIpc('settings.merge', {
+        adapters: { copilot: { exclusiveSkillsWithClaude: false } },
+      });
       await callIpc('adapter.syncAll', { adapterId: 'copilot' });
     }
     const current = await callIpc<SettingsModel | null>('settings.get', {});
@@ -114,7 +120,9 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         setSyncReport(result.syncReport);
       }
     } else {
-      const { count } = await callIpc<{ count: number }>('adapter.countDestinations', { adapterId: key });
+      const { count } = await callIpc<{ count: number }>('adapter.countDestinations', {
+        adapterId: key,
+      });
       setDisableModal({ key, count });
     }
   };
@@ -224,29 +232,18 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
   return (
     <Container component="main" data-testid="settings-screen" maxWidth="md" sx={{ py: 4 }}>
-      <Stack
-        direction="row"
-        sx={{ mb: 4, justifyContent: 'space-between', alignItems: 'center' }}
-      >
+      <Stack direction="row" sx={{ mb: 4, justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" component="h1">
           Settings
         </Typography>
         {onBack && (
-          <Button
-            variant="text"
-            startIcon={<ArrowBackIcon />}
-            onClick={onBack}
-          >
+          <Button variant="text" startIcon={<ArrowBackIcon />} onClick={onBack}>
             Back
           </Button>
         )}
       </Stack>
 
-      <Paper
-        component="section"
-        variant="outlined"
-        sx={{ p: 3, mb: 3 }}
-      >
+      <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" component="h2" gutterBottom>
           Adapters
         </Typography>
@@ -254,7 +251,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           Enable assistants to keep your customizations in sync.
         </Typography>
         <FormGroup>
-          {(['claude', 'copilot'] as const).map((key) => (
+          {(['claude'] as const).map((key) => (
             <FormControlLabel
               key={key}
               control={
@@ -284,11 +281,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         </FormGroup>
       </Paper>
 
-      <Paper
-        component="section"
-        variant="outlined"
-        sx={{ p: 3, mb: 3 }}
-      >
+      <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Stack
           direction="row"
           sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}
@@ -296,11 +289,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           <Typography variant="h6" component="h2">
             Linked repos
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => void handleAddRepo()}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => void handleAddRepo()}>
             Add repo
           </Button>
         </Stack>
@@ -370,8 +359,8 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           GitHub
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Personal Access Token for publishing plugins to GitHub.
-          {' '}Status: <strong>{patHasToken ? 'Configured' : 'Not configured'}</strong>
+          Personal Access Token for publishing plugins to GitHub. Status:{' '}
+          <strong>{patHasToken ? 'Configured' : 'Not configured'}</strong>
         </Typography>
 
         {safeStorageUnavailable && (
@@ -381,11 +370,15 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         )}
 
         {patError !== null && (
-          <Alert severity="error" sx={{ mb: 2 }}>{patError}</Alert>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {patError}
+          </Alert>
         )}
 
         {patSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>PAT saved successfully.</Alert>
+          <Alert severity="success" sx={{ mb: 2 }}>
+            PAT saved successfully.
+          </Alert>
         )}
 
         <Stack direction="row" sx={{ gap: 2, alignItems: 'flex-start' }}>
@@ -438,8 +431,8 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             <Box component="code" sx={{ fontFamily: 'monospace' }}>
               .github/
             </Box>{' '}
-            inside the repository. These changes may be{' '}
-            <strong>committed</strong> unless you ignore them via{' '}
+            inside the repository. These changes may be <strong>committed</strong> unless you ignore
+            them via{' '}
             <Box component="code" sx={{ fontFamily: 'monospace' }}>
               .gitignore
             </Box>
@@ -464,12 +457,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         />
       )}
       {disableToast !== null && (
-        <Alert
-          data-testid="disable-toast"
-          role="status"
-          severity="success"
-          sx={{ mt: 2 }}
-        >
+        <Alert data-testid="disable-toast" role="status" severity="success" sx={{ mt: 2 }}>
           {disableToast}
         </Alert>
       )}
