@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MarketplaceList } from '../../../../src/renderer/screens/marketplaces/MarketplaceList.js';
-import { mockApi, ok, type CallSpy } from '../../test-utils.js';
+import {
+  mockApi,
+  ok,
+  renderWithQuery,
+  type CallSpy,
+} from '../../test-utils.js';
 
 let call: CallSpy;
 
@@ -16,9 +21,13 @@ describe('<MarketplaceList>', () => {
       if (method === 'marketplace.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
     });
-    render(<MarketplaceList />);
-    expect(await screen.findByText(/No marketplaces configured yet/i)).toBeInTheDocument();
-    expect(screen.getByTestId('import-marketplace-button')).toBeInTheDocument();
+    renderWithQuery(<MarketplaceList />);
+    expect(
+      await screen.findByText(/No marketplaces yet/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('import-marketplace-button'),
+    ).toBeInTheDocument();
   });
 
   it('renders marketplace items with manifest info', async () => {
@@ -39,12 +48,16 @@ describe('<MarketplaceList>', () => {
         );
       return Promise.resolve(ok(undefined));
     });
-    render(<MarketplaceList />);
+    renderWithQuery(<MarketplaceList />);
 
     expect(
-      await screen.findByTestId('marketplace-item-claude-plugins-official'),
+      await screen.findByTestId(
+        'entity-grid-card-marketplace-claude-plugins-official',
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText('Claude Plugins Official')).toBeInTheDocument();
+    expect(
+      screen.getByText('Claude Plugins Official'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/1 plugin/)).toBeInTheDocument();
   });
 
@@ -54,9 +67,11 @@ describe('<MarketplaceList>', () => {
       return Promise.resolve(ok(undefined));
     });
     const user = userEvent.setup();
-    render(<MarketplaceList />);
-    await screen.findByText(/No marketplaces/i);
+    renderWithQuery(<MarketplaceList />);
+    await screen.findByText(/No marketplaces yet/i);
     await user.click(screen.getByTestId('import-marketplace-button'));
-    expect(screen.getByTestId('marketplace-import-dialog')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('marketplace-import-dialog'),
+    ).toBeInTheDocument();
   });
 });

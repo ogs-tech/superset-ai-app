@@ -1,8 +1,8 @@
-import { EntityList } from '../../components/EntityList.js';
+import { CustomizationListScreen } from '../../components/CustomizationListScreen.js';
 
 export function AgentList(): React.ReactElement {
   return (
-    <EntityList
+    <CustomizationListScreen
       entityType="agent"
       templateTargetType="agent"
       title="Agents"

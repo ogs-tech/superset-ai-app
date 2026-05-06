@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Main } from '../../../src/renderer/screens/Main.js';
-import { mockApi, ok, fail, type CallSpy } from '../test-utils.js';
+import {
+  mockApi,
+  ok,
+  fail,
+  renderWithQuery,
+  type CallSpy,
+} from '../test-utils.js';
+
+const render = renderWithQuery;
 
 let call: CallSpy;
 

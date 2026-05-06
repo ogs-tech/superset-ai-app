@@ -1,8 +1,8 @@
-import { EntityList } from '../../components/EntityList.js';
+import { CustomizationListScreen } from '../../components/CustomizationListScreen.js';
 
 export function CommandList(): React.ReactElement {
   return (
-    <EntityList
+    <CustomizationListScreen
       entityType="command"
       templateTargetType="command"
       title="Commands"

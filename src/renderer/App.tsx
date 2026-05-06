@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { callIpc } from './lib/ipc.js';
+import { queryClient } from './lib/query-client.js';
 import { IoError } from './screens/IoError.js';
 import { Main } from './screens/Main.js';
 import { Settings as SettingsScreen } from './screens/Settings.js';
@@ -13,6 +15,14 @@ type View =
   | { kind: 'io-error'; message: string; retry: () => Promise<void> };
 
 export function App(): React.ReactElement {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppRoot />
+    </QueryClientProvider>
+  );
+}
+
+function AppRoot(): React.ReactElement {
   const [view, setView] = useState<View>({ kind: 'loading' });
 
   const bootstrap = useCallback(async (): Promise<void> => {

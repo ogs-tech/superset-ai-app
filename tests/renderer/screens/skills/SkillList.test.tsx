@@ -1,13 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { SkillList } from '../../../../src/renderer/screens/skills/SkillList.js';
-import { mockApi, ok, type CallSpy } from '../../test-utils.js';
+import {
+  mockApi,
+  ok,
+  renderWithQuery,
+  type CallSpy,
+} from '../../test-utils.js';
 
 let call: CallSpy;
 
 const FROZEN = '2026-04-26T10:00:00.000Z';
 
-const skill = (name: string, source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string }) => ({
+const skill = (
+  name: string,
+  source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string },
+) => ({
   id: name,
   frontmatter: {
     name,
@@ -22,6 +30,11 @@ const skill = (name: string, source: { kind: 'workspace' } | { kind: 'plugin'; p
   source,
 });
 
+const cardId = (
+  name: string,
+  source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string },
+): string => `entity-grid-card-skill-${source.kind}/${name}`;
+
 beforeEach(() => {
   call = mockApi();
 });
@@ -32,7 +45,7 @@ describe('<SkillList>', () => {
       if (method === 'skill.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
     });
-    render(<SkillList />);
+    renderWithQuery(<SkillList />);
     expect(await screen.findByText(/No skills yet/i)).toBeInTheDocument();
   });
 
@@ -47,10 +60,16 @@ describe('<SkillList>', () => {
         );
       return Promise.resolve(ok(undefined));
     });
-    render(<SkillList />);
+    renderWithQuery(<SkillList />);
 
-    expect(await screen.findByTestId('skill-item-local')).toBeInTheDocument();
-    expect(await screen.findByTestId('skill-item-from-plugin')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId(cardId('local', { kind: 'workspace' })),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByTestId(
+        cardId('from-plugin', { kind: 'plugin', pluginId: 'superpowers' }),
+      ),
+    ).toBeInTheDocument();
     expect(
       await screen.findByTestId('plugin-origin-badge-superpowers'),
     ).toBeInTheDocument();
@@ -64,14 +83,16 @@ describe('<SkillList>', () => {
         );
       return Promise.resolve(ok(undefined));
     });
-    render(<SkillList />);
+    renderWithQuery(<SkillList />);
 
-    await screen.findByTestId('skill-item-from-plugin');
-    // Plugin-sourced rows show View button instead of Edit/Delete
-    const item = screen.getByTestId('skill-item-from-plugin');
-    expect(item.querySelector('[aria-label="View"]')).not.toBeNull();
-    expect(item.querySelector('[aria-label="Edit"]')).toBeNull();
-    expect(item.querySelector('[aria-label="Delete"]')).toBeNull();
+    const card = await screen.findByTestId(
+      cardId('from-plugin', { kind: 'plugin', pluginId: 'p' }),
+    );
+    expect(
+      within(card).getByRole('button', { name: 'View' }),
+    ).toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: 'Edit' })).toBeNull();
+    expect(within(card).queryByRole('button', { name: 'Delete' })).toBeNull();
   });
 
   it('shows edit/delete buttons for workspace skills', async () => {
@@ -80,13 +101,20 @@ describe('<SkillList>', () => {
         return Promise.resolve(ok([skill('local', { kind: 'workspace' })]));
       return Promise.resolve(ok(undefined));
     });
-    render(<SkillList />);
+    renderWithQuery(<SkillList />);
 
-    await screen.findByTestId('skill-item-local');
-    const item = screen.getByTestId('skill-item-local');
-    expect(item.querySelector('[aria-label="Edit"]')).not.toBeNull();
-    expect(item.querySelector('[aria-label="Duplicate"]')).not.toBeNull();
-    expect(item.querySelector('[aria-label="Delete"]')).not.toBeNull();
-    expect(item.querySelector('[aria-label="View"]')).toBeNull();
+    const card = await screen.findByTestId(
+      cardId('local', { kind: 'workspace' }),
+    );
+    expect(
+      within(card).getByRole('button', { name: 'Edit' }),
+    ).toBeInTheDocument();
+    expect(
+      within(card).getByRole('button', { name: 'Duplicate' }),
+    ).toBeInTheDocument();
+    expect(
+      within(card).getByRole('button', { name: 'Delete' }),
+    ).toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: 'View' })).toBeNull();
   });
 });

@@ -1,8 +1,8 @@
-import { EntityList } from '../../components/EntityList.js';
+import { CustomizationListScreen } from '../../components/CustomizationListScreen.js';
 
 export function ReferenceList(): React.ReactElement {
   return (
-    <EntityList
+    <CustomizationListScreen
       entityType="reference"
       templateTargetType="reference"
       title="References"

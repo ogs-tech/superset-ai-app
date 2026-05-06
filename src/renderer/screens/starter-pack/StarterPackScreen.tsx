@@ -1,14 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   Container,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
   Paper,
   Stack,
   Typography,
@@ -20,6 +17,8 @@ import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { SidebarTab } from '../../components/Sidebar.js';
 import { PluginInstallPreviewDialog } from '../marketplaces/PluginInstallPreviewDialog.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
+import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
+import type { EntityDef } from '../../components/EntityDataGrid/index.js';
 
 interface MarketplacePlugin {
   name: string;
@@ -34,30 +33,24 @@ type InstallState = 'idle' | 'loading' | 'done';
 const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
 
 export const RECOMMENDED_PLUGIN_NAMES = new Set([
-  // Code quality
   'feature-dev',
   'code-review',
   'pr-review-toolkit',
   'code-simplifier',
   'code-modernization',
   'frontend-design',
-  // Git & commits
   'commit-commands',
-  // Project organization
   'claude-code-setup',
   'claude-md-management',
   'hookify',
-  // Claude development
   'agent-sdk-dev',
   'mcp-server-dev',
   'plugin-dev',
   'example-plugin',
-  // Output styles & loops
   'explanatory-output-style',
   'learning-output-style',
   'ralph-loop',
   'playground',
-  // LSPs
   'pyright-lsp',
   'gopls-lsp',
   'clangd-lsp',
@@ -66,7 +59,6 @@ export const RECOMMENDED_PLUGIN_NAMES = new Set([
   'kotlin-lsp',
   'php-lsp',
   'lua-lsp',
-  // External integrations
   'github',
   'gitlab',
   'linear',
@@ -82,67 +74,76 @@ interface StarterPackScreenProps {
   onNavigate: (tab: SidebarTab) => void;
 }
 
-export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React.ReactElement {
-  const [profileConfigured, setProfileConfigured] = useState<boolean | null>(null);
-  const [plugins, setPlugins] = useState<MarketplacePlugin[]>([]);
-  const [marketplaceId, setMarketplaceId] = useState<string | null>(null);
-  const [installStates, setInstallStates] = useState<Record<string, InstallState>>({});
-  const [fetching, setFetching] = useState(true);
-  const [previewPlugin, setPreviewPlugin] = useState<MarketplacePlugin | null>(null);
+interface StarterData {
+  profileConfigured: boolean | null;
+  plugins: MarketplacePlugin[];
+  marketplaceId: string | null;
+  installedIds: Set<string>;
+}
+
+const STARTER_QUERY_KEY = ['starter-pack'] as const;
+
+export function StarterPackScreen({
+  onNavigate,
+}: StarterPackScreenProps): React.ReactElement {
+  const [installStates, setInstallStates] = useState<
+    Record<string, InstallState>
+  >({});
+  const [previewPlugin, setPreviewPlugin] = useState<MarketplacePlugin | null>(
+    null,
+  );
+  const [installingAll, setInstallingAll] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [marketplaceList, installedPlugins, gi] = await Promise.all([
-          callIpc<Array<{
+  const { data, isLoading } = useQuery<StarterData>({
+    queryKey: STARTER_QUERY_KEY,
+    queryFn: async () => {
+      const [marketplaceList, installedPlugins, gi] = await Promise.all([
+        callIpc<
+          Array<{
             id: string;
             source: { kind: string; repo?: string };
             manifest?: { plugins: MarketplacePlugin[] };
-          }>>('marketplace.list', { scope: 'personal' }),
-          callIpc<Array<{ id: string }>>('plugin.list', { scope: 'personal' }),
-          callIpc('global-instruction.get', { id: 'default' }).then(
-            () => true,
-            (err: unknown) => {
-              if (err instanceof IpcCallError && err.kind === 'not_found') return false;
-              return null;
-            },
-          ),
-        ]);
+          }>
+        >('marketplace.list', { scope: 'personal' }),
+        callIpc<Array<{ id: string }>>('plugin.list', { scope: 'personal' }),
+        callIpc('global-instruction.get', { id: 'default' }).then(
+          () => true,
+          (err: unknown) => {
+            if (err instanceof IpcCallError && err.kind === 'not_found')
+              return false;
+            return null;
+          },
+        ),
+      ]);
 
-        if (cancelled) return;
+      const official = marketplaceList.find(
+        (m) => m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO,
+      );
+      const installedIds = new Set(installedPlugins.map((p) => p.id));
+      const recommended =
+        official?.manifest?.plugins.filter((p) =>
+          RECOMMENDED_PLUGIN_NAMES.has(p.name),
+        ) ?? [];
 
-        setProfileConfigured(gi as boolean | null);
-
-        const official = marketplaceList.find(
-          (m) => m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO,
-        );
-        if (official?.manifest?.plugins?.length) {
-          const recommended = official.manifest.plugins.filter((p) =>
-            RECOMMENDED_PLUGIN_NAMES.has(p.name),
-          );
-          setPlugins(recommended);
-          setMarketplaceId(official.id);
-          const installedIds = new Set(installedPlugins.map((p) => p.id));
-          const initial: Record<string, InstallState> = {};
-          for (const p of official.manifest.plugins) {
-            if (installedIds.has(p.name)) initial[p.name] = 'done';
-          }
-          setInstallStates(initial);
-        }
-      } catch {
-        // best-effort
-      } finally {
-        if (!cancelled) setFetching(false);
+      const initial: Record<string, InstallState> = {};
+      for (const p of recommended) {
+        if (installedIds.has(p.name)) initial[p.name] = 'done';
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      setInstallStates((prev) => ({ ...initial, ...prev }));
 
-  const [installingAll, setInstallingAll] = useState(false);
+      return {
+        profileConfigured: gi as boolean | null,
+        plugins: recommended,
+        marketplaceId: official?.id ?? null,
+        installedIds,
+      };
+    },
+  });
+
+  const plugins = data?.plugins ?? [];
+  const marketplaceId = data?.marketplaceId ?? null;
+  const profileConfigured = data?.profileConfigured ?? null;
 
   const handleConfirmInstall = async (): Promise<void> => {
     if (!previewPlugin) return;
@@ -164,7 +165,9 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
   };
 
   const handleInstallAll = async (): Promise<void> => {
-    const pending = plugins.filter((p) => (installStates[p.name] ?? 'idle') === 'idle');
+    const pending = plugins.filter(
+      (p) => (installStates[p.name] ?? 'idle') === 'idle',
+    );
     if (pending.length === 0) return;
     setInstallingAll(true);
     let failed = 0;
@@ -182,19 +185,63 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
     }
     setInstallingAll(false);
     if (failed > 0) {
-      setToast({ variant: 'error', message: `${failed} plugin(s) failed to install` });
+      setToast({
+        variant: 'error',
+        message: `${failed} plugin(s) failed to install`,
+      });
     } else {
       setToast({ variant: 'success', message: `All plugins installed` });
     }
   };
 
-  const installedCount = plugins.filter((p) => installStates[p.name] === 'done').length;
+  const installedCount = plugins.filter(
+    (p) => installStates[p.name] === 'done',
+  ).length;
   const totalCount = plugins.length;
   const progress = totalCount > 0 ? (installedCount / totalCount) * 100 : 0;
-  const pendingCount = plugins.filter((p) => (installStates[p.name] ?? 'idle') === 'idle').length;
+  const pendingCount = plugins.filter(
+    (p) => (installStates[p.name] ?? 'idle') === 'idle',
+  ).length;
+
+  const entity: EntityDef<MarketplacePlugin> = {
+    name: 'starter-plugin',
+    pluralName: 'plugins',
+    getKey: (item) => item.name,
+    fields: [
+      {
+        key: 'name',
+        label: 'Name',
+        primary: true,
+        searchable: true,
+      },
+      {
+        key: 'category',
+        label: 'Category',
+        badge: true,
+        searchable: true,
+      },
+      {
+        key: 'description',
+        label: 'Description',
+        secondary: true,
+        searchable: true,
+      },
+      {
+        key: 'author.name',
+        label: 'Author',
+        searchable: true,
+        render: (item) => (item.author?.name ? `by ${item.author.name}` : ''),
+      },
+    ],
+  };
 
   return (
-    <Container component="main" data-testid="starter-pack-screen" maxWidth="md" sx={{ py: 4 }}>
+    <Container
+      component="main"
+      data-testid="starter-pack-screen"
+      maxWidth="lg"
+      sx={{ py: 2.5 }}
+    >
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
         <Box
           sx={{
@@ -211,7 +258,11 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
           <RocketLaunchIcon />
         </Box>
         <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: 600, lineHeight: 1.2 }}
+          >
             SDE Starter Pack
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -261,9 +312,16 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
         )}
       </Paper>
 
-      {!fetching && totalCount > 0 && (
+      {!isLoading && totalCount > 0 && (
         <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
-          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Stack
+            direction="row"
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 1,
+            }}
+          >
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               Plugin progress
             </Typography>
@@ -278,7 +336,9 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                   disabled={installingAll}
                   onClick={() => void handleInstallAll()}
                 >
-                  {installingAll ? 'Installing…' : `Install All (${pendingCount})`}
+                  {installingAll
+                    ? 'Installing…'
+                    : `Install All (${pendingCount})`}
                 </Button>
               )}
             </Stack>
@@ -291,11 +351,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
         </Paper>
       )}
 
-      {fetching ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress />
-        </Box>
-      ) : plugins.length === 0 ? (
+      {!isLoading && plugins.length === 0 ? (
         <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             Add the official marketplace to discover SDE plugins.
@@ -310,65 +366,40 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
         </Paper>
       ) : (
         <>
-          <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ display: 'block', mb: 1 }}
+          >
             Recommended plugins
           </Typography>
-          <Paper variant="outlined">
-            <List disablePadding>
-              {plugins.map((plugin, idx) => {
-                const state = installStates[plugin.name] ?? 'idle';
+          <EntityDataGrid<MarketplacePlugin>
+            entity={entity}
+            data={plugins}
+            isLoading={isLoading}
+            searchPlaceholder="Search plugins…"
+            cardSlots={{
+              footer: (item) => {
+                const state = installStates[item.name] ?? 'idle';
                 return (
-                  <ListItem
-                    key={plugin.name}
-                    data-testid={`starter-plugin-${plugin.name}`}
-                    divider={idx < plugins.length - 1}
-                    sx={{ py: 1.5, pr: 14 }}
-                    secondaryAction={
-                      <Button
-                        size="small"
-                        variant={state === 'done' ? 'outlined' : 'contained'}
-                        disabled={state !== 'idle'}
-                        onClick={() => setPreviewPlugin(plugin)}
-                        sx={{ minWidth: 92 }}
-                      >
-                        {state === 'done'
-                          ? 'Installed'
-                          : state === 'loading'
-                            ? 'Installing…'
-                            : 'Install'}
-                      </Button>
-                    }
+                  <Button
+                    size="small"
+                    variant={state === 'done' ? 'outlined' : 'contained'}
+                    disabled={state !== 'idle'}
+                    onClick={() => setPreviewPlugin(item)}
+                    data-testid={`starter-plugin-install-${item.name}`}
+                    sx={{ minWidth: 92 }}
                   >
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                          <Box component="strong">{plugin.name}</Box>
-                          {plugin.category && (
-                            <Chip
-                              label={plugin.category}
-                              size="small"
-                              variant="outlined"
-                              sx={{ height: 18, fontSize: 10 }}
-                            />
-                          )}
-                        </Stack>
-                      }
-                      secondary={
-                        <>
-                          {plugin.description}
-                          {plugin.author?.name && (
-                            <Typography variant="caption" sx={{ display: 'block' }}>
-                              by {plugin.author.name}
-                            </Typography>
-                          )}
-                        </>
-                      }
-                    />
-                  </ListItem>
+                    {state === 'done'
+                      ? 'Installed'
+                      : state === 'loading'
+                        ? 'Installing…'
+                        : 'Install'}
+                  </Button>
                 );
-              })}
-            </List>
-          </Paper>
+              },
+            }}
+          />
 
           <Stack direction="row" sx={{ mt: 2, justifyContent: 'flex-end' }}>
             <Button
@@ -385,7 +416,10 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       <PluginInstallPreviewDialog
         open={previewPlugin !== null}
         plugin={previewPlugin}
-        installing={previewPlugin !== null && installStates[previewPlugin.name] === 'loading'}
+        installing={
+          previewPlugin !== null &&
+          installStates[previewPlugin.name] === 'loading'
+        }
         onCancel={() => setPreviewPlugin(null)}
         onConfirm={() => void handleConfirmInstall()}
       />

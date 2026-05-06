@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -9,14 +10,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  IconButton,
   Link,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -27,6 +22,11 @@ import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { MarketplaceDetail } from './MarketplaceDetail.js';
 import { MarketplaceImportDialog } from './MarketplaceImportDialog.js';
+import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
+import type {
+  EntityDef,
+  RowAction,
+} from '../../components/EntityDataGrid/index.js';
 
 interface MarketplacePlugin {
   name: string;
@@ -54,6 +54,7 @@ interface MarketplaceSummary {
 
 const SKILLFORGE_LOCAL_ID = 'skillforge-imports';
 const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
+const MARKETPLACES_QUERY_KEY = ['marketplaces', 'personal'] as const;
 
 function sourceLabel(source: MarketplaceSource): {
   badge: string;
@@ -77,58 +78,54 @@ function sourceLabel(source: MarketplaceSource): {
 }
 
 export function MarketplaceList(): React.ReactElement {
-  const [items, setItems] = useState<MarketplaceSummary[]>([]);
+  const qc = useQueryClient();
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState<MarketplaceSummary | null>(null);
+  const [confirmRemove, setConfirmRemove] =
+    useState<MarketplaceSummary | null>(null);
   const [selected, setSelected] = useState<MarketplaceSummary | null>(null);
 
-  const load = async (): Promise<void> => {
-    try {
+  const { data, isLoading, error } = useQuery<MarketplaceSummary[]>({
+    queryKey: MARKETPLACES_QUERY_KEY,
+    queryFn: async () => {
       const list = await callIpc<MarketplaceSummary[]>('marketplace.list', {
         scope: 'personal',
       });
-      const filtered = Array.isArray(list)
+      return Array.isArray(list)
         ? list.filter((m) => m.id !== SKILLFORGE_LOCAL_ID)
         : [];
-      setItems(filtered);
-    } catch (err) {
-      const message = err instanceof IpcCallError ? err.message : String(err);
-      setToast({ variant: 'error', message });
-    }
-  };
+    },
+  });
 
-  useEffect(() => {
-    void load();
-  }, []);
-
-  const handleRefresh = async (id: string): Promise<void> => {
-    try {
+  const refreshMutation = useMutation({
+    mutationFn: async (id: string) => {
       await callIpc('marketplace.refresh', { scope: 'personal', id });
-      await load();
+      return id;
+    },
+    onSuccess: async (id) => {
       setToast({ variant: 'success', message: `${id} refreshed` });
-    } catch (err) {
+      await qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
+    },
+    onError: (err) => {
       const message = err instanceof IpcCallError ? err.message : String(err);
       setToast({ variant: 'error', message });
-    }
-  };
+    },
+  });
 
-  const handleRemoveConfirmed = async (): Promise<void> => {
-    if (!confirmRemove) return;
-    try {
-      await callIpc('marketplace.remove', {
-        scope: 'personal',
-        id: confirmRemove.id,
-      });
-      setItems((prev) => prev.filter((m) => m.id !== confirmRemove.id));
-      setToast({ variant: 'success', message: `${confirmRemove.id} removed` });
-    } catch (err) {
+  const removeMutation = useMutation({
+    mutationFn: async (m: MarketplaceSummary) => {
+      await callIpc('marketplace.remove', { scope: 'personal', id: m.id });
+      return m;
+    },
+    onSuccess: async (m) => {
+      setToast({ variant: 'success', message: `${m.id} removed` });
+      await qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
+    },
+    onError: (err) => {
       const message = err instanceof IpcCallError ? err.message : String(err);
       setToast({ variant: 'error', message });
-    } finally {
-      setConfirmRemove(null);
-    }
-  };
+    },
+  });
 
   if (selected) {
     return (
@@ -136,27 +133,132 @@ export function MarketplaceList(): React.ReactElement {
         marketplace={selected}
         onBack={() => {
           setSelected(null);
-          void load();
+          void qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
         }}
       />
     );
   }
 
+  const entity: EntityDef<MarketplaceSummary> = {
+    name: 'marketplace',
+    pluralName: 'marketplaces',
+    getKey: (item) => item.id,
+    fields: [
+      {
+        key: 'manifest.name',
+        label: 'Name',
+        primary: true,
+        searchable: true,
+        render: (item) => {
+          const isOfficial =
+            item.source.kind === 'github' && item.source.repo === OFFICIAL_REPO;
+          return (
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Box component="span">{item.manifest?.name ?? item.id}</Box>
+              {isOfficial && (
+                <Chip
+                  icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
+                  label="official"
+                  size="small"
+                  color="primary"
+                  data-testid={`marketplace-${item.id}-official-badge`}
+                />
+              )}
+            </Stack>
+          );
+        },
+      },
+      {
+        key: 'source.kind',
+        label: 'Source',
+        badge: true,
+        searchable: true,
+        render: (item) => {
+          const isLocal =
+            item.id === SKILLFORGE_LOCAL_ID || item.source.kind === 'directory';
+          return isLocal ? 'local' : sourceLabel(item.source).badge;
+        },
+      },
+      {
+        key: 'manifest.plugins',
+        label: 'Plugins',
+        badge: true,
+        render: (item) => {
+          const count = item.manifest?.plugins.length ?? 0;
+          return `${count} plugin${count === 1 ? '' : 's'}`;
+        },
+      },
+      {
+        key: 'manifest.description',
+        label: 'Description',
+        secondary: true,
+        searchable: true,
+        render: (item) => {
+          const label = sourceLabel(item.source);
+          return (
+            <Box>
+              {item.manifest?.description && (
+                <span>{item.manifest.description} · </span>
+              )}
+              {label.href ? (
+                <Link
+                  href={label.href}
+                  target="_blank"
+                  rel="noopener"
+                  underline="hover"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {label.detail}
+                </Link>
+              ) : (
+                <span>{label.detail}</span>
+              )}
+            </Box>
+          );
+        },
+      },
+    ],
+  };
+
+  const actions: RowAction<MarketplaceSummary>[] = [
+    {
+      label: 'Refresh',
+      icon: <RefreshIcon fontSize="small" />,
+      onClick: (item) => refreshMutation.mutate(item.id),
+    },
+    {
+      label: 'Remove',
+      icon: <DeleteOutlineIcon fontSize="small" />,
+      variant: 'destructive',
+      onClick: (item) => setConfirmRemove(item),
+    },
+  ];
+
   return (
     <Container
       component="main"
       data-testid="marketplace-list"
-      maxWidth="md"
-      sx={{ py: 4 }}
+      maxWidth="lg"
+      sx={{ py: 2.5 }}
     >
       <Stack
         direction="row"
-        sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}
+        sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h5" component="h1">
           Marketplaces
         </Typography>
-        <Stack direction="row" spacing={1}>
+      </Stack>
+
+      <EntityDataGrid<MarketplaceSummary>
+        entity={entity}
+        data={data}
+        isLoading={isLoading}
+        error={error}
+        actions={actions}
+        searchPlaceholder="Search marketplaces…"
+        onRowClick={(item) => setSelected(item)}
+        toolbarActions={
           <Button
             variant="outlined"
             startIcon={<DownloadIcon />}
@@ -165,113 +267,8 @@ export function MarketplaceList(): React.ReactElement {
           >
             Import from URL
           </Button>
-        </Stack>
-      </Stack>
-
-      <List disablePadding>
-        {items.length === 0 && (
-          <Box
-            sx={{
-              border: 1,
-              borderStyle: 'dashed',
-              borderColor: 'divider',
-              borderRadius: 1,
-              p: 4,
-              textAlign: 'center',
-              color: 'text.secondary',
-            }}
-          >
-            <Typography variant="body2">No marketplaces configured yet.</Typography>
-          </Box>
-        )}
-        {items.map((m) => {
-          const isLocal = m.id === SKILLFORGE_LOCAL_ID || m.source.kind === 'directory';
-          const isOfficial = m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO;
-          const label = sourceLabel(m.source);
-          return (
-            <ListItem
-              key={m.id}
-              data-testid={`marketplace-item-${m.id}`}
-              divider
-              disablePadding
-              secondaryAction={
-                <Stack direction="row" spacing={0.5}>
-                  <Tooltip title="Refresh">
-                    <IconButton
-                      size="small"
-                      onClick={() => void handleRefresh(m.id)}
-                      aria-label="Refresh"
-                    >
-                      <RefreshIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Remove">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => setConfirmRemove(m)}
-                      aria-label="Remove"
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              }
-            >
-              <ListItemButton onClick={() => setSelected(m)}>
-                <ListItemText
-                  primary={
-                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                      <Box component="strong">{m.manifest?.name ?? m.id}</Box>
-                      <Chip
-                        label={isLocal ? 'local' : label.badge}
-                        size="small"
-                        color={isLocal ? 'default' : 'primary'}
-                        variant={isLocal ? 'outlined' : 'filled'}
-                      />
-                      {isOfficial && (
-                        <Chip
-                          icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
-                          label="official"
-                          size="small"
-                          color="primary"
-                          data-testid={`marketplace-${m.id}-official-badge`}
-                        />
-                      )}
-                    </Stack>
-                  }
-                  secondary={
-                    <>
-                      {m.manifest?.description && (
-                        <span>{m.manifest.description} · </span>
-                      )}
-                      {label.href ? (
-                        <Link
-                          href={label.href}
-                          target="_blank"
-                          rel="noopener"
-                          underline="hover"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {label.detail}
-                        </Link>
-                      ) : (
-                        <span>{label.detail}</span>
-                      )}
-                      {m.manifest?.plugins && (
-                        <Typography variant="caption" sx={{ display: 'block' }}>
-                          {m.manifest.plugins.length} plugin
-                          {m.manifest.plugins.length === 1 ? '' : 's'}
-                        </Typography>
-                      )}
-                    </>
-                  }
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+        }
+      />
 
       <MarketplaceImportDialog
         open={showImport}
@@ -279,7 +276,7 @@ export function MarketplaceList(): React.ReactElement {
         onMarketplaceAdded={(id) => {
           setShowImport(false);
           setToast({ variant: 'success', message: `Marketplace ${id} added` });
-          void load();
+          void qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
         }}
       />
 
@@ -292,13 +289,21 @@ export function MarketplaceList(): React.ReactElement {
         <DialogTitle>Remove marketplace</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Remove marketplace <strong>{confirmRemove?.id}</strong>? This will not delete
-            any installed plugins; only the marketplace registration is removed.
+            Remove marketplace <strong>{confirmRemove?.id}</strong>? This will
+            not delete any installed plugins; only the marketplace registration
+            is removed.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmRemove(null)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleRemoveConfirmed}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              if (confirmRemove) removeMutation.mutate(confirmRemove);
+              setConfirmRemove(null);
+            }}
+          >
             Confirm
           </Button>
         </DialogActions>
