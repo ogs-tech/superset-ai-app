@@ -3,14 +3,18 @@ import {
   Alert,
   Box,
   CircularProgress,
+  MenuItem,
   Pagination,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import { CardView } from './CardView.js';
 import { Toolbar } from './Toolbar.js';
 import type { EntityDataGridProps } from './types.js';
 import { filterBySearch, paginate } from './utils.js';
+
+const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const;
 
 export function EntityDataGrid<T>({
   entity,
@@ -20,16 +24,22 @@ export function EntityDataGrid<T>({
   actions,
   toolbarActions,
   cardSlots,
-  pageSize = 12,
+  pageSize = 5,
   searchPlaceholder,
   emptyState,
   onRowClick,
 }: EntityDataGridProps<T>): React.ReactElement {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
 
   const handleSearchChange = (value: string): void => {
     setSearch(value);
+    setPage(1);
+  };
+
+  const handlePageSizeChange = (value: number): void => {
+    setCurrentPageSize(value);
     setPage(1);
   };
 
@@ -38,12 +48,22 @@ export function EntityDataGrid<T>({
     () => filterBySearch(items, entity.fields, search),
     [items, entity.fields, search],
   );
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / currentPageSize));
   const safePage = Math.min(page, totalPages);
   const paged = useMemo(
-    () => paginate(filtered, safePage, pageSize),
-    [filtered, safePage, pageSize],
+    () => paginate(filtered, safePage, currentPageSize),
+    [filtered, safePage, currentPageSize],
   );
+
+  const pageSizeOptions = useMemo<readonly number[]>(() => {
+    if ((PAGE_SIZE_OPTIONS as readonly number[]).includes(currentPageSize)) {
+      return PAGE_SIZE_OPTIONS;
+    }
+    return [currentPageSize, ...PAGE_SIZE_OPTIONS].sort((a, b) => a - b);
+  }, [currentPageSize]);
+
+  const showFooter =
+    filtered.length > Math.min(currentPageSize, ...PAGE_SIZE_OPTIONS);
 
   return (
     <Box data-testid={`entity-grid-${entity.name}`}>
@@ -93,21 +113,53 @@ export function EntityDataGrid<T>({
         />
       )}
 
-      {filtered.length > pageSize && (
+      {showFooter && (
         <Stack
-          direction="row"
-          sx={{ justifyContent: 'center', mt: 2 }}
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          sx={{
+            mt: 2,
+            alignItems: { sm: 'center' },
+            justifyContent: 'space-between',
+          }}
           data-testid={`entity-grid-pagination-${entity.name}`}
         >
-          <Pagination
-            count={totalPages}
-            page={safePage}
-            onChange={(_, p) => setPage(p)}
-            color="primary"
+          <TextField
+            select
             size="small"
-            showFirstButton
-            showLastButton
-          />
+            label="Per page"
+            value={currentPageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            slotProps={{
+              htmlInput: {
+                'data-testid': `entity-grid-page-size-${entity.name}`,
+                'aria-label': `Items per page for ${entity.name}`,
+              },
+            }}
+            sx={{ minWidth: 110 }}
+          >
+            {pageSizeOptions.map((size) => (
+              <MenuItem key={size} value={size}>
+                {size}
+              </MenuItem>
+            ))}
+          </TextField>
+          {totalPages > 1 ? (
+            <Pagination
+              count={totalPages}
+              page={safePage}
+              onChange={(_, p) => setPage(p)}
+              color="primary"
+              size="small"
+              showFirstButton
+              showLastButton
+            />
+          ) : (
+            <Box />
+          )}
+          <Typography variant="caption" color="text.secondary">
+            {filtered.length} {filtered.length === 1 ? 'item' : 'items'}
+          </Typography>
         </Stack>
       )}
     </Box>
