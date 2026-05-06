@@ -33,9 +33,19 @@ export function TableView<T>({
   return (
     <TableContainer
       component={Box}
-      sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}
+      sx={{
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
+        maxHeight: 'calc(100vh - 260px)',
+        overflowY: 'auto',
+      }}
     >
-      <Table size="small" data-testid={`entity-grid-table-${entity.name}`}>
+      <Table
+        size="small"
+        stickyHeader
+        data-testid={`entity-grid-table-${entity.name}`}
+      >
         <TableHead>
           <TableRow>
             {columns.map((col) => (
@@ -46,6 +56,7 @@ export function TableView<T>({
                   width: col.width,
                   fontWeight: 600,
                   bgcolor: 'background.default',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {col.label}
@@ -58,6 +69,7 @@ export function TableView<T>({
                   width: 1,
                   fontWeight: 600,
                   bgcolor: 'background.default',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Actions
@@ -75,7 +87,16 @@ export function TableView<T>({
               data-testid={`entity-grid-row-${entity.name}-${entity.getKey(item)}`}
             >
               {columns.map((col) => (
-                <TableCell key={col.key} align={col.align ?? 'left'}>
+                <TableCell
+                  key={col.key}
+                  align={col.align ?? 'left'}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: col.width ?? 360,
+                  }}
+                >
                   {renderCell(col, item)}
                 </TableCell>
               ))}

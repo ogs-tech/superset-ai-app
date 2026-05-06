@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EntityDataGrid } from '../../src/renderer/components/EntityDataGrid/index.js';
 import type {
@@ -52,17 +52,15 @@ describe('<EntityDataGrid>', () => {
     expect(within(grid).getAllByText(/Alpha|Bravo|Charlie/)).toHaveLength(3);
   });
 
-  it('switches to table view when toggle clicked and persists', () => {
-    const { rerender } = render(
-      <EntityDataGrid<Item> entity={entity} data={items} />,
-    );
-    fireEvent.click(screen.getByTestId('entity-grid-view-table-thing'));
-    expect(screen.getByTestId('entity-grid-table-thing')).toBeInTheDocument();
-    expect(window.localStorage.getItem('entity-grid:thing:view')).toBe('table');
-
-    // re-render simulates remount — should restore from localStorage
-    rerender(<EntityDataGrid<Item> entity={entity} data={items} />);
-    expect(screen.getByTestId('entity-grid-table-thing')).toBeInTheDocument();
+  it('does not expose the view-mode toggle (table view hidden)', () => {
+    render(<EntityDataGrid<Item> entity={entity} data={items} />);
+    expect(
+      screen.queryByTestId('entity-grid-view-table-thing'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('entity-grid-view-card-thing'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('entity-grid-table-thing')).not.toBeInTheDocument();
   });
 
   it('filters items by searchable fields', async () => {

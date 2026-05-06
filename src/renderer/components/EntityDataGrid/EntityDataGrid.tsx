@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -8,10 +8,9 @@ import {
   Typography,
 } from '@mui/material';
 import { CardView } from './CardView.js';
-import { TableView } from './TableView.js';
 import { Toolbar } from './Toolbar.js';
-import type { EntityDataGridProps, ViewMode } from './types.js';
-import { filterBySearch, paginate, viewStorageKey } from './utils.js';
+import type { EntityDataGridProps } from './types.js';
+import { filterBySearch, paginate } from './utils.js';
 
 export function EntityDataGrid<T>({
   entity,
@@ -26,15 +25,8 @@ export function EntityDataGrid<T>({
   emptyState,
   onRowClick,
 }: EntityDataGridProps<T>): React.ReactElement {
-  const [view, setView] = useState<ViewMode>(() =>
-    readPersistedView(entity.name, entity.defaultView ?? 'card'),
-  );
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    persistView(entity.name, view);
-  }, [entity.name, view]);
 
   const handleSearchChange = (value: string): void => {
     setSearch(value);
@@ -60,8 +52,8 @@ export function EntityDataGrid<T>({
         search={search}
         onSearchChange={handleSearchChange}
         searchPlaceholder={searchPlaceholder}
-        view={view}
-        onViewChange={setView}
+        view="card"
+        onViewChange={() => {}}
         toolbarActions={toolbarActions}
       />
 
@@ -91,19 +83,12 @@ export function EntityDataGrid<T>({
           fallback={emptyState}
           entityPlural={entity.pluralName ?? `${entity.name}s`}
         />
-      ) : view === 'card' ? (
+      ) : (
         <CardView
           entity={entity}
           items={paged}
           actions={actions}
           cardSlots={cardSlots}
-          onRowClick={onRowClick}
-        />
-      ) : (
-        <TableView
-          entity={entity}
-          items={paged}
-          actions={actions}
           onRowClick={onRowClick}
         />
       )}
@@ -177,22 +162,3 @@ function EmptyBlock({
   );
 }
 
-function readPersistedView(name: string, fallback: ViewMode): ViewMode {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = window.localStorage.getItem(viewStorageKey(name));
-    if (raw === 'card' || raw === 'table') return raw;
-  } catch {
-    /* localStorage may be disabled */
-  }
-  return fallback;
-}
-
-function persistView(name: string, view: ViewMode): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(viewStorageKey(name), view);
-  } catch {
-    /* ignore */
-  }
-}
