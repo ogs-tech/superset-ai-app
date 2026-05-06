@@ -1,0 +1,202 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MarketplaceDetail } from '../../../../src/renderer/screens/marketplaces/MarketplaceDetail.js';
+import { mockApi, ok, type CallSpy } from '../../test-utils.js';
+
+let call: CallSpy;
+
+const marketplace = {
+  id: 'official',
+  source: { kind: 'github' as const, repo: 'anthropics/claude-plugins-official' },
+  manifest: {
+    name: 'Official',
+    description: 'Official Claude plugins',
+    plugins: [
+      {
+        name: 'plugin-alpha',
+        description: 'Alpha helper',
+        author: { name: 'Anthropic' },
+        category: 'productivity',
+        source: 'a',
+      },
+      {
+        name: 'plugin-bravo',
+        description: 'Bravo helper',
+        author: { name: 'Community' },
+        category: 'devtools',
+        source: 'b',
+      },
+    ],
+  },
+};
+
+beforeEach(() => {
+  call = mockApi();
+  call.mockImplementation((method: string) => {
+    if (method === 'plugin.list') return Promise.resolve(ok([]));
+    return Promise.resolve(ok(undefined));
+  });
+});
+
+describe('<MarketplaceDetail>', () => {
+  it('renders plugins via the entity grid with install buttons', async () => {
+    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+
+    expect(
+      await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('entity-grid-card-marketplace-plugin-plugin-bravo'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
+    ).toHaveTextContent('Install');
+  });
+
+  it('filters plugins through the grid search input', async () => {
+    const user = userEvent.setup();
+    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+
+    await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha');
+    await user.type(
+      screen.getByTestId('entity-grid-search-marketplace-plugin'),
+      'bravo',
+    );
+
+    expect(
+      screen.queryByTestId('entity-grid-card-marketplace-plugin-plugin-alpha'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('entity-grid-card-marketplace-plugin-plugin-bravo'),
+    ).toBeInTheDocument();
+  });
+
+  it('marks already-installed plugins as Installed', async () => {
+    call.mockImplementation((method: string) => {
+      if (method === 'plugin.list')
+        return Promise.resolve(ok([{ id: 'plugin-alpha' }]));
+      return Promise.resolve(ok(undefined));
+    });
+
+    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
+      ).toHaveTextContent('Installed');
+    });
+    expect(
+      screen.getByTestId('marketplace-plugin-install-plugin-bravo'),
+    ).toHaveTextContent('Install');
+  });
+
+  it('opens the install preview dialog when Install is clicked', async () => {
+    const user = userEvent.setup();
+    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+
+    const button = await screen.findByTestId(
+      'marketplace-plugin-install-plugin-alpha',
+    );
+    await user.click(button);
+
+    expect(
+      await screen.findByTestId('plugin-install-preview-dialog'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an empty state when the marketplace has no plugins', async () => {
+    render(
+      <MarketplaceDetail
+        marketplace={{
+          ...marketplace,
+          manifest: { ...marketplace.manifest, plugins: [] },
+        }}
+        onBack={() => {}}
+      />,
+    );
+
+    expect(
+      await screen.findByText(/No plugins listed in this marketplace/i),
+    ).toBeInTheDocument();
+  });
+
+  it('calls onBack when Back is clicked', async () => {
+    const user = userEvent.setup();
+    let backCount = 0;
+    render(
+      <MarketplaceDetail
+        marketplace={marketplace}
+        onBack={() => {
+          backCount += 1;
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /back/i }));
+    expect(backCount).toBe(1);
+  });
+
+  it('renders the official badge for the official marketplace', async () => {
+    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    expect(
+      await screen.findByTestId('marketplace-official-badge'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a manifest warning when the manifest is missing', () => {
+    render(
+      <MarketplaceDetail
+        marketplace={{ id: 'broken', source: marketplace.source }}
+        onBack={() => {}}
+      />,
+    );
+    expect(
+      screen.getByText(/Marketplace manifest could not be loaded/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the install error inline when install fails', async () => {
+    const user = userEvent.setup();
+    call.mockImplementation((method: string) => {
+      if (method === 'plugin.list') return Promise.resolve(ok([]));
+      if (method === 'plugin.previewFromMarketplace')
+        return Promise.resolve(
+          ok({
+            id: 'plugin-alpha',
+            version: '1.0.0',
+            description: 'Alpha helper',
+            artifacts: {
+              skills: [],
+              agents: [],
+              commands: [],
+              hooks: 0,
+              mcp: false,
+              lsp: false,
+            },
+          }),
+        );
+      if (method === 'plugin.installFromMarketplace')
+        return Promise.resolve({
+          ok: false,
+          error: { kind: 'install-failed', message: 'boom' },
+        });
+      return Promise.resolve(ok(undefined));
+    });
+
+    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+
+    await user.click(
+      await screen.findByTestId('marketplace-plugin-install-plugin-alpha'),
+    );
+    const confirm = await screen.findByTestId('plugin-install-confirm');
+    await waitFor(() => expect(confirm).not.toBeDisabled());
+    await user.click(confirm);
+
+    const errorEl = await screen.findByTestId(
+      'marketplace-plugin-error-plugin-alpha',
+    );
+    expect(within(errorEl.parentElement!).getByText(/boom/)).toBeInTheDocument();
+  });
+});

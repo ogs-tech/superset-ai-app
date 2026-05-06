@@ -1,26 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Chip,
   Container,
-  InputAdornment,
   Link,
-  List,
-  ListItem,
-  ListItemText,
-  Paper,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SearchIcon from '@mui/icons-material/Search';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { PluginInstallPreviewDialog } from './PluginInstallPreviewDialog.js';
+import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
+import type {
+  CardSlots,
+  EntityDef,
+} from '../../components/EntityDataGrid/index.js';
 
 interface MarketplacePlugin {
   name: string;
@@ -77,6 +75,12 @@ function sourceLabel(source: MarketplaceSource): {
   return { badge: 'url', detail: source.url, href: source.url };
 }
 
+function installButtonLabel(state: InstallState | undefined): string {
+  if (state === 'done') return 'Installed';
+  if (state === 'loading') return 'Installing…';
+  return 'Install';
+}
+
 export function MarketplaceDetail({
   marketplace,
   onBack,
@@ -84,7 +88,6 @@ export function MarketplaceDetail({
   const [installStates, setInstallStates] = useState<Record<string, InstallState>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const [search, setSearch] = useState('');
   const [previewPlugin, setPreviewPlugin] = useState<MarketplacePlugin | null>(null);
 
   useEffect(() => {
@@ -149,17 +152,74 @@ export function MarketplaceDetail({
     marketplace.source.kind === 'github' && marketplace.source.repo === OFFICIAL_REPO;
   const label = sourceLabel(marketplace.source);
 
-  const filteredPlugins = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return plugins;
-    return plugins.filter((p) => {
-      const haystack = [p.name, p.description, p.author?.name, p.category]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [plugins, search]);
+  const entity: EntityDef<MarketplacePlugin> = {
+    name: 'marketplace-plugin',
+    pluralName: 'plugins',
+    getKey: (plugin) => plugin.name,
+    fields: [
+      {
+        key: 'name',
+        label: 'Name',
+        primary: true,
+        searchable: true,
+      },
+      {
+        key: 'category',
+        label: 'Category',
+        badge: true,
+        searchable: true,
+      },
+      {
+        key: 'description',
+        label: 'Description',
+        secondary: true,
+        searchable: true,
+        render: (plugin) => (
+          <Box>
+            <Box component="span">{plugin.description}</Box>
+            {plugin.author && (
+              <Typography variant="caption" sx={{ display: 'block' }}>
+                by {plugin.author.name}
+              </Typography>
+            )}
+            {errors[plugin.name] && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ display: 'block', mt: 0.5 }}
+                data-testid={`marketplace-plugin-error-${plugin.name}`}
+              >
+                {errors[plugin.name]}
+              </Typography>
+            )}
+          </Box>
+        ),
+      },
+      {
+        key: 'author.name',
+        label: 'Author',
+        hideInCard: true,
+        searchable: true,
+      },
+    ],
+  };
+
+  const cardSlots: CardSlots<MarketplacePlugin> = {
+    footer: (plugin) => {
+      const state = installStates[plugin.name];
+      return (
+        <Button
+          size="small"
+          variant={state === 'done' ? 'outlined' : 'contained'}
+          disabled={state !== undefined && state !== 'idle'}
+          onClick={() => setPreviewPlugin(plugin)}
+          data-testid={`marketplace-plugin-install-${plugin.name}`}
+        >
+          {installButtonLabel(state)}
+        </Button>
+      );
+    },
+  };
 
   return (
     <Container component="main" data-testid="marketplace-detail" maxWidth="md" sx={{ py: 4 }}>
@@ -211,97 +271,29 @@ export function MarketplaceDetail({
         </Alert>
       )}
 
-      {plugins.length > 0 && (
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}
-        >
-          <TextField
-            size="small"
-            placeholder="Search plugins"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            slotProps={{
-              htmlInput: { 'data-testid': 'marketplace-plugin-search' },
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              },
+      <EntityDataGrid<MarketplacePlugin>
+        entity={entity}
+        data={plugins}
+        cardSlots={cardSlots}
+        searchPlaceholder="Search plugins"
+        emptyState={
+          <Box
+            sx={{
+              border: 1,
+              borderStyle: 'dashed',
+              borderColor: 'divider',
+              borderRadius: 1,
+              p: 4,
+              textAlign: 'center',
+              color: 'text.secondary',
             }}
-            sx={{ flex: 1 }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            {filteredPlugins.length} of {plugins.length}
-          </Typography>
-        </Stack>
-      )}
-
-      <Paper variant="outlined" sx={{ maxHeight: '52vh', overflowY: 'auto' }}>
-        <List disablePadding>
-          {plugins.length === 0 && (
-            <ListItem>
-              <ListItemText primary="No plugins listed in this marketplace." />
-            </ListItem>
-          )}
-          {plugins.length > 0 && filteredPlugins.length === 0 && (
-            <ListItem>
-              <ListItemText primary="No plugins match your search." />
-            </ListItem>
-          )}
-          {filteredPlugins.map((plugin) => (
-            <ListItem
-              key={plugin.name}
-              data-testid={`marketplace-plugin-${plugin.name}`}
-              divider
-              sx={{ py: 1.5, pr: 14 }}
-              secondaryAction={
-                <Button
-                  size="small"
-                  variant={installStates[plugin.name] === 'done' ? 'outlined' : 'contained'}
-                  disabled={
-                    installStates[plugin.name] !== undefined &&
-                    installStates[plugin.name] !== 'idle'
-                  }
-                  onClick={() => setPreviewPlugin(plugin)}
-                >
-                  {installStates[plugin.name] === 'done'
-                    ? 'Installed'
-                    : installStates[plugin.name] === 'loading'
-                      ? 'Installing…'
-                      : 'Install'}
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={<Box component="strong">{plugin.name}</Box>}
-                secondary={
-                  <>
-                    {plugin.description}
-                    {plugin.author && (
-                      <Typography variant="caption" sx={{ display: 'block' }}>
-                        by {plugin.author.name}
-                      </Typography>
-                    )}
-                    {errors[plugin.name] && (
-                      <Typography
-                        variant="caption"
-                        color="error"
-                        sx={{ display: 'block', mt: 0.5 }}
-                      >
-                        {errors[plugin.name]}
-                      </Typography>
-                    )}
-                  </>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
+          >
+            <Typography variant="body2">
+              No plugins listed in this marketplace.
+            </Typography>
+          </Box>
+        }
+      />
 
       <PluginInstallPreviewDialog
         open={previewPlugin !== null}
