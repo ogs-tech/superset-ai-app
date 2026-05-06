@@ -38,6 +38,64 @@ export class PluginManifestParser {
       });
     }
 
-    return result.data as PluginManifest;
+    // Claude Code auto-discovers artifacts from the directory layout — most
+    // plugins (incl. all official ones) don't declare an `artifacts` block in
+    // plugin.json. Merge filesystem-discovered artifacts with manifest-declared
+    // ones (manifest wins where it provides values).
+    const declared = result.data.artifacts;
+    const discovered = await this.discoverArtifacts(pluginDir);
+
+    const merged = {
+      skills: declared.skills.length > 0 ? declared.skills : discovered.skills,
+      agents: declared.agents.length > 0 ? declared.agents : discovered.agents,
+      commands: declared.commands.length > 0 ? declared.commands : discovered.commands,
+      hooks: declared.hooks || discovered.hooks,
+      mcp: declared.mcp || discovered.mcp,
+      lsp: declared.lsp || discovered.lsp,
+    };
+
+    return { ...result.data, artifacts: merged } as PluginManifest;
+  }
+
+  private async discoverArtifacts(pluginDir: string): Promise<PluginManifest['artifacts']> {
+    const [skills, agents, commands, hooksDir, hooksRoot, mcp] = await Promise.all([
+      this.listSubdirectories(`${pluginDir}/skills`),
+      this.listMarkdownNames(`${pluginDir}/agents`),
+      this.listMarkdownNames(`${pluginDir}/commands`),
+      this.fs.pathExists(`${pluginDir}/hooks/hooks.json`),
+      this.fs.pathExists(`${pluginDir}/hooks.json`),
+      this.fs.pathExists(`${pluginDir}/.mcp.json`),
+    ]);
+
+    return {
+      skills,
+      agents,
+      commands,
+      hooks: hooksDir || hooksRoot,
+      mcp,
+      lsp: false,
+    };
+  }
+
+  private async listSubdirectories(dir: string): Promise<string[]> {
+    if (!(await this.fs.pathExists(dir))) return [];
+    const entries = await this.fs.readdir(dir);
+    const dirs: string[] = [];
+    await Promise.all(
+      entries.map(async (name) => {
+        const stat = await this.fs.lstat(`${dir}/${name}`);
+        if (stat.kind === 'directory') dirs.push(name);
+      }),
+    );
+    return dirs.sort();
+  }
+
+  private async listMarkdownNames(dir: string): Promise<string[]> {
+    if (!(await this.fs.pathExists(dir))) return [];
+    const entries = await this.fs.readdir(dir);
+    return entries
+      .filter((n) => n.endsWith('.md'))
+      .map((n) => n.slice(0, -'.md'.length))
+      .sort();
   }
 }

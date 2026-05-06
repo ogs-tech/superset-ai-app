@@ -125,6 +125,12 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
       return pluginService.importFromMarketplace(plugin, scope, marketplaceId);
     },
 
+    'plugin.previewFromMarketplace': async (params) => {
+      const raw = asObject(params, 'plugin.previewFromMarketplace');
+      const plugin = raw['plugin'] as MarketplacePlugin;
+      return pluginService.previewFromMarketplace(plugin);
+    },
+
     'plugin.publish': async (params) => {
       const raw = asObject(params, 'plugin.publish');
       const id = pluginId(asString(raw['id'], 'id'));

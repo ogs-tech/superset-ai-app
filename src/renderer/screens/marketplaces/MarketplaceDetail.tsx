@@ -17,8 +17,10 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
+import { PluginInstallPreviewDialog } from './PluginInstallPreviewDialog.js';
 
 interface MarketplacePlugin {
   name: string;
@@ -52,6 +54,7 @@ interface MarketplaceDetailProps {
 type InstallState = 'idle' | 'loading' | 'done';
 
 const SKILLFORGE_LOCAL_ID = 'skillforge-imports';
+const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
 
 function sourceLabel(source: MarketplaceSource): {
   badge: string;
@@ -82,6 +85,7 @@ export function MarketplaceDetail({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [search, setSearch] = useState('');
+  const [previewPlugin, setPreviewPlugin] = useState<MarketplacePlugin | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,8 +136,17 @@ export function MarketplaceDetail({
     }
   };
 
+  const handleConfirmInstall = async (): Promise<void> => {
+    if (!previewPlugin) return;
+    const plugin = previewPlugin;
+    await handleInstall(plugin);
+    setPreviewPlugin(null);
+  };
+
   const plugins = marketplace.manifest?.plugins ?? [];
   const isLocal = marketplace.id === SKILLFORGE_LOCAL_ID || marketplace.source.kind === 'directory';
+  const isOfficial =
+    marketplace.source.kind === 'github' && marketplace.source.repo === OFFICIAL_REPO;
   const label = sourceLabel(marketplace.source);
 
   const filteredPlugins = useMemo(() => {
@@ -162,6 +175,15 @@ export function MarketplaceDetail({
               color={isLocal ? 'default' : 'primary'}
               variant={isLocal ? 'outlined' : 'filled'}
             />
+            {isOfficial && (
+              <Chip
+                icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
+                label="official"
+                size="small"
+                color="primary"
+                data-testid="marketplace-official-badge"
+              />
+            )}
           </Stack>
           {marketplace.manifest?.description && (
             <Typography variant="body2" color="text.secondary">
@@ -244,7 +266,7 @@ export function MarketplaceDetail({
                     installStates[plugin.name] !== undefined &&
                     installStates[plugin.name] !== 'idle'
                   }
-                  onClick={() => void handleInstall(plugin)}
+                  onClick={() => setPreviewPlugin(plugin)}
                 >
                   {installStates[plugin.name] === 'done'
                     ? 'Installed'
@@ -280,6 +302,16 @@ export function MarketplaceDetail({
           ))}
         </List>
       </Paper>
+
+      <PluginInstallPreviewDialog
+        open={previewPlugin !== null}
+        plugin={previewPlugin}
+        installing={
+          previewPlugin !== null && installStates[previewPlugin.name] === 'loading'
+        }
+        onCancel={() => setPreviewPlugin(null)}
+        onConfirm={() => void handleConfirmInstall()}
+      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </Container>

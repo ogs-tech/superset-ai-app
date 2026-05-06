@@ -43,6 +43,7 @@ import { CommandService } from './application/services/command-service.js';
 import { ReferenceService } from './application/services/reference-service.js';
 import { GlobalInstructionService } from './application/services/global-instruction-service.js';
 import { MarketplaceService } from './application/services/marketplace-service.js';
+import { MarketplaceSeeder } from './application/services/marketplace-seeder.js';
 import { SettingsMarketplaceRepository } from './infrastructure/marketplace/settings-marketplace-repository.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
@@ -201,6 +202,8 @@ async function wireIpc(): Promise<void> {
     git: gitClient,
     cacheDirRoot: marketplacesCacheRoot,
   });
+
+  await new MarketplaceSeeder({ marketplaceService }).seedDefaultsIfMissing('personal');
 
   const handlers = buildHandlers({
     settingsService,

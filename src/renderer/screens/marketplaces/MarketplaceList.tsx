@@ -22,6 +22,7 @@ import {
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { MarketplaceDetail } from './MarketplaceDetail.js';
@@ -52,6 +53,7 @@ interface MarketplaceSummary {
 }
 
 const SKILLFORGE_LOCAL_ID = 'skillforge-imports';
+const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
 
 function sourceLabel(source: MarketplaceSource): {
   badge: string;
@@ -184,6 +186,7 @@ export function MarketplaceList(): React.ReactElement {
         )}
         {items.map((m) => {
           const isLocal = m.id === SKILLFORGE_LOCAL_ID || m.source.kind === 'directory';
+          const isOfficial = m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO;
           const label = sourceLabel(m.source);
           return (
             <ListItem
@@ -226,6 +229,15 @@ export function MarketplaceList(): React.ReactElement {
                         color={isLocal ? 'default' : 'primary'}
                         variant={isLocal ? 'outlined' : 'filled'}
                       />
+                      {isOfficial && (
+                        <Chip
+                          icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
+                          label="official"
+                          size="small"
+                          color="primary"
+                          data-testid={`marketplace-${m.id}-official-badge`}
+                        />
+                      )}
                     </Stack>
                   }
                   secondary={

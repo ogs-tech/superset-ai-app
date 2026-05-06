@@ -1,78 +1,51 @@
 import { useState } from 'react';
-import { AppBar, Box, IconButton, Tab, Tabs, Toolbar, Tooltip } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings';
+import { Box } from '@mui/material';
+import { Sidebar, SIDEBAR_WIDTH, type SidebarTab } from '../components/Sidebar.js';
+import { HomeScreen } from './home/HomeScreen.js';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
 import { CommandList } from './commands/CommandList.js';
 import { ReferenceList } from './references/ReferenceList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
+import { TemplateList } from './templates/TemplateList.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
-
-type MainTab =
-  | 'skills'
-  | 'agents'
-  | 'commands'
-  | 'references'
-  | 'global-instructions'
-  | 'plugins'
-  | 'marketplaces';
 
 interface MainProps {
   onOpenSettings: () => void;
 }
 
 export function Main({ onOpenSettings }: MainProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<MainTab>('skills');
+  const [activeTab, setActiveTab] = useState<SidebarTab>('home');
 
   return (
-    <Box data-testid="main-screen" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar
-        data-testid="topbar"
-        position="sticky"
-        color="default"
-        elevation={0}
+    <Box
+      data-testid="main-screen"
+      sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}
+    >
+      <Sidebar
+        active={activeTab}
+        onNavigate={setActiveTab}
+        onOpenSettings={onOpenSettings}
+      />
+      <Box
+        component="main"
         sx={{
-          backgroundColor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
+          flexGrow: 1,
+          minHeight: '100vh',
+          width: { sm: `calc(100% - ${SIDEBAR_WIDTH}px)` },
         }}
       >
-        <Toolbar sx={{ gap: 2 }}>
-          <Box sx={{ flexGrow: 1 }} />
-          <Tooltip title="Open settings">
-            <IconButton
-              onClick={onOpenSettings}
-              aria-label="Open settings"
-              data-testid="open-settings-button"
-            >
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
-        <Tabs
-          value={activeTab}
-          onChange={(_, v: MainTab) => setActiveTab(v)}
-          sx={{ px: 2 }}
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab label="Skills" value="skills" />
-          <Tab label="Agents" value="agents" />
-          <Tab label="Commands" value="commands" />
-          <Tab label="References" value="references" />
-          <Tab label="Global Instructions" value="global-instructions" />
-          <Tab label="Plugins" value="plugins" />
-          <Tab label="Marketplaces" value="marketplaces" />
-        </Tabs>
-      </AppBar>
-      {activeTab === 'skills' && <SkillList />}
-      {activeTab === 'agents' && <AgentList />}
-      {activeTab === 'commands' && <CommandList />}
-      {activeTab === 'references' && <ReferenceList />}
-      {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
-      {activeTab === 'plugins' && <PluginList scope="personal" />}
-      {activeTab === 'marketplaces' && <MarketplaceList />}
+        {activeTab === 'home' && <HomeScreen onNavigate={setActiveTab} />}
+        {activeTab === 'skills' && <SkillList />}
+        {activeTab === 'agents' && <AgentList />}
+        {activeTab === 'commands' && <CommandList />}
+        {activeTab === 'references' && <ReferenceList />}
+        {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
+        {activeTab === 'templates' && <TemplateList />}
+        {activeTab === 'plugins' && <PluginList scope="personal" />}
+        {activeTab === 'marketplaces' && <MarketplaceList />}
+      </Box>
     </Box>
   );
 }

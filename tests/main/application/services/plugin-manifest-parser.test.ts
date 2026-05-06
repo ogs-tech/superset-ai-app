@@ -120,4 +120,65 @@ describe('PluginManifestParser', () => {
       expect(manifestErr.details?.reason).toBeDefined();
     }
   });
+
+  it('auto-discovers skills, agents, and commands from the plugin directory layout', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile(
+      '/p/.claude-plugin/plugin.json',
+      JSON.stringify({ name: 'demo', version: '1.0.0' }),
+    );
+    // skills are subdirectories under /p/skills
+    fs.createFile('/p/skills/brainstorming/SKILL.md', '# brainstorming');
+    fs.createFile('/p/skills/test-driven-development/SKILL.md', '# tdd');
+    // agents are .md files under /p/agents
+    fs.createFile('/p/agents/code-architect.md', '# arch');
+    fs.createFile('/p/agents/code-reviewer.md', '# rev');
+    // commands are .md files under /p/commands
+    fs.createFile('/p/commands/init.md', '# init');
+
+    const manifest = await new PluginManifestParser(fs).parse('/p');
+
+    expect(manifest.artifacts.skills).toEqual(['brainstorming', 'test-driven-development']);
+    expect(manifest.artifacts.agents).toEqual(['code-architect', 'code-reviewer']);
+    expect(manifest.artifacts.commands).toEqual(['init']);
+  });
+
+  it('flags hooks when hooks/hooks.json exists', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile(
+      '/p/.claude-plugin/plugin.json',
+      JSON.stringify({ name: 'demo', version: '1.0.0' }),
+    );
+    fs.createFile('/p/hooks/hooks.json', '{}');
+
+    const manifest = await new PluginManifestParser(fs).parse('/p');
+    expect(manifest.artifacts.hooks).toBe(true);
+  });
+
+  it('flags mcp when .mcp.json exists', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile(
+      '/p/.claude-plugin/plugin.json',
+      JSON.stringify({ name: 'demo', version: '1.0.0' }),
+    );
+    fs.createFile('/p/.mcp.json', '{}');
+
+    const manifest = await new PluginManifestParser(fs).parse('/p');
+    expect(manifest.artifacts.mcp).toBe(true);
+  });
+
+  it('returns empty artifacts when no marker files exist', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile(
+      '/p/.claude-plugin/plugin.json',
+      JSON.stringify({ name: 'demo', version: '1.0.0' }),
+    );
+
+    const manifest = await new PluginManifestParser(fs).parse('/p');
+    expect(manifest.artifacts.skills).toEqual([]);
+    expect(manifest.artifacts.agents).toEqual([]);
+    expect(manifest.artifacts.commands).toEqual([]);
+    expect(manifest.artifacts.hooks).toBe(false);
+    expect(manifest.artifacts.mcp).toBe(false);
+  });
 });

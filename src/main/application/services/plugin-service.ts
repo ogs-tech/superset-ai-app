@@ -177,6 +177,30 @@ export class PluginService {
   }
 
   /**
+   * Fetch a marketplace plugin's manifest without installing — for a pre-install
+   * preview UI. Clones the plugin to a temp dir, parses the manifest, then deletes
+   * the temp dir. Returns id, version, description, and the artifacts list so the
+   * UI can show what skills/agents/commands/hooks/MCP/LSP will be added.
+   */
+  async previewFromMarketplace(
+    plugin: MarketplacePlugin,
+  ): Promise<PluginManifest> {
+    const { git, parser } = this.deps;
+
+    const tmpDir = path.join(
+      os.tmpdir(),
+      `plugin-preview-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+
+    try {
+      await cloneMarketplaceSource(git, plugin.source, tmpDir);
+      return await parser.parse(tmpDir);
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  /**
    * Install a plugin from a marketplace entry. Handles source types:
    * git-subdir, url, github, git. Local-path sources are pre-expanded by detect().
    *
