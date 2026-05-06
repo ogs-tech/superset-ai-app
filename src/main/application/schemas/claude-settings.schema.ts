@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { claudeHooksFieldSchema } from './hook.js';
 
 const directorySourceSchema = z
   .object({
@@ -50,6 +51,7 @@ export const claudeSettingsSchema = z
   .object({
     extraKnownMarketplaces: extraKnownMarketplacesSchema,
     enabledPlugins: enabledPluginsSchema,
+    hooks: claudeHooksFieldSchema.optional(),
   })
   .passthrough();
 

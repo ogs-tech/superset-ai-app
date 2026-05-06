@@ -25,6 +25,15 @@ export class CommandIdInvalidError extends Error {
   }
 }
 
+export class HookIdInvalidError extends Error {
+  override readonly name = 'HookIdInvalidError';
+  readonly details: { raw?: string } | undefined;
+  constructor(message: string, details?: { raw?: string }) {
+    super(message);
+    this.details = details;
+  }
+}
+
 export class ReferenceIdInvalidError extends Error {
   override readonly name = 'ReferenceIdInvalidError';
   readonly details: { raw?: string } | undefined;

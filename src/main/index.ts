@@ -40,6 +40,7 @@ import { PluginProvenanceService } from './application/services/plugin-provenanc
 import { SkillService } from './application/services/skill-service.js';
 import { AgentService } from './application/services/agent-service.js';
 import { CommandService } from './application/services/command-service.js';
+import { HookService } from './application/services/hook-service.js';
 import { ReferenceService } from './application/services/reference-service.js';
 import { GlobalInstructionService } from './application/services/global-instruction-service.js';
 import { MarketplaceService } from './application/services/marketplace-service.js';
@@ -190,6 +191,10 @@ async function wireIpc(): Promise<void> {
     cache: pluginCache,
     fs: nodeFsAdapter,
   });
+  const hookService = new HookService(claudeSettingsFile, {
+    cache: pluginCache,
+    fs: nodeFsAdapter,
+  });
   const referenceService = new ReferenceService(customizationService);
   const globalInstructionService = new GlobalInstructionService(customizationService);
   const marketplacesCacheRoot = (scope: 'personal' | 'project'): string =>
@@ -216,6 +221,7 @@ async function wireIpc(): Promise<void> {
     skillService,
     agentService,
     commandService,
+    hookService,
     referenceService,
     globalInstructionService,
     marketplaceService,

@@ -11,6 +11,7 @@ import type { AgentService } from '../application/services/agent-service.js';
 import type { ReferenceService } from '../application/services/reference-service.js';
 import type { GlobalInstructionService } from '../application/services/global-instruction-service.js';
 import type { CommandService } from '../application/services/command-service.js';
+import type { HookService } from '../application/services/hook-service.js';
 import type { MarketplaceService } from '../application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
@@ -22,6 +23,7 @@ import { buildCredentialsHandlers } from './credentials-handlers.js';
 import { buildSkillHandlers } from './skill-handlers.js';
 import { buildAgentHandlers } from './agent-handlers.js';
 import { buildCommandHandlers } from './command-handlers.js';
+import { buildHookHandlers } from './hook-handlers.js';
 import { buildReferenceHandlers } from './reference-handlers.js';
 import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
@@ -37,6 +39,7 @@ export interface IpcDeps {
   skillService: SkillService;
   agentService: AgentService;
   commandService: CommandService;
+  hookService: HookService;
   referenceService: ReferenceService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
@@ -106,6 +109,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     skillService,
     agentService,
     commandService,
+    hookService,
     referenceService,
     globalInstructionService,
     marketplaceService,
@@ -273,6 +277,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     ...buildSkillHandlers(skillService),
     ...buildAgentHandlers(agentService),
     ...buildCommandHandlers(commandService),
+    ...buildHookHandlers(hookService),
     ...buildReferenceHandlers(referenceService),
     ...buildGlobalInstructionHandlers(globalInstructionService),
     ...buildMarketplaceHandlers(marketplaceService),

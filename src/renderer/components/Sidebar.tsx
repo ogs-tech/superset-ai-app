@@ -19,6 +19,7 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import WebhookIcon from '@mui/icons-material/Webhook';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
@@ -31,6 +32,7 @@ export type SidebarTab =
   | 'skills'
   | 'agents'
   | 'commands'
+  | 'hooks'
   | 'references'
   | 'global-instructions'
   | 'templates'
@@ -48,6 +50,7 @@ const PRIMARY_ITEMS: ReadonlyArray<SidebarItem> = [
   { id: 'skills', label: 'Skills', icon: <AutoAwesomeIcon fontSize="small" /> },
   { id: 'agents', label: 'Agents', icon: <SmartToyIcon fontSize="small" /> },
   { id: 'commands', label: 'Commands', icon: <TerminalIcon fontSize="small" /> },
+  { id: 'hooks', label: 'Hooks', icon: <WebhookIcon fontSize="small" /> },
   { id: 'references', label: 'References', icon: <MenuBookIcon fontSize="small" /> },
   { id: 'global-instructions', label: 'Global Instructions', icon: <EditNoteIcon fontSize="small" /> },
   { id: 'templates', label: 'Templates', icon: <LibraryBooksIcon fontSize="small" /> },
