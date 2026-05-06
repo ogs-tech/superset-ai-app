@@ -78,7 +78,7 @@ function makeFakeParser(description?: string): PluginManifestParser {
       id: ID,
       version: VERSION,
       description,
-      artifacts: { skills: [], agents: [], commands: [], hooks: false, mcp: false, lsp: false },
+      artifacts: { skills: [], agents: [], commands: [], hooks: 0, mcp: false, lsp: false },
     }),
   } as unknown as PluginManifestParser;
 }

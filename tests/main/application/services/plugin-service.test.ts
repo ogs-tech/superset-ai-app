@@ -37,7 +37,7 @@ function makeFakeManifest(id: PluginId): PluginManifest {
   return {
     id,
     version: semVer('1.0.0'),
-    artifacts: { skills: [], agents: [], commands: [], hooks: false, mcp: false, lsp: false },
+    artifacts: { skills: [], agents: [], commands: [], hooks: 0, mcp: false, lsp: false },
   };
 }
 

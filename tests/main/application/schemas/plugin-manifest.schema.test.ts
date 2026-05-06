@@ -17,7 +17,7 @@ describe('pluginManifestSchema', () => {
           skills: [],
           agents: [],
           commands: [],
-          hooks: false,
+          hooks: 0,
           mcp: false,
           lsp: false,
         });
@@ -49,7 +49,7 @@ describe('pluginManifestSchema', () => {
           skills: ['skill1.md', 'skill2.md'],
           agents: ['agent1.md'],
           commands: ['cmd1'],
-          hooks: true,
+          hooks: 1,
           mcp: true,
           lsp: false,
         });
@@ -323,7 +323,7 @@ describe('pluginManifestSchema', () => {
         expect(result.data.artifacts.skills).toEqual(['skill.md']);
         expect(result.data.artifacts.agents).toEqual([]);
         expect(result.data.artifacts.commands).toEqual([]);
-        expect(result.data.artifacts.hooks).toBe(false);
+        expect(result.data.artifacts.hooks).toBe(0);
         expect(result.data.artifacts.mcp).toBe(false);
         expect(result.data.artifacts.lsp).toBe(false);
       }

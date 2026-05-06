@@ -25,7 +25,7 @@ export type PluginArtifacts = {
   skills: string[];
   agents: string[];
   commands: string[];
-  hooks: boolean;
+  hooks: number;
   mcp: boolean;
   lsp: boolean;
 };

@@ -143,16 +143,38 @@ describe('PluginManifestParser', () => {
     expect(manifest.artifacts.commands).toEqual(['init']);
   });
 
-  it('flags hooks when hooks/hooks.json exists', async () => {
+  it('counts hook handlers when hooks/hooks.json exists', async () => {
     const fs = new InMemoryFileSystem();
     fs.createFile(
       '/p/.claude-plugin/plugin.json',
       JSON.stringify({ name: 'demo', version: '1.0.0' }),
     );
-    fs.createFile('/p/hooks/hooks.json', '{}');
+    fs.createFile(
+      '/p/hooks/hooks.json',
+      JSON.stringify({
+        hooks: {
+          SessionStart: [
+            { hooks: [{ type: 'command', command: 'a' }, { type: 'command', command: 'b' }] },
+          ],
+          Stop: [{ hooks: [{ type: 'command', command: 'c' }] }],
+        },
+      }),
+    );
 
     const manifest = await new PluginManifestParser(fs).parse('/p');
-    expect(manifest.artifacts.hooks).toBe(true);
+    expect(manifest.artifacts.hooks).toBe(3);
+  });
+
+  it('returns 0 hooks when hooks.json is malformed JSON', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile(
+      '/p/.claude-plugin/plugin.json',
+      JSON.stringify({ name: 'demo', version: '1.0.0' }),
+    );
+    fs.createFile('/p/hooks/hooks.json', '{ not json');
+
+    const manifest = await new PluginManifestParser(fs).parse('/p');
+    expect(manifest.artifacts.hooks).toBe(0);
   });
 
   it('flags mcp when .mcp.json exists', async () => {
@@ -178,7 +200,7 @@ describe('PluginManifestParser', () => {
     expect(manifest.artifacts.skills).toEqual([]);
     expect(manifest.artifacts.agents).toEqual([]);
     expect(manifest.artifacts.commands).toEqual([]);
-    expect(manifest.artifacts.hooks).toBe(false);
+    expect(manifest.artifacts.hooks).toBe(0);
     expect(manifest.artifacts.mcp).toBe(false);
   });
 });

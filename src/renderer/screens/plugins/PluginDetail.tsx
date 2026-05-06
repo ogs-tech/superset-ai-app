@@ -72,8 +72,8 @@ export function PluginDetail({
     if (artifacts.commands && artifacts.commands.length > 0) {
       items.push(`Commands: ${artifacts.commands.join(', ')}`);
     }
-    if (artifacts.hooks) {
-      items.push('Hooks');
+    if (artifacts.hooks > 0) {
+      items.push(`Hooks: ${artifacts.hooks}`);
     }
     if (artifacts.mcp) {
       items.push('MCP');

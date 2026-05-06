@@ -43,7 +43,10 @@ const coreManifestSchema = z
         skills: z.array(z.string()).default([]),
         agents: z.array(z.string()).default([]),
         commands: z.array(z.string()).default([]),
-        hooks: z.boolean().default(false),
+        hooks: z
+          .union([z.boolean(), z.number().int().nonnegative()])
+          .transform((v) => (typeof v === 'boolean' ? (v ? 1 : 0) : v))
+          .default(0),
         mcp: z.boolean().default(false),
         lsp: z.boolean().default(false),
       })
@@ -51,7 +54,7 @@ const coreManifestSchema = z
         skills: [],
         agents: [],
         commands: [],
-        hooks: false,
+        hooks: 0,
         mcp: false,
         lsp: false,
       }),

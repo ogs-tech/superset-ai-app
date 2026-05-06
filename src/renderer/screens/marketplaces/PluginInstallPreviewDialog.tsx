@@ -37,7 +37,7 @@ interface PluginManifest {
     skills: string[];
     agents: string[];
     commands: string[];
-    hooks: boolean;
+    hooks: number;
     mcp: boolean;
     lsp: boolean;
   };
@@ -170,16 +170,17 @@ export function PluginInstallPreviewDialog({
                 color="#f59e0b"
                 items={manifest.artifacts.commands}
               />
+              <ArtifactCount
+                icon={<PowerIcon fontSize="small" />}
+                label="Hooks"
+                color="#10b981"
+                count={manifest.artifacts.hooks}
+              />
             </Box>
 
             <Divider flexItem />
 
             <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
-              <CapabilityFlag
-                icon={<PowerIcon fontSize="small" />}
-                label="Hooks"
-                enabled={manifest.artifacts.hooks}
-              />
               <CapabilityFlag
                 icon={<HubIcon fontSize="small" />}
                 label="MCP"
@@ -247,6 +248,32 @@ function ArtifactGroup({ icon, label, color, items }: ArtifactGroupProps): React
             </Typography>
           ))}
         </Box>
+      )}
+    </Box>
+  );
+}
+
+interface ArtifactCountProps {
+  icon: React.ReactElement;
+  label: string;
+  color: string;
+  count: number;
+}
+
+function ArtifactCount({ icon, label, color, count }: ArtifactCountProps): React.ReactElement {
+  return (
+    <Box sx={{ mb: 1.5 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Box sx={{ color, display: 'flex' }}>{icon}</Box>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {label}
+        </Typography>
+        <Chip label={count} size="small" sx={{ height: 18, fontSize: 10 }} />
+      </Stack>
+      {count === 0 && (
+        <Typography variant="caption" color="text.secondary" sx={{ pl: 4 }}>
+          none
+        </Typography>
       )}
     </Box>
   );

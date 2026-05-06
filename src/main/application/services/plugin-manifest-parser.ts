@@ -49,7 +49,7 @@ export class PluginManifestParser {
       skills: declared.skills.length > 0 ? declared.skills : discovered.skills,
       agents: declared.agents.length > 0 ? declared.agents : discovered.agents,
       commands: declared.commands.length > 0 ? declared.commands : discovered.commands,
-      hooks: declared.hooks || discovered.hooks,
+      hooks: declared.hooks > 0 ? declared.hooks : discovered.hooks,
       mcp: declared.mcp || discovered.mcp,
       lsp: declared.lsp || discovered.lsp,
     };
@@ -58,12 +58,11 @@ export class PluginManifestParser {
   }
 
   private async discoverArtifacts(pluginDir: string): Promise<PluginManifest['artifacts']> {
-    const [skills, agents, commands, hooksDir, hooksRoot, mcp] = await Promise.all([
+    const [skills, agents, commands, hooks, mcp] = await Promise.all([
       this.listSubdirectories(`${pluginDir}/skills`),
       this.listMarkdownNames(`${pluginDir}/agents`),
       this.listMarkdownNames(`${pluginDir}/commands`),
-      this.fs.pathExists(`${pluginDir}/hooks/hooks.json`),
-      this.fs.pathExists(`${pluginDir}/hooks.json`),
+      this.countHookHandlers(pluginDir),
       this.fs.pathExists(`${pluginDir}/.mcp.json`),
     ]);
 
@@ -71,10 +70,37 @@ export class PluginManifestParser {
       skills,
       agents,
       commands,
-      hooks: hooksDir || hooksRoot,
+      hooks,
       mcp,
       lsp: false,
     };
+  }
+
+  private async countHookHandlers(pluginDir: string): Promise<number> {
+    for (const path of [`${pluginDir}/hooks/hooks.json`, `${pluginDir}/hooks.json`]) {
+      if (!(await this.fs.pathExists(path))) continue;
+      try {
+        const raw = await this.fs.readFile(path);
+        const parsed = JSON.parse(raw) as unknown;
+        const root =
+          typeof parsed === 'object' && parsed !== null && 'hooks' in parsed
+            ? (parsed as { hooks: unknown }).hooks
+            : parsed;
+        if (typeof root !== 'object' || root === null) return 0;
+        let total = 0;
+        for (const blocks of Object.values(root as Record<string, unknown>)) {
+          if (!Array.isArray(blocks)) continue;
+          for (const block of blocks) {
+            const handlers = (block as { hooks?: unknown }).hooks;
+            if (Array.isArray(handlers)) total += handlers.length;
+          }
+        }
+        return total;
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
   }
 
   private async listSubdirectories(dir: string): Promise<string[]> {

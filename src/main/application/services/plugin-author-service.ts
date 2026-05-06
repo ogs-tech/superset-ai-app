@@ -59,7 +59,7 @@ export class PluginAuthorService {
         skills: [],
         agents: [],
         commands: [],
-        hooks: false as const,
+        hooks: 0 as const,
         mcp: false as const,
         lsp: false as const,
       },
