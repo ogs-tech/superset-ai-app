@@ -225,6 +225,7 @@ async function wireIpc(): Promise<void> {
     referenceService,
     globalInstructionService,
     marketplaceService,
+    appQuit: () => app.quit(),
   });
   const dispatch = createDispatcher(handlers);
 

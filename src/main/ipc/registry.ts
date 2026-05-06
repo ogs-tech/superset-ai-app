@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { basename } from 'node:path';
+import { rm } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { basename, join } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
 import type { TemplateService } from '../application/services/template-service.js';
@@ -43,6 +45,7 @@ export interface IpcDeps {
   referenceService: ReferenceService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
+  appQuit: () => void;
 }
 
 const TEMPLATE_TARGET_TYPES: readonly TemplateTargetType[] = [
@@ -113,6 +116,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     referenceService,
     globalInstructionService,
     marketplaceService,
+    appQuit,
   } = deps;
 
   return {
@@ -270,6 +274,13 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       const adapterId = asString(raw['adapterId'], 'adapterId');
       const count = await adapterManager.countDestinations(adapterId);
       return { count };
+    },
+
+    'app.restore': async () => {
+      await rm(join(homedir(), '.sde-ai-app'), { recursive: true, force: true });
+      await rm(join(homedir(), '.claude'), { recursive: true, force: true });
+      await rm(join(process.cwd(), '.env.local'), { force: true });
+      appQuit();
     },
 
     ...buildPluginHandlers(pluginService),

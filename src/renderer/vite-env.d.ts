@@ -6,6 +6,7 @@ declare global {
   interface Window {
     api: {
       call<T>(method: string, params: unknown): Promise<IpcResult<T>>;
+      isDev: boolean;
     };
   }
 }

@@ -29,6 +29,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
+import { RestoreConfirmDialog } from './settings/RestoreConfirmDialog.js';
 import type { SyncResult } from '../../shared/customization.js';
 import type { LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
 
@@ -65,6 +66,9 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [patError, setPatError] = useState<string | null>(null);
   const [patSuccess, setPatSuccess] = useState(false);
   const [safeStorageUnavailable, setSafeStorageUnavailable] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
   const refreshRepos = async (): Promise<void> => {
     const list = await callIpc<LinkedRepoView[]>('repo.list', {});
@@ -214,6 +218,19 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       setPatError(err instanceof Error ? err.message : 'Failed to clear PAT');
     } finally {
       setPatLoading(false);
+    }
+  };
+
+  const handleRestore = async (): Promise<void> => {
+    setRestoring(true);
+    setRestoreError(null);
+    try {
+      await callIpc('app.restore', {});
+    } catch (err) {
+      setRestoreError(err instanceof Error ? err.message : 'Erro ao restaurar');
+    } finally {
+      setRestoring(false);
+      setRestoreOpen(false);
     }
   };
 
@@ -461,6 +478,40 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           {disableToast}
         </Alert>
       )}
+      {window.api.isDev && (
+        <Paper
+          component="section"
+          variant="outlined"
+          sx={{ p: 3, mb: 3, borderColor: 'error.main' }}
+        >
+          <Typography variant="h6" component="h2" color="error" gutterBottom>
+            Zona de perigo
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Restaura o aplicativo para o estado inicial deletando <code>~/.sde-ai-app</code>,{' '}
+            <code>~/.claude</code> e <code>.env.local</code>. O aplicativo será fechado em seguida.
+          </Typography>
+          {restoreError !== null && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {restoreError}
+            </Alert>
+          )}
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={restoring}
+            onClick={() => setRestoreOpen(true)}
+          >
+            {restoring ? 'Restaurando…' : 'Restaurar para estado inicial'}
+          </Button>
+        </Paper>
+      )}
+
+      <RestoreConfirmDialog
+        open={restoreOpen}
+        onConfirm={() => void handleRestore()}
+        onCancel={() => setRestoreOpen(false)}
+      />
       <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />
     </Container>
   );

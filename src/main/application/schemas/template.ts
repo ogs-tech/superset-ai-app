@@ -11,8 +11,8 @@ import {
 export const templateSchema = z
   .object({
     name: slugSchema,
-    targetType: z.enum(['skill', 'reference', 'agent', 'global-instruction'], {
-      message: 'targetType must be one of skill | reference | agent | global-instruction',
+    targetType: z.enum(['skill', 'reference', 'agent', 'global-instruction', 'command'], {
+      message: 'targetType must be one of skill | reference | agent | global-instruction | command',
     }),
     description: descriptionSchema,
     scopes: scopesSchema,
