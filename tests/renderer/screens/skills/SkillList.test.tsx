@@ -75,7 +75,7 @@ describe('<SkillList>', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides edit/delete buttons for plugin-sourced skills', async () => {
+  it('hides all row action buttons for plugin-sourced skills', async () => {
     call.mockImplementation((method: string) => {
       if (method === 'skill.list')
         return Promise.resolve(
@@ -88,9 +88,7 @@ describe('<SkillList>', () => {
     const card = await screen.findByTestId(
       cardId('from-plugin', { kind: 'plugin', pluginId: 'p' }),
     );
-    expect(
-      within(card).getByRole('button', { name: 'View' }),
-    ).toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: 'View' })).toBeNull();
     expect(within(card).queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(within(card).queryByRole('button', { name: 'Delete' })).toBeNull();
   });
@@ -115,6 +113,5 @@ describe('<SkillList>', () => {
     expect(
       within(card).getByRole('button', { name: 'Delete' }),
     ).toBeInTheDocument();
-    expect(within(card).queryByRole('button', { name: 'View' })).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationListScreen } from '../../../src/renderer/components/CustomizationListScreen.js';
 import { mockApi, ok, renderWithQuery, type CallSpy } from '../test-utils.js';
@@ -99,7 +99,6 @@ describe('<CustomizationListScreen>', () => {
     const drawer = await screen.findByTestId('detail-drawer-customization');
 
     // Use within() to scope to the drawer (the row also has an Edit button)
-    const { within } = await import('@testing-library/react');
     await user.click(within(drawer).getByRole('button', { name: /edit/i }));
 
     expect(screen.queryByTestId('detail-drawer-customization')).not.toBeInTheDocument();
