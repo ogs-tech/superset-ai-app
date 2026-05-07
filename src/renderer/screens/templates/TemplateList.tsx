@@ -12,13 +12,12 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
-import { EntityViewer } from '../../components/EntityViewer.js';
 import { TemplateEditor, emptyTemplate } from './TemplateEditor.js';
+import { TemplateViewDrawer } from './TemplateViewDrawer.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
 import type {
   EntityDef,
@@ -87,22 +86,6 @@ export function TemplateList(): React.ReactElement {
     );
   }
 
-  if (viewing) {
-    return (
-      <EntityViewer
-        entity={{
-          frontmatter: viewing.frontmatter as unknown as {
-            name: string;
-          } & Record<string, unknown>,
-          body: viewing.body,
-          source: { kind: 'workspace' },
-        }}
-        title="Templates"
-        onBack={() => setViewing(null)}
-      />
-    );
-  }
-
   const entity: EntityDef<Template> = {
     name: 'template',
     pluralName: 'templates',
@@ -137,11 +120,6 @@ export function TemplateList(): React.ReactElement {
   };
 
   const actions: RowAction<Template>[] = [
-    {
-      label: 'View',
-      icon: <VisibilityIcon fontSize="small" />,
-      onClick: (item) => setViewing(item),
-    },
     {
       label: 'Edit',
       icon: <EditIcon fontSize="small" />,
@@ -181,6 +159,7 @@ export function TemplateList(): React.ReactElement {
         isLoading={isLoading}
         error={error}
         actions={actions}
+        onRowClick={(item) => setViewing(item)}
         searchPlaceholder="Search templates…"
         toolbarActions={
           <Button
@@ -221,6 +200,15 @@ export function TemplateList(): React.ReactElement {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <TemplateViewDrawer
+        template={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={(item) => {
+          setViewing(null);
+          setEditor({ kind: 'edit', template: item });
+        }}
+      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </Container>
