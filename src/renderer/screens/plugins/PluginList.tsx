@@ -17,6 +17,8 @@ import { callIpc } from '../../lib/ipc.js';
 import type { PluginListItemIpc } from '../../../shared/plugin-ipc-types.js';
 import { PluginImportDialog } from './PluginImportDialog.js';
 import { PublishPluginDialog } from './PublishPluginDialog.js';
+import { PluginDetail } from './PluginDetail.js';
+import { DetailDrawer } from '../../components/DetailDrawer.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
 import type {
   EntityDef,
@@ -41,6 +43,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
   const queryKey = ['plugins', scope] as const;
   const [dialog, setDialog] = useState<DialogState>({ kind: 'closed' });
   const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
+  const [selected, setSelected] = useState<PluginListItemIpc | null>(null);
 
   const { data, isLoading, error } = useQuery<PluginListItemIpc[]>({
     queryKey,
@@ -144,6 +147,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         isLoading={isLoading}
         error={error}
         searchPlaceholder="Search plugins…"
+        onRowClick={(item) => setSelected(item)}
         toolbarActions={
           <Button
             variant="outlined"
@@ -280,6 +284,17 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
           void qc.invalidateQueries({ queryKey });
         }}
       />
+
+      <DetailDrawer
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        title={selected?.id ?? ''}
+        testId="plugin"
+      >
+        {selected && (
+          <PluginDetail pluginId={selected.id} scope={selected.scope} />
+        )}
+      </DetailDrawer>
     </Container>
   );
 }

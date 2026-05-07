@@ -9,21 +9,25 @@ export interface CustomizationListItem {
   source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string };
 }
 
+export type CustomizationScope = 'personal' | 'project';
+
 export function customizationQueryKey(
   type: CustomizationType,
+  scope: CustomizationScope = 'personal',
 ): readonly unknown[] {
-  return ['customization', type, 'personal'] as const;
+  return ['customization', type, scope] as const;
 }
 
 export function useCustomizationList(
   type: CustomizationType,
   listMethod: string,
+  scope: CustomizationScope = 'personal',
 ) {
   return useQuery<CustomizationListItem[]>({
-    queryKey: customizationQueryKey(type),
+    queryKey: customizationQueryKey(type, scope),
     queryFn: async () => {
       const list = await callIpc<CustomizationListItem[]>(listMethod, {
-        scope: 'personal',
+        scope,
       });
       return Array.isArray(list) ? list : [];
     },
@@ -32,6 +36,9 @@ export function useCustomizationList(
 
 export function useInvalidateCustomization() {
   const qc = useQueryClient();
-  return (type: CustomizationType): Promise<void> =>
-    qc.invalidateQueries({ queryKey: customizationQueryKey(type) });
+  return (
+    type: CustomizationType,
+    scope: CustomizationScope = 'personal',
+  ): Promise<void> =>
+    qc.invalidateQueries({ queryKey: customizationQueryKey(type, scope) });
 }
