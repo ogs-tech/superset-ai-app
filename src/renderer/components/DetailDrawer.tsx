@@ -68,7 +68,7 @@ export function DetailDrawer({
           <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>{children}</Box>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 2 }}>{children}</Box>
     </Drawer>
   );
 }
