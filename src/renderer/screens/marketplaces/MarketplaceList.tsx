@@ -20,6 +20,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
+import { DetailDrawer } from '../../components/DetailDrawer.js';
 import { MarketplaceDetail } from './MarketplaceDetail.js';
 import { MarketplaceImportDialog } from './MarketplaceImportDialog.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
@@ -126,14 +127,6 @@ export function MarketplaceList(): React.ReactElement {
       setToast({ variant: 'error', message });
     },
   });
-
-  if (selected) {
-    return (
-      <MarketplaceDetail
-        marketplace={selected}
-      />
-    );
-  }
 
   const entity: EntityDef<MarketplaceSummary> = {
     name: 'marketplace',
@@ -306,6 +299,18 @@ export function MarketplaceList(): React.ReactElement {
       </Dialog>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+      <DetailDrawer
+        open={selected !== null}
+        onClose={() => {
+          setSelected(null);
+          void qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
+        }}
+        title={selected?.manifest?.name ?? selected?.id ?? ''}
+        testId="marketplace"
+      >
+        {selected && <MarketplaceDetail marketplace={selected} />}
+      </DetailDrawer>
     </Container>
   );
 }

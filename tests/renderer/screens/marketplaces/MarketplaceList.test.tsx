@@ -74,4 +74,40 @@ describe('<MarketplaceList>', () => {
       screen.getByTestId('marketplace-import-dialog'),
     ).toBeInTheDocument();
   });
+
+  it('opens marketplace detail drawer when a card is clicked', async () => {
+    call.mockImplementation((method: string) => {
+      if (method === 'marketplace.list')
+        return Promise.resolve(
+          ok([
+            {
+              id: 'cpo',
+              source: { kind: 'directory', path: '/tmp/cpo' },
+              manifest: {
+                name: 'Catalog',
+                description: 'desc',
+                plugins: [{ name: 'p1', description: 'plugin 1', source: 'a' }],
+              },
+            },
+          ]),
+        );
+      if (method === 'plugin.list') return Promise.resolve(ok([]));
+      return Promise.resolve(ok(undefined));
+    });
+    const user = userEvent.setup();
+    renderWithQuery(<MarketplaceList />);
+
+    // List remains on screen
+    const card = await screen.findByTestId('entity-grid-card-marketplace-cpo');
+    await user.click(card);
+
+    // Drawer opens; list still mounted
+    expect(await screen.findByTestId('detail-drawer-marketplace')).toBeInTheDocument();
+    expect(screen.getByTestId('marketplace-list')).toBeInTheDocument();
+    expect(screen.getByTestId('marketplace-detail')).toBeInTheDocument();
+
+    // Close drawer
+    await user.click(screen.getByRole('button', { name: /close/i }));
+    expect(screen.queryByTestId('marketplace-detail')).not.toBeInTheDocument();
+  });
 });
