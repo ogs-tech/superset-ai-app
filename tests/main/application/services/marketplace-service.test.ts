@@ -81,4 +81,40 @@ describe('MarketplaceService', () => {
     const refreshed = await service.refresh('personal', marketplaceId('foo'));
     expect(refreshed?.id).toBe('foo');
   });
+
+  it('list derives cache path from cacheDirRoot when source has no cachePath', async () => {
+    const manifest: MarketplaceManifest = {
+      name: 'official',
+      description: 'd',
+      plugins: [],
+    };
+    const parser = { parse: vi.fn().mockResolvedValue(manifest) };
+    const repository = new SettingsMarketplaceRepository(settings);
+    const cacheDirRoot = vi.fn().mockReturnValue('/cache');
+    const withParser = new MarketplaceService({ repository, parser, cacheDirRoot });
+
+    await service.add('personal', {
+      id: marketplaceId('claude-plugins-official'),
+      source: { kind: 'github', repo: 'anthropics/claude-plugins-official' },
+    });
+
+    const items = await withParser.list('personal');
+    expect(items[0]!.manifest).toEqual(manifest);
+    expect(parser.parse).toHaveBeenCalledWith('/cache/claude-plugins-official');
+  });
+
+  it('list returns no manifest when source has no cachePath and no cacheDirRoot is configured', async () => {
+    const parser = { parse: vi.fn() };
+    const repository = new SettingsMarketplaceRepository(settings);
+    const withParser = new MarketplaceService({ repository, parser });
+
+    await service.add('personal', {
+      id: marketplaceId('claude-plugins-official'),
+      source: { kind: 'github', repo: 'anthropics/claude-plugins-official' },
+    });
+
+    const items = await withParser.list('personal');
+    expect(items[0]!.manifest).toBeUndefined();
+    expect(parser.parse).not.toHaveBeenCalled();
+  });
 });

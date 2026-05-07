@@ -40,7 +40,7 @@ export class MarketplaceService {
     }
     const summaries: MarketplaceSummary[] = [];
     for (const record of records) {
-      const dir = manifestDirFor(record.source);
+      const dir = this.manifestDirFor(scope, record.id, record.source);
       if (dir == null) {
         summaries.push({ ...record });
         continue;
@@ -59,7 +59,7 @@ export class MarketplaceService {
     const record = await this.deps.repository.get(scope, id);
     if (!record) return null;
     if (!this.deps.parser) return { ...record };
-    const dir = manifestDirFor(record.source);
+    const dir = this.manifestDirFor(scope, record.id, record.source);
     if (dir == null) return { ...record };
     try {
       const manifest = await this.deps.parser.parse(dir);
@@ -67,6 +67,18 @@ export class MarketplaceService {
     } catch {
       return { ...record };
     }
+  }
+
+  private manifestDirFor(
+    scope: Scope,
+    id: MarketplaceId,
+    source: MarketplaceSourceRecord,
+  ): string | null {
+    if (source.kind === 'directory') return source.path;
+    if (source.cachePath != null) return source.cachePath;
+    const { cacheDirRoot } = this.deps;
+    if (cacheDirRoot == null) return null;
+    return path.join(cacheDirRoot(scope), id);
   }
 
   async add(scope: Scope, record: MarketplaceRecord): Promise<void> {
@@ -210,12 +222,6 @@ function expandLocalPluginSource(
     ...plugin,
     source: { source: 'git-subdir', url: marketplaceUrl, path: localPath },
   };
-}
-
-function manifestDirFor(source: MarketplaceSourceRecord): string | null {
-  if (source.kind === 'directory') return source.path;
-  if (source.cachePath != null) return source.cachePath;
-  return null;
 }
 
 function sourceCloneUrl(source: MarketplaceSourceRecord): string {
