@@ -4,12 +4,10 @@ import {
   Box,
   Button,
   Chip,
-  Container,
   Link,
   Stack,
   Typography,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
@@ -46,7 +44,6 @@ interface MarketplaceSummary {
 
 interface MarketplaceDetailProps {
   marketplace: MarketplaceSummary;
-  onBack: () => void;
 }
 
 type InstallState = 'idle' | 'loading' | 'done';
@@ -83,7 +80,6 @@ function installButtonLabel(state: InstallState | undefined): string {
 
 export function MarketplaceDetail({
   marketplace,
-  onBack,
 }: MarketplaceDetailProps): React.ReactElement {
   const [installStates, setInstallStates] = useState<Record<string, InstallState>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -222,48 +218,43 @@ export function MarketplaceDetail({
   };
 
   return (
-    <Container component="main" data-testid="marketplace-detail" maxWidth="md" sx={{ py: 4 }}>
-      <Stack direction="row" sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Typography variant="h4" component="h1">
-              {marketplace.manifest?.name ?? marketplace.id}
-            </Typography>
-            <Chip
-              label={isLocal ? 'local' : label.badge}
-              size="small"
-              color={isLocal ? 'default' : 'primary'}
-              variant={isLocal ? 'outlined' : 'filled'}
-            />
-            {isOfficial && (
-              <Chip
-                icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
-                label="official"
-                size="small"
-                color="primary"
-                data-testid="marketplace-official-badge"
-              />
-            )}
-          </Stack>
-          {marketplace.manifest?.description && (
-            <Typography variant="body2" color="text.secondary">
-              {marketplace.manifest.description}
-            </Typography>
-          )}
-          <Typography variant="caption" color="text.secondary">
-            {label.href ? (
-              <Link href={label.href} target="_blank" rel="noopener" underline="hover">
-                {label.detail}
-              </Link>
-            ) : (
-              label.detail
-            )}
+    <Box data-testid="marketplace-detail">
+      <Stack direction="row" sx={{ mb: 2, alignItems: 'flex-start' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <Typography variant="h5" component="h2">
+            {marketplace.manifest?.name ?? marketplace.id}
           </Typography>
-        </Box>
-        <Button variant="text" startIcon={<ArrowBackIcon />} onClick={onBack}>
-          Back
-        </Button>
+          <Chip
+            label={isLocal ? 'local' : label.badge}
+            size="small"
+            color={isLocal ? 'default' : 'primary'}
+            variant={isLocal ? 'outlined' : 'filled'}
+          />
+          {isOfficial && (
+            <Chip
+              icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
+              label="official"
+              size="small"
+              color="primary"
+              data-testid="marketplace-official-badge"
+            />
+          )}
+        </Stack>
       </Stack>
+      {marketplace.manifest?.description && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {marketplace.manifest.description}
+        </Typography>
+      )}
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+        {label.href ? (
+          <Link href={label.href} target="_blank" rel="noopener" underline="hover">
+            {label.detail}
+          </Link>
+        ) : (
+          label.detail
+        )}
+      </Typography>
 
       {!marketplace.manifest && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -306,6 +297,6 @@ export function MarketplaceDetail({
       />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
-    </Container>
+    </Box>
   );
 }

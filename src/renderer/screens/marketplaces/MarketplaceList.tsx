@@ -131,10 +131,6 @@ export function MarketplaceList(): React.ReactElement {
     return (
       <MarketplaceDetail
         marketplace={selected}
-        onBack={() => {
-          setSelected(null);
-          void qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
-        }}
       />
     );
   }

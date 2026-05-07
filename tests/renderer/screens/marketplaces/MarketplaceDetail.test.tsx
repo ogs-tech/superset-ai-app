@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe('<MarketplaceDetail>', () => {
   it('renders plugins via the entity grid with install buttons', async () => {
-    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    render(<MarketplaceDetail marketplace={marketplace} />);
 
     expect(
       await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha'),
@@ -53,11 +53,13 @@ describe('<MarketplaceDetail>', () => {
     expect(
       screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
     ).toHaveTextContent('Install');
+
+    expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
 
   it('filters plugins through the grid search input', async () => {
     const user = userEvent.setup();
-    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    render(<MarketplaceDetail marketplace={marketplace} />);
 
     await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha');
     await user.type(
@@ -80,7 +82,7 @@ describe('<MarketplaceDetail>', () => {
       return Promise.resolve(ok(undefined));
     });
 
-    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    render(<MarketplaceDetail marketplace={marketplace} />);
 
     await waitFor(() => {
       expect(
@@ -94,7 +96,7 @@ describe('<MarketplaceDetail>', () => {
 
   it('opens the install preview dialog when Install is clicked', async () => {
     const user = userEvent.setup();
-    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    render(<MarketplaceDetail marketplace={marketplace} />);
 
     const button = await screen.findByTestId(
       'marketplace-plugin-install-plugin-alpha',
@@ -113,7 +115,6 @@ describe('<MarketplaceDetail>', () => {
           ...marketplace,
           manifest: { ...marketplace.manifest, plugins: [] },
         }}
-        onBack={() => {}}
       />,
     );
 
@@ -122,24 +123,8 @@ describe('<MarketplaceDetail>', () => {
     ).toBeInTheDocument();
   });
 
-  it('calls onBack when Back is clicked', async () => {
-    const user = userEvent.setup();
-    let backCount = 0;
-    render(
-      <MarketplaceDetail
-        marketplace={marketplace}
-        onBack={() => {
-          backCount += 1;
-        }}
-      />,
-    );
-
-    await user.click(screen.getByRole('button', { name: /back/i }));
-    expect(backCount).toBe(1);
-  });
-
   it('renders the official badge for the official marketplace', async () => {
-    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    render(<MarketplaceDetail marketplace={marketplace} />);
     expect(
       await screen.findByTestId('marketplace-official-badge'),
     ).toBeInTheDocument();
@@ -149,7 +134,6 @@ describe('<MarketplaceDetail>', () => {
     render(
       <MarketplaceDetail
         marketplace={{ id: 'broken', source: marketplace.source }}
-        onBack={() => {}}
       />,
     );
     expect(
@@ -185,7 +169,7 @@ describe('<MarketplaceDetail>', () => {
       return Promise.resolve(ok(undefined));
     });
 
-    render(<MarketplaceDetail marketplace={marketplace} onBack={() => {}} />);
+    render(<MarketplaceDetail marketplace={marketplace} />);
 
     await user.click(
       await screen.findByTestId('marketplace-plugin-install-plugin-alpha'),
