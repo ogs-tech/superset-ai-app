@@ -15,13 +15,12 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { Toast, type ToastMessage } from './Toast.js';
 import { PluginOriginBadge } from './PluginOriginBadge.js';
 import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { CustomizationEditor } from './CustomizationEditor.js';
-import { EntityViewer } from './EntityViewer.js';
+import { CustomizationViewDrawer } from './CustomizationViewDrawer.js';
 import { EntityDataGrid } from './EntityDataGrid/index.js';
 import type { EntityDef, RowAction } from './EntityDataGrid/index.js';
 import {
@@ -48,8 +47,7 @@ type Editor =
   | { kind: 'closed' }
   | { kind: 'new'; template: Template }
   | { kind: 'create'; customization: Customization }
-  | { kind: 'edit'; customization: Customization }
-  | { kind: 'view'; entity: CustomizationListItem };
+  | { kind: 'edit'; customization: Customization };
 
 export function CustomizationListScreen({
   entityType,
@@ -70,6 +68,7 @@ export function CustomizationListScreen({
   const [editor, setEditor] = useState<Editor>({ kind: 'closed' });
   const [confirmDelete, setConfirmDelete] =
     useState<CustomizationListItem | null>(null);
+  const [viewing, setViewing] = useState<CustomizationListItem | null>(null);
 
   const items = data ?? [];
 
@@ -110,16 +109,6 @@ export function CustomizationListScreen({
       setConfirmDelete(null);
     }
   };
-
-  if (editor.kind === 'view') {
-    return (
-      <EntityViewer
-        entity={editor.entity}
-        title={title}
-        onBack={() => setEditor({ kind: 'closed' })}
-      />
-    );
-  }
 
   if (editor.kind !== 'closed') {
     const initial =
@@ -176,12 +165,6 @@ export function CustomizationListScreen({
 
   const actions: RowAction<CustomizationListItem>[] = [
     {
-      label: 'View',
-      icon: <VisibilityIcon fontSize="small" />,
-      hidden: (item) => isWorkspace(item),
-      onClick: (item) => setEditor({ kind: 'view', entity: item }),
-    },
-    {
       label: 'Edit',
       icon: <EditIcon fontSize="small" />,
       hidden: (item) => !isWorkspace(item),
@@ -232,6 +215,7 @@ export function CustomizationListScreen({
         isLoading={isLoading}
         error={error}
         actions={actions}
+        onRowClick={(item) => setViewing(item)}
         searchPlaceholder={`Search ${singular}s…`}
         toolbarActions={
           <Button
@@ -305,6 +289,18 @@ export function CustomizationListScreen({
       </Dialog>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+      <CustomizationViewDrawer
+        entity={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={(item) => {
+          setViewing(null);
+          setEditor({
+            kind: 'edit',
+            customization: toCustomization(item),
+          });
+        }}
+      />
     </Container>
   );
 }
