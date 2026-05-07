@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TemplateList } from '../../../../src/renderer/screens/templates/TemplateList.js';
 import { mockApi, ok, renderWithQuery, type CallSpy } from '../../test-utils.js';
@@ -38,6 +38,28 @@ describe('<TemplateList>', () => {
 
     expect(await screen.findByTestId('detail-drawer-template')).toBeInTheDocument();
     expect(screen.getByText('Hello body')).toBeInTheDocument();
+  });
+
+  it('closes the drawer and opens the editor when Edit is clicked inside the drawer', async () => {
+    call.mockImplementation((method: string) => {
+      if (method === 'template.list') return Promise.resolve(ok([sampleTemplate]));
+      return Promise.resolve(ok(undefined));
+    });
+    const user = userEvent.setup();
+    renderWithQuery(<TemplateList />);
+
+    // Open the drawer
+    const card = await screen.findByTestId('entity-grid-card-template-t1');
+    await user.click(card);
+    await screen.findByTestId('detail-drawer-template');
+
+    // Click Edit inside the drawer
+    const drawer = screen.getByTestId('detail-drawer-template');
+    await user.click(within(drawer).getByRole('button', { name: /edit/i }));
+
+    // Drawer must be gone, editor must be present
+    expect(screen.queryByTestId('detail-drawer-template')).not.toBeInTheDocument();
+    expect(screen.getByTestId('template-editor')).toBeInTheDocument();
   });
 
   it('does not show the "View" row action (replaced by row click)', async () => {
