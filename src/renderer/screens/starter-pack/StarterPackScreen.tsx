@@ -34,6 +34,7 @@ const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
 
 export const RECOMMENDED_PLUGIN_NAMES = new Set([
   'feature-dev',
+  'superpowers',
   'code-review',
   'pr-review-toolkit',
   'code-simplifier',
