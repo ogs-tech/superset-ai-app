@@ -12,6 +12,8 @@ Authoritative docs live in `docs/` (Diátaxis):
 - `docs/reference/ipc-contract.md` — every IPC method
 - `docs/reference/customization-schema.md` — frontmatter rules
 
+**Read the relevant doc before editing the area it covers** — they are the source of truth for layout, IPC and schema. CLAUDE.md only carries gotchas and pointers.
+
 ## Common commands
 
 | Task | Command |
@@ -37,79 +39,15 @@ Coverage targets `application/`, `ipc/`, `infrastructure/`, and `renderer/screen
 
 ## Architecture — what you must know before editing
 
-### Three Electron processes, three bundles
-
-```
-src/
-├── main/        # Node.js — domain, services, IPC handlers, file I/O
-├── preload/     # Bridge — exposes window.api.call() to the renderer
-├── renderer/    # React 19 UI (MUI + react-query)
-└── shared/      # Types crossing the process boundary
-```
-
-`electron.vite.config.ts` builds each as a separate bundle into `out/{main,preload,renderer}`.
-
-### Hexagonal layers inside `src/main/`
-
-```
-main/
-├── domain/          # Pure value types (ids, errors, source, manifests)
-├── application/
-│   ├── ports/       # Interfaces — what services need from the outside
-│   ├── services/    # Use cases (skill-service, plugin-service, …)
-│   └── schemas/     # Zod schemas for frontmatter
-├── infrastructure/  # Adapter impls (filesystem, git, dialog, github, …)
-├── ipc/             # Handlers wiring services to renderer requests
-└── templates/       # Built-in template Markdown (seeded on first launch)
-```
-
-**Rule:** services in `application/services/` must depend on **ports**, never on `node:fs`, `electron`, `simple-git`, `@octokit/rest` directly. Concrete I/O lives in `infrastructure/`. This is enforced socially — there's no automated check, but breaking it makes services hard to test.
-
-`src/main/index.ts` is the composition root: it news up every adapter and service and hands the wired `handlers` map to `createDispatcher`.
-
-### IPC — single channel, dispatcher pattern
-
-Wire shape (defined in `src/shared/ipc-contract.ts`):
-
-```ts
-const IPC_CHANNEL = 'ipc:call';
-// Renderer → main: { method: 'skill.list', params: {...} }
-// Main → renderer: { ok: true, data: T } | { ok: false, error: { kind, message, details? } }
-```
-
-- Renderer calls `callIpc<T>('namespace.method', params)` from `src/renderer/lib/ipc.ts` — it unwraps `data` or throws `IpcCallError`.
-- `src/main/ipc/dispatcher.ts` wraps every handler in try/catch and maps `DomainError(kind, …)` → `IpcError.kind` verbatim. Plain `Error` → `kind: 'internal'`. Unknown method → `kind: 'not_found'`.
-- Method namespaces: `app`, `settings`, `repo`, `workspace`, `dialog`, `skill`, `agent`, `command`, `hook`, `reference`, `global-instruction`, `template`, `adapter`, `marketplace`, `plugin`, `credentials`, plus deprecated `customization`.
-
-**Adding a new IPC method:** types in `src/shared/`, handler in `src/main/ipc/registry.ts` (validate raw params with `_validators.ts` helpers), call site uses `callIpc<Result>(...)`.
-
-### Per-entity service facades vs the deprecated umbrella
-
-`customization-service` is the **legacy** umbrella that originally handled all four customization types. The codebase is mid-migration — new code should use the typed facades:
-
-- `skill-service`, `agent-service`, `command-service`, `hook-service`, `reference-service`, `global-instruction-service`
-
-These wrap `customization-service` and add provenance merging (workspace files + plugin-provided entries via `plugin-provenance`). The deprecated `customization.*` IPC namespace is retained for the legacy `CustomizationList` screen used inside `PluginEditor` and for cross-type search. Don't add new features to it.
-
-### Customization model
-
-A customization = Markdown file with YAML frontmatter, typed as one of:
-- `skill` · `reference` · `agent` · `global-instruction`
-
-Schema (`src/main/application/schemas/`):
-- Common fields: `name` (slug), `type`, `description` (1–1024 chars), `scopes` (subset of `personal` | `project`, ≥1, no dups), `version` (semver), `createdAt`/`updatedAt` (ISO 8601), `tags?`. Frontmatter is `passthrough()` — unknown fields kept.
-- `global-instruction` is special: `name` **must** be the literal `"default"`; `scopes` **must** be exactly `["personal"]`. Exactly one per machine.
-- `reference` is **app-only** — `claude-adapter.ts` deliberately returns no destinations; references are aggregated into `.github/copilot-instructions.md` by `CopilotInstructionsGen`.
-
-### Adapter / sync model
-
-Two adapters under `src/main/infrastructure/adapters/`:
-- `claude-adapter.ts` — symlinks personal customizations into `~/.claude/`, project ones into `<repo>/.claude/`.
-- `copilot-adapter.ts` — same shape into `~/.copilot/` and `<repo>/.github/`, plus generates `copilot-instructions.md`.
-
-Both implement the `Adapter` port (`src/main/application/ports/adapter.ts`). `AdapterManager` orchestrates them; `SymlinkManager` handles the actual link create/reconcile and reports `SyncResult[]` back through the IPC response.
-
-Plugin-provided entities (`source.kind === 'plugin'`) are **read-only** — `save`/`delete` raise `OperationNotAllowedForOriginError`.
+- **Three processes** (`main`, `preload`, `renderer`) + `shared` types. Built as separate bundles by `electron.vite.config.ts` into `out/{main,preload,renderer}`. Layout in `docs/reference/architecture.md`.
+- **Hexagonal split inside `src/main/`** (`domain` / `application/{ports,services,schemas}` / `infrastructure` / `ipc` / `templates`). **Rule:** services must depend on **ports**, never on `node:fs`, `electron`, `simple-git`, `@octokit/rest` directly — concrete I/O lives in `infrastructure/`. Enforced socially (no lint check). Layout in `docs/reference/architecture.md`.
+- **Composition root:** `src/main/index.ts` wires every adapter + service and passes the `handlers` map to `createDispatcher`.
+- **IPC** — single channel `ipc:call`, envelope `{ method, params }` → `IpcResult<T>`. Full shape, namespaces and per-method tables in `docs/reference/ipc-contract.md`. Renderer uses `callIpc<T>('ns.method', params)` from `src/renderer/lib/ipc.ts`. The dispatcher (`src/main/ipc/dispatcher.ts`) maps `DomainError(kind, …)` → `IpcError.kind` verbatim; plain `Error` → `kind: 'internal'`; unknown method → `kind: 'not_found'`.
+- **Adding a new IPC method:** types in `src/shared/`, handler in `src/main/ipc/registry.ts` (validate raw params with `_validators.ts` helpers), call site uses `callIpc<Result>(...)`.
+- **Per-entity facades vs deprecated umbrella:** `customization-service` is the legacy umbrella; new code uses `skill-service`, `agent-service`, `command-service`, `hook-service`, `reference-service`, `global-instruction-service`. They wrap `customization-service` and add plugin-provenance merging. The `customization.*` IPC namespace is retained only for the `CustomizationList` screen inside `PluginEditor` and cross-type search — don't extend it.
+- **Adapters** — `claude-adapter.ts` and `copilot-adapter.ts` under `src/main/infrastructure/adapters/`, both implementing the `Adapter` port; `AdapterManager` orchestrates, `SymlinkManager` reconciles links and returns `SyncResult[]`. Targets and sync flow in `docs/reference/architecture.md`.
+- **Plugin-provided entities** (`source.kind === 'plugin'`) are **read-only** — `save`/`delete` raise `OperationNotAllowedForOriginError`.
+- **Customization schema** — Markdown + YAML frontmatter; four types (`skill`, `reference`, `agent`, `global-instruction`). Full rules and per-type constraints in `docs/reference/customization-schema.md`. Two non-obvious points to remember up front: `global-instruction` requires `name === "default"` and `scopes === ["personal"]`; `reference` is **app-only** — `claude-adapter.ts` returns no destinations and references are aggregated into `.github/copilot-instructions.md` by `CopilotInstructionsGen`.
 
 ## Conventions and gotchas
 
@@ -123,4 +61,4 @@ Plugin-provided entities (`source.kind === 'plugin'`) are **read-only** — `sav
 
 ## Project state
 
-This is a **time-boxed validation spike** (see `docs/explanation/prd.md`). Scope is intentionally lean: no multi-user, no Linux/Windows, no i18n, no accessibility polish. Should-haves (full schema validation, text search, token usage) only ship after must-haves have been used in real work for ≥1 week.
+Time-boxed validation spike — full scope, must/should/out-of-scope and stop rules in `docs/explanation/prd.md`. Don't infer scope from the code; check the PRD.
