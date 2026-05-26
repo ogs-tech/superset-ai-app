@@ -3,7 +3,6 @@ import { buildHandlers, type IpcDeps } from '../../../src/main/ipc/registry.js';
 import { createDispatcher } from '../../../src/main/ipc/dispatcher.js';
 import { getDefaults, type Settings } from '../../../src/shared/settings.js';
 import type { GlobalInstruction } from '../../../src/main/application/schemas/global-instruction.js';
-import type { SyncResult } from '../../../src/shared/customization.js';
 
 const makeGlobalInstruction = (body: string): GlobalInstruction => ({
   id: 'default' as GlobalInstruction['id'],

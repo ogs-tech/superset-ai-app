@@ -11,13 +11,17 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControl,
   FormControlLabel,
   FormGroup,
   IconButton,
+  InputLabel,
   List,
   ListItem,
   ListItemText,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Tooltip,
@@ -26,14 +30,23 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import AddIcon from '@mui/icons-material/Add';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
 import { RestoreConfirmDialog } from './settings/RestoreConfirmDialog.js';
 import type { SyncResult } from '../../shared/customization.js';
-import type { LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
+import type { LanguagePreference, LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
 
 const labelFor = (key: 'claude' | 'copilot'): string => (key === 'claude' ? 'Claude' : 'Copilot');
+
+const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: 'mirror', label: 'Mirror (same as user)' },
+  { value: 'pt-BR', label: 'Português (pt-BR)' },
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
+];
 
 interface SelectFolderResult {
   canceled: boolean;
@@ -69,6 +82,23 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [languageLoading, setLanguageLoading] = useState(false);
+
+  const handleLanguageChange = async (language: LanguagePreference): Promise<void> => {
+    setLanguageLoading(true);
+    try {
+      const result = await callIpc<{ settings: SettingsModel; syncReport: SyncResult[] }>(
+        'settings.setLanguage',
+        { language },
+      );
+      setSettings(result.settings);
+      if (result.syncReport.some((e) => e.status !== 'ok')) {
+        setSyncReport(result.syncReport);
+      }
+    } finally {
+      setLanguageLoading(false);
+    }
+  };
 
   const refreshRepos = async (): Promise<void> => {
     const list = await callIpc<LinkedRepoView[]>('repo.list', {});
@@ -296,6 +326,39 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             </Tooltip>
           )}
         </FormGroup>
+      </Paper>
+
+      <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" component="h2" gutterBottom>
+          Language
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Controls the language prompt in your global instructions.
+        </Typography>
+        <FormControl size="small" sx={{ minWidth: 240 }}>
+          <InputLabel id="language-select-label">Language</InputLabel>
+          <Select
+            labelId="language-select-label"
+            label="Language"
+            value={settings.language}
+            disabled={languageLoading}
+            onChange={(e) => void handleLanguageChange(e.target.value as LanguagePreference)}
+          >
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {settings.language !== 'off' && (
+          <Stack direction="row" sx={{ mt: 1.5, gap: 0.5, alignItems: 'center', color: 'text.secondary' }}>
+            <InfoOutlinedIcon fontSize="small" />
+            <Typography variant="caption">
+              Code, comments, and test descriptions are always written in English.
+            </Typography>
+          </Stack>
+        )}
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
