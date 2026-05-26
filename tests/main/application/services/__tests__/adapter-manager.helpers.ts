@@ -18,6 +18,7 @@ export const defaultSettings: Settings = {
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 export const setupAdapterManager = async (

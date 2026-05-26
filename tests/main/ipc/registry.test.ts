@@ -30,6 +30,7 @@ const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
   ...overrides,
 });
 
@@ -205,6 +206,7 @@ describe('buildHandlers', () => {
     const merged = (await handlers['settings.merge']?.({
       adapters: { claude: { enabled: false } },
       ui: { theme: 'dark' },
+      language: 'off',
     })) as Settings;
 
     expect(merged.adapters.claude.enabled).toBe(false);

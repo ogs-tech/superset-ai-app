@@ -42,6 +42,7 @@ const baseSettings = (
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const setup = async () => {

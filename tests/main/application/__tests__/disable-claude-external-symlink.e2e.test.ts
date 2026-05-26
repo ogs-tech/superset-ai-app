@@ -18,6 +18,7 @@ const baseSettings: Settings = {
   adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 const skillPersonal: Customization = {

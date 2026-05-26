@@ -35,6 +35,7 @@ const buildSettings = (copilotEnabled: boolean): Settings => ({
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const makeGen = (): CopilotInstructionsGenPort => ({

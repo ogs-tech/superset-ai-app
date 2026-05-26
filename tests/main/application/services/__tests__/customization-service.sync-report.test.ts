@@ -21,6 +21,7 @@ const settings: Settings = {
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 const validFrontmatter = (

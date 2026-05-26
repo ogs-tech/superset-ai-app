@@ -38,6 +38,7 @@ const buildSettings = (): Settings => ({
     { id: 'r2', name: 'repo2', path: '/repos/repo2' },
   ],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const setup = async () => {

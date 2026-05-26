@@ -1,5 +1,7 @@
 export type ThemeMode = 'system' | 'light' | 'dark';
 
+export type LanguagePreference = 'off' | 'mirror' | 'pt-BR' | 'en' | 'es';
+
 export interface AdapterSettings {
   enabled: boolean;
 }
@@ -32,6 +34,7 @@ export interface Settings {
   };
   linkedRepos: LinkedRepo[];
   ui: UiSettings;
+  language: LanguagePreference;
 }
 
 export const WorkspacePaths = [
@@ -53,5 +56,6 @@ export function getDefaults(): Settings {
     },
     linkedRepos: [],
     ui: { theme: 'system' },
+    language: 'off',
   };
 }

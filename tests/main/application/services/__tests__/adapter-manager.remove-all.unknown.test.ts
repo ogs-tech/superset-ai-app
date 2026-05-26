@@ -12,6 +12,7 @@ const baseSettings: Settings = {
   adapters: { claude: { enabled: true }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 const setup = async () => {

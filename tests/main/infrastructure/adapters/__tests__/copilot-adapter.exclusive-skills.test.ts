@@ -20,6 +20,7 @@ const makeSettings = (overrides: { exclusiveSkillsWithClaude?: boolean; claudeEn
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const makeSettingsService = (settings: Settings): SettingsService => {

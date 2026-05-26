@@ -34,6 +34,7 @@ const buildSettings = (claudeEnabled: boolean): Settings => ({
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const setup = async (settings: Settings) => {

@@ -40,6 +40,7 @@ const buildSettings = (): Settings => ({
   },
   linkedRepos: repos,
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const setup = async () => {
