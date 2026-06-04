@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Box,
+  Collapse,
   Divider,
   Drawer,
   IconButton,
@@ -23,13 +24,14 @@ import WebhookIcon from '@mui/icons-material/Webhook';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import TuneIcon from '@mui/icons-material/Tune';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export type SidebarTab =
-  | 'home'
   | 'starter-pack'
   | 'skills'
   | 'agents'
@@ -41,29 +43,75 @@ export type SidebarTab =
   | 'plugins'
   | 'marketplaces';
 
-interface SidebarItem {
+interface NavLeaf {
   id: SidebarTab;
   label: string;
   icon: React.ReactElement;
 }
 
-const PRIMARY_ITEMS: ReadonlyArray<SidebarItem> = [
-  { id: 'home', label: 'Home', icon: <HomeIcon fontSize="small" /> },
-  { id: 'starter-pack', label: 'Starter Pack', icon: <RocketLaunchIcon fontSize="small" /> },
-  { id: 'skills', label: 'Skills', icon: <AutoAwesomeIcon fontSize="small" /> },
-  { id: 'agents', label: 'Agents', icon: <SmartToyIcon fontSize="small" /> },
-  { id: 'commands', label: 'Commands', icon: <TerminalIcon fontSize="small" /> },
-  { id: 'hooks', label: 'Hooks', icon: <WebhookIcon fontSize="small" /> },
-  { id: 'references', label: 'References', icon: <MenuBookIcon fontSize="small" /> },
-  { id: 'global-instructions', label: 'Global Instructions', icon: <EditNoteIcon fontSize="small" /> },
-  { id: 'templates', label: 'Templates', icon: <LibraryBooksIcon fontSize="small" /> },
-  { id: 'plugins', label: 'Plugins', icon: <ExtensionIcon fontSize="small" /> },
-  { id: 'marketplaces', label: 'Marketplaces', icon: <StorefrontIcon fontSize="small" /> },
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: React.ReactElement;
+  children: ReadonlyArray<NavLeaf>;
+}
+
+const TOP_ITEM: NavLeaf = {
+  id: 'starter-pack',
+  label: 'Início',
+  icon: <HomeIcon fontSize="small" />,
+};
+
+const GROUPS: ReadonlyArray<NavGroup> = [
+  {
+    id: 'customizations',
+    label: 'Customizations',
+    icon: <TuneIcon fontSize="small" />,
+    children: [
+      { id: 'skills', label: 'Skills', icon: <AutoAwesomeIcon fontSize="small" /> },
+      { id: 'agents', label: 'Agents', icon: <SmartToyIcon fontSize="small" /> },
+      { id: 'commands', label: 'Commands', icon: <TerminalIcon fontSize="small" /> },
+      { id: 'hooks', label: 'Hooks', icon: <WebhookIcon fontSize="small" /> },
+      { id: 'references', label: 'References', icon: <MenuBookIcon fontSize="small" /> },
+      {
+        id: 'global-instructions',
+        label: 'Global Instructions',
+        icon: <EditNoteIcon fontSize="small" />,
+      },
+    ],
+  },
+  {
+    id: 'plugins',
+    label: 'Plugins',
+    icon: <ExtensionIcon fontSize="small" />,
+    children: [
+      { id: 'plugins', label: 'Plugins', icon: <ExtensionIcon fontSize="small" /> },
+      { id: 'marketplaces', label: 'Marketplaces', icon: <StorefrontIcon fontSize="small" /> },
+      { id: 'templates', label: 'Templates', icon: <LibraryBooksIcon fontSize="small" /> },
+    ],
+  },
 ];
+
+// Flattened leaf list used by the collapsed (icon-only) rail, where group
+// headers have no room to expand.
+const FLAT_LEAVES: ReadonlyArray<NavLeaf> = [TOP_ITEM, ...GROUPS.flatMap((g) => g.children)];
 
 export const SIDEBAR_WIDTH = 232;
 export const SIDEBAR_COLLAPSED_WIDTH = 64;
 const STORAGE_KEY = 'sde:sidebar-collapsed';
+const GROUPS_STORAGE_KEY = 'sde:sidebar-collapsed-groups';
+
+function readCollapsedGroups(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.localStorage.getItem(GROUPS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed.filter((id): id is string => typeof id === 'string')) : new Set();
+  } catch {
+    return new Set();
+  }
+}
 
 interface SidebarProps {
   active: SidebarTab;
@@ -76,11 +124,26 @@ export function Sidebar({ active, onNavigate, onOpenSettings }: SidebarProps): R
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(STORAGE_KEY) === '1';
   });
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(readCollapsedGroups);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
   }, [collapsed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify([...collapsedGroups]));
+  }, [collapsedGroups]);
+
+  const toggleGroup = (id: string): void => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const width = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
 
@@ -155,54 +218,80 @@ export function Sidebar({ active, onNavigate, onOpenSettings }: SidebarProps): R
 
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <List dense sx={{ pt: 1.5, flex: 1 }}>
-          {PRIMARY_ITEMS.map((item) => (
-            <ListItem key={item.id} disablePadding sx={{ px: 1, mb: 0.5 }}>
-              <Tooltip
-                title={collapsed ? item.label : ''}
-                placement="right"
-                disableHoverListener={!collapsed}
-                disableFocusListener={!collapsed}
-                disableTouchListener={!collapsed}
-              >
-                <ListItemButton
-                  data-testid={`sidebar-${item.id}`}
-                  selected={active === item.id}
-                  onClick={() => onNavigate(item.id)}
-                  sx={{
-                    borderRadius: 1.5,
-                    py: 1,
-                    minHeight: 40,
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                    px: collapsed ? 1 : 1.5,
-                    '&.Mui-selected': {
-                      backgroundColor: 'action.selected',
-                    },
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: collapsed ? 0 : 32,
-                      justifyContent: 'center',
-                      color: active === item.id ? 'primary.main' : 'text.secondary',
-                    }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
-                  {!collapsed && (
-                    <ListItemText
-                      primary={item.label}
-                      slotProps={{
-                        primary: {
-                          variant: 'body2',
-                          sx: { fontWeight: active === item.id ? 600 : 400 },
-                        },
-                      }}
-                    />
-                  )}
-                </ListItemButton>
-              </Tooltip>
-            </ListItem>
-          ))}
+          {collapsed ? (
+            FLAT_LEAVES.map((leaf) => (
+              <LeafButton
+                key={leaf.id}
+                leaf={leaf}
+                active={active === leaf.id}
+                collapsed
+                onNavigate={onNavigate}
+              />
+            ))
+          ) : (
+            <>
+              <LeafButton
+                leaf={TOP_ITEM}
+                active={active === TOP_ITEM.id}
+                collapsed={false}
+                onNavigate={onNavigate}
+              />
+              {GROUPS.map((group) => {
+                const expanded = !collapsedGroups.has(group.id);
+                const hasActiveChild = group.children.some((c) => c.id === active);
+                return (
+                  <Box key={group.id}>
+                    <ListItem disablePadding sx={{ px: 1, mb: 0.5 }}>
+                      <ListItemButton
+                        data-testid={`sidebar-group-${group.id}`}
+                        aria-expanded={expanded}
+                        onClick={() => toggleGroup(group.id)}
+                        sx={{ borderRadius: 1.5, py: 1, minHeight: 40, px: 1.5 }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 32,
+                            justifyContent: 'center',
+                            color: hasActiveChild ? 'primary.main' : 'text.secondary',
+                          }}
+                        >
+                          {group.icon}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={group.label}
+                          slotProps={{
+                            primary: {
+                              variant: 'body2',
+                              sx: { fontWeight: 600, color: 'text.secondary' },
+                            },
+                          }}
+                        />
+                        {expanded ? (
+                          <ExpandLessIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                        ) : (
+                          <ExpandMoreIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                        )}
+                      </ListItemButton>
+                    </ListItem>
+                    <Collapse in={expanded} timeout="auto" unmountOnExit>
+                      <List dense disablePadding>
+                        {group.children.map((leaf) => (
+                          <LeafButton
+                            key={leaf.id}
+                            leaf={leaf}
+                            active={active === leaf.id}
+                            collapsed={false}
+                            indented
+                            onNavigate={onNavigate}
+                          />
+                        ))}
+                      </List>
+                    </Collapse>
+                  </Box>
+                );
+              })}
+            </>
+          )}
         </List>
 
         <Divider />
@@ -247,5 +336,71 @@ export function Sidebar({ active, onNavigate, onOpenSettings }: SidebarProps): R
         </List>
       </Box>
     </Drawer>
+  );
+}
+
+interface LeafButtonProps {
+  leaf: NavLeaf;
+  active: boolean;
+  collapsed: boolean;
+  indented?: boolean;
+  onNavigate: (tab: SidebarTab) => void;
+}
+
+function LeafButton({
+  leaf,
+  active,
+  collapsed,
+  indented = false,
+  onNavigate,
+}: LeafButtonProps): React.ReactElement {
+  return (
+    <ListItem disablePadding sx={{ px: 1, mb: 0.5 }}>
+      <Tooltip
+        title={collapsed ? leaf.label : ''}
+        placement="right"
+        disableHoverListener={!collapsed}
+        disableFocusListener={!collapsed}
+        disableTouchListener={!collapsed}
+      >
+        <ListItemButton
+          data-testid={`sidebar-${leaf.id}`}
+          selected={active}
+          onClick={() => onNavigate(leaf.id)}
+          sx={{
+            borderRadius: 1.5,
+            py: 1,
+            minHeight: 40,
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            px: collapsed ? 1 : 1.5,
+            ...(indented && !collapsed ? { pl: 3.5 } : {}),
+            '&.Mui-selected': {
+              backgroundColor: 'action.selected',
+            },
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: collapsed ? 0 : 32,
+              justifyContent: 'center',
+              color: active ? 'primary.main' : 'text.secondary',
+            }}
+          >
+            {leaf.icon}
+          </ListItemIcon>
+          {!collapsed && (
+            <ListItemText
+              primary={leaf.label}
+              slotProps={{
+                primary: {
+                  variant: 'body2',
+                  sx: { fontWeight: active ? 600 : 400 },
+                },
+              }}
+            />
+          )}
+        </ListItemButton>
+      </Tooltip>
+    </ListItem>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
 import { Sidebar, SIDEBAR_WIDTH, type SidebarTab } from '../components/Sidebar.js';
-import { HomeScreen } from './home/HomeScreen.js';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
 import { CommandList } from './commands/CommandList.js';
@@ -18,7 +17,7 @@ interface MainProps {
 }
 
 export function Main({ onOpenSettings }: MainProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<SidebarTab>('home');
+  const [activeTab, setActiveTab] = useState<SidebarTab>('starter-pack');
 
   return (
     <Box
@@ -38,7 +37,6 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
           width: { sm: `calc(100% - ${SIDEBAR_WIDTH}px)` },
         }}
       >
-        {activeTab === 'home' && <HomeScreen onNavigate={setActiveTab} />}
         {activeTab === 'starter-pack' && <StarterPackScreen onNavigate={setActiveTab} />}
         {activeTab === 'skills' && <SkillList />}
         {activeTab === 'agents' && <AgentList />}

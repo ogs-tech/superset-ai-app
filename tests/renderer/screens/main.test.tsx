@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Main } from '../../../src/renderer/screens/Main.js';
 import {
@@ -35,12 +35,12 @@ const setupRoute = (overrides: Record<string, unknown> = {}) => {
   });
 };
 
-describe('<Main> — home view', () => {
-  it('renders the home dashboard and sidebar by default', async () => {
+describe('<Main> — landing view', () => {
+  it('renders the starter pack as the landing screen and sidebar by default', async () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
-    expect(await screen.findByTestId('home-screen')).toBeInTheDocument();
+    expect(await screen.findByTestId('starter-pack-screen')).toBeInTheDocument();
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('sidebar-settings')).toBeInTheDocument();
   });
@@ -49,17 +49,32 @@ describe('<Main> — home view', () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
-    await screen.findByTestId('home-screen');
+    await screen.findByTestId('starter-pack-screen');
     await userEvent.click(screen.getByTestId('sidebar-skills'));
 
     expect(await screen.findByTestId('entity-list-skill')).toBeInTheDocument();
   });
 
-  it('does not render linked repos UI in the home view', async () => {
+  it('groups entity screens under an expandable Customizations section', async () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
-    await screen.findByTestId('home-screen');
+    await screen.findByTestId('starter-pack-screen');
+    // Groups are expanded by default, so children are reachable immediately.
+    const group = screen.getByTestId('sidebar-group-customizations');
+    expect(group).toHaveAttribute('aria-expanded', 'true');
+
+    // Collapsing the group hides its children.
+    await userEvent.click(group);
+    expect(group).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(screen.queryByTestId('sidebar-agents')).toBeNull());
+  });
+
+  it('does not render linked repos UI in the landing view', async () => {
+    setupRoute();
+    render(<Main onOpenSettings={() => undefined} />);
+
+    await screen.findByTestId('starter-pack-screen');
     expect(screen.queryByRole('button', { name: /add repo/i })).toBeNull();
     expect(screen.queryByText(/linked repos/i)).toBeNull();
   });
