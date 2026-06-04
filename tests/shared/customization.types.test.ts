@@ -56,7 +56,7 @@ describe('CustomizationType union (spec 014)', () => {
   });
 });
 
-describe('CustomizationType excludes "template" (template is now first-class entity)', () => {
+describe('CustomizationType excludes "template"', () => {
   it('does not include "template"', () => {
     const valid: CustomizationType[] = ['skill', 'reference', 'agent', 'global-instruction'];
     expect(valid).toHaveLength(4);

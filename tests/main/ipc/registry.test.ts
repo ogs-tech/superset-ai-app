@@ -3,14 +3,11 @@ import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
 import { CustomizationService } from '../../../src/main/application/services/customization-service.js';
-import { TemplateService } from '../../../src/main/application/services/template-service.js';
 import { InMemoryCustomizationRepository } from '../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
-import type { TemplateRepository } from '../../../src/main/application/ports/template-repository.js';
-import type { Template, TemplateFrontmatter } from '../../../src/shared/template.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import type { PluginService } from '../../../src/main/application/services/plugin-service.js';
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
@@ -38,7 +35,6 @@ interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
   customizationService: CustomizationService;
-  templateService: TemplateService;
   adapterManager: AdapterManager;
   dialogPort: DialogPort;
   pluginService: PluginService;
@@ -62,13 +58,6 @@ interface Deps {
   };
   customizationRepo: InMemoryCustomizationRepository;
   clock: FixedClock;
-  templateRepoSpy: {
-    list: ReturnType<typeof vi.fn>;
-    get: ReturnType<typeof vi.fn>;
-    save: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-    exists: ReturnType<typeof vi.fn>;
-  };
 }
 
 const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
@@ -109,36 +98,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   } as unknown as AdapterManager;
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
 
-  const templateFrontmatter: TemplateFrontmatter = {
-    name: 'default',
-    targetType: 'skill',
-    description: 'sample',
-    scopes: ['personal'],
-    version: '0.1.0',
-    createdAt: '2026-04-26T10:00:00.000Z',
-    updatedAt: '2026-04-26T10:00:00.000Z',
-  };
-  const templateFixture: Template = {
-    id: 'template/default',
-    frontmatter: templateFrontmatter,
-    body: '# Default\n',
-  };
-  const templateRepoSpy = {
-    list: vi.fn().mockResolvedValue([templateFixture]),
-    get: vi.fn().mockResolvedValue(templateFixture),
-    save: vi.fn().mockResolvedValue(templateFixture),
-    delete: vi.fn().mockResolvedValue(undefined),
-    exists: vi.fn().mockResolvedValue(false),
-  };
-  const templateRepo: TemplateRepository = {
-    list: templateRepoSpy.list,
-    get: templateRepoSpy.get,
-    save: templateRepoSpy.save,
-    delete: templateRepoSpy.delete,
-    exists: templateRepoSpy.exists,
-  };
-  const templateService = new TemplateService(templateRepo, clock);
-
   const pluginService = null as unknown as PluginService;
   const skillService = null as unknown as SkillService;
   const agentService = null as unknown as AgentService;
@@ -157,7 +116,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
     customizationService,
-    templateService,
     adapterManager,
     dialogPort,
     pluginService,
@@ -173,7 +131,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     dialogSpy,
     customizationRepo,
     clock,
-    templateRepoSpy,
   };
 };
 
@@ -341,35 +298,5 @@ describe('buildHandlers', () => {
     expect(deps.dialogSpy.selectFolder).toHaveBeenCalledWith({
       defaultPath: '/home',
     });
-  });
-});
-
-describe('buildHandlers — templates', () => {
-  it('template.list accepts targetType "global-instruction" without rejection', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    await expect(
-      handlers['template.list']?.({ targetType: 'global-instruction' }),
-    ).resolves.toBeDefined();
-  });
-
-  it('template.list delegates to TemplateService with the requested targetType', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    const result = (await handlers['template.list']?.({ targetType: 'skill' })) as Template[];
-    expect(deps.templateRepoSpy.list).toHaveBeenCalledWith({ targetType: 'skill' });
-    expect(result).toHaveLength(1);
-    expect(result[0]!.frontmatter.targetType).toBe('skill');
-  });
-
-  it('template.list rejects unknown targetType with kind=validation', async () => {
-    const deps = buildDeps();
-    const handlers = buildHandlers(deps);
-
-    await expect(
-      handlers['template.list']?.({ targetType: 'unknown' }),
-    ).rejects.toMatchObject({ kind: 'validation' });
   });
 });

@@ -7,15 +7,12 @@ import { SettingsService } from './application/services/settings-service.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
 import { CustomizationService } from './application/services/customization-service.js';
-import { TemplateService } from './application/services/template-service.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
 import { FsCustomizationRepository } from './infrastructure/customization/fs-customization-repository.js';
-import { FsTemplateRepository } from './infrastructure/template/fs-template-repository.js';
-import { TemplateSeeder } from './application/services/template-seeder.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
@@ -106,10 +103,6 @@ async function wireIpc(): Promise<void> {
   });
   const schemaValidator = new SchemaValidator();
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
-  const templatesSeedDir = join(process.cwd(), 'src', 'main', 'templates');
-  await new TemplateSeeder({ sourceDir: templatesSeedDir }).seedIfMissing(workspacePath);
-  const templateRepo = new FsTemplateRepository(workspacePath);
-  const templateService = new TemplateService(templateRepo, clock, schemaValidator);
 
   const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));
 
@@ -213,7 +206,6 @@ async function wireIpc(): Promise<void> {
   const handlers = buildHandlers({
     settingsService,
     repoService,
-    templateService,
     adapterManager,
     dialogPort,
     pluginService,

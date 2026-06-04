@@ -18,7 +18,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { Toast, type ToastMessage } from './Toast.js';
 import { PluginOriginBadge } from './PluginOriginBadge.js';
-import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import { CustomizationEditor } from './CustomizationEditor.js';
 import { CustomizationViewDrawer } from './CustomizationViewDrawer.js';
 import { EntityDataGrid } from './EntityDataGrid/index.js';
@@ -32,11 +31,10 @@ import type {
   Customization,
   CustomizationType,
 } from '../../shared/customization.js';
-import type { Template, TemplateTargetType } from '../../shared/template.js';
+import { blankCustomization } from '../lib/blank-customization.js';
 
 interface CustomizationListScreenProps {
   entityType: CustomizationType;
-  templateTargetType: TemplateTargetType;
   title: string;
   singular: string;
   listMethod: string;
@@ -45,13 +43,11 @@ interface CustomizationListScreenProps {
 
 type Editor =
   | { kind: 'closed' }
-  | { kind: 'new'; template: Template }
   | { kind: 'create'; customization: Customization }
   | { kind: 'edit'; customization: Customization };
 
 export function CustomizationListScreen({
   entityType,
-  templateTargetType,
   title,
   singular,
   listMethod,
@@ -64,7 +60,6 @@ export function CustomizationListScreen({
   const invalidate = useInvalidateCustomization();
 
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [editor, setEditor] = useState<Editor>({ kind: 'closed' });
   const [confirmDelete, setConfirmDelete] =
     useState<CustomizationListItem | null>(null);
@@ -111,19 +106,18 @@ export function CustomizationListScreen({
   };
 
   if (editor.kind !== 'closed') {
-    const initial =
-      editor.kind === 'edit' || editor.kind === 'create'
-        ? editor.customization
-        : customizationFromTemplate(editor.template, entityType);
     return (
       <CustomizationEditor
-        initial={initial}
-        isCreate={editor.kind === 'new' || editor.kind === 'create'}
+        initial={editor.customization}
+        isCreate={editor.kind === 'create'}
         onSaved={handleSaved}
         onCancel={() => setEditor({ kind: 'closed' })}
       />
     );
   }
+
+  const startCreate = (): void =>
+    setEditor({ kind: 'create', customization: blankCustomization(entityType) });
 
   const entity: EntityDef<CustomizationListItem> = {
     name: entityType,
@@ -221,10 +215,10 @@ export function CustomizationListScreen({
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setShowTemplateDialog(true)}
+            onClick={startCreate}
             data-testid={`new-${entityType}-button`}
           >
-            New from template
+            New
           </Button>
         }
         emptyState={
@@ -245,24 +239,13 @@ export function CustomizationListScreen({
             <Button
               variant="outlined"
               startIcon={<AddIcon />}
-              onClick={() => setShowTemplateDialog(true)}
+              onClick={startCreate}
             >
               Create your first {singular}
             </Button>
           </Box>
         }
       />
-
-      {showTemplateDialog && (
-        <NewFromTemplateDialog
-          targetType={templateTargetType}
-          onCancel={() => setShowTemplateDialog(false)}
-          onSelect={(template) => {
-            setShowTemplateDialog(false);
-            setEditor({ kind: 'new', template });
-          }}
-        />
-      )}
 
       <Dialog
         open={confirmDelete !== null}
@@ -303,27 +286,6 @@ export function CustomizationListScreen({
       />
     </Container>
   );
-}
-
-function customizationFromTemplate(
-  template: Template,
-  type: CustomizationType,
-): Customization {
-  const fm = template.frontmatter;
-  return {
-    id: '',
-    frontmatter: {
-      name: fm.name,
-      type,
-      description: fm.description,
-      scopes: fm.scopes ?? ['personal'],
-      version: fm.version ?? '0.1.0',
-      createdAt: '',
-      updatedAt: '',
-      ...(fm.tags ? { tags: fm.tags } : {}),
-    },
-    body: template.body,
-  };
 }
 
 function duplicateCustomization(

@@ -6,11 +6,6 @@ import {
   Checkbox,
   CircularProgress,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   FormControlLabel,
   FormGroup,
   Paper,
@@ -20,11 +15,9 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { Toast, type ToastMessage } from './Toast.js';
 import { SyncReportModal } from './SyncReportModal.js';
-import { NewFromTemplateDialog } from './NewFromTemplateDialog.js';
 import type {
   Customization,
   CustomizationFrontmatter,
@@ -32,7 +25,6 @@ import type {
   CustomizationType,
   SyncResult,
 } from '../../shared/customization.js';
-import type { Template } from '../../shared/template.js';
 
 interface TypedEntity {
   id: string;
@@ -94,25 +86,7 @@ export function CustomizationEditor({
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [saving, setSaving] = useState(false);
   const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-  const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null);
   const [bodyView, setBodyView] = useState<BodyView>('split');
-
-  const handleTemplateSelected = (template: Template): void => {
-    setTemplateDialogOpen(false);
-    if (body.trim() === '') {
-      setBody(template.body);
-      return;
-    }
-    setPendingTemplate(template);
-  };
-
-  const confirmApplyTemplate = (): void => {
-    if (pendingTemplate) {
-      setBody(pendingTemplate.body);
-    }
-    setPendingTemplate(null);
-  };
 
   const update = <K extends keyof CustomizationFrontmatter>(
     key: K,
@@ -176,13 +150,6 @@ export function CustomizationEditor({
           {isCreate ? 'New customization' : `Edit ${initial.frontmatter.name}`}
         </Typography>
         <Stack direction="row" spacing={1}>
-          <Button
-            variant="text"
-            startIcon={<AutoFixHighIcon />}
-            onClick={() => setTemplateDialogOpen(true)}
-          >
-            Apply template
-          </Button>
           <Button variant="outlined" onClick={onCancel}>
             Cancel
           </Button>
@@ -335,38 +302,6 @@ export function CustomizationEditor({
           )}
         </Box>
       </Paper>
-
-      {templateDialogOpen && (
-        <NewFromTemplateDialog
-          targetType={frontmatter.type}
-          onCancel={() => setTemplateDialogOpen(false)}
-          onSelect={handleTemplateSelected}
-        />
-      )}
-
-      <Dialog
-        open={pendingTemplate !== null}
-        onClose={() => setPendingTemplate(null)}
-        aria-label="Confirm body replacement"
-        data-testid="confirm-apply-template-dialog"
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Replace body?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Replace the current body with template{' '}
-            <strong>{pendingTemplate?.frontmatter.name}</strong>? Frontmatter will be
-            preserved.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPendingTemplate(null)}>Keep current body</Button>
-          <Button variant="contained" color="error" onClick={confirmApplyTemplate}>
-            Replace body
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
       <SyncReportModal report={syncReport} onClose={() => setSyncReport([])} />

@@ -182,17 +182,6 @@ Retained for the legacy `CustomizationList` screen used by `PluginEditor` and fo
 
 `CustomizationType`, `Customization`, `SyncResult` — see [`src/shared/customization.ts`](../../src/shared/customization.ts) and [Customization schema](customization-schema.md). Prefer the typed namespaces above for new code.
 
-### `template`
-
-| Method | Params | Result |
-|---|---|---|
-| `template.list` | `{ targetType?: TemplateTargetType }` (or none) | `Template[]` |
-| `template.get` | `{ id: string }` | `Template` |
-| `template.save` | `{ template: Template; isCreate?: boolean }` | `Template` |
-| `template.delete` | `{ id: string }` | `{ ok: true }` |
-
-`Template`, `TemplateTargetType` — see [`src/shared/template.ts`](../../src/shared/template.ts).
-
 ### `adapter`
 
 | Method | Params | Result |

@@ -1,12 +1,10 @@
 import type { ZodIssue, ZodError } from 'zod';
 import type { CustomizationFrontmatter } from '../../../shared/customization.js';
-import type { TemplateFrontmatter } from '../../../shared/template.js';
 import { skillSchema } from '../schemas/skill.js';
 import { referenceSchema } from '../schemas/reference.js';
 import { agentSchema } from '../schemas/agent.js';
 import { globalInstructionSchema } from '../schemas/global-instruction.js';
 import { commandSchema } from '../schemas/command.js';
-import { templateSchema } from '../schemas/template.js';
 
 export interface ValidationError {
   path: string;
@@ -96,14 +94,6 @@ export class SchemaValidator {
         return { ok: false, errors: [{ path: 'frontmatter.type', kind: 'enum', message: `Unknown type: ${String(type)}` }] };
     }
 
-    if (!result.success) {
-      return { ok: false, errors: zodErrorToValidationErrors(result.error) };
-    }
-    return { ok: true };
-  }
-
-  validateTemplate(frontmatter: TemplateFrontmatter): ValidationResult {
-    const result = templateSchema.safeParse(frontmatter);
     if (!result.success) {
       return { ok: false, errors: zodErrorToValidationErrors(result.error) };
     }

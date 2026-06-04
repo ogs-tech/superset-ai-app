@@ -36,7 +36,7 @@ Each customization has a **scope**: `personal` or `project`.
 ### Must-have
 
 - CRUD of customizations (all four types) in Markdown + YAML frontmatter.
-- Templates by type (don't face a blank page).
+- "New" opens the editor pre-filled with sensible defaults; "Duplicate" copies an existing item (don't face a blank page).
 - Markdown preview on save.
 - Sync via symlink to Claude Code and Copilot, personal and project scopes.
 - `copilot-instructions.md` generated from flagged references.

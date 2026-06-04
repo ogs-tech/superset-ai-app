@@ -35,7 +35,6 @@ function renderScreen() {
   return renderWithQuery(
     <CustomizationListScreen
       entityType="skill"
-      templateTargetType="skill"
       title="Skills"
       singular="skill"
       listMethod="skill.list"

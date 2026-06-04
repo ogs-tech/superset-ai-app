@@ -24,14 +24,13 @@ Build is driven by `electron-vite.config.ts`: each process has its own entry and
 ```
 src/main/
 ├── domain/          # Pure types and value objects
-│                    #   customization-id, customization-name, template-id, errors
+│                    #   customization-id, customization-name, errors
 ├── application/
 │   ├── ports/       # Interfaces — what the core needs from the outside
 │   ├── services/    # Use cases (see below)
 │   └── schemas/     # Zod schemas
 ├── infrastructure/  # Adapter implementations (filesystem, git, dialog, settings, …)
-├── ipc/             # IPC handlers — wire services to renderer requests
-└── templates/       # Built-in template seeds
+└── ipc/             # IPC handlers — wire services to renderer requests
 ```
 
 ### Application services
@@ -51,8 +50,6 @@ Plugin lifecycle:
 - `plugin-installer`, `plugin-author-service`, `plugin-publisher`, `plugin-manifest-parser`, `marketplace-parser`.
 
 Cross-cutting:
-- `template-service` — built-in and user templates.
-- `template-seeder` — installs built-in templates on bootstrap.
 - `adapter-manager` — orchestrates per-tool adapters (Claude, Copilot).
 - `symlink-manager` — creates and reconciles symlinks.
 - `copilot-instructions-gen` — generates `.github/copilot-instructions.md`.
@@ -105,7 +102,6 @@ I/O failures bubble up to the `IoError` screen, which retries the failing step.
 ## Persistence
 
 - **Customizations** — `.md` files with YAML frontmatter under the user's chosen workspace folder.
-- **Templates** — same shape as customizations; seeded from `src/main/templates/`.
 - **Settings** — JSON file managed by `settings-service`.
 - **Sync** — symbolic links from each adapter target into the workspace files.
 

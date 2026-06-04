@@ -35,7 +35,6 @@ const baseDeps = (): IpcDeps => {
       save: vi.fn().mockResolvedValue({ globalInstruction: gi, syncReport: [] }),
     } as unknown as IpcDeps['globalInstructionService'],
     repoService: {} as IpcDeps['repoService'],
-    templateService: {} as IpcDeps['templateService'],
     adapterManager: {} as IpcDeps['adapterManager'],
     dialogPort: {} as IpcDeps['dialogPort'],
     pluginService: {} as IpcDeps['pluginService'],

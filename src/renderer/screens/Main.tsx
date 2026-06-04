@@ -7,7 +7,6 @@ import { CommandList } from './commands/CommandList.js';
 import { HookList } from './hooks/HookList.js';
 import { ReferenceList } from './references/ReferenceList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
-import { TemplateList } from './templates/TemplateList.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
 import { StarterPackScreen } from './starter-pack/StarterPackScreen.js';
@@ -44,7 +43,6 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         {activeTab === 'hooks' && <HookList />}
         {activeTab === 'references' && <ReferenceList />}
         {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
-        {activeTab === 'templates' && <TemplateList />}
         {activeTab === 'plugins' && <PluginList scope="personal" />}
         {activeTab === 'marketplaces' && <MarketplaceList />}
       </Box>

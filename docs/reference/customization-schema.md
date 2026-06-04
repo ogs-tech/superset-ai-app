@@ -1,6 +1,6 @@
 ---
 title: Customization schema
-description: YAML frontmatter contract for customizations and templates, with field rules, per-type constraints and validation error shape.
+description: YAML frontmatter contract for customizations, with field rules, per-type constraints and validation error shape.
 ---
 
 # Customization schema
@@ -90,20 +90,6 @@ The Markdown body is unconstrained at the schema layer (just `body: string` in `
 | `project` | Applies to repos linked in Settings. | `<repo>/.claude/`, `<repo>/.github/` |
 
 A customization can declare both scopes; the adapter publishes it to each enabled target.
-
-## Templates
-
-Templates live alongside customizations and seed new files. Schema in `schemas/template.ts`.
-
-Differences vs. customization frontmatter:
-
-| Field | Note |
-|---|---|
-| `targetType` (instead of `type`) | One of `skill` · `reference` · `agent` · `global-instruction`. Indicates which customization type the template produces. |
-| `name` | Slug rule — **no** `default` constraint, even for `global-instruction` templates. |
-| `scopes` | Same rule as customizations (≥ 1, no duplicates) — **no** `["personal"]` constraint. |
-
-All other fields (`description`, `version`, `createdAt`, `updatedAt`, `tags`) follow the common rules.
 
 ## Validation result
 

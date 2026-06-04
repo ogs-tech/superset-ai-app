@@ -4,7 +4,6 @@ import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
-import type { TemplateService } from '../application/services/template-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
 import type { DialogPort, SelectFolderParams } from '../application/ports/dialog-port.js';
 import type { PluginService } from '../application/services/plugin-service.js';
@@ -18,7 +17,6 @@ import type { MarketplaceService } from '../application/services/marketplace-ser
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
 import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
-import type { Template, TemplateTargetType } from '../../shared/template.js';
 import type { IpcHandlers } from './dispatcher.js';
 import { buildPluginHandlers } from './plugin-handlers.js';
 import { buildCredentialsHandlers } from './credentials-handlers.js';
@@ -36,7 +34,6 @@ import { globalInstructionId } from '../domain/global-instruction-id.js';
 export interface IpcDeps {
   settingsService: SettingsService;
   repoService: RepoService;
-  templateService: TemplateService;
   adapterManager: AdapterManager;
   dialogPort: DialogPort;
   pluginService: PluginService;
@@ -50,31 +47,6 @@ export interface IpcDeps {
   marketplaceService: MarketplaceService;
   appQuit: () => void;
 }
-
-const TEMPLATE_TARGET_TYPES: readonly TemplateTargetType[] = [
-  'skill',
-  'reference',
-  'agent',
-  'global-instruction',
-  'command',
-];
-
-const asTemplateTargetType = (value: unknown, field: string): TemplateTargetType => {
-  if (typeof value !== 'string' || !(TEMPLATE_TARGET_TYPES as readonly string[]).includes(value)) {
-    throw new DomainError(
-      'validation',
-      `Invalid '${field}' (must be ${TEMPLATE_TARGET_TYPES.join(' | ')})`,
-    );
-  }
-  return value as TemplateTargetType;
-};
-
-const asTemplate = (value: unknown): Template => {
-  if (typeof value !== 'object' || value === null) {
-    throw new DomainError('validation', `Invalid 'template' payload`);
-  }
-  return value as Template;
-};
 
 interface RepoLinkParams {
   path: string;
@@ -107,7 +79,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
   const {
     settingsService,
     repoService,
-    templateService,
     adapterManager,
     dialogPort,
     pluginService,
@@ -230,36 +201,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       return adapterManager.removeAll({
         adapterId: asString(raw['adapterId'], 'adapterId'),
       });
-    },
-
-    'template.list': async (params) => {
-      const raw = params === undefined || params === null ? {} : asObject(params, 'template.list');
-      const query: { targetType?: TemplateTargetType } = {};
-      if (raw['targetType'] !== undefined) {
-        query.targetType = asTemplateTargetType(raw['targetType'], 'targetType');
-      }
-      return templateService.list(query);
-    },
-
-    'template.get': async (params) => {
-      const raw = asObject(params, 'template.get');
-      return templateService.get({ id: asString(raw['id'], 'id') });
-    },
-
-    'template.save': async (params) => {
-      const raw = asObject(params, 'template.save');
-      const template = asTemplate(raw['template']);
-      const isCreate = raw['isCreate'];
-      return templateService.save({
-        template,
-        ...(typeof isCreate === 'boolean' ? { isCreate } : {}),
-      });
-    },
-
-    'template.delete': async (params) => {
-      const raw = asObject(params, 'template.delete');
-      await templateService.delete({ id: asString(raw['id'], 'id') });
-      return { ok: true };
     },
 
     'adapter.setEnabled': async (params) => {

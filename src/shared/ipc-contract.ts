@@ -1,5 +1,4 @@
 import type { SyncResult } from './customization.js';
-import type { Template, TemplateTargetType } from './template.js';
 
 export type IpcErrorKind =
   | 'validation'
@@ -27,31 +26,6 @@ export interface AdapterSyncAllParams {
 }
 
 export type AdapterSyncAllResult = SyncResult[];
-
-export interface TemplateListParams {
-  targetType?: TemplateTargetType;
-}
-
-export interface TemplateGetParams {
-  id: string;
-}
-
-export interface TemplateSaveParams {
-  template: Template;
-  isCreate?: boolean;
-}
-
-export interface TemplateDeleteParams {
-  id: string;
-}
-
-export interface TemplateDeleteResult {
-  ok: true;
-}
-
-export type TemplateListResult = Template[];
-export type TemplateGetResult = Template;
-export type TemplateSaveResult = Template;
 
 // ──────────────────────────────────────────────────────────────────────────
 // Plugin methods (IPC method names)

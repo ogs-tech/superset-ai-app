@@ -13,8 +13,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { CustomizationEditor } from '../../components/CustomizationEditor.js';
+import { blankCustomization } from '../../lib/blank-customization.js';
 import type { Customization } from '../../../shared/customization.js';
-import type { Template } from '../../../shared/template.js';
 
 const SLUG = 'default';
 
@@ -45,29 +45,16 @@ export function GlobalInstructionScreen(): React.ReactElement {
     void load();
   }, []);
 
-  const handleEdit = async (): Promise<void> => {
+  const handleEdit = (): void => {
     if (existing) {
       setEditor({ kind: 'edit', customization: existing, isCreate: false });
       return;
     }
-    try {
-      const list = await callIpc<Template[]>('template.list', {
-        targetType: 'global-instruction',
-      });
-      const template = list[0];
-      if (!template) {
-        setToast({ variant: 'error', message: 'global-instruction template not found' });
-        return;
-      }
-      setEditor({
-        kind: 'create',
-        customization: customizationFromTemplate(template),
-        isCreate: true,
-      });
-    } catch (err) {
-      const message = err instanceof IpcCallError ? err.message : String(err);
-      setToast({ variant: 'error', message });
-    }
+    setEditor({
+      kind: 'create',
+      customization: blankCustomization('global-instruction'),
+      isCreate: true,
+    });
   };
 
   if (editor.kind !== 'closed' && editor.customization) {
@@ -117,22 +104,4 @@ export function GlobalInstructionScreen(): React.ReactElement {
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </Container>
   );
-}
-
-function customizationFromTemplate(template: Template): Customization {
-  const fm = template.frontmatter;
-  return {
-    id: '',
-    frontmatter: {
-      name: SLUG,
-      type: 'global-instruction',
-      description: fm.description,
-      scopes: ['personal'],
-      version: fm.version ?? '0.1.0',
-      createdAt: '',
-      updatedAt: '',
-      ...(fm.tags ? { tags: fm.tags } : {}),
-    },
-    body: template.body,
-  };
 }

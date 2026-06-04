@@ -23,7 +23,6 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import WebhookIcon from '@mui/icons-material/Webhook';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import TuneIcon from '@mui/icons-material/Tune';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -39,7 +38,6 @@ export type SidebarTab =
   | 'hooks'
   | 'references'
   | 'global-instructions'
-  | 'templates'
   | 'plugins'
   | 'marketplaces';
 
@@ -87,7 +85,6 @@ const GROUPS: ReadonlyArray<NavGroup> = [
     children: [
       { id: 'plugins', label: 'Plugins', icon: <ExtensionIcon fontSize="small" /> },
       { id: 'marketplaces', label: 'Marketplaces', icon: <StorefrontIcon fontSize="small" /> },
-      { id: 'templates', label: 'Templates', icon: <LibraryBooksIcon fontSize="small" /> },
     ],
   },
 ];

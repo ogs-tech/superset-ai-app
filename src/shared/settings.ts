@@ -43,7 +43,6 @@ export const WorkspacePaths = [
   'agents',
   '_generated',
   '_backups',
-  '.superset/templates',
 ] as const;
 
 export type WorkspacePath = (typeof WorkspacePaths)[number];
