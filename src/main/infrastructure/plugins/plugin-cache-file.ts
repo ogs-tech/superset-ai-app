@@ -12,7 +12,7 @@ export class PluginCacheFile implements PluginCachePort {
     private readonly config: {
       // Returns the workspace/plugins/ directory for the given scope
       pluginsDir(scope: Scope): string;
-      // Returns the Claude cache dir: ~/.claude/plugins/cache/skillforge-imports/
+      // Returns the Claude cache dir: ~/.claude/plugins/cache/local/
       cacheDir(scope: Scope): string;
     },
   ) {}
@@ -42,7 +42,7 @@ export class PluginCacheFile implements PluginCachePort {
     await fs.rename(tmpPath, metaPath);
 
     // Sidecar: keep the Claude Code marketplace.json in sync with _meta.json so
-    // that the directory registered as the `skillforge-imports` marketplace can
+    // that the directory registered as the `local` marketplace can
     // actually be loaded by Claude Code. _meta.json is the source of truth.
     await this.syncMarketplaceManifest(pluginsDir, meta);
   }
@@ -69,7 +69,7 @@ export class PluginCacheFile implements PluginCachePort {
     );
 
     const manifest = {
-      name: 'skillforge-imports',
+      name: 'local',
       owner: { name: 'SDE-AI' },
       description: 'Plugins managed by SDE-AI',
       plugins,

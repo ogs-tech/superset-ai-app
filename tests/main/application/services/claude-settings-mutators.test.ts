@@ -16,7 +16,7 @@ const emptySettings = (): ClaudeSettings => ({
 
 const settingsWithMarketplace = (marketplacePath: string): ClaudeSettings => ({
   extraKnownMarketplaces: {
-    'skillforge-imports': {
+    'local': {
       source: {
         source: 'directory',
         path: marketplacePath,
@@ -30,13 +30,13 @@ const pluginId = (id: string): PluginId => id as PluginId;
 
 describe('claude-settings-mutators', () => {
   describe('addMarketplaceIfMissing', () => {
-    it('adds the skillforge-imports marketplace when absent', () => {
+    it('adds the local marketplace when absent', () => {
       const settings = emptySettings();
       const path = '/workspace/plugins';
 
       const result = addMarketplaceIfMissing(settings, path);
 
-      expect(result.extraKnownMarketplaces['skillforge-imports']).toEqual({
+      expect(result.extraKnownMarketplaces['local']).toEqual({
         source: {
           source: 'directory',
           path,
@@ -51,14 +51,14 @@ describe('claude-settings-mutators', () => {
       const result = addMarketplaceIfMissing(settings, newPath);
 
       expect(result).toBe(settings);
-      const marketplace = result.extraKnownMarketplaces['skillforge-imports'];
+      const marketplace = result.extraKnownMarketplaces['local'];
       expect(marketplace).toBeDefined();
       if (marketplace) {
         expect(marketplace.source.path).toBe('/workspace/plugins');
       }
     });
 
-    it('preserves other marketplaces when adding skillforge-imports', () => {
+    it('preserves other marketplaces when adding local', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
           'other-marketplace': {
@@ -79,7 +79,7 @@ describe('claude-settings-mutators', () => {
           path: '/other/path',
         },
       });
-      expect(result.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+      expect(result.extraKnownMarketplaces['local']).toBeDefined();
     });
 
     it('preserves other settings properties', () => {
@@ -107,13 +107,13 @@ describe('claude-settings-mutators', () => {
   });
 
   describe('enablePlugin', () => {
-    it('sets enabledPlugins[<id>@skillforge-imports] = true', () => {
+    it('sets enabledPlugins[<id>@local] = true', () => {
       const settings = emptySettings();
       const id = pluginId('my-plugin');
 
       const result = enablePlugin(settings, id);
 
-      expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['my-plugin@local']).toBe(true);
     });
 
     it('creates enabledPlugins object if absent', () => {
@@ -124,14 +124,14 @@ describe('claude-settings-mutators', () => {
 
       const result = enablePlugin(settings, id);
 
-      expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['my-plugin@local']).toBe(true);
     });
 
     it('preserves other enabled plugins', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'other-plugin@skillforge-imports': true,
+          'other-plugin@local': true,
           'another@other-marketplace': false,
         },
       };
@@ -139,8 +139,8 @@ describe('claude-settings-mutators', () => {
 
       const result = enablePlugin(settings, id);
 
-      expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(true);
-      expect(result.enabledPlugins['other-plugin@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['my-plugin@local']).toBe(true);
+      expect(result.enabledPlugins['other-plugin@local']).toBe(true);
       expect(result.enabledPlugins['another@other-marketplace']).toBe(false);
     });
 
@@ -148,14 +148,14 @@ describe('claude-settings-mutators', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': false,
+          'my-plugin@local': false,
         },
       };
       const id = pluginId('my-plugin');
 
       const result = enablePlugin(settings, id);
 
-      expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['my-plugin@local']).toBe(true);
     });
 
     it('does not mutate the input settings', () => {
@@ -169,18 +169,18 @@ describe('claude-settings-mutators', () => {
   });
 
   describe('disablePlugin', () => {
-    it('sets enabledPlugins[<id>@skillforge-imports] = false', () => {
+    it('sets enabledPlugins[<id>@local] = false', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
+          'my-plugin@local': true,
         },
       };
       const id = pluginId('my-plugin');
 
       const result = disablePlugin(settings, id);
 
-      expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(false);
+      expect(result.enabledPlugins['my-plugin@local']).toBe(false);
     });
 
     it('no-op when plugin is not in enabledPlugins', () => {
@@ -196,16 +196,16 @@ describe('claude-settings-mutators', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
-          'other-plugin@skillforge-imports': true,
+          'my-plugin@local': true,
+          'other-plugin@local': true,
         },
       };
       const id = pluginId('my-plugin');
 
       const result = disablePlugin(settings, id);
 
-      expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(false);
-      expect(result.enabledPlugins['other-plugin@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['my-plugin@local']).toBe(false);
+      expect(result.enabledPlugins['other-plugin@local']).toBe(true);
     });
 
     it('does not create entry if plugin does not exist', () => {
@@ -214,14 +214,14 @@ describe('claude-settings-mutators', () => {
 
       const result = disablePlugin(settings, id);
 
-      expect('my-plugin@skillforge-imports' in result.enabledPlugins).toBe(false);
+      expect('my-plugin@local' in result.enabledPlugins).toBe(false);
     });
 
     it('does not mutate the input settings', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
+          'my-plugin@local': true,
         },
       };
       const original = JSON.stringify(settings);
@@ -237,14 +237,14 @@ describe('claude-settings-mutators', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
+          'my-plugin@local': true,
         },
       };
       const id = pluginId('my-plugin');
 
       const result = removePlugin(settings, id);
 
-      expect('my-plugin@skillforge-imports' in result.enabledPlugins).toBe(false);
+      expect('my-plugin@local' in result.enabledPlugins).toBe(false);
     });
 
     it('no-op when plugin is absent', () => {
@@ -260,8 +260,8 @@ describe('claude-settings-mutators', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
-          'other-plugin@skillforge-imports': false,
+          'my-plugin@local': true,
+          'other-plugin@local': false,
           'another@other-marketplace': true,
         },
       };
@@ -269,8 +269,8 @@ describe('claude-settings-mutators', () => {
 
       const result = removePlugin(settings, id);
 
-      expect('my-plugin@skillforge-imports' in result.enabledPlugins).toBe(false);
-      expect(result.enabledPlugins['other-plugin@skillforge-imports']).toBe(false);
+      expect('my-plugin@local' in result.enabledPlugins).toBe(false);
+      expect(result.enabledPlugins['other-plugin@local']).toBe(false);
       expect(result.enabledPlugins['another@other-marketplace']).toBe(true);
     });
 
@@ -278,21 +278,21 @@ describe('claude-settings-mutators', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'plugin-a@skillforge-imports': true,
-          'plugin-b@skillforge-imports': true,
+          'plugin-a@local': true,
+          'plugin-b@local': true,
         },
       };
 
       const result = removePlugin(settings, pluginId('plugin-a'));
 
-      expect(result.enabledPlugins['plugin-b@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['plugin-b@local']).toBe(true);
     });
 
     it('does not mutate the input settings', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
+          'my-plugin@local': true,
         },
       };
       const original = JSON.stringify(settings);
@@ -307,7 +307,7 @@ describe('claude-settings-mutators', () => {
     it('removes the marketplace when last plugin is removed', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -319,13 +319,13 @@ describe('claude-settings-mutators', () => {
 
       const result = cleanupMarketplaceIfEmpty(settings);
 
-      expect('skillforge-imports' in result.extraKnownMarketplaces).toBe(false);
+      expect('local' in result.extraKnownMarketplaces).toBe(false);
     });
 
-    it('keeps the marketplace when other skillforge plugins still exist', () => {
+    it('keeps the marketplace when other local plugins still exist', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -333,19 +333,19 @@ describe('claude-settings-mutators', () => {
           },
         },
         enabledPlugins: {
-          'my-plugin@skillforge-imports': true,
+          'my-plugin@local': true,
         },
       };
 
       const result = cleanupMarketplaceIfEmpty(settings);
 
-      expect(result.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+      expect(result.extraKnownMarketplaces['local']).toBeDefined();
     });
 
-    it('keeps the marketplace when disabled skillforge plugins exist', () => {
+    it('keeps the marketplace when disabled local plugins exist', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -353,13 +353,13 @@ describe('claude-settings-mutators', () => {
           },
         },
         enabledPlugins: {
-          'my-plugin@skillforge-imports': false,
+          'my-plugin@local': false,
         },
       };
 
       const result = cleanupMarketplaceIfEmpty(settings);
 
-      expect(result.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+      expect(result.extraKnownMarketplaces['local']).toBeDefined();
     });
 
     it('is no-op when marketplace never existed', () => {
@@ -372,10 +372,10 @@ describe('claude-settings-mutators', () => {
       expect(JSON.stringify(result)).toBe(original);
     });
 
-    it('preserves other marketplaces when cleaning up skillforge', () => {
+    it('preserves other marketplaces when cleaning up local', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -393,14 +393,14 @@ describe('claude-settings-mutators', () => {
 
       const result = cleanupMarketplaceIfEmpty(settings);
 
-      expect('skillforge-imports' in result.extraKnownMarketplaces).toBe(false);
+      expect('local' in result.extraKnownMarketplaces).toBe(false);
       expect(result.extraKnownMarketplaces['other-marketplace']).toBeDefined();
     });
 
     it('does not mutate the input settings', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -416,10 +416,10 @@ describe('claude-settings-mutators', () => {
       expect(JSON.stringify(settings)).toBe(original);
     });
 
-    it('handles edge case: only non-skillforge plugins exist', () => {
+    it('handles edge case: only non-local plugins exist', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -433,7 +433,7 @@ describe('claude-settings-mutators', () => {
 
       const result = cleanupMarketplaceIfEmpty(settings);
 
-      expect('skillforge-imports' in result.extraKnownMarketplaces).toBe(false);
+      expect('local' in result.extraKnownMarketplaces).toBe(false);
     });
   });
 
@@ -441,7 +441,7 @@ describe('claude-settings-mutators', () => {
     it('enablePlugin uses provided marketplaceId in the key', () => {
       const result = enablePlugin(emptySettings(), pluginId('feature-dev'), 'claude-plugins-official');
       expect(result.enabledPlugins['feature-dev@claude-plugins-official']).toBe(true);
-      expect(result.enabledPlugins['feature-dev@skillforge-imports']).toBeUndefined();
+      expect(result.enabledPlugins['feature-dev@local']).toBeUndefined();
     });
 
     it('disablePlugin targets the per-marketplace key', () => {
@@ -449,13 +449,13 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {},
         enabledPlugins: {
           'feature-dev@claude-plugins-official': true,
-          'feature-dev@skillforge-imports': true,
+          'feature-dev@local': true,
         },
       };
       const result = disablePlugin(settings, pluginId('feature-dev'), 'claude-plugins-official');
       expect(result.enabledPlugins['feature-dev@claude-plugins-official']).toBe(false);
-      // skillforge-imports key untouched
-      expect(result.enabledPlugins['feature-dev@skillforge-imports']).toBe(true);
+      // local key untouched
+      expect(result.enabledPlugins['feature-dev@local']).toBe(true);
     });
 
     it('removePlugin removes only the per-marketplace key', () => {
@@ -463,15 +463,15 @@ describe('claude-settings-mutators', () => {
         extraKnownMarketplaces: {},
         enabledPlugins: {
           'feature-dev@claude-plugins-official': true,
-          'feature-dev@skillforge-imports': true,
+          'feature-dev@local': true,
         },
       };
       const result = removePlugin(settings, pluginId('feature-dev'), 'claude-plugins-official');
       expect('feature-dev@claude-plugins-official' in result.enabledPlugins).toBe(false);
-      expect(result.enabledPlugins['feature-dev@skillforge-imports']).toBe(true);
+      expect(result.enabledPlugins['feature-dev@local']).toBe(true);
     });
 
-    it('cleanupMarketplaceIfEmpty does NOT remove non-skillforge marketplaces (we never registered them)', () => {
+    it('cleanupMarketplaceIfEmpty does NOT remove non-local marketplaces (we never registered them)', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
           'claude-plugins-official': {
@@ -491,23 +491,23 @@ describe('claude-settings-mutators', () => {
 
       // Add marketplace
       settings = addMarketplaceIfMissing(settings, '/workspace/plugins');
-      expect('skillforge-imports' in settings.extraKnownMarketplaces).toBe(true);
+      expect('local' in settings.extraKnownMarketplaces).toBe(true);
 
       // Enable plugin
       settings = enablePlugin(settings, pluginId('my-plugin'));
-      expect(settings.enabledPlugins['my-plugin@skillforge-imports']).toBe(true);
+      expect(settings.enabledPlugins['my-plugin@local']).toBe(true);
 
       // Disable plugin
       settings = disablePlugin(settings, pluginId('my-plugin'));
-      expect(settings.enabledPlugins['my-plugin@skillforge-imports']).toBe(false);
+      expect(settings.enabledPlugins['my-plugin@local']).toBe(false);
 
       // Remove plugin
       settings = removePlugin(settings, pluginId('my-plugin'));
-      expect('my-plugin@skillforge-imports' in settings.enabledPlugins).toBe(false);
+      expect('my-plugin@local' in settings.enabledPlugins).toBe(false);
 
       // Cleanup marketplace
       settings = cleanupMarketplaceIfEmpty(settings);
-      expect('skillforge-imports' in settings.extraKnownMarketplaces).toBe(false);
+      expect('local' in settings.extraKnownMarketplaces).toBe(false);
     });
 
     it('manage multiple plugins concurrently', () => {
@@ -519,15 +519,15 @@ describe('claude-settings-mutators', () => {
       settings = enablePlugin(settings, pluginId('plugin-b'));
       settings = enablePlugin(settings, pluginId('plugin-c'));
 
-      expect(settings.enabledPlugins['plugin-a@skillforge-imports']).toBe(true);
-      expect(settings.enabledPlugins['plugin-b@skillforge-imports']).toBe(true);
-      expect(settings.enabledPlugins['plugin-c@skillforge-imports']).toBe(true);
-      expect('skillforge-imports' in settings.extraKnownMarketplaces).toBe(true);
+      expect(settings.enabledPlugins['plugin-a@local']).toBe(true);
+      expect(settings.enabledPlugins['plugin-b@local']).toBe(true);
+      expect(settings.enabledPlugins['plugin-c@local']).toBe(true);
+      expect('local' in settings.extraKnownMarketplaces).toBe(true);
 
       // Disable one plugin
       settings = disablePlugin(settings, pluginId('plugin-b'));
-      expect(settings.enabledPlugins['plugin-b@skillforge-imports']).toBe(false);
-      expect('skillforge-imports' in settings.extraKnownMarketplaces).toBe(true);
+      expect(settings.enabledPlugins['plugin-b@local']).toBe(false);
+      expect('local' in settings.extraKnownMarketplaces).toBe(true);
 
       // Remove all plugins
       settings = removePlugin(settings, pluginId('plugin-a'));
@@ -538,7 +538,7 @@ describe('claude-settings-mutators', () => {
 
       // Cleanup marketplace
       settings = cleanupMarketplaceIfEmpty(settings);
-      expect('skillforge-imports' in settings.extraKnownMarketplaces).toBe(false);
+      expect('local' in settings.extraKnownMarketplaces).toBe(false);
     });
   });
 });

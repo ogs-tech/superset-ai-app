@@ -53,8 +53,8 @@ describe('PluginInstaller', () => {
 
       // Settings mutated: marketplace + plugin enabled
       const s = settings.getSettings(SCOPE);
-      expect(s.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
-      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBe(true);
+      expect(s.extraKnownMarketplaces['local']).toBeDefined();
+      expect(s.enabledPlugins[`${ID}@local`]).toBe(true);
 
       // Meta written
       const meta = cache.getMeta(SCOPE);
@@ -83,7 +83,7 @@ describe('PluginInstaller', () => {
       expect(settings.getSymlinks().get(`${SCOPE}/${ID}`)).toBe(PLUGIN_DIR);
 
       const s = settings.getSettings(SCOPE);
-      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBe(true);
+      expect(s.enabledPlugins[`${ID}@local`]).toBe(true);
 
       const meta = cache.getMeta(SCOPE);
       expect(meta?.plugins[0]?.origin).toBe('owned');
@@ -181,8 +181,8 @@ describe('PluginInstaller', () => {
 
       // C' ran: settings should have plugin removed
       const s = settings.getSettings(SCOPE);
-      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBeUndefined();
-      expect(s.extraKnownMarketplaces['skillforge-imports']).toBeUndefined();
+      expect(s.enabledPlugins[`${ID}@local`]).toBeUndefined();
+      expect(s.extraKnownMarketplaces['local']).toBeUndefined();
 
       // B' ran: unlink
       expect(unlinkSpy).toHaveBeenCalledWith(SCOPE, ID);
@@ -276,13 +276,13 @@ describe('PluginInstaller', () => {
         marketplaceId: 'claude-plugins-official',
       });
 
-      // enabledPlugins keyed by upstream marketplace, not skillforge-imports
+      // enabledPlugins keyed by upstream marketplace, not local
       const s = settings.getSettings(SCOPE);
       expect(s.enabledPlugins[`${ID}@claude-plugins-official`]).toBe(true);
-      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBeUndefined();
+      expect(s.enabledPlugins[`${ID}@local`]).toBeUndefined();
 
       // No synthetic marketplace registered for upstream installs
-      expect(s.extraKnownMarketplaces['skillforge-imports']).toBeUndefined();
+      expect(s.extraKnownMarketplaces['local']).toBeUndefined();
 
       // marketplaceId persisted in meta + summary
       const meta = cache.getMeta(SCOPE);
@@ -308,7 +308,7 @@ describe('PluginInstaller', () => {
       expect(s.enabledPlugins[`${ID}@claude-plugins-official`]).toBeUndefined();
     });
 
-    it('falls back to skillforge-imports when marketplaceId is omitted', async () => {
+    it('falls back to local when marketplaceId is omitted', async () => {
       await cache.movePluginDir('nowhere', TMP_DIR);
 
       await installer.install({
@@ -320,8 +320,8 @@ describe('PluginInstaller', () => {
       });
 
       const s = settings.getSettings(SCOPE);
-      expect(s.enabledPlugins[`${ID}@skillforge-imports`]).toBe(true);
-      expect(s.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+      expect(s.enabledPlugins[`${ID}@local`]).toBe(true);
+      expect(s.extraKnownMarketplaces['local']).toBeDefined();
     });
   });
 

@@ -117,8 +117,8 @@ async function wireIpc(): Promise<void> {
         : join(process.cwd(), '.superset-ai-app', 'plugins'),
     cacheDir: (scope) =>
       scope === 'personal'
-        ? join(homedir(), '.claude', 'plugins', 'cache', 'skillforge-imports')
-        : join(process.cwd(), '.claude', 'plugins', 'cache', 'skillforge-imports'),
+        ? join(homedir(), '.claude', 'plugins', 'cache', 'local')
+        : join(process.cwd(), '.claude', 'plugins', 'cache', 'local'),
   });
 
   const claudeSettingsFile = new ClaudeSettingsFile({
@@ -128,8 +128,8 @@ async function wireIpc(): Promise<void> {
         : join(process.cwd(), '.claude', 'settings.json'),
     symlinkPath: (scope, id) =>
       scope === 'personal'
-        ? join(homedir(), '.claude', 'plugins', 'cache', 'skillforge-imports', id)
-        : join(process.cwd(), '.claude', 'plugins', 'cache', 'skillforge-imports', id),
+        ? join(homedir(), '.claude', 'plugins', 'cache', 'local', id)
+        : join(process.cwd(), '.claude', 'plugins', 'cache', 'local', id),
   });
 
   const manifestParser = new PluginManifestParser(nodeFsAdapter);

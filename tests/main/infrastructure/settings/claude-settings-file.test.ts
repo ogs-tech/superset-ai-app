@@ -12,7 +12,7 @@ function makeAdapter(tmpDir: string) {
       return path.join(tmpDir, scope, 'settings.json');
     },
     symlinkPath(scope: Scope, id: PluginId): string {
-      return path.join(tmpDir, scope, 'plugins', 'cache', 'skillforge-imports', id);
+      return path.join(tmpDir, scope, 'plugins', 'cache', 'local', id);
     },
   });
 }
@@ -96,7 +96,7 @@ describe('ClaudeSettingsFile', () => {
         'personal',
         'plugins',
         'cache',
-        'skillforge-imports',
+        'local',
         'my-plugin' as PluginId,
       );
 
@@ -121,7 +121,7 @@ describe('ClaudeSettingsFile', () => {
         'personal',
         'plugins',
         'cache',
-        'skillforge-imports',
+        'local',
         id,
       );
       const linkStat = await lstat(linkPath);
@@ -139,7 +139,7 @@ describe('ClaudeSettingsFile', () => {
         'personal',
         'plugins',
         'cache',
-        'skillforge-imports',
+        'local',
         id,
       );
 

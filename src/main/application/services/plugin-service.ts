@@ -207,7 +207,7 @@ export class PluginService {
    * `marketplaceId` is the upstream marketplace identifier (as registered in
    * Claude Code's settings). When provided, the plugin is attributed to it in
    * `enabledPlugins` ('<id>@<marketplaceId>'); otherwise it falls back to the
-   * synthetic skillforge-imports marketplace.
+   * synthetic local marketplace.
    */
   async importFromMarketplace(
     plugin: MarketplacePlugin,
@@ -262,7 +262,7 @@ export class PluginService {
 
     // Entries from meta
     for (const entry of meta.plugins) {
-      const marketplaceId = entry.marketplaceId ?? 'skillforge-imports';
+      const marketplaceId = entry.marketplaceId ?? 'local';
       const pluginKey = `${entry.id}@${marketplaceId}`;
       const inSettings = claudeSettings.enabledPlugins[pluginKey] === true;
 
@@ -294,16 +294,16 @@ export class PluginService {
       result.push(item);
     }
 
-    // Detect drift: settings has @skillforge-imports entries not in meta. We
+    // Detect drift: settings has @local entries not in meta. We
     // only scan the synthetic marketplace because upstream marketplaces are
     // managed by the user/Claude and may legitimately list plugins we don't
     // know about.
     const metaIds = new Set(meta.plugins.map((p) => p.id));
     for (const key of Object.keys(claudeSettings.enabledPlugins)) {
-      if (!key.endsWith('@skillforge-imports')) continue;
+      if (!key.endsWith('@local')) continue;
       if (claudeSettings.enabledPlugins[key] !== true) continue;
 
-      const idFromKey = key.slice(0, key.lastIndexOf('@skillforge-imports'));
+      const idFromKey = key.slice(0, key.lastIndexOf('@local'));
       if (!metaIds.has(idFromKey)) {
         result.push({
           id: idFromKey as PluginId,

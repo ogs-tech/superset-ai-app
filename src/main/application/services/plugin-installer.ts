@@ -49,8 +49,8 @@ export class PluginInstaller {
     const workspacePluginsDir = path.dirname(pluginDir);
     // Plugins from a known upstream marketplace are attributed to it directly.
     // Plugins owned locally or imported via raw URL fall back to the synthetic
-    // skillforge-imports marketplace (which we register).
-    const usingSkillforge = marketplaceId == null;
+    // local marketplace (which we register).
+    const usingLocal = marketplaceId == null;
 
     const compensations: Array<() => Promise<void>> = [];
 
@@ -73,13 +73,13 @@ export class PluginInstaller {
 
       // Step C
       await settings.mutate(scope, (s) => {
-        const next = usingSkillforge ? addMarketplaceIfMissing(s, workspacePluginsDir) : s;
+        const next = usingLocal ? addMarketplaceIfMissing(s, workspacePluginsDir) : s;
         return enablePlugin(next, id, marketplaceId);
       });
       compensations.push(() =>
         settings.mutate(scope, (s) => {
           const next = removePlugin(s, id, marketplaceId);
-          return usingSkillforge ? cleanupMarketplaceIfEmpty(next) : next;
+          return usingLocal ? cleanupMarketplaceIfEmpty(next) : next;
         }),
       );
 

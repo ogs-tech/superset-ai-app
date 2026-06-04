@@ -1,14 +1,14 @@
 ---
-title: PRD — Skillforge (superset-ai-app)
+title: PRD — Superset AI App
 internal_name: superset-ai-app
 codename: forge
-public_name: Skillforge
+public_name: Superset AI App
 status: Ready
 created_at: 2026-04-19
-updated_at: 2026-05-04
+updated_at: 2026-06-04
 ---
 
-# PRD — Skillforge (superset-ai-app)
+# PRD — Superset AI App
 
 > [!NOTE]
 > Stack, processes and technical decisions in [reference/architecture.md](../reference/architecture.md).

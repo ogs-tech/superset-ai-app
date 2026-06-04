@@ -16,8 +16,8 @@ export class ClaudeSettingsFile implements ClaudeSettingsPort {
       // project → <cwd>/.claude/settings.json
       settingsPath(scope: Scope): string;
       // Returns the path to the symlink target dir for the given scope
-      // personal → ~/.claude/plugins/cache/skillforge-imports/<id>
-      // project → <cwd>/.claude/plugins/cache/skillforge-imports/<id>
+      // personal → ~/.claude/plugins/cache/local/<id>
+      // project → <cwd>/.claude/plugins/cache/local/<id>
       symlinkPath(scope: Scope, id: PluginId): string;
     },
   ) {}

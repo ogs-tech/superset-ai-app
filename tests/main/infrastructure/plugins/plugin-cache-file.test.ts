@@ -238,7 +238,7 @@ describe('PluginCacheFile', () => {
 
     const raw = await readFile(path.join(pluginsDir, '.claude-plugin', 'marketplace.json'), 'utf8');
     expect(JSON.parse(raw)).toEqual({
-      name: 'skillforge-imports',
+      name: 'local',
       owner: { name: 'SDE-AI' },
       description: 'Plugins managed by SDE-AI',
       plugins: [

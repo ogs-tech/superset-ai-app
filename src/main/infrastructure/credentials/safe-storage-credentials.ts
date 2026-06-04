@@ -11,7 +11,7 @@ export class SafeStorageCredentials implements CredentialStorePort {
   private _available: boolean | undefined;
 
   constructor(userData: string) {
-    this.storePath = join(userData, 'skillforge', 'credentials.enc');
+    this.storePath = join(userData, 'credentials.enc');
   }
 
   async isAvailable(): Promise<boolean> {

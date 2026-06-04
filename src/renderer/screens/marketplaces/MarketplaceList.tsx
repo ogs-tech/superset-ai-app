@@ -53,7 +53,7 @@ interface MarketplaceSummary {
   };
 }
 
-const SKILLFORGE_LOCAL_ID = 'skillforge-imports';
+const LOCAL_MARKETPLACE_ID = 'local';
 const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
 const MARKETPLACES_QUERY_KEY = ['marketplaces', 'personal'] as const;
 
@@ -93,7 +93,7 @@ export function MarketplaceList(): React.ReactElement {
         scope: 'personal',
       });
       return Array.isArray(list)
-        ? list.filter((m) => m.id !== SKILLFORGE_LOCAL_ID)
+        ? list.filter((m) => m.id !== LOCAL_MARKETPLACE_ID)
         : [];
     },
   });
@@ -164,7 +164,7 @@ export function MarketplaceList(): React.ReactElement {
         searchable: true,
         render: (item) => {
           const isLocal =
-            item.id === SKILLFORGE_LOCAL_ID || item.source.kind === 'directory';
+            item.id === LOCAL_MARKETPLACE_ID || item.source.kind === 'directory';
           return isLocal ? 'local' : sourceLabel(item.source).badge;
         },
       },

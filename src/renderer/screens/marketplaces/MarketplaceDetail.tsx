@@ -48,7 +48,7 @@ interface MarketplaceDetailProps {
 
 type InstallState = 'idle' | 'loading' | 'done';
 
-const SKILLFORGE_LOCAL_ID = 'skillforge-imports';
+const LOCAL_MARKETPLACE_ID = 'local';
 const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
 
 function sourceLabel(source: MarketplaceSource): {
@@ -118,11 +118,11 @@ export function MarketplaceDetail({
     setErrors((e) => ({ ...e, [plugin.name]: '' }));
     try {
       // Attribute the install to the originating marketplace so Claude Code
-      // shows it correctly. The synthetic skillforge-imports marketplace is
+      // shows it correctly. The synthetic local marketplace is
       // only used for owned/raw-URL imports — when installing FROM it, omit
       // marketplaceId so the installer falls back to the default.
       const params: Record<string, unknown> = { plugin, scope: 'personal' };
-      if (marketplace.id !== SKILLFORGE_LOCAL_ID) {
+      if (marketplace.id !== LOCAL_MARKETPLACE_ID) {
         params['marketplaceId'] = marketplace.id;
       }
       await callIpc('plugin.installFromMarketplace', params);
@@ -143,7 +143,7 @@ export function MarketplaceDetail({
   };
 
   const plugins = marketplace.manifest?.plugins ?? [];
-  const isLocal = marketplace.id === SKILLFORGE_LOCAL_ID || marketplace.source.kind === 'directory';
+  const isLocal = marketplace.id === LOCAL_MARKETPLACE_ID || marketplace.source.kind === 'directory';
   const isOfficial =
     marketplace.source.kind === 'github' && marketplace.source.repo === OFFICIAL_REPO;
   const label = sourceLabel(marketplace.source);

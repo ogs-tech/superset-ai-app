@@ -18,10 +18,10 @@ describe('ClaudePluginAdapter', () => {
       await adapter.install(scope, pluginId);
 
       const result = settings.getSettings(scope);
-      const marketplace = result.extraKnownMarketplaces['skillforge-imports'];
+      const marketplace = result.extraKnownMarketplaces['local'];
       expect(marketplace).toBeDefined();
       expect(marketplace!.source.path).toBe('/workspace/personal');
-      expect(result.enabledPlugins[`${pluginId}@skillforge-imports`]).toBe(true);
+      expect(result.enabledPlugins[`${pluginId}@local`]).toBe(true);
     });
 
     it('is idempotent - marketplace not duplicated on second install', async () => {
@@ -41,8 +41,8 @@ describe('ClaudePluginAdapter', () => {
 
       expect(firstMarketplaceCount).toBe(secondMarketplaceCount);
       expect(secondMarketplaceCount).toBe(1);
-      expect(afterSecond.enabledPlugins[`${pluginId1}@skillforge-imports`]).toBe(true);
-      expect(afterSecond.enabledPlugins[`${pluginId2}@skillforge-imports`]).toBe(true);
+      expect(afterSecond.enabledPlugins[`${pluginId1}@local`]).toBe(true);
+      expect(afterSecond.enabledPlugins[`${pluginId2}@local`]).toBe(true);
     });
   });
 
@@ -56,14 +56,14 @@ describe('ClaudePluginAdapter', () => {
       // Setup: install the plugin first
       await adapter.install(scope, pluginId);
       const afterInstall = settings.getSettings(scope);
-      expect(afterInstall.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+      expect(afterInstall.extraKnownMarketplaces['local']).toBeDefined();
 
       // Uninstall
       await adapter.uninstall(scope, pluginId);
 
       const result = settings.getSettings(scope);
-      expect(result.enabledPlugins[`${pluginId}@skillforge-imports`]).toBeUndefined();
-      expect(result.extraKnownMarketplaces['skillforge-imports']).toBeUndefined();
+      expect(result.enabledPlugins[`${pluginId}@local`]).toBeUndefined();
+      expect(result.extraKnownMarketplaces['local']).toBeUndefined();
     });
 
     it('keeps marketplace when other plugins remain', async () => {
@@ -81,9 +81,9 @@ describe('ClaudePluginAdapter', () => {
       await adapter.uninstall(scope, pluginId1);
 
       const result = settings.getSettings(scope);
-      expect(result.enabledPlugins[`${pluginId1}@skillforge-imports`]).toBeUndefined();
-      expect(result.enabledPlugins[`${pluginId2}@skillforge-imports`]).toBe(true);
-      expect(result.extraKnownMarketplaces['skillforge-imports']).toBeDefined();
+      expect(result.enabledPlugins[`${pluginId1}@local`]).toBeUndefined();
+      expect(result.enabledPlugins[`${pluginId2}@local`]).toBe(true);
+      expect(result.extraKnownMarketplaces['local']).toBeDefined();
     });
   });
 
@@ -104,7 +104,7 @@ describe('ClaudePluginAdapter', () => {
       await adapter.toggle(scope, pluginId, true);
 
       const result = settings.getSettings(scope);
-      expect(result.enabledPlugins[`${pluginId}@skillforge-imports`]).toBe(true);
+      expect(result.enabledPlugins[`${pluginId}@local`]).toBe(true);
     });
 
     it('disables plugin when toggle(false)', async () => {
@@ -116,7 +116,7 @@ describe('ClaudePluginAdapter', () => {
       // Seed initial settings with the plugin enabled
       const initialSettings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'skillforge-imports': {
+          'local': {
             source: {
               source: 'directory',
               path: '/workspace/personal',
@@ -124,7 +124,7 @@ describe('ClaudePluginAdapter', () => {
           },
         },
         enabledPlugins: {
-          [`${pluginId}@skillforge-imports`]: true,
+          [`${pluginId}@local`]: true,
         },
       };
       settings.seedSettings(scope, initialSettings);
@@ -132,7 +132,7 @@ describe('ClaudePluginAdapter', () => {
       await adapter.toggle(scope, pluginId, false);
 
       const result = settings.getSettings(scope);
-      expect(result.enabledPlugins[`${pluginId}@skillforge-imports`]).toBe(false);
+      expect(result.enabledPlugins[`${pluginId}@local`]).toBe(false);
     });
   });
 });

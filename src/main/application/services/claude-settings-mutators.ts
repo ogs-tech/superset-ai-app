@@ -1,17 +1,17 @@
 import type { ClaudeSettings } from '../schemas/claude-settings.schema.js';
 import type { PluginId } from '../../domain/plugin-id.js';
 
-export const SKILLFORGE_MARKETPLACE = 'skillforge-imports';
+export const LOCAL_MARKETPLACE = 'local';
 
 /**
- * Adds the skillforge-imports synthetic marketplace to settings if absent. Used
+ * Adds the local synthetic marketplace to settings if absent. Used
  * only for plugins this app owns (authored locally) or imported via raw URL,
  * where there is no upstream marketplace registered with Claude Code. For
  * plugins installed from a known marketplace (e.g. claude-plugins-official)
  * the marketplace is assumed to already be registered by the user/Claude.
  */
 export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: string): ClaudeSettings {
-  if (s.extraKnownMarketplaces?.[SKILLFORGE_MARKETPLACE]) {
+  if (s.extraKnownMarketplaces?.[LOCAL_MARKETPLACE]) {
     return s;
   }
 
@@ -19,7 +19,7 @@ export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: stri
     ...s,
     extraKnownMarketplaces: {
       ...s.extraKnownMarketplaces,
-      [SKILLFORGE_MARKETPLACE]: {
+      [LOCAL_MARKETPLACE]: {
         source: {
           source: 'directory',
           path: marketplacePath,
@@ -31,12 +31,12 @@ export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: stri
 
 /**
  * Sets enabledPlugins['<id>@<marketplaceId>'] = true. When marketplaceId is
- * omitted, defaults to skillforge-imports for back-compat.
+ * omitted, defaults to local for back-compat.
  */
 export function enablePlugin(
   s: ClaudeSettings,
   id: PluginId,
-  marketplaceId: string = SKILLFORGE_MARKETPLACE,
+  marketplaceId: string = LOCAL_MARKETPLACE,
 ): ClaudeSettings {
   const pluginKey = `${id}@${marketplaceId}`;
 
@@ -56,7 +56,7 @@ export function enablePlugin(
 export function disablePlugin(
   s: ClaudeSettings,
   id: PluginId,
-  marketplaceId: string = SKILLFORGE_MARKETPLACE,
+  marketplaceId: string = LOCAL_MARKETPLACE,
 ): ClaudeSettings {
   const pluginKey = `${id}@${marketplaceId}`;
 
@@ -79,7 +79,7 @@ export function disablePlugin(
 export function removePlugin(
   s: ClaudeSettings,
   id: PluginId,
-  marketplaceId: string = SKILLFORGE_MARKETPLACE,
+  marketplaceId: string = LOCAL_MARKETPLACE,
 ): ClaudeSettings {
   const pluginKey = `${id}@${marketplaceId}`;
 
@@ -97,25 +97,25 @@ export function removePlugin(
 }
 
 /**
- * Removes 'skillforge-imports' from extraKnownMarketplaces if no plugin is
+ * Removes 'local' from extraKnownMarketplaces if no plugin is
  * still attributed to it. Other marketplaces are left untouched (we did not
  * register them).
  */
 export function cleanupMarketplaceIfEmpty(s: ClaudeSettings): ClaudeSettings {
-  const hasSkillforgePlugin = Object.keys(s.enabledPlugins).some((key) =>
-    key.endsWith(`@${SKILLFORGE_MARKETPLACE}`),
+  const hasLocalPlugin = Object.keys(s.enabledPlugins).some((key) =>
+    key.endsWith(`@${LOCAL_MARKETPLACE}`),
   );
 
-  if (hasSkillforgePlugin) {
+  if (hasLocalPlugin) {
     return s;
   }
 
-  if (!(SKILLFORGE_MARKETPLACE in s.extraKnownMarketplaces)) {
+  if (!(LOCAL_MARKETPLACE in s.extraKnownMarketplaces)) {
     return s;
   }
 
   const newMarketplaces = { ...s.extraKnownMarketplaces };
-  delete newMarketplaces[SKILLFORGE_MARKETPLACE];
+  delete newMarketplaces[LOCAL_MARKETPLACE];
 
   return {
     ...s,

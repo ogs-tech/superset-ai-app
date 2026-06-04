@@ -290,8 +290,8 @@ describe('PluginService', () => {
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
         enabledPlugins: {
-          [`${IMPORTED_ID}@skillforge-imports`]: true,
-          [`${OWNED_ID}@skillforge-imports`]: true,
+          [`${IMPORTED_ID}@local`]: true,
+          [`${OWNED_ID}@local`]: true,
         },
       });
 
@@ -324,7 +324,7 @@ describe('PluginService', () => {
       cache.seedMeta(SCOPE, meta);
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
-        enabledPlugins: { [`${IMPORTED_ID}@skillforge-imports`]: true },
+        enabledPlugins: { [`${IMPORTED_ID}@local`]: true },
       });
 
       const result = await service.list(SCOPE);
@@ -338,7 +338,7 @@ describe('PluginService', () => {
       cache.seedMeta(SCOPE, { version: 2, plugins: [] });
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
-        enabledPlugins: { [`${IMPORTED_ID}@skillforge-imports`]: true },
+        enabledPlugins: { [`${IMPORTED_ID}@local`]: true },
       });
 
       const result = await service.list(SCOPE);
@@ -359,7 +359,7 @@ describe('PluginService', () => {
       cache.seedMeta(SCOPE, meta);
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
-        enabledPlugins: { [`${IMPORTED_ID}@skillforge-imports`]: true },
+        enabledPlugins: { [`${IMPORTED_ID}@local`]: true },
       });
       parser.seedById(IMPORTED_ID);
 
@@ -378,7 +378,7 @@ describe('PluginService', () => {
       cache.seedMeta(SCOPE, meta);
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
-        enabledPlugins: { [`${IMPORTED_ID}@skillforge-imports`]: true },
+        enabledPlugins: { [`${IMPORTED_ID}@local`]: true },
       });
       // No manifest seeded → parser will throw → detail.manifest should be undefined
 
@@ -403,7 +403,7 @@ describe('PluginService', () => {
       cache.seedMeta(SCOPE, meta);
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
-        enabledPlugins: { [`${OWNED_ID}@skillforge-imports`]: true },
+        enabledPlugins: { [`${OWNED_ID}@local`]: true },
       });
 
       const detail = await service.get(OWNED_ID, SCOPE);
@@ -455,7 +455,7 @@ describe('PluginService', () => {
       await service.toggle(IMPORTED_ID, SCOPE, true);
 
       const updatedSettings = settings.getSettings(SCOPE);
-      expect(updatedSettings.enabledPlugins[`${IMPORTED_ID}@skillforge-imports`]).toBe(true);
+      expect(updatedSettings.enabledPlugins[`${IMPORTED_ID}@local`]).toBe(true);
 
       const updatedMeta = cache.getMeta(SCOPE);
       const entry = updatedMeta?.plugins.find((p) => p.id === IMPORTED_ID);
@@ -466,7 +466,7 @@ describe('PluginService', () => {
       // First enable it so settings has an entry
       settings.seedSettings(SCOPE, {
         extraKnownMarketplaces: {},
-        enabledPlugins: { [`${IMPORTED_ID}@skillforge-imports`]: true },
+        enabledPlugins: { [`${IMPORTED_ID}@local`]: true },
       });
       const meta: MetaFile = {
         version: 2,
@@ -477,7 +477,7 @@ describe('PluginService', () => {
       await service.toggle(IMPORTED_ID, SCOPE, false);
 
       const updatedSettings = settings.getSettings(SCOPE);
-      expect(updatedSettings.enabledPlugins[`${IMPORTED_ID}@skillforge-imports`]).toBe(false);
+      expect(updatedSettings.enabledPlugins[`${IMPORTED_ID}@local`]).toBe(false);
 
       const updatedMeta = cache.getMeta(SCOPE);
       const entry = updatedMeta?.plugins.find((p) => p.id === IMPORTED_ID);

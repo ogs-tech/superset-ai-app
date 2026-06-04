@@ -15,7 +15,7 @@ describe('claudeSettingsSchema', () => {
   it('parses full settings object with marketplace and enabled plugins', () => {
     const input = {
       extraKnownMarketplaces: {
-        'skillforge-imports': {
+        'local': {
           source: {
             source: 'directory',
             path: '/Users/user/workspace/plugins',
@@ -23,21 +23,21 @@ describe('claudeSettingsSchema', () => {
         },
       },
       enabledPlugins: {
-        'my-plugin@skillforge-imports': true,
-        'other-plugin@skillforge-imports': false,
+        'my-plugin@local': true,
+        'other-plugin@local': false,
       },
     };
 
     const result = claudeSettingsSchema.parse(input);
 
-    expect(result.extraKnownMarketplaces['skillforge-imports']).toEqual({
+    expect(result.extraKnownMarketplaces['local']).toEqual({
       source: {
         source: 'directory',
         path: '/Users/user/workspace/plugins',
       },
     });
-    expect(result.enabledPlugins['my-plugin@skillforge-imports']).toBe(true);
-    expect(result.enabledPlugins['other-plugin@skillforge-imports']).toBe(false);
+    expect(result.enabledPlugins['my-plugin@local']).toBe(true);
+    expect(result.enabledPlugins['other-plugin@local']).toBe(false);
   });
 
   it('preserves unknown top-level fields via passthrough', () => {
@@ -84,7 +84,7 @@ describe('claudeSettingsSchema', () => {
   it('parses partial settings with only enabledPlugins (extraKnownMarketplaces defaults)', () => {
     const input = {
       enabledPlugins: {
-        'my-plugin@skillforge-imports': true,
+        'my-plugin@local': true,
       },
     };
 
@@ -92,14 +92,14 @@ describe('claudeSettingsSchema', () => {
 
     expect(result.extraKnownMarketplaces).toEqual({});
     expect(result.enabledPlugins).toEqual({
-      'my-plugin@skillforge-imports': true,
+      'my-plugin@local': true,
     });
   });
 
   it('parses partial settings with only extraKnownMarketplaces (enabledPlugins defaults)', () => {
     const input = {
       extraKnownMarketplaces: {
-        'skillforge-imports': {
+        'local': {
           source: {
             source: 'directory',
             path: '/Users/user/workspace/plugins',
@@ -110,14 +110,14 @@ describe('claudeSettingsSchema', () => {
 
     const result = claudeSettingsSchema.parse(input);
 
-    expect(result.extraKnownMarketplaces).toHaveProperty('skillforge-imports');
+    expect(result.extraKnownMarketplaces).toHaveProperty('local');
     expect(result.enabledPlugins).toEqual({});
   });
 
   it('preserves unknown fields inside marketplace objects via passthrough', () => {
     const input = {
       extraKnownMarketplaces: {
-        'skillforge-imports': {
+        'local': {
           source: {
             source: 'directory',
             path: '/Users/user/workspace/plugins',
@@ -129,7 +129,7 @@ describe('claudeSettingsSchema', () => {
 
     const result = claudeSettingsSchema.parse(input);
 
-    expect(result.extraKnownMarketplaces['skillforge-imports']).toEqual({
+    expect(result.extraKnownMarketplaces['local']).toEqual({
       source: {
         source: 'directory',
         path: '/Users/user/workspace/plugins',
@@ -141,7 +141,7 @@ describe('claudeSettingsSchema', () => {
   it('infers ClaudeSettings type correctly', () => {
     const settings: ClaudeSettings = {
       extraKnownMarketplaces: {
-        'skillforge': {
+        'local': {
           source: {
             source: 'directory',
             path: '/path/to/plugins',
@@ -149,7 +149,7 @@ describe('claudeSettingsSchema', () => {
         },
       },
       enabledPlugins: {
-        'plugin@skillforge': true,
+        'plugin@local': true,
       },
     };
 
