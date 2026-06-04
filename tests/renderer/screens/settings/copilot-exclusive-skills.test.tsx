@@ -12,6 +12,7 @@ const copilotOn = (exclusiveSkillsWithClaude: boolean): Settings => ({
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 let call: CallSpy;

@@ -20,6 +20,7 @@ const baseSettings: Settings = {
   adapters: { claude: { enabled: false }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 const refFlagged: Customization = {

@@ -1,6 +1,6 @@
 ---
-title: PRD — Skillforge (sde-ai-app)
-internal_name: sde-ai-app
+title: PRD — Skillforge (superset-ai-app)
+internal_name: superset-ai-app
 codename: forge
 public_name: Skillforge
 status: Ready
@@ -8,7 +8,7 @@ created_at: 2026-04-19
 updated_at: 2026-05-04
 ---
 
-# PRD — Skillforge (sde-ai-app)
+# PRD — Skillforge (superset-ai-app)
 
 > [!NOTE]
 > Stack, processes and technical decisions in [reference/architecture.md](../reference/architecture.md).

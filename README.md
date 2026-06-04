@@ -1,6 +1,6 @@
-# sde-ai-app
+# superset-ai-app
 
-[![GitHub Repo](https://img.shields.io/badge/github-ogs--tech%2Fsde--ai--app-blue)](https://github.com/ogs-tech/sde-ai-app)
+[![GitHub Repo](https://img.shields.io/badge/github-ogs--tech%2Fsuperset--ai--app-blue)](https://github.com/ogs-tech/superset-ai-app)
 
 > **Validation spike** — local desktop app to centralize AI customizations (skills, references, agent profiles, global instructions) in Markdown + YAML and sync them to **Claude Code** and **GitHub Copilot** via symlinks.
 >
@@ -27,8 +27,8 @@ Pure TypeScript — no backend, API, database, auth, or telemetry.
 ## Quick start
 
 ```bash
-git clone https://github.com/ogs-tech/sde-ai-app.git
-cd sde-ai-app
+git clone https://github.com/ogs-tech/superset-ai-app.git
+cd superset-ai-app
 npm install
 npm run dev
 ```
@@ -70,4 +70,4 @@ Success = author uses the app daily for ≥ 2 consecutive weeks without falling 
 
 ## Repository
 
-Source: [github.com/ogs-tech/sde-ai-app](https://github.com/ogs-tech/sde-ai-app).
+Source: [github.com/ogs-tech/superset-ai-app](https://github.com/ogs-tech/superset-ai-app).

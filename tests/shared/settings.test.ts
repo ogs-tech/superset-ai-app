@@ -22,7 +22,13 @@ describe('getDefaults', () => {
       },
       linkedRepos: [],
       ui: { theme: 'system' },
+      language: 'off',
     });
+  });
+
+  it('includes language defaulting to off', () => {
+    const defaults = getDefaults();
+    expect(defaults.language).toBe('off');
   });
 
   it('returns a fresh object on each call (no shared mutable state)', () => {

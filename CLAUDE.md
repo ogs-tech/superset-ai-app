@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this app is
 
-**Skillforge / sde-ai-app** — an Electron desktop app that centralizes AI customizations (skills, references, agent profiles, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) and GitHub Copilot (`~/.copilot/`, `<repo>/.github/`) via **symbolic links**. Single-developer dogfooding spike — no backend, no API, no telemetry.
+**Skillforge / superset-ai-app** — an Electron desktop app that centralizes AI customizations (skills, references, agent profiles, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) and GitHub Copilot (`~/.copilot/`, `<repo>/.github/`) via **symbolic links**. Single-developer dogfooding spike — no backend, no API, no telemetry.
 
 Authoritative docs live in `docs/` (Diátaxis):
 - `docs/explanation/prd.md` — goals, scope, stop rules
@@ -56,7 +56,7 @@ Coverage targets `application/`, `ipc/`, `infrastructure/`, and `renderer/screen
 - **No `react-router`** — `App.tsx` uses a `View` discriminated union (`'loading' | 'main' | 'settings' | 'io-error'`) with `useState`. Renderer screens for individual entities are reached via `Main.tsx`'s left-rail navigation.
 - **react-query** is the data layer in the renderer — `src/renderer/lib/query-client.ts` configures it; `src/renderer/hooks/use-customization-list.ts` is the canonical example.
 - **MUI + Emotion** — design tokens in `src/renderer/theme.ts`. Roboto via `@fontsource/roboto`.
-- **Workspace path is fixed** — `~/.sde-ai-app/` (set in `src/main/index.ts`). `WorkspaceBootstrapService` creates the dir tree; templates are seeded from `src/main/templates/` on first run.
+- **Workspace path is fixed** — `~/.superset-ai-app/` (set in `src/main/index.ts`). `WorkspaceBootstrapService` creates the dir tree; templates are seeded from `src/main/templates/` on first run.
 - **Git ops** go through `SimpleGitClient` (`simple-git`); GitHub API through `OctokitClient` (`@octokit/rest`); GitHub PAT is stored encrypted via Electron `safeStorage` (`SafeStorageCredentials`) — **never** returned by any IPC method.
 
 ## Project state

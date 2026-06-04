@@ -11,6 +11,7 @@ const baseSettings = (): Settings => ({
   },
   linkedRepos: [{ id: 'r1', name: 'repo', path: '/repos/r1' }],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const stubRepo = (overrides: Partial<SettingsRepository> = {}): SettingsRepository => ({
@@ -58,6 +59,7 @@ describe('SettingsService.merge', () => {
     const result = await service.merge({
       adapters: { claude: { enabled: false } },
       ui: { theme: 'dark' },
+      language: 'off',
     });
 
     expect(result.adapters.claude).toEqual({ enabled: false });

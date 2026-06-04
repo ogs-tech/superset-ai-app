@@ -39,6 +39,7 @@ const makeSettings = (exclusiveSkillsWithClaude: boolean, claudeEnabled: boolean
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 });
 
 const setup = async (settings: Settings) => {

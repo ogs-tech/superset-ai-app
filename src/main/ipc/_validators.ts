@@ -1,5 +1,6 @@
 import { DomainError } from '../domain/errors.js';
 import type { Scope } from '../application/ports/scope.js';
+import type { LanguagePreference } from '../../shared/settings.js';
 
 const SCOPES: readonly Scope[] = ['personal', 'project'];
 
@@ -36,4 +37,16 @@ export function asScope(value: unknown): Scope {
 
 export function optParams(params: unknown, label: string): Record<string, unknown> {
   return params === undefined || params === null ? {} : asObject(params, label);
+}
+
+const LANGUAGE_PREFERENCES: readonly LanguagePreference[] = ['off', 'mirror', 'pt-BR', 'en', 'es'];
+
+export function asLanguagePreference(value: unknown, field: string): LanguagePreference {
+  if (typeof value !== 'string' || !(LANGUAGE_PREFERENCES as readonly string[]).includes(value)) {
+    throw new DomainError(
+      'validation',
+      `Missing or invalid '${field}' (must be ${LANGUAGE_PREFERENCES.join(' | ')})`,
+    );
+  }
+  return value as LanguagePreference;
 }

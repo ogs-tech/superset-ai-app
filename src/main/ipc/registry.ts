@@ -29,6 +29,9 @@ import { buildHookHandlers } from './hook-handlers.js';
 import { buildReferenceHandlers } from './reference-handlers.js';
 import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
+import { updateLanguageSection } from '../application/services/language-section.js';
+import { asLanguagePreference } from './_validators.js';
+import { globalInstructionId } from '../domain/global-instruction-id.js';
 
 export interface IpcDeps {
   settingsService: SettingsService;
@@ -128,6 +131,21 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
 
     'settings.merge': (params) =>
       settingsService.merge(params as Parameters<SettingsService['merge']>[0]),
+
+    'settings.setLanguage': async (params) => {
+      const raw = asObject(params, 'settings.setLanguage');
+      const language = asLanguagePreference(raw['language'], 'language');
+
+      const settings = await settingsService.merge({ language });
+
+      const gi = await globalInstructionService.get(globalInstructionId('default'));
+      const newBody = updateLanguageSection(gi.body, language);
+      const { syncReport } = await globalInstructionService.save({
+        globalInstruction: { ...gi, body: newBody },
+      });
+
+      return { settings, syncReport };
+    },
 
     'repo.detectGit': (params) => {
       const { path } = params as RepoPathParams;
@@ -277,7 +295,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'app.restore': async () => {
-      await rm(join(homedir(), '.sde-ai-app'), { recursive: true, force: true });
+      await rm(join(homedir(), '.superset-ai-app'), { recursive: true, force: true });
       await rm(join(homedir(), '.claude'), { recursive: true, force: true });
       await rm(join(process.cwd(), '.env.local'), { force: true });
       appQuit();

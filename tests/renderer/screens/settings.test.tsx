@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Settings as SettingsScreen } from '../../../src/renderer/screens/Settings.js';
 import { mockApi, ok, type CallSpy } from '../test-utils.js';
-import type { Settings } from '../../../src/shared/settings.js';
+import type { LanguagePreference, Settings } from '../../../src/shared/settings.js';
 
 const baseSettings: Settings = {
   adapters: {
@@ -12,6 +12,7 @@ const baseSettings: Settings = {
   },
   linkedRepos: [],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 let call: CallSpy;
@@ -29,6 +30,8 @@ const setupRoute = (
     if (method === 'settings.get') return Promise.resolve(ok(initial));
     if (method === 'repo.list') return Promise.resolve(ok([]));
     if (method === 'settings.merge') return Promise.resolve(ok(initial));
+    if (method === 'settings.setLanguage')
+      return Promise.resolve(ok({ settings: initial, syncReport: [] }));
     if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [] }));
     if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));
     if (method === 'adapter.syncAll' || method === 'adapter.removeAll') return Promise.resolve(ok([]));
@@ -82,7 +85,6 @@ describe('<Settings> — no per-adapter default scope', () => {
     await screen.findByLabelText('Claude');
 
     expect(screen.queryByLabelText(/default scope/i)).toBeNull();
-    expect(screen.queryByRole('combobox')).toBeNull();
   });
 
   it('toggling adapters never sends defaultScope to adapter.setEnabled', async () => {
@@ -106,6 +108,64 @@ describe('<Settings> — no per-adapter default scope', () => {
       const payload = c[1] as Record<string, unknown>;
       expect(payload).not.toHaveProperty('defaultScope');
     }
+  });
+});
+
+describe('<Settings> — language selector', () => {
+  it('renders the language select with current value from settings', async () => {
+    setupRoute({ ...baseSettings, language: 'pt-BR' as LanguagePreference });
+    render(<SettingsScreen />);
+
+    const select = await screen.findByLabelText('Language');
+    expect(select).toHaveTextContent('Português (pt-BR)');
+  });
+
+  it('defaults to Off when language is off', async () => {
+    setupRoute();
+    render(<SettingsScreen />);
+
+    const select = await screen.findByLabelText('Language');
+    expect(select).toHaveTextContent('Off');
+  });
+
+  it('calls settings.setLanguage when selection changes', async () => {
+    const user = userEvent.setup();
+    setupRoute();
+    render(<SettingsScreen />);
+
+    const select = await screen.findByLabelText('Language');
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: 'English' });
+    await user.click(option);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'settings.setLanguage',
+        expect.objectContaining({ language: 'en' }),
+      ),
+    );
+  });
+
+  it('shows info note when language is not off', async () => {
+    setupRoute({ ...baseSettings, language: 'en' as LanguagePreference });
+    render(<SettingsScreen />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/code, comments, and test descriptions are always written in English/i),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('hides info note when language is off', async () => {
+    setupRoute();
+    render(<SettingsScreen />);
+
+    await screen.findByLabelText('Language');
+
+    expect(
+      screen.queryByText(/code, comments, and test descriptions are always written in English/i),
+    ).not.toBeInTheDocument();
   });
 });
 

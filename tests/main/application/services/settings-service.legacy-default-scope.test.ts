@@ -17,6 +17,7 @@ const legacyPersisted = (): Settings =>
     },
     linkedRepos: [],
     ui: { theme: 'system' },
+    language: 'off',
   }) as unknown as Settings;
 
 describe('SettingsService — legacy defaultScope strip on load', () => {

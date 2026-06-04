@@ -23,6 +23,7 @@ const baseSettings: Settings = {
     { id: 'r2', name: 'r2', path: '/repos/r2' },
   ],
   ui: { theme: 'system' },
+  language: 'off',
 };
 
 const refFlagged: Customization = {
