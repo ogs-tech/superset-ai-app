@@ -1,11 +1,11 @@
 ---
 title: Architecture
-description: Hexagonal layout of sde-ai-app — main, preload, renderer, and the ports/adapters split inside the main process.
+description: Hexagonal layout of superset-ai-app — main, preload, renderer, and the ports/adapters split inside the main process.
 ---
 
 # Architecture
 
-sde-ai-app is an Electron app with three processes (**main**, **preload**, **renderer**) and a hexagonal split inside the main process.
+superset-ai-app is an Electron app with three processes (**main**, **preload**, **renderer**) and a hexagonal split inside the main process.
 
 ## Process layout
 

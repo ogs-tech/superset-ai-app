@@ -295,7 +295,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'app.restore': async () => {
-      await rm(join(homedir(), '.sde-ai-app'), { recursive: true, force: true });
+      await rm(join(homedir(), '.superset-ai-app'), { recursive: true, force: true });
       await rm(join(homedir(), '.claude'), { recursive: true, force: true });
       await rm(join(process.cwd(), '.env.local'), { force: true });
       appQuit();

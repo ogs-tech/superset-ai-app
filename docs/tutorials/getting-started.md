@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Run sde-ai-app locally from a fresh clone in under 5 minutes.
+description: Run superset-ai-app locally from a fresh clone in under 5 minutes.
 ---
 
 # Getting started
@@ -17,8 +17,8 @@ description: Run sde-ai-app locally from a fresh clone in under 5 minutes.
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/ogs-tech/sde-ai-app.git
-cd sde-ai-app
+git clone https://github.com/ogs-tech/superset-ai-app.git
+cd superset-ai-app
 npm install
 ```
 

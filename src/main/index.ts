@@ -66,7 +66,7 @@ function isCallPayload(value: unknown): value is IpcCallPayload {
 }
 
 async function wireIpc(): Promise<void> {
-  const workspacePath = join(homedir(), '.sde-ai-app');
+  const workspacePath = join(homedir(), '.superset-ai-app');
 
   const workspaceBootstrap = new WorkspaceBootstrapService(new FsWorkspaceBootstrap());
   await workspaceBootstrap.create(workspacePath);
@@ -121,7 +121,7 @@ async function wireIpc(): Promise<void> {
     pluginsDir: (scope) =>
       scope === 'personal'
         ? pluginsWorkspaceDir
-        : join(process.cwd(), '.sde-ai-app', 'plugins'),
+        : join(process.cwd(), '.superset-ai-app', 'plugins'),
     cacheDir: (scope) =>
       scope === 'personal'
         ? join(homedir(), '.claude', 'plugins', 'cache', 'skillforge-imports')
@@ -200,7 +200,7 @@ async function wireIpc(): Promise<void> {
   const marketplacesCacheRoot = (scope: 'personal' | 'project'): string =>
     scope === 'personal'
       ? join(workspacePath, 'marketplaces-cache')
-      : join(process.cwd(), '.sde-ai-app', 'marketplaces-cache');
+      : join(process.cwd(), '.superset-ai-app', 'marketplaces-cache');
   const marketplaceService = new MarketplaceService({
     repository: new SettingsMarketplaceRepository(claudeSettingsFile),
     parser: marketplaceParser,

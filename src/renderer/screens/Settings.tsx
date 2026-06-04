@@ -551,7 +551,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             Zona de perigo
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Restaura o aplicativo para o estado inicial deletando <code>~/.sde-ai-app</code>,{' '}
+            Restaura o aplicativo para o estado inicial deletando <code>~/.superset-ai-app</code>,{' '}
             <code>~/.claude</code> e <code>.env.local</code>. O aplicativo será fechado em seguida.
           </Typography>
           {restoreError !== null && (

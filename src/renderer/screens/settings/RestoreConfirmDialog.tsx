@@ -31,7 +31,7 @@ export function RestoreConfirmDialog({
       <DialogContent>
         <DialogContentText>
           Esta ação irá <strong>deletar permanentemente</strong> os diretórios{' '}
-          <code>~/.sde-ai-app</code> e <code>~/.claude</code> e fechar o aplicativo. Isso não pode
+          <code>~/.superset-ai-app</code> e <code>~/.claude</code> e fechar o aplicativo. Isso não pode
           ser desfeito.
         </DialogContentText>
       </DialogContent>
