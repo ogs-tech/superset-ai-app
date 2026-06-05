@@ -93,5 +93,31 @@ describe('FsClaudeRuntimeReader', () => {
       expect(healthy?.state).toBe('ok');
       expect(broken?.state).toBe('error');
     });
+
+    it('picks the worst state when the same server appears in two project slugs', async () => {
+      const projA = join(mcpLogsBaseDir, '-Users-me-projA');
+      const projB = join(mcpLogsBaseDir, '-Users-me-projB');
+      await mkdir(join(projA, 'mcp-logs-gmail'), { recursive: true });
+      await mkdir(join(projB, 'mcp-logs-gmail'), { recursive: true });
+
+      // projA: INFO-only → ok
+      await writeFile(
+        join(projA, 'mcp-logs-gmail', 'session.jsonl'),
+        jsonl([{ error: 'Server stderr: INFO connected', sessionId: 's1' }]),
+        'utf8',
+      );
+      // projB: connection failure → error
+      await writeFile(
+        join(projB, 'mcp-logs-gmail', 'session.jsonl'),
+        jsonl([{ error: 'failed to connect to server', sessionId: 's2' }]),
+        'utf8',
+      );
+
+      const summaries = await reader.readMcpRuntimeLogs();
+      const gmailSummaries = summaries.filter((s) => s.server === 'gmail');
+
+      expect(gmailSummaries).toHaveLength(1);
+      expect(gmailSummaries[0]?.state).toBe('error');
+    });
   });
 });

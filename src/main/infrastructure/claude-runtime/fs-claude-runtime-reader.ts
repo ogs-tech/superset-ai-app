@@ -96,7 +96,10 @@ export class FsClaudeRuntimeReader implements ClaudeRuntimePort {
         const newest = await this.newestJsonl(join(projectPath, entry));
         if (newest === undefined) continue;
 
-        const raw = await readFile(newest, 'utf8').catch(() => '');
+        const raw = await readFile(newest, 'utf8').catch((err: unknown) => {
+          if (isNotFound(err)) return '';
+          throw err;
+        });
         const result = classifyMcpLog(parseJsonl(raw));
         const summary: McpLogSummary = {
           server,
