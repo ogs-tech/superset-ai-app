@@ -142,6 +142,11 @@ export function GlobalInstructionScreen(): React.ReactElement {
         throw err;
       }
     },
+    // The Settings screen writes the same `default` instruction (the <language>
+    // block) outside react-query, so a cached body goes stale silently. Always
+    // refetch on mount so navigating here reflects the on-disk truth regardless
+    // of who last wrote it.
+    refetchOnMount: 'always',
   });
 
   const existing = data ?? null;

@@ -6,3 +6,6 @@ coverage/
 .DS_Store
 *.log
 .worktrees/
+test-results/
+playwright-report/
+.playwright/
