@@ -1,0 +1,28 @@
+import type { HealthCheck } from '../../../../shared/health.js';
+import type { ClockPort } from '../../ports/clock-port.js';
+import type { ClaudeRuntimePort } from '../../ports/claude-runtime-port.js';
+import type { Scope } from '../../ports/scope.js';
+import type { HealthCollector } from './health-collector.js';
+
+export class McpAuthCollector implements HealthCollector {
+  readonly category = 'mcp-auth' as const;
+
+  constructor(
+    private readonly runtime: ClaudeRuntimePort,
+    private readonly clock: ClockPort,
+  ) {}
+
+  async collect(_scope: Scope): Promise<HealthCheck[]> {
+    const alerts = await this.runtime.readMcpAuthAlerts();
+    const observedAt = this.clock.now().toISOString();
+    return alerts.map((alert) => ({
+      id: `mcp-auth:${alert.name}`,
+      category: 'mcp-auth',
+      severity: 'warning',
+      title: `MCP "${alert.name}" needs authentication`,
+      target: alert.name,
+      remediation: 'Run /mcp in Claude Code to authenticate.',
+      observedAt,
+    }));
+  }
+}
