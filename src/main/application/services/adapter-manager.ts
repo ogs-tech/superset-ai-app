@@ -26,6 +26,13 @@ export interface AdapterManagerDeps {
   workspacePath: string;
 }
 
+export interface SymlinkPlanEntry {
+  adapterId: string;
+  source: string;
+  destination: string;
+  scope: 'personal' | 'project';
+}
+
 export interface SyncOneCommand {
   customization: Customization;
 }
@@ -209,6 +216,38 @@ export class AdapterManager {
       }
     }
     return count;
+  }
+
+  /**
+   * Read-only resolution of every expected symlink across enabled adapters and
+   * all customizations. Mirrors syncAll's resolution but performs NO filesystem
+   * writes — used by the health SymlinkCollector to validate integrity.
+   */
+  async planDestinations(): Promise<SymlinkPlanEntry[]> {
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const enabledAdapters = this.enabledAdapters(settings);
+    const customizations = await this.deps.customizationRepository.list();
+
+    const entries: SymlinkPlanEntry[] = [];
+    for (const customization of customizations) {
+      const source = this.customizationSourcePath(customization, this.deps.workspacePath);
+      for (const adapter of enabledAdapters) {
+        const destinations = await adapter.resolveDestinations({
+          customization,
+          linkedRepos: settings.linkedRepos,
+        });
+        for (const dest of destinations) {
+          entries.push({
+            adapterId: adapter.adapterId,
+            source,
+            destination: dest.destination,
+            scope: dest.scope,
+          });
+        }
+      }
+    }
+    return entries;
   }
 
   private async removeDestination(adapterId: string, destination: string): Promise<SyncResult> {
