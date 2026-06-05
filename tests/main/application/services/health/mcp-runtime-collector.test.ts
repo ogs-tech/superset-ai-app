@@ -24,14 +24,14 @@ describe('McpRuntimeCollector', () => {
 
   it('returns no checks when nothing is configured or logged', async () => {
     const { collector } = setup();
-    await expect(collector.collect('personal')).resolves.toEqual([]);
+    await expect(collector.collect()).resolves.toEqual([]);
   });
 
   it('reports a configured server with no logs as ok', async () => {
     const { runtime, collector } = setup();
     runtime.seedServers([{ name: 'gmail', source: 'global' }]);
 
-    const checks = await collector.collect('personal');
+    const checks = await collector.collect();
 
     expect(checks).toHaveLength(1);
     expect(byTarget(checks, 'gmail')).toMatchObject({
@@ -46,7 +46,7 @@ describe('McpRuntimeCollector', () => {
     runtime.seedServers([{ name: 'gmail', source: 'global' }]);
     runtime.seedRuntimeLogs([{ server: 'gmail', state: 'error', detail: 'timed out' }]);
 
-    const check = byTarget(await collector.collect('personal'), 'gmail');
+    const check = byTarget(await collector.collect(), 'gmail');
 
     expect(check).toMatchObject({
       severity: 'error',
@@ -59,7 +59,7 @@ describe('McpRuntimeCollector', () => {
     const { runtime, collector } = setup();
     runtime.seedRuntimeLogs([{ server: 'orphan', state: 'warning' }]);
 
-    const check = byTarget(await collector.collect('personal'), 'orphan');
+    const check = byTarget(await collector.collect(), 'orphan');
     expect(check?.severity).toBe('warning');
   });
 });

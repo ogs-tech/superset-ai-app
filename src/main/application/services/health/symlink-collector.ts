@@ -1,6 +1,5 @@
 import type { HealthCheck, Severity } from '../../../../shared/health.js';
 import type { ClockPort } from '../../ports/clock-port.js';
-import type { Scope } from '../../ports/scope.js';
 import type { SymlinkPlanEntry } from '../adapter-manager.js';
 import type { SymlinkValidateState } from '../symlink-manager.js';
 import type { HealthCollector } from './health-collector.js';
@@ -54,7 +53,7 @@ export class SymlinkCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
-  async collect(_scope: Scope): Promise<HealthCheck[]> {
+  async collect(): Promise<HealthCheck[]> {
     const entries = await this.planner.planDestinations();
     const observedAt = this.clock.now().toISOString();
 

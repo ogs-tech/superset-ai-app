@@ -5,7 +5,6 @@ import type {
   McpLogState,
   McpLogSummary,
 } from '../../ports/claude-runtime-port.js';
-import type { Scope } from '../../ports/scope.js';
 import type { HealthCollector } from './health-collector.js';
 
 const SEVERITY: Record<McpLogState, Severity> = {
@@ -22,7 +21,7 @@ export class McpRuntimeCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
-  async collect(_scope: Scope): Promise<HealthCheck[]> {
+  async collect(): Promise<HealthCheck[]> {
     const [servers, logs] = await Promise.all([
       this.runtime.readMcpServers(),
       this.runtime.readMcpRuntimeLogs(),

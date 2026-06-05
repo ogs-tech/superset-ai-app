@@ -37,7 +37,7 @@ describe('SymlinkCollector', () => {
     const collector = setup([entry('alpha')], {
       '/home/.claude/skills/alpha': 'symlink-to-source',
     });
-    const checks = await collector.collect('personal');
+    const checks = await collector.collect();
     expect(checks[0]).toMatchObject({
       category: 'symlink',
       severity: 'ok',
@@ -48,7 +48,7 @@ describe('SymlinkCollector', () => {
 
   it('classifies a missing link as error', async () => {
     const collector = setup([entry('alpha')], { '/home/.claude/skills/alpha': 'none' });
-    const checks = await collector.collect('personal');
+    const checks = await collector.collect();
     expect(checks[0]?.severity).toBe('error');
     expect(checks[0]?.remediation).toBeDefined();
   });
@@ -57,13 +57,13 @@ describe('SymlinkCollector', () => {
     const collector = setup([entry('alpha')], {
       '/home/.claude/skills/alpha': 'symlink-to-other',
     });
-    expect((await collector.collect('personal'))[0]?.severity).toBe('error');
+    expect((await collector.collect())[0]?.severity).toBe('error');
   });
 
   it('classifies a real file at the destination as warning', async () => {
     const collector = setup([entry('alpha')], {
       '/home/.claude/skills/alpha': 'real-file',
     });
-    expect((await collector.collect('personal'))[0]?.severity).toBe('warning');
+    expect((await collector.collect())[0]?.severity).toBe('warning');
   });
 });

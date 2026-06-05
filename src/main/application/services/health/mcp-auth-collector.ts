@@ -1,7 +1,6 @@
 import type { HealthCheck } from '../../../../shared/health.js';
 import type { ClockPort } from '../../ports/clock-port.js';
 import type { ClaudeRuntimePort } from '../../ports/claude-runtime-port.js';
-import type { Scope } from '../../ports/scope.js';
 import type { HealthCollector } from './health-collector.js';
 
 export class McpAuthCollector implements HealthCollector {
@@ -12,7 +11,7 @@ export class McpAuthCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
-  async collect(_scope: Scope): Promise<HealthCheck[]> {
+  async collect(): Promise<HealthCheck[]> {
     const alerts = await this.runtime.readMcpAuthAlerts();
     const observedAt = this.clock.now().toISOString();
     return alerts.map((alert) => ({

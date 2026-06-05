@@ -19,14 +19,14 @@ describe('McpAuthCollector', () => {
 
   it('returns no checks when there are no auth alerts', async () => {
     const { collector } = setup();
-    await expect(collector.collect('personal')).resolves.toEqual([]);
+    await expect(collector.collect()).resolves.toEqual([]);
   });
 
   it('emits one warning per server needing auth, with remediation and observedAt', async () => {
     const { runtime, collector } = setup();
     runtime.seedAuthAlerts([{ name: 'Gmail' }, { name: 'Google Calendar' }]);
 
-    const checks = await collector.collect('personal');
+    const checks = await collector.collect();
 
     expect(checks).toHaveLength(2);
     const first = checks[0]!;
