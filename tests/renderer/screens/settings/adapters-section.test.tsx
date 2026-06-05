@@ -9,7 +9,6 @@ import type { SyncResult } from '../../../../src/shared/customization.js';
 const baseSettings: Settings = {
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -44,7 +43,6 @@ describe('<Settings> — adapters section toggle-on (AC#15)', () => {
       ...baseSettings,
       adapters: {
         claude: { enabled: false },
-        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
     };
     call.mockImplementation((method: string) => {

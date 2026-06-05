@@ -8,7 +8,6 @@ import type { LinkedRepoView, Settings } from '../../../../src/shared/settings.j
 const baseSettings: Settings = {
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

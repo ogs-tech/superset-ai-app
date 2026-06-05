@@ -23,18 +23,16 @@ export function DetailDrawer({
   testId,
   width = 560,
 }: DetailDrawerProps): React.ReactElement {
+  // Extracted to a const so it is no longer a "fresh" object literal: TS excess-property
+  // checks only apply to literals passed directly, so `data-testid` (not in MUI v9's
+  // tightened SlotProps) is accepted while still rendering on the Paper element.
+  const paperSlotProps = {
+    sx: { width: { xs: '100%', sm: width } },
+    'data-testid': `detail-drawer-${testId}`,
+  };
+
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      slotProps={{
-        paper: {
-          sx: { width: { xs: '100%', sm: width } },
-          'data-testid': `detail-drawer-${testId}`,
-        },
-      }}
-    >
+    <Drawer anchor="right" open={open} onClose={onClose} slotProps={{ paper: paperSlotProps }}>
       <Stack
         direction="row"
         sx={{
