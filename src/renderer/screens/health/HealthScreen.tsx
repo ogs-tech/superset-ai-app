@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useHealthReport } from '../../hooks/use-health-report.js';
 import type { HealthCategory, HealthCheck, Severity } from '../../../shared/health.js';
 
@@ -94,7 +94,7 @@ export function HealthScreen(): React.ReactElement {
             color: 'text.secondary',
           }}
         >
-          <CheckCircleOutlineIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
+          <CheckCircleIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
           <Typography variant="body1">Everything looks healthy.</Typography>
         </Box>
       )}
