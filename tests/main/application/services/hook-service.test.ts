@@ -149,7 +149,18 @@ describe('HookService', () => {
       const cache = new FakePluginCachePort();
       const fs = new InMemoryFileSystem();
       const pid = 'superpowers' as PluginId;
-      cache.seedMeta('personal', { version: 2, plugins: [{ id: pid }] });
+      cache.seedMeta('personal', {
+        version: 2,
+        plugins: [
+          {
+            id: pid,
+            origin: 'imported',
+            installedAt: '2026-05-04T14:30:00Z',
+            scope: 'personal',
+            enabled: true,
+          },
+        ],
+      });
       fs.createFile(
         `${cache.pluginDir('personal', pid)}/hooks/hooks.json`,
         JSON.stringify({
@@ -178,7 +189,18 @@ describe('HookService', () => {
       const cache = new FakePluginCachePort();
       const fs = new InMemoryFileSystem();
       const pid = 'superpowers' as PluginId;
-      cache.seedMeta('personal', { version: 2, plugins: [{ id: pid }] });
+      cache.seedMeta('personal', {
+        version: 2,
+        plugins: [
+          {
+            id: pid,
+            origin: 'imported',
+            installedAt: '2026-05-04T14:30:00Z',
+            scope: 'personal',
+            enabled: true,
+          },
+        ],
+      });
       fs.createFile(
         `${cache.pluginDir('personal', pid)}/hooks/hooks.json`,
         JSON.stringify({
@@ -211,7 +233,18 @@ describe('HookService', () => {
       const cache = new FakePluginCachePort();
       const fs = new InMemoryFileSystem();
       const pid = 'superpowers' as PluginId;
-      cache.seedMeta('personal', { version: 2, plugins: [{ id: pid }] });
+      cache.seedMeta('personal', {
+        version: 2,
+        plugins: [
+          {
+            id: pid,
+            origin: 'imported',
+            installedAt: '2026-05-04T14:30:00Z',
+            scope: 'personal',
+            enabled: true,
+          },
+        ],
+      });
       fs.createFile(
         `${cache.pluginDir('personal', pid)}/hooks/hooks.json`,
         JSON.stringify({

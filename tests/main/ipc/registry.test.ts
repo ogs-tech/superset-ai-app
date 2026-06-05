@@ -15,6 +15,7 @@ import type { AgentService } from '../../../src/main/application/services/agent-
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
 import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
+import type { HookService } from '../../../src/main/application/services/hook-service.js';
 import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
@@ -42,6 +43,8 @@ interface Deps {
   commandService: CommandService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
+  hookService: HookService;
+  appQuit: () => void;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
@@ -101,6 +104,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const commandService = null as unknown as CommandService;
   const globalInstructionService = null as unknown as GlobalInstructionService;
   const marketplaceService = null as unknown as MarketplaceService;
+  const hookService = null as unknown as HookService;
   const credentialStore: CredentialStorePort = {
     get: vi.fn().mockResolvedValue(null),
     set: vi.fn().mockResolvedValue(undefined),
@@ -121,6 +125,8 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     commandService,
     globalInstructionService,
     marketplaceService,
+    hookService,
+    appQuit: () => undefined,
     settingsRepoSpy,
     repoReaderSpy,
     dialogSpy,
