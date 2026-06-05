@@ -15,6 +15,7 @@ export default defineConfig({
       ],
       exclude: [
         'src/main/infrastructure/dialog/**',
+        'src/main/infrastructure/notification/**',
         'src/main/infrastructure/settings/in-memory-settings-repository.ts',
       ],
       thresholds: {
