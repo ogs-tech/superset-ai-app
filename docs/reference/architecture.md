@@ -56,6 +56,7 @@ Cross-cutting:
 - `settings-service` — load/merge/persist settings.
 - `schema-validator` — Zod-based validation.
 - `workspace-bootstrap`, `workspace-locator` — workspace lifecycle.
+- `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink) into a `HealthReport`; exposed via the `health.*` IPC namespace.
 
 Legacy (deprecated, internal):
 - `customization-service` — umbrella service backing the per-entity facades; retained for the legacy `customization.*` IPC and the `CustomizationList` screen used by `PluginEditor`. Future PRs should split this into a `customization-core` helper and let the facades own the lifecycle.

@@ -260,6 +260,43 @@ interface PluginPublishInfo {
 - `clearGithubToken` — erases the stored credential.
 - `hasGithubToken` — returns only a boolean; never returns the token itself.
 
+### `health`
+
+| Method | Params | Result |
+|---|---|---|
+| `health.getReport` | `{ scope?: 'personal' \| 'project' }` (default: `'personal'`) | `HealthReport` |
+| `health.notify` | `{ title: string; body: string }` | `void` |
+
+**Types** (see [`src/shared/health.ts`](../../src/shared/health.ts)):
+
+```ts
+type Severity = 'ok' | 'warning' | 'error';
+type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink';
+
+interface HealthCheck {
+  id: string;           // stable id used for notification diffing
+  category: HealthCategory;
+  severity: Severity;
+  title: string;
+  detail?: string;
+  target?: string;      // MCP/plugin/symlink name this check concerns
+  remediation?: string; // actionable hint, e.g. "Run /mcp to authenticate"
+  observedAt: string;   // ISO timestamp
+}
+
+interface HealthReport {
+  generatedAt: string;
+  worst: Severity;      // drives the nav badge color
+  counts: { ok: number; warning: number; error: number };
+  checks: HealthCheck[];
+}
+```
+
+**Error conditions:**
+
+- `health.getReport` — `{ kind: 'validation' }` if `scope` is present but not `'personal'` or `'project'`.
+- `health.notify` — `{ kind: 'validation' }` if `title` or `body` is missing or not a string.
+
 ## Validation rules (handler side)
 
 Every handler that takes parameters validates them before delegating to the service. Common patterns:
