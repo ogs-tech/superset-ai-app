@@ -40,6 +40,12 @@ import { GlobalInstructionService } from './application/services/global-instruct
 import { MarketplaceService } from './application/services/marketplace-service.js';
 import { MarketplaceSeeder } from './application/services/marketplace-seeder.js';
 import { SettingsMarketplaceRepository } from './infrastructure/marketplace/settings-marketplace-repository.js';
+import { FsClaudeRuntimeReader } from './infrastructure/claude-runtime/fs-claude-runtime-reader.js';
+import { ElectronNotificationAdapter } from './infrastructure/notification/electron-notification-adapter.js';
+import { HealthService } from './application/services/health/health-service.js';
+import { McpAuthCollector } from './application/services/health/mcp-auth-collector.js';
+import { McpRuntimeCollector } from './application/services/health/mcp-runtime-collector.js';
+import type { HealthCollector } from './application/services/health/health-collector.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
 
@@ -188,6 +194,20 @@ async function wireIpc(): Promise<void> {
 
   await new MarketplaceSeeder({ marketplaceService }).seedDefaultsIfMissing('personal');
 
+  const claudeRuntimeReader = new FsClaudeRuntimeReader({
+    claudeJsonPath: join(homedir(), '.claude.json'),
+    authCachePath: join(homedir(), '.claude', 'mcp-needs-auth-cache.json'),
+    mcpLogsBaseDir: join(homedir(), 'Library', 'Caches', 'claude-cli-nodejs'),
+  });
+
+  const healthCollectors: HealthCollector[] = [
+    new McpAuthCollector(claudeRuntimeReader, clock),
+    new McpRuntimeCollector(claudeRuntimeReader, clock),
+    // TODO(Task 13/15): add ConfigDriftCollector(pluginService, clock) and SymlinkCollector(adapterManager, symlinkManager, clock) once implemented
+  ];
+  const healthService = new HealthService(healthCollectors, clock);
+  const notificationPort = new ElectronNotificationAdapter();
+
   const handlers = buildHandlers({
     settingsService,
     repoService,
@@ -201,6 +221,8 @@ async function wireIpc(): Promise<void> {
     hookService,
     globalInstructionService,
     marketplaceService,
+    healthService,
+    notificationPort,
     appQuit: () => app.quit(),
   });
   const dispatch = createDispatcher(handlers);
