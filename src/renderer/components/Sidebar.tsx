@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  Badge,
   Box,
   Collapse,
   Divider,
@@ -15,6 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import TerminalIcon from '@mui/icons-material/Terminal';
@@ -37,7 +39,10 @@ export type SidebarTab =
   | 'hooks'
   | 'global-instructions'
   | 'plugins'
-  | 'marketplaces';
+  | 'marketplaces'
+  | 'diagnostics';
+
+export type SidebarHealthSeverity = 'ok' | 'warning' | 'error';
 
 interface NavLeaf {
   id: SidebarTab;
@@ -56,6 +61,12 @@ const TOP_ITEM: NavLeaf = {
   id: 'starter-pack',
   label: 'Início',
   icon: <HomeIcon fontSize="small" />,
+};
+
+const DIAGNOSTICS_ITEM: NavLeaf = {
+  id: 'diagnostics',
+  label: 'Diagnostics',
+  icon: <MonitorHeartIcon fontSize="small" />,
 };
 
 const GROUPS: ReadonlyArray<NavGroup> = [
@@ -88,7 +99,17 @@ const GROUPS: ReadonlyArray<NavGroup> = [
 
 // Flattened leaf list used by the collapsed (icon-only) rail, where group
 // headers have no room to expand.
-const FLAT_LEAVES: ReadonlyArray<NavLeaf> = [TOP_ITEM, ...GROUPS.flatMap((g) => g.children)];
+const FLAT_LEAVES: ReadonlyArray<NavLeaf> = [
+  TOP_ITEM,
+  DIAGNOSTICS_ITEM,
+  ...GROUPS.flatMap((g) => g.children),
+];
+
+const BADGE_COLOR: Record<SidebarHealthSeverity, 'success' | 'warning' | 'error'> = {
+  ok: 'success',
+  warning: 'warning',
+  error: 'error',
+};
 
 export const SIDEBAR_WIDTH = 232;
 export const SIDEBAR_COLLAPSED_WIDTH = 64;
@@ -111,9 +132,10 @@ interface SidebarProps {
   active: SidebarTab;
   onNavigate: (tab: SidebarTab) => void;
   onOpenSettings: () => void;
+  healthSeverity?: SidebarHealthSeverity;
 }
 
-export function Sidebar({ active, onNavigate, onOpenSettings }: SidebarProps): React.ReactElement {
+export function Sidebar({ active, onNavigate, onOpenSettings, healthSeverity }: SidebarProps): React.ReactElement {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(STORAGE_KEY) === '1';
@@ -220,6 +242,7 @@ export function Sidebar({ active, onNavigate, onOpenSettings }: SidebarProps): R
                 active={active === leaf.id}
                 collapsed
                 onNavigate={onNavigate}
+                {...(leaf.id === 'diagnostics' ? { healthSeverity } : {})}
               />
             ))
           ) : (
@@ -229,6 +252,13 @@ export function Sidebar({ active, onNavigate, onOpenSettings }: SidebarProps): R
                 active={active === TOP_ITEM.id}
                 collapsed={false}
                 onNavigate={onNavigate}
+              />
+              <LeafButton
+                leaf={DIAGNOSTICS_ITEM}
+                active={active === DIAGNOSTICS_ITEM.id}
+                collapsed={false}
+                onNavigate={onNavigate}
+                {...(healthSeverity !== undefined ? { healthSeverity } : {})}
               />
               {GROUPS.map((group) => {
                 const expanded = !collapsedGroups.has(group.id);
@@ -339,6 +369,7 @@ interface LeafButtonProps {
   collapsed: boolean;
   indented?: boolean;
   onNavigate: (tab: SidebarTab) => void;
+  healthSeverity?: SidebarHealthSeverity;
 }
 
 function LeafButton({
@@ -347,7 +378,23 @@ function LeafButton({
   collapsed,
   indented = false,
   onNavigate,
+  healthSeverity,
 }: LeafButtonProps): React.ReactElement {
+  const icon =
+    healthSeverity !== undefined ? (
+      <Badge
+        data-testid="sidebar-health-badge"
+        data-severity={healthSeverity}
+        color={BADGE_COLOR[healthSeverity]}
+        variant="dot"
+        overlap="circular"
+      >
+        {leaf.icon}
+      </Badge>
+    ) : (
+      leaf.icon
+    );
+
   return (
     <ListItem disablePadding sx={{ px: 1, mb: 0.5 }}>
       <Tooltip
@@ -380,7 +427,7 @@ function LeafButton({
               color: active ? 'primary.main' : 'text.secondary',
             }}
           >
-            {leaf.icon}
+            {icon}
           </ListItemIcon>
           {!collapsed && (
             <ListItemText
