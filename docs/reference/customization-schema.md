@@ -36,7 +36,7 @@ All four customization types share these fields. Defined in `schemas/common.ts`.
 | Field | Type | Required | Rule |
 |---|---|---|---|
 | `name` | string | yes | Slug — must match `^[a-z0-9][a-z0-9-]*$` (lowercase, digits, hyphens; no leading hyphen). |
-| `type` | enum | yes | One of `skill` · `reference` · `agent` · `global-instruction`. |
+| `type` | enum | yes | One of `skill` · `agent` · `global-instruction` · `command`. |
 | `description` | string | yes | 1–1024 characters. Empty string is rejected. |
 | `scopes` | array | yes | At least 1 entry, no duplicates. Each entry is `personal` or `project`. |
 | `version` | string | yes | Semver `^\d+\.\d+\.\d+(-[\w.-]+)?$` (e.g. `1.2.3`, `1.2.3-rc.1`). |
@@ -53,16 +53,6 @@ Each type extends the common schema. Only the differences are listed.
 ### `skill`
 
 No additional fields or constraints. `type` must be the literal `skill`.
-
-### `reference`
-
-No additional fields or constraints. `type` must be the literal `reference`.
-
-> **App-only:** Claude Code has no native concept of "references". The Claude adapter
-> deliberately returns no destinations for `reference` (see `claude-adapter.ts`). They
-> live in the workspace and are aggregated into `copilot-instructions.md` by
-> `CopilotInstructionsGen`. The viewer surfaces a banner stating that references are
-> not synchronized to Claude.
 
 ### `agent`
 
@@ -86,8 +76,8 @@ The Markdown body is unconstrained at the schema layer (just `body: string` in `
 
 | Scope | Meaning | Adapter target (typical) |
 |---|---|---|
-| `personal` | Applies machine-wide for the author. | `~/.claude/`, `~/.copilot/` |
-| `project` | Applies to repos linked in Settings. | `<repo>/.claude/`, `<repo>/.github/` |
+| `personal` | Applies machine-wide for the author. | `~/.claude/` |
+| `project` | Applies to repos linked in Settings. | `<repo>/.claude/` |
 
 A customization can declare both scopes; the adapter publishes it to each enabled target.
 

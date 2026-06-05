@@ -18,7 +18,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import WebhookIcon from '@mui/icons-material/Webhook';
 import ExtensionIcon from '@mui/icons-material/Extension';
@@ -36,7 +35,6 @@ export type SidebarTab =
   | 'agents'
   | 'commands'
   | 'hooks'
-  | 'references'
   | 'global-instructions'
   | 'plugins'
   | 'marketplaces';
@@ -70,7 +68,6 @@ const GROUPS: ReadonlyArray<NavGroup> = [
       { id: 'agents', label: 'Agents', icon: <SmartToyIcon fontSize="small" /> },
       { id: 'commands', label: 'Commands', icon: <TerminalIcon fontSize="small" /> },
       { id: 'hooks', label: 'Hooks', icon: <WebhookIcon fontSize="small" /> },
-      { id: 'references', label: 'References', icon: <MenuBookIcon fontSize="small" /> },
       {
         id: 'global-instructions',
         label: 'Global Instructions',

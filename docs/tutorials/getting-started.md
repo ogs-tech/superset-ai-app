@@ -47,7 +47,7 @@ After this, the **Main** screen opens with an empty customization list.
 You're ready when:
 
 - The main window shows the customization list (empty on first run).
-- `Settings` shows your workspace path and the configured adapter targets (`~/.claude/`, `~/.copilot/`).
+- `Settings` shows your workspace path and the configured adapter targets (`~/.claude/`).
 - The workspace folder on disk exists and is writable.
 
 ## What's next

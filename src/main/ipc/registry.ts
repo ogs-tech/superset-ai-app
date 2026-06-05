@@ -9,7 +9,6 @@ import type { DialogPort, SelectFolderParams } from '../application/ports/dialog
 import type { PluginService } from '../application/services/plugin-service.js';
 import type { SkillService } from '../application/services/skill-service.js';
 import type { AgentService } from '../application/services/agent-service.js';
-import type { ReferenceService } from '../application/services/reference-service.js';
 import type { GlobalInstructionService } from '../application/services/global-instruction-service.js';
 import type { CommandService } from '../application/services/command-service.js';
 import type { HookService } from '../application/services/hook-service.js';
@@ -24,7 +23,6 @@ import { buildSkillHandlers } from './skill-handlers.js';
 import { buildAgentHandlers } from './agent-handlers.js';
 import { buildCommandHandlers } from './command-handlers.js';
 import { buildHookHandlers } from './hook-handlers.js';
-import { buildReferenceHandlers } from './reference-handlers.js';
 import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
 import { updateLanguageSection } from '../application/services/language-section.js';
@@ -42,7 +40,6 @@ export interface IpcDeps {
   agentService: AgentService;
   commandService: CommandService;
   hookService: HookService;
-  referenceService: ReferenceService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
   appQuit: () => void;
@@ -87,7 +84,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     agentService,
     commandService,
     hookService,
-    referenceService,
     globalInstructionService,
     marketplaceService,
     appQuit,
@@ -248,7 +244,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     ...buildAgentHandlers(agentService),
     ...buildCommandHandlers(commandService),
     ...buildHookHandlers(hookService),
-    ...buildReferenceHandlers(referenceService),
     ...buildGlobalInstructionHandlers(globalInstructionService),
     ...buildMarketplaceHandlers(marketplaceService),
   };

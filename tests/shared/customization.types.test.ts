@@ -58,7 +58,7 @@ describe('CustomizationType union (spec 014)', () => {
 
 describe('CustomizationType excludes "template"', () => {
   it('does not include "template"', () => {
-    const valid: CustomizationType[] = ['skill', 'reference', 'agent', 'global-instruction'];
+    const valid: CustomizationType[] = ['skill', 'agent', 'global-instruction', 'command'];
     expect(valid).toHaveLength(4);
   });
 });

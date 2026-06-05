@@ -17,7 +17,6 @@ const WORKSPACE = '/workspace';
 const settings: Settings = {
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

@@ -15,7 +15,7 @@ updated_at: 2026-06-04
 
 ## 1. Problem
 
-Devs who use AI (Claude Code, Copilot) accumulate skills, references, agent profiles and global instructions scattered across notes, loose folders and ad-hoc repos. They know they exist, but can't find them when needed.
+Devs who use AI (Claude Code) accumulate skills, agent profiles, global instructions and commands scattered across notes, loose folders and ad-hoc repos. They know they exist, but can't find them when needed.
 
 ## 2. Hypothesis
 
@@ -30,7 +30,7 @@ Single persona: the author themselves. Dogfooding. No external users.
 ## 4. Scope
 
 A **customization** is a Markdown file with YAML frontmatter typed as one of:
-`skill` · `reference` · `agent` · `global-instruction`.
+`skill` · `agent` · `global-instruction` · `command`.
 Each customization has a **scope**: `personal` or `project`.
 
 ### Must-have
@@ -38,8 +38,7 @@ Each customization has a **scope**: `personal` or `project`.
 - CRUD of customizations (all four types) in Markdown + YAML frontmatter.
 - "New" opens the editor pre-filled with sensible defaults; "Duplicate" copies an existing item (don't face a blank page).
 - Markdown preview on save.
-- Sync via symlink to Claude Code and Copilot, personal and project scopes.
-- `copilot-instructions.md` generated from flagged references.
+- Sync via symlink to Claude Code, personal and project scopes.
 - Settings: enable/disable adapter, default scope, management of linked repos.
 
 ### Should-have (if there's time left)
@@ -51,12 +50,12 @@ Each customization has a **scope**: `personal` or `project`.
 
 ### Nice-to-have
 
-- Token consumption per customization (Claude via JSONL, Copilot via Usage API). Split from should-have because the JSONL parser and the Copilot HTTP client carry significantly more risk (format breakage, plan/PAT requirements) than schema validation or text search.
+- Token consumption per customization (Claude via JSONL). Split from should-have because the JSONL parser carries significantly more risk (format breakage) than schema validation or text search.
 
 ## 5. Out of scope
 
 - Collaboration, multi-user, team sync.
-- Tools other than Claude and Copilot.
+- Tools other than Claude Code.
 - Token cost in dollars (raw count only).
 - Git history in the UI.
 - Visual polish, accessibility, i18n.
@@ -64,8 +63,8 @@ Each customization has a **scope**: `personal` or `project`.
 
 ## 6. Success metrics
 
-- ≥ 10 working days in which ≥ 1 synced customization was effectively consumed by Claude Code or Copilot in a real work session (verifiable via Claude JSONL or Copilot log).
-- ≥ 2 consecutive weeks without creating/editing customizations outside the app (loose notes, ad-hoc prompts, direct edits in `~/.claude/` or `~/.copilot/`).
+- ≥ 10 working days in which ≥ 1 synced customization was effectively consumed by Claude Code in a real work session (verifiable via Claude JSONL).
+- ≥ 2 consecutive weeks without creating/editing customizations outside the app (loose notes, ad-hoc prompts, direct edits in `~/.claude/`).
 - ≥ 5 customizations created and used in real projects.
 - Zero occurrences of broken symlink, unresolved conflict or desynced customization persisting > 1 working day after detection.
 - Final report with transferable decisions for the next step (Specfy).
@@ -88,7 +87,7 @@ Decision logged in this PRD (changelog) or a dedicated file. The 8-week soft cap
 ## 7. Assumptions
 
 - Author has ≥ 4h/day available throughout the spike.
-- File format read by Claude Code and Copilot remains stable.
+- File format read by Claude Code remains stable.
 - Author's local git repos are sufficient to test sync in a real project.
 
 ## Changelog

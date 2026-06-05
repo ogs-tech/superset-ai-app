@@ -136,17 +136,6 @@ Saving or deleting a plugin-provided skill (`source.kind === 'plugin'`) raises `
 
 Same plugin-source guard as `skill.*`.
 
-### `reference`
-
-| Method | Params | Result |
-|---|---|---|
-| `reference.list` | `{ scope?: 'personal' \| 'project' }` | `Reference[]` |
-| `reference.get` | `{ id: string }` | `Reference` |
-| `reference.save` | `{ reference: Reference; isCreate?: boolean }` | `{ reference: Reference; syncReport: SyncResult[] }` |
-| `reference.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
-
-References are app-only — never synced to Claude (see `claude-adapter.ts`).
-
 ### `global-instruction`
 
 | Method | Params | Result |

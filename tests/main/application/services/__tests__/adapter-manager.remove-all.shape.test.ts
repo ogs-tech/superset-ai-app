@@ -15,7 +15,7 @@ const HOMEDIR = '/home/alice';
 const WORKSPACE = '/workspace';
 
 const baseSettings: Settings = {
-  adapters: { claude: { enabled: true }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
+  adapters: { claude: { enabled: true } },
   linkedRepos: [],
   ui: { theme: 'system' },
   language: 'off',

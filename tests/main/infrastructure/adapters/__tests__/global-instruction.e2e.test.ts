@@ -1,8 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { isAbsolute } from 'node:path';
-import type { CopilotInstructionsGenPort } from '../../../../../src/main/application/ports/copilot-instructions-gen.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { CopilotAdapter } from '../../../../../src/main/infrastructure/adapters/copilot-adapter.js';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
@@ -37,7 +35,6 @@ const baseSettings = (
 ): Settings => ({
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: true, exclusiveSkillsWithClaude: false },
     ...overrides,
   },
   linkedRepos: [],
@@ -54,10 +51,6 @@ const setup = async () => {
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
-  const gen: CopilotInstructionsGenPort = {
-    generate: vi.fn().mockResolvedValue({ path: `${WORKSPACE}/_generated/copilot-instructions.md`, refsIncluded: 0 }),
-  };
-  const copilotAdapter = new CopilotAdapter({ homedir: HOMEDIR, workspacePath: WORKSPACE, copilotInstructionsGen: gen });
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
@@ -65,14 +58,13 @@ const setup = async () => {
     workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
-      [copilotAdapter.adapterId, copilotAdapter],
     ]),
   });
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
   return { customizationService, fs };
 };
 
-describe('global-instruction — end-to-end save fans out to both adapters', () => {
+describe('global-instruction — end-to-end save syncs to the Claude adapter', () => {
   it('save creates a Claude symlink at <homedir>/.claude/CLAUDE.md → <workspace>/global-instructions/default.md', async () => {
     const { customizationService, fs } = await setup();
 
@@ -87,28 +79,6 @@ describe('global-instruction — end-to-end save fans out to both adapters', () 
     expect(claudeOk).toBeDefined();
 
     const destination = '/Users/alice/.claude/CLAUDE.md';
-    const stat = await fs.lstat(destination);
-    expect(stat.kind).toBe('symlink');
-    const target = await fs.readlink(destination);
-    expect(target).toBe('/workspace/global-instructions/default.md');
-    expect(isAbsolute(destination)).toBe(true);
-    expect(isAbsolute(target)).toBe(true);
-  });
-
-  it('save creates a Copilot symlink at <homedir>/.copilot/instructions/global.instructions.md → <workspace>/global-instructions/default.md', async () => {
-    const { customizationService, fs } = await setup();
-
-    const result = await customizationService.save({
-      customization: globalInstruction(),
-      isCreate: true,
-    });
-
-    const copilotOk = result.syncReport.find(
-      (r) => r.adapter === 'copilot' && r.status === 'ok',
-    );
-    expect(copilotOk).toBeDefined();
-
-    const destination = '/Users/alice/.copilot/instructions/global.instructions.md';
     const stat = await fs.lstat(destination);
     expect(stat.kind).toBe('symlink');
     const target = await fs.readlink(destination);

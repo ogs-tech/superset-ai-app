@@ -1,7 +1,6 @@
 import type { ZodIssue, ZodError } from 'zod';
 import type { CustomizationFrontmatter } from '../../../shared/customization.js';
 import { skillSchema } from '../schemas/skill.js';
-import { referenceSchema } from '../schemas/reference.js';
 import { agentSchema } from '../schemas/agent.js';
 import { globalInstructionSchema } from '../schemas/global-instruction.js';
 import { commandSchema } from '../schemas/command.js';
@@ -77,9 +76,6 @@ export class SchemaValidator {
     switch (type) {
       case 'skill':
         result = skillSchema.safeParse(frontmatter);
-        break;
-      case 'reference':
-        result = referenceSchema.safeParse(frontmatter);
         break;
       case 'agent':
         result = agentSchema.safeParse(frontmatter);

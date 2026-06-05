@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this app is
 
-**Skillforge / superset-ai-app** — an Electron desktop app that centralizes AI customizations (skills, references, agent profiles, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) and GitHub Copilot (`~/.copilot/`, `<repo>/.github/`) via **symbolic links**. Single-developer dogfooding spike — no backend, no API, no telemetry.
+**Skillforge / superset-ai-app** — an Electron desktop app that centralizes AI customizations (skills, agent profiles, commands, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) via **symbolic links**. Single-developer dogfooding spike — no backend, no API, no telemetry.
 
 Authoritative docs live in `docs/` (Diátaxis):
 - `docs/explanation/prd.md` — goals, scope, stop rules
@@ -44,10 +44,10 @@ Coverage targets `application/`, `ipc/`, `infrastructure/`, and `renderer/screen
 - **Composition root:** `src/main/index.ts` wires every adapter + service and passes the `handlers` map to `createDispatcher`.
 - **IPC** — single channel `ipc:call`, envelope `{ method, params }` → `IpcResult<T>`. Full shape, namespaces and per-method tables in `docs/reference/ipc-contract.md`. Renderer uses `callIpc<T>('ns.method', params)` from `src/renderer/lib/ipc.ts`. The dispatcher (`src/main/ipc/dispatcher.ts`) maps `DomainError(kind, …)` → `IpcError.kind` verbatim; plain `Error` → `kind: 'internal'`; unknown method → `kind: 'not_found'`.
 - **Adding a new IPC method:** types in `src/shared/`, handler in `src/main/ipc/registry.ts` (validate raw params with `_validators.ts` helpers), call site uses `callIpc<Result>(...)`.
-- **Per-entity facades vs deprecated umbrella:** `customization-service` is the legacy umbrella; new code uses `skill-service`, `agent-service`, `command-service`, `hook-service`, `reference-service`, `global-instruction-service`. They wrap `customization-service` and add plugin-provenance merging. The `customization.*` IPC namespace is retained only for the `CustomizationList` screen inside `PluginEditor` and cross-type search — don't extend it.
-- **Adapters** — `claude-adapter.ts` and `copilot-adapter.ts` under `src/main/infrastructure/adapters/`, both implementing the `Adapter` port; `AdapterManager` orchestrates, `SymlinkManager` reconciles links and returns `SyncResult[]`. Targets and sync flow in `docs/reference/architecture.md`.
+- **Per-entity facades vs deprecated umbrella:** `customization-service` is the legacy umbrella; new code uses `skill-service`, `agent-service`, `command-service`, `hook-service`, `global-instruction-service`. They wrap `customization-service` and add plugin-provenance merging. The `customization.*` IPC namespace is retained only for the `CustomizationList` screen inside `PluginEditor` and cross-type search — don't extend it.
+- **Adapters** — `claude-adapter.ts` under `src/main/infrastructure/adapters/`, implementing the `Adapter` port; `AdapterManager` orchestrates, `SymlinkManager` reconciles links and returns `SyncResult[]`. Targets and sync flow in `docs/reference/architecture.md`.
 - **Plugin-provided entities** (`source.kind === 'plugin'`) are **read-only** — `save`/`delete` raise `OperationNotAllowedForOriginError`.
-- **Customization schema** — Markdown + YAML frontmatter; four types (`skill`, `reference`, `agent`, `global-instruction`). Full rules and per-type constraints in `docs/reference/customization-schema.md`. Two non-obvious points to remember up front: `global-instruction` requires `name === "default"` and `scopes === ["personal"]`; `reference` is **app-only** — `claude-adapter.ts` returns no destinations and references are aggregated into `.github/copilot-instructions.md` by `CopilotInstructionsGen`.
+- **Customization schema** — Markdown + YAML frontmatter; four types (`skill`, `agent`, `global-instruction`, `command`). Full rules and per-type constraints in `docs/reference/customization-schema.md`. One non-obvious point to remember up front: `global-instruction` requires `name === "default"` and `scopes === ["personal"]`.
 
 ## Conventions and gotchas
 

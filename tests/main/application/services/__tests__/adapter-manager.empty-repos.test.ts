@@ -4,17 +4,14 @@ import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.
 
 describe('AdapterManager.syncOne with empty linkedRepos', () => {
   it('returns a skipped SyncResult for project customizations when no linked repos exist', async () => {
-    const adapters = [
-      new FakeAdapter('claude', '/workspace/personal/claude'),
-      new FakeAdapter('copilot', '/workspace/personal/copilot'),
-    ];
+    const adapters = [new FakeAdapter('claude', '/workspace/personal/claude')];
     const settings = { ...defaultSettings, linkedRepos: [] };
     const { manager, registerCustomization } = await setupAdapterManager(adapters, settings);
     const customization = {
-      id: 'reference/empty',
+      id: 'agent/empty',
       frontmatter: {
         name: 'empty',
-        type: 'reference' as const,
+        type: 'agent' as const,
         description: 'empty customization',
         scopes: ['project' as const],
         version: '1.0.0',
@@ -27,7 +24,7 @@ describe('AdapterManager.syncOne with empty linkedRepos', () => {
 
     const result = await manager.syncOne({ customization });
 
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(1);
     for (const item of result) {
       expect(item.status).toBe('ok');
       expect(item.destination).toBeNull();

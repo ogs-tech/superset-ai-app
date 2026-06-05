@@ -10,10 +10,6 @@ describe('parseCustomizationId', () => {
     expect(parseCustomizationId('skill/foo')).toEqual({ type: 'skill', name: 'foo' });
   });
 
-  it('parses reference/<name>', () => {
-    expect(parseCustomizationId('reference/bar')).toEqual({ type: 'reference', name: 'bar' });
-  });
-
   it('parses agent/<name>', () => {
     expect(parseCustomizationId('agent/baz')).toEqual({ type: 'agent', name: 'baz' });
   });
@@ -72,7 +68,6 @@ describe('parseCustomizationId', () => {
 describe('formatCustomizationId', () => {
   it('joins type and name with /', () => {
     expect(formatCustomizationId('skill', 'foo')).toBe('skill/foo');
-    expect(formatCustomizationId('reference', 'bar')).toBe('reference/bar');
     expect(formatCustomizationId('agent', 'baz-qux')).toBe('agent/baz-qux');
     expect(formatCustomizationId('command', 'feature-dev')).toBe('command/feature-dev');
   });

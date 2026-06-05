@@ -43,7 +43,6 @@ const baseDeps = (): IpcDeps => {
     agentService: {} as IpcDeps['agentService'],
     commandService: {} as IpcDeps['commandService'],
     hookService: {} as IpcDeps['hookService'],
-    referenceService: {} as IpcDeps['referenceService'],
     marketplaceService: {} as IpcDeps['marketplaceService'],
     appQuit: vi.fn(),
   };

@@ -29,12 +29,6 @@ const skill = (name = 'foo'): Customization => ({
   body: '# Foo\n',
 });
 
-const reference = (name = 'bar'): Customization => ({
-  id: `reference/${name}`,
-  frontmatter: buildFrontmatter({ name, type: 'reference' }),
-  body: '# Bar\n',
-});
-
 const agent = (name = 'baz'): Customization => ({
   id: `agent/${name}`,
   frontmatter: buildFrontmatter({ name, type: 'agent' }),
@@ -86,17 +80,6 @@ describe('FsCustomizationRepository.save — skill', () => {
   });
 });
 
-describe('FsCustomizationRepository.save — reference', () => {
-  it('writes <workspace>/references/<slug>.md', async () => {
-    const repo = new FsCustomizationRepository(workspace);
-    await repo.save({ customization: reference('bar') });
-
-    const target = join(workspace, 'references', 'bar.md');
-    const raw = await readFile(target, 'utf8');
-    expect(raw).toContain('# Bar');
-  });
-});
-
 describe('FsCustomizationRepository.save — agent', () => {
   it('writes <workspace>/agents/<slug>.md', async () => {
     const repo = new FsCustomizationRepository(workspace);
@@ -116,17 +99,6 @@ describe('FsCustomizationRepository.delete', () => {
     await repo.delete({ id: 'skill/foo' });
 
     await expect(fs.stat(join(workspace, 'skills', 'foo'))).rejects.toMatchObject({
-      code: 'ENOENT',
-    });
-  });
-
-  it('removes the file (not the directory) for references', async () => {
-    const repo = new FsCustomizationRepository(workspace);
-    await repo.save({ customization: reference('bar') });
-
-    await repo.delete({ id: 'reference/bar' });
-
-    await expect(fs.stat(join(workspace, 'references', 'bar.md'))).rejects.toMatchObject({
       code: 'ENOENT',
     });
   });
@@ -172,7 +144,6 @@ describe('FsCustomizationRepository.list and get', () => {
   it('list({ type }) returns only customizations of that type', async () => {
     const repo = new FsCustomizationRepository(workspace);
     await repo.save({ customization: skill('foo') });
-    await repo.save({ customization: reference('bar') });
     await repo.save({ customization: agent('baz') });
 
     const skills = await repo.list({ type: 'skill' });
@@ -182,12 +153,11 @@ describe('FsCustomizationRepository.list and get', () => {
   it('list() without filter returns all types', async () => {
     const repo = new FsCustomizationRepository(workspace);
     await repo.save({ customization: skill('foo') });
-    await repo.save({ customization: reference('bar') });
     await repo.save({ customization: agent('baz') });
 
     const all = await repo.list();
     const ids = all.map((a) => a.id).sort();
-    expect(ids).toEqual(['agent/baz', 'reference/bar', 'skill/foo']);
+    expect(ids).toEqual(['agent/baz', 'skill/foo']);
   });
 
   it('list() returns [] when workspace has no customizations', async () => {
@@ -233,15 +203,6 @@ describe('FsCustomizationRepository.list — ignora entradas espúrias', () => {
 
     const skills = await repo.list({ type: 'skill' });
     expect(skills.map((a) => a.id)).toEqual(['skill/foo']);
-  });
-
-  it('ignora .DS_Store em references/', async () => {
-    const repo = new FsCustomizationRepository(workspace);
-    await repo.save({ customization: reference('bar') });
-    await writeFile(join(workspace, 'references', '.DS_Store'), 'binary', 'utf8');
-
-    const refs = await repo.list({ type: 'reference' });
-    expect(refs.map((a) => a.id)).toEqual(['reference/bar']);
   });
 
   it('ignora .DS_Store em agents/', async () => {

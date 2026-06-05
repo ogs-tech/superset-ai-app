@@ -121,8 +121,8 @@ describe('CustomizationService.list', () => {
     });
     await service.save({
       customization: makeCustomization({
-        id: 'reference/bar',
-        frontmatter: validFrontmatter({ name: 'bar', type: 'reference' }),
+        id: 'agent/bar',
+        frontmatter: validFrontmatter({ name: 'bar', type: 'agent' }),
         body: '',
       }),
     });
@@ -141,8 +141,8 @@ describe('CustomizationService.list', () => {
     });
     await service.save({
       customization: makeCustomization({
-        id: 'reference/bar',
-        frontmatter: validFrontmatter({ name: 'bar', type: 'reference' }),
+        id: 'command/bar',
+        frontmatter: validFrontmatter({ name: 'bar', type: 'command' }),
       }),
     });
     await service.save({
@@ -155,7 +155,7 @@ describe('CustomizationService.list', () => {
     const all = await service.list();
     expect(all.map((a) => a.id).sort()).toEqual([
       'agent/baz',
-      'reference/bar',
+      'command/bar',
       'skill/foo',
     ]);
   });

@@ -5,7 +5,6 @@ import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
 import { CommandList } from './commands/CommandList.js';
 import { HookList } from './hooks/HookList.js';
-import { ReferenceList } from './references/ReferenceList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
@@ -41,7 +40,6 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         {activeTab === 'agents' && <AgentList />}
         {activeTab === 'commands' && <CommandList />}
         {activeTab === 'hooks' && <HookList />}
-        {activeTab === 'references' && <ReferenceList />}
         {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
         {activeTab === 'plugins' && <PluginList scope="personal" />}
         {activeTab === 'marketplaces' && <MarketplaceList />}

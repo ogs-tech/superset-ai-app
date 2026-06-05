@@ -13,7 +13,6 @@ import type { PluginService } from '../../../src/main/application/services/plugi
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
-import type { ReferenceService } from '../../../src/main/application/services/reference-service.js';
 import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
@@ -23,7 +22,6 @@ import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -42,7 +40,6 @@ interface Deps {
   skillService: SkillService;
   agentService: AgentService;
   commandService: CommandService;
-  referenceService: ReferenceService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
   settingsRepoSpy: {
@@ -102,7 +99,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const skillService = null as unknown as SkillService;
   const agentService = null as unknown as AgentService;
   const commandService = null as unknown as CommandService;
-  const referenceService = null as unknown as ReferenceService;
   const globalInstructionService = null as unknown as GlobalInstructionService;
   const marketplaceService = null as unknown as MarketplaceService;
   const credentialStore: CredentialStorePort = {
@@ -123,7 +119,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     skillService,
     agentService,
     commandService,
-    referenceService,
     globalInstructionService,
     marketplaceService,
     settingsRepoSpy,
@@ -167,10 +162,6 @@ describe('buildHandlers', () => {
     })) as Settings;
 
     expect(merged.adapters.claude.enabled).toBe(false);
-    expect(merged.adapters.copilot).toEqual({
-      enabled: false,
-      exclusiveSkillsWithClaude: false,
-    });
     expect(merged.ui.theme).toBe('dark');
     expect(deps.settingsRepoSpy.save).toHaveBeenCalledWith(merged);
   });

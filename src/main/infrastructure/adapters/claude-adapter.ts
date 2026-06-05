@@ -43,14 +43,6 @@ export class ClaudeAdapter implements Adapter {
       ];
     }
 
-    if (type === 'reference') {
-      // References are app-only: Claude Code has no native concept of "references".
-      // They live in the workspace and are aggregated into copilot-instructions.md
-      // for Copilot via CopilotInstructionsGen. Returning [] here means the Claude
-      // adapter never creates a destination for them.
-      return [];
-    }
-
     if (type !== 'skill' && type !== 'agent') {
       return [];
     }

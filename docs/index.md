@@ -1,13 +1,13 @@
 ---
 title: superset-ai-app
-description: Local desktop app to centralize AI customizations (skills, references, agent profiles) and sync them to Claude Code and GitHub Copilot via symlinks.
+description: Local desktop app to centralize AI customizations (skills, agent profiles) and sync them to Claude Code via symlinks.
 ---
 
 # superset-ai-app
 
 > **Status:** Spike — validating in 4 weeks whether centralizing AI context in a local app with symlink-based sync replaces ad-hoc folders and loose notes.
 
-Single source of truth for AI customizations in your workspace; live copies in `~/.claude/`, `~/.copilot/`, `<repo>/.claude/`, and `<repo>/.github/`.
+Single source of truth for AI customizations in your workspace; live copies in `~/.claude/` and `<repo>/.claude/`.
 
 ## Quick links
 
@@ -33,7 +33,7 @@ This project follows the [Diátaxis](https://diataxis.fr/) framework. Each quadr
 ### How-to — task-oriented
 
 - Create a customization _(TBD)_
-- Sync customizations to Claude Code and Copilot _(TBD)_
+- Sync customizations to Claude Code _(TBD)_
 - Link an external repo _(TBD)_
 
 ### Reference — look it up
@@ -64,11 +64,11 @@ Pure TypeScript — no backend, API, database, auth, or telemetry.
 
 ## Scope (4-week spike)
 
-**Must-have:** CRUD of customizations in Markdown + YAML, adapters with symlinks to Claude Code and Copilot (personal + project), settings UI.
+**Must-have:** CRUD of customizations in Markdown + YAML, adapters with symlinks to Claude Code (personal + project), settings UI.
 
 **Should-have:** Schema validation, text search, token usage stats.
 
-**Out:** Multi-user, auto-commit, Linux/Windows, i18n, accessibility, tools other than Claude/Copilot.
+**Out:** Multi-user, auto-commit, Linux/Windows, i18n, accessibility, tools other than Claude Code.
 
 **Success criterion:** the author uses the app daily for ≥ 2 consecutive weeks without falling back to loose notes.
 

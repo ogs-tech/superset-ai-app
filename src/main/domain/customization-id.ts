@@ -4,7 +4,6 @@ import { validateCustomizationName } from './customization-name.js';
 
 const ARTIFACT_TYPES: readonly CustomizationType[] = [
   'skill',
-  'reference',
   'agent',
   'global-instruction',
   'command',

@@ -2,13 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { buildSkillHandlers } from '../../../src/main/ipc/skill-handlers.js';
 import { buildAgentHandlers } from '../../../src/main/ipc/agent-handlers.js';
 import { buildCommandHandlers } from '../../../src/main/ipc/command-handlers.js';
-import { buildReferenceHandlers } from '../../../src/main/ipc/reference-handlers.js';
 import { buildGlobalInstructionHandlers } from '../../../src/main/ipc/global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from '../../../src/main/ipc/marketplace-handlers.js';
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
-import type { ReferenceService } from '../../../src/main/application/services/reference-service.js';
 import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
 
@@ -127,17 +125,6 @@ describe('command-handlers', () => {
   it('command.delete rejects missing removeSymlinks', async () => {
     const h = buildCommandHandlers(fakeCommandService());
     await expect(h['command.delete']!({ id: 'feature-dev' })).rejects.toMatchObject({ kind: 'validation' });
-  });
-});
-
-describe('reference-handlers', () => {
-  it('reference.list calls service.list', async () => {
-    const svc = {
-      list: vi.fn().mockResolvedValue([]),
-    } as unknown as ReferenceService;
-    const h = buildReferenceHandlers(svc);
-    await h['reference.list']!({});
-    expect(svc.list).toHaveBeenCalled();
   });
 });
 

@@ -4,7 +4,6 @@ import type { SettingsService } from './settings-service.js';
 import type { CustomizationRepository } from '../ports/customization-repository.js';
 import type { Adapter } from '../ports/adapter.js';
 import type { SymlinkManager } from './symlink-manager.js';
-import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import { DomainError } from '../../domain/errors.js';
 
 export interface SymlinkError {
@@ -25,7 +24,6 @@ export interface AdapterManagerDeps {
   symlinkManager: SymlinkManager;
   adapters: Map<string, Adapter>;
   workspacePath: string;
-  workspaceFs?: WritableFileSystemPort;
 }
 
 export interface SyncOneCommand {
@@ -184,23 +182,6 @@ export class AdapterManager {
       }
     }
 
-    if (adapterId === 'copilot' && this.deps.workspaceFs) {
-      const generatedPath = join(workspacePath, '_generated/copilot-instructions.md');
-      const stat = await this.deps.workspaceFs.stat(generatedPath);
-      if (stat !== null) {
-        try {
-          await this.deps.workspaceFs.chmod(generatedPath, 0o644);
-          await this.deps.workspaceFs.unlink(generatedPath);
-        } catch (err) {
-          errors.push({
-            destination: generatedPath,
-            kind: 'io',
-            message: err instanceof Error ? err.message : 'Unknown error',
-          });
-        }
-      }
-    }
-
     return { removed, skipped, errors };
   }
 
@@ -282,10 +263,10 @@ export class AdapterManager {
       return join(workspacePath, 'skills', name);
     }
     const folder =
-      type === 'reference'
-        ? 'references'
-        : type === 'agent'
-          ? 'agents'
+      type === 'agent'
+        ? 'agents'
+        : type === 'command'
+          ? 'commands'
           : 'global-instructions';
     return join(workspacePath, folder, `${name}.md`);
   }

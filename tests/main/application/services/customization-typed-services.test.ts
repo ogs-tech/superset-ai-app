@@ -3,21 +3,18 @@ import { CustomizationService } from '../../../../src/main/application/services/
 import { SkillService } from '../../../../src/main/application/services/skill-service.js';
 import { AgentService } from '../../../../src/main/application/services/agent-service.js';
 import { CommandService } from '../../../../src/main/application/services/command-service.js';
-import { ReferenceService } from '../../../../src/main/application/services/reference-service.js';
 import { GlobalInstructionService } from '../../../../src/main/application/services/global-instruction-service.js';
 import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { skillId } from '../../../../src/main/domain/skill-id.js';
 import { agentId } from '../../../../src/main/domain/agent-id.js';
 import { commandId } from '../../../../src/main/domain/command-id.js';
-import { referenceId } from '../../../../src/main/domain/reference-id.js';
 import { globalInstructionId } from '../../../../src/main/domain/global-instruction-id.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import type { Customization, CustomizationFrontmatter } from '../../../../src/shared/customization.js';
 import type { SkillFrontmatter } from '../../../../src/main/application/schemas/skill.js';
 import type { AgentFrontmatter } from '../../../../src/main/application/schemas/agent.js';
 import type { CommandFrontmatter } from '../../../../src/main/application/schemas/command.js';
-import type { ReferenceFrontmatter } from '../../../../src/main/application/schemas/reference.js';
 import type { GlobalInstructionFrontmatter } from '../../../../src/main/application/schemas/global-instruction.js';
 
 const FROZEN = new Date('2026-04-26T10:00:00.000Z');
@@ -40,7 +37,6 @@ const setup = () => {
     skills: new SkillService(base),
     agents: new AgentService(base),
     commands: new CommandService(base),
-    references: new ReferenceService(base),
     globalInstructions: new GlobalInstructionService(base),
   };
 };
@@ -153,32 +149,6 @@ describe('CommandService (facade)', () => {
     const got = await commands.get(commandId('feature-dev'));
     expect(got.id).toBe('feature-dev');
     expect(got.body).toBe('workflow body');
-  });
-});
-
-describe('ReferenceService (facade)', () => {
-  it('list filters to references only', async () => {
-    const { references, repo } = setup();
-    await seed(repo, { id: 'reference/style', frontmatter: makeFm('reference', 'style'), body: 'r' });
-    const list = await references.list();
-    expect(list).toHaveLength(1);
-    expect(list[0]!.id).toBe('style');
-  });
-
-  it('save and delete round-trip', async () => {
-    const { references } = setup();
-    await references.save({
-      reference: {
-        id: referenceId('style'),
-        frontmatter: makeFm('reference', 'style') as unknown as ReferenceFrontmatter,
-        source: { kind: 'workspace' },
-        body: 'r',
-      },
-      isCreate: true,
-    });
-    await references.delete({ id: referenceId('style'), removeSymlinks: false });
-    const list = await references.list();
-    expect(list).toEqual([]);
   });
 });
 

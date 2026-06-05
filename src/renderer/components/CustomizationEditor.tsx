@@ -41,7 +41,6 @@ interface TypedSaveResult {
 const SAVE_BY_TYPE: Record<CustomizationType, { method: string; payloadKey: string; resultKey: string }> = {
   skill: { method: 'skill.save', payloadKey: 'skill', resultKey: 'skill' },
   agent: { method: 'agent.save', payloadKey: 'agent', resultKey: 'agent' },
-  reference: { method: 'reference.save', payloadKey: 'reference', resultKey: 'reference' },
   'global-instruction': {
     method: 'global-instruction.save',
     payloadKey: 'globalInstruction',

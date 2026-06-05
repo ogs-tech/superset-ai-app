@@ -1,14 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { Skill, SkillSummary } from '../../../../src/main/application/schemas/skill.js';
 import type { Agent, AgentSummary } from '../../../../src/main/application/schemas/agent.js';
-import type { Reference, ReferenceSummary } from '../../../../src/main/application/schemas/reference.js';
 import type {
   GlobalInstruction,
   GlobalInstructionSummary,
 } from '../../../../src/main/application/schemas/global-instruction.js';
 import { skillId } from '../../../../src/main/domain/skill-id.js';
 import { agentId } from '../../../../src/main/domain/agent-id.js';
-import { referenceId } from '../../../../src/main/domain/reference-id.js';
 import { globalInstructionId } from '../../../../src/main/domain/global-instruction-id.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
 import {
@@ -75,24 +73,6 @@ describe('Customization summary types', () => {
     const full: Agent = { ...summary, body: 'instructions' };
     expect(full.id).toBe('reviewer');
     expect(full.body).toBe('instructions');
-  });
-
-  it('ReferenceSummary and Reference build', () => {
-    const summary: ReferenceSummary = {
-      id: referenceId('style-guide'),
-      source: WORKSPACE_SOURCE,
-      frontmatter: {
-        name: 'style-guide',
-        type: 'reference',
-        description: 'styling docs',
-        scopes: ['project'],
-        version: '1.0.0',
-        createdAt: isoNow(),
-        updatedAt: isoNow(),
-      },
-    };
-    const full: Reference = { ...summary, body: 'reference body' };
-    expect(full.id).toBe('style-guide');
   });
 
   it('GlobalInstructionSummary and GlobalInstruction build with default id', () => {

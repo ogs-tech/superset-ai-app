@@ -9,7 +9,7 @@ import { SettingsService } from '../../../../../src/main/application/services/se
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const baseSettings: Settings = {
-  adapters: { claude: { enabled: true }, copilot: { enabled: true, exclusiveSkillsWithClaude: false } },
+  adapters: { claude: { enabled: true } },
   linkedRepos: [],
   ui: { theme: 'system' },
   language: 'off',

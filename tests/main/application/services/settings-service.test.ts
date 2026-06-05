@@ -7,7 +7,6 @@ import { getDefaults, type Settings } from '../../../../src/shared/settings.js';
 const baseSettings = (): Settings => ({
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [{ id: 'r1', name: 'repo', path: '/repos/r1' }],
   ui: { theme: 'system' },
@@ -63,7 +62,6 @@ describe('SettingsService.merge', () => {
     });
 
     expect(result.adapters.claude).toEqual({ enabled: false });
-    expect(result.adapters.copilot).toEqual({ enabled: false, exclusiveSkillsWithClaude: false });
     expect(result.ui.theme).toBe('dark');
     expect(result.linkedRepos).toEqual(persisted.linkedRepos);
   });

@@ -21,7 +21,7 @@ const legacyPersisted = (): Settings =>
   }) as unknown as Settings;
 
 describe('SettingsService — legacy defaultScope strip on load', () => {
-  it('drops defaultScope from each adapter when loading legacy settings', async () => {
+  it('drops defaultScope from claude and removes the legacy copilot key when loading legacy settings', async () => {
     const service = new SettingsService(
       stubRepo({ load: () => Promise.resolve(legacyPersisted()) }),
     );
@@ -30,12 +30,11 @@ describe('SettingsService — legacy defaultScope strip on load', () => {
 
     expect(result).not.toBeNull();
     expect(result!.adapters.claude).toEqual({ enabled: true });
-    expect(result!.adapters.copilot).toEqual({ enabled: false, exclusiveSkillsWithClaude: false });
     expect(
       (result!.adapters.claude as unknown as { defaultScope?: string }).defaultScope,
     ).toBeUndefined();
     expect(
-      (result!.adapters.copilot as unknown as { defaultScope?: string }).defaultScope,
+      (result!.adapters as unknown as { copilot?: unknown }).copilot,
     ).toBeUndefined();
   });
 
@@ -49,7 +48,9 @@ describe('SettingsService — legacy defaultScope strip on load', () => {
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(next.adapters.claude).toEqual({ enabled: true });
-    expect(next.adapters.copilot).toEqual({ enabled: false, exclusiveSkillsWithClaude: false });
+    expect(
+      (next.adapters as unknown as { copilot?: unknown }).copilot,
+    ).toBeUndefined();
     expect((save.mock.calls[0]![0] as Settings).adapters.claude).toEqual({ enabled: true });
   });
 });

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FsSkillRepository } from '../../../../src/main/infrastructure/customization/fs-skill-repository.js';
 import { FsAgentRepository } from '../../../../src/main/infrastructure/customization/fs-agent-repository.js';
-import { FsReferenceRepository } from '../../../../src/main/infrastructure/customization/fs-reference-repository.js';
 import { FsGlobalInstructionRepository } from '../../../../src/main/infrastructure/customization/fs-global-instruction-repository.js';
 import type { CustomizationRepository } from '../../../../src/main/application/ports/customization-repository.js';
 import type {
@@ -10,10 +9,8 @@ import type {
 } from '../../../../src/shared/customization.js';
 import type { SkillFrontmatter } from '../../../../src/main/application/schemas/skill.js';
 import type { AgentFrontmatter } from '../../../../src/main/application/schemas/agent.js';
-import type { ReferenceFrontmatter } from '../../../../src/main/application/schemas/reference.js';
 import { skillId } from '../../../../src/main/domain/skill-id.js';
 import { agentId } from '../../../../src/main/domain/agent-id.js';
-import { referenceId } from '../../../../src/main/domain/reference-id.js';
 import { globalInstructionId } from '../../../../src/main/domain/global-instruction-id.js';
 import { DomainError } from '../../../../src/main/domain/errors.js';
 
@@ -22,7 +19,7 @@ const isoNow = () => new Date().toISOString();
 class FakeCustomizationRepository implements CustomizationRepository {
   private store = new Map<string, Customization>();
 
-  async list(query: { type?: 'skill' | 'reference' | 'agent' | 'global-instruction' } = {}) {
+  async list(query: { type?: 'skill' | 'agent' | 'global-instruction' | 'command' } = {}) {
     const items = [...this.store.values()];
     return query.type ? items.filter((c) => c.frontmatter.type === query.type) : items;
   }
@@ -128,33 +125,6 @@ describe('FsAgentRepository', () => {
       },
     });
     expect(await repo.exists({ id: agentId('reviewer') })).toBe(true);
-  });
-});
-
-describe('FsReferenceRepository', () => {
-  it('lists only references', async () => {
-    const base = new FakeCustomizationRepository();
-    const repo = new FsReferenceRepository(base);
-    await base.save({
-      customization: { id: 'reference/style', frontmatter: fm('reference', 'style'), body: 'r' },
-    });
-    const refs = await repo.list();
-    expect(refs).toHaveLength(1);
-    expect(refs[0]!.id).toBe('style');
-  });
-
-  it('save round-trip', async () => {
-    const repo = new FsReferenceRepository(new FakeCustomizationRepository());
-    await repo.save({
-      reference: {
-        id: referenceId('style'),
-        frontmatter: fm('reference', 'style') as unknown as ReferenceFrontmatter,
-        source: { kind: 'workspace' },
-        body: 'r',
-      },
-    });
-    const got = await repo.get({ id: referenceId('style') });
-    expect(got.id).toBe('style');
   });
 });
 

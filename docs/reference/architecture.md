@@ -40,7 +40,6 @@ Located at `src/main/application/services/`:
 Per-entity facades (1ª class):
 - `skill-service` — CRUD over skills + provenance merge with installed plugins.
 - `agent-service` — CRUD over agents + provenance merge.
-- `reference-service` — CRUD over references (app-only; not synced to Claude).
 - `global-instruction-service` — single-slot (`default`) global instruction.
 - `marketplace-service` — list/add/remove/refresh marketplaces (`extraKnownMarketplaces`).
 - `plugin-provenance` — scans `_meta.json` and plugin dirs to map skills/agents to their providing plugin.
@@ -50,9 +49,8 @@ Plugin lifecycle:
 - `plugin-installer`, `plugin-author-service`, `plugin-publisher`, `plugin-manifest-parser`, `marketplace-parser`.
 
 Cross-cutting:
-- `adapter-manager` — orchestrates per-tool adapters (Claude, Copilot).
+- `adapter-manager` — orchestrates the Claude adapter.
 - `symlink-manager` — creates and reconciles symlinks.
-- `copilot-instructions-gen` — generates `.github/copilot-instructions.md`.
 - `repo-service` — operations on linked repositories.
 - `search-service` — text search across customizations.
 - `settings-service` — load/merge/persist settings.
@@ -64,12 +62,11 @@ Legacy (deprecated, internal):
 
 ### Tool adapters
 
-Two adapter implementations live under `src/main/infrastructure/adapters/`:
+The adapter implementation lives under `src/main/infrastructure/adapters/`:
 
 - `claude-adapter.ts` — symlinks customizations into `~/.claude/` (personal) and `<repo>/.claude/` (project).
-- `copilot-adapter.ts` — symlinks into `~/.copilot/` (personal) and `<repo>/.github/` (project).
 
-Both implement the `Adapter` port at `src/main/application/ports/adapter.ts`.
+It implements the `Adapter` port at `src/main/application/ports/adapter.ts`.
 
 ## Renderer structure
 

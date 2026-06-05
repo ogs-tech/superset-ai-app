@@ -2,15 +2,15 @@
 
 [![GitHub Repo](https://img.shields.io/badge/github-ogs--tech%2Fsuperset--ai--app-blue)](https://github.com/ogs-tech/superset-ai-app)
 
-> **Validation spike** — local desktop app to centralize AI customizations (skills, references, agent profiles, global instructions) in Markdown + YAML and sync them to **Claude Code** and **GitHub Copilot** via symlinks.
+> **Validation spike** — local desktop app to centralize AI customizations (skills, agent profiles, global instructions, commands) in Markdown + YAML and sync them to **Claude Code** via symlinks.
 >
 > **Status:** Spike — single-developer dogfooding. See [docs/explanation/prd.md](docs/explanation/prd.md) for goals and stop rules.
 
 ## What it does
 
-Single source of truth for AI customizations in your workspace; live copies in `~/.claude/`, `~/.copilot/`, `<repo>/.claude/`, and `<repo>/.github/`.
+Single source of truth for AI customizations in your workspace; live copies in `~/.claude/` and `<repo>/.claude/`.
 
-Customization types: `skill` · `reference` · `agent` · `global-instruction`. Scopes: `personal` · `project`.
+Customization types: `skill` · `agent` · `global-instruction` · `command`. Scopes: `personal` · `project`.
 
 ## Stack
 
@@ -62,9 +62,9 @@ Direct links:
 
 ## Scope (4-week spike)
 
-- **In:** CRUD of customizations, templates, symlink sync to Claude/Copilot (personal + project), settings UI.
+- **In:** CRUD of customizations, templates, symlink sync to Claude Code (personal + project), settings UI.
 - **Maybe in:** Schema validation, text search, token usage stats.
-- **Out:** Multi-user, auto-commit, Linux/Windows, i18n, accessibility, tools other than Claude/Copilot.
+- **Out:** Multi-user, auto-commit, Linux/Windows, i18n, accessibility, tools other than Claude Code.
 
 Success = author uses the app daily for ≥ 2 consecutive weeks without falling back to loose notes.
 

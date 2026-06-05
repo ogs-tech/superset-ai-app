@@ -22,21 +22,18 @@ const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}
 describe('AdapterManager.removeOne', () => {
   it('removes symlinks for a single customization across all registered adapters', async () => {
     const claude = new FakeAdapter('claude', '/personal/claude/skills/alpha');
-    const copilot = new FakeAdapter('copilot', '/personal/copilot/skills/alpha');
-    const { manager, registerCustomization, fs } = await setupAdapterManager([claude, copilot]);
+    const { manager, registerCustomization, fs } = await setupAdapterManager([claude]);
     const skill = baseCustomization({ name: 'alpha', type: 'skill' });
     await registerCustomization(skill);
     fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
     await fs.symlink({ target: '/workspace/skills/alpha', path: '/personal/claude/skills/alpha' });
-    await fs.symlink({ target: '/workspace/skills/alpha', path: '/personal/copilot/skills/alpha' });
 
     const results = await manager.removeOne({ customization: skill });
 
-    expect(results).toHaveLength(2);
-    expect(results.map((r) => r.adapter).sort()).toEqual(['claude', 'copilot']);
+    expect(results).toHaveLength(1);
+    expect(results.map((r) => r.adapter).sort()).toEqual(['claude']);
     expect(results.every((r) => r.status === 'ok')).toBe(true);
     expect(await fs.pathExists('/personal/claude/skills/alpha')).toBe(false);
-    expect(await fs.pathExists('/personal/copilot/skills/alpha')).toBe(false);
   });
 
   it('removes symlinks even when adapter is disabled in settings', async () => {
@@ -45,7 +42,6 @@ describe('AdapterManager.removeOne', () => {
       ...defaultSettings,
       adapters: {
         claude: { enabled: false },
-        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
     };
     const { manager, registerCustomization, fs } = await setupAdapterManager([adapter], disabled);

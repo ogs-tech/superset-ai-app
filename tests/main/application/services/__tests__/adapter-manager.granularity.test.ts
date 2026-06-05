@@ -3,12 +3,10 @@ import { FakeAdapter } from '../../../../../src/main/application/services/__fixt
 import { setupAdapterManager } from './adapter-manager.helpers.js';
 
 describe('AdapterManager sync granularity by customization type', () => {
-  it('creates a directory symlink for skill customizations and file symlinks for reference customizations', async () => {
-    const adapters = [
-      new FakeAdapter('claude', '/workspace/personal/claude-skill'),
-      new FakeAdapter('copilot', '/workspace/personal/claude-ref'),
-    ];
-    const { manager, fs, registerCustomization } = await setupAdapterManager(adapters);
+  it('creates a directory symlink for skill customizations and file symlinks for agent customizations', async () => {
+    const skillAdapter = new FakeAdapter('claude', '/workspace/personal/claude-skill');
+    const { manager: skillManager, fs: skillFs, registerCustomization: registerSkill } =
+      await setupAdapterManager([skillAdapter]);
 
     const skillCustomization = {
       id: 'skill/alpha',
@@ -23,15 +21,26 @@ describe('AdapterManager sync granularity by customization type', () => {
       },
       body: '# alpha',
     };
-    await registerCustomization(skillCustomization);
-    fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
+    await registerSkill(skillCustomization);
+    skillFs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
 
-    const referenceCustomization = {
-      id: 'reference/beta',
+    const skillResult = await skillManager.syncOne({ customization: skillCustomization });
+    expect(skillResult).toHaveLength(1);
+    expect(skillResult.every((entry) => entry.status === 'ok')).toBe(true);
+    const skillTarget = await skillFs.readlink('/workspace/personal/claude-skill');
+    expect(skillTarget).toBe('/workspace/skills/alpha');
+    expect((await skillFs.lstat(skillTarget)).kind).toBe('directory');
+
+    const agentAdapter = new FakeAdapter('claude', '/workspace/personal/claude-agent');
+    const { manager: agentManager, fs: agentFs, registerCustomization: registerAgent } =
+      await setupAdapterManager([agentAdapter]);
+
+    const agentCustomization = {
+      id: 'agent/beta',
       frontmatter: {
         name: 'beta',
-        type: 'reference' as const,
-        description: 'reference customization',
+        type: 'agent' as const,
+        description: 'agent customization',
         scopes: ['personal' as const],
         version: '1.0.0',
         createdAt: '',
@@ -39,21 +48,14 @@ describe('AdapterManager sync granularity by customization type', () => {
       },
       body: '# beta',
     };
-    await registerCustomization(referenceCustomization);
-    fs.createFile('/workspace/references/beta.md', '# beta');
+    await registerAgent(agentCustomization);
+    agentFs.createFile('/workspace/agents/beta.md', '# beta');
 
-    const skillResult = await manager.syncOne({ customization: skillCustomization });
-    expect(skillResult).toHaveLength(2);
-    expect(skillResult.every((entry) => entry.status === 'ok')).toBe(true);
-    const skillTarget = await fs.readlink('/workspace/personal/claude-skill');
-    expect(skillTarget).toBe('/workspace/skills/alpha');
-    expect((await fs.lstat(skillTarget)).kind).toBe('directory');
-
-    const referenceResult = await manager.syncOne({ customization: referenceCustomization });
-    expect(referenceResult).toHaveLength(2);
-    expect(referenceResult.every((entry) => entry.status === 'ok')).toBe(true);
-    const referenceTarget = await fs.readlink('/workspace/personal/claude-ref');
-    expect(referenceTarget).toBe('/workspace/references/beta.md');
-    expect((await fs.lstat(referenceTarget)).kind).toBe('file');
+    const agentResult = await agentManager.syncOne({ customization: agentCustomization });
+    expect(agentResult).toHaveLength(1);
+    expect(agentResult.every((entry) => entry.status === 'ok')).toBe(true);
+    const agentTarget = await agentFs.readlink('/workspace/personal/claude-agent');
+    expect(agentTarget).toBe('/workspace/agents/beta.md');
+    expect((await agentFs.lstat(agentTarget)).kind).toBe('file');
   });
 });

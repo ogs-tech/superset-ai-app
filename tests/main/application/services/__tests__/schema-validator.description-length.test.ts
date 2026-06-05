@@ -12,7 +12,7 @@ const validBase = (type: CustomizationType): CustomizationFrontmatter => ({
   updatedAt: '2026-05-03T00:00:00.000Z',
 });
 
-const types: CustomizationType[] = ['skill', 'reference', 'agent', 'global-instruction'];
+const types: CustomizationType[] = ['skill', 'agent', 'global-instruction', 'command'];
 
 describe('SchemaValidator — description length (AC#7)', () => {
   it.each(types)('%s: description > 1024 chars → kind "max-length"', (type) => {

@@ -17,7 +17,6 @@ import { normalizeCustomizationFrontmatter } from './normalize-frontmatter.js';
 
 const ARTIFACT_TYPES: CustomizationType[] = [
   'skill',
-  'reference',
   'agent',
   'global-instruction',
   'command',
@@ -25,7 +24,6 @@ const ARTIFACT_TYPES: CustomizationType[] = [
 
 const FOLDER_BY_TYPE: Record<CustomizationType, string> = {
   skill: 'skills',
-  reference: 'references',
   agent: 'agents',
   'global-instruction': 'global-instructions',
   command: 'commands',

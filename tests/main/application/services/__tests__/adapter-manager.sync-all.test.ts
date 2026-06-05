@@ -20,30 +20,24 @@ const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}
 
 describe('AdapterManager.syncAll', () => {
   it('aggregates results across all customizations and enabled adapters', async () => {
-    const adapters = [
-      new FakeAdapter('claude', '/personal/claude/{slug}'),
-      new FakeAdapter('copilot', '/personal/copilot/{slug}'),
-    ];
+    const adapters = [new FakeAdapter('claude', '/personal/claude/{slug}')];
     const { manager, registerCustomization, fs } = await setupAdapterManager(adapters);
     const skill = baseCustomization({ name: 'alpha', type: 'skill' });
-    const reference = baseCustomization({ name: 'beta', type: 'reference' });
+    const agent = baseCustomization({ name: 'beta', type: 'agent' });
     await registerCustomization(skill);
-    await registerCustomization(reference);
+    await registerCustomization(agent);
     fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
-    fs.createFile('/workspace/references/beta.md', '# beta');
+    fs.createFile('/workspace/agents/beta.md', '# beta');
 
     const results = await manager.syncAll({});
 
-    expect(results).toHaveLength(4);
+    expect(results).toHaveLength(2);
     const adapterIds = results.map((r) => r.adapter).sort();
-    expect(adapterIds).toEqual(['claude', 'claude', 'copilot', 'copilot']);
+    expect(adapterIds).toEqual(['claude', 'claude']);
   });
 
   it('filters by adapterId when provided', async () => {
-    const adapters = [
-      new FakeAdapter('claude', '/personal/claude'),
-      new FakeAdapter('copilot', '/personal/copilot'),
-    ];
+    const adapters = [new FakeAdapter('claude', '/personal/claude')];
     const { manager, registerCustomization, fs } = await setupAdapterManager(adapters);
     const skill = baseCustomization({ name: 'alpha', type: 'skill' });
     await registerCustomization(skill);
@@ -59,8 +53,8 @@ describe('AdapterManager.syncAll', () => {
     const adapter = new FakeAdapter('claude', '/personal/claude');
     const settings = { ...defaultSettings, linkedRepos: [] };
     const { manager, registerCustomization } = await setupAdapterManager([adapter], settings);
-    const projectRef = baseCustomization({ name: 'gamma', type: 'reference', scopes: ['project'] });
-    await registerCustomization(projectRef);
+    const projectAgent = baseCustomization({ name: 'gamma', type: 'agent', scopes: ['project'] });
+    await registerCustomization(projectAgent);
 
     const results = await manager.syncAll({});
 

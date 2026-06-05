@@ -2,28 +2,19 @@ import { getDefaults, type Settings } from '../../../shared/settings.js';
 import type { SettingsRepository } from '../ports/settings-repository.js';
 
 const stripLegacyFields = (settings: Settings): Settings => {
-  const adapters = settings.adapters as unknown as Record<
-    'claude' | 'copilot',
-    Record<string, unknown>
-  >;
+  // Drops fields from older on-disk shapes: a removed `copilot` adapter key and
+  // the legacy per-adapter `defaultScope`. Rebuilding `adapters` from scratch
+  // (rather than spreading) is what prunes the stale `copilot` entry on load.
+  const adapters = settings.adapters as unknown as { claude: Record<string, unknown> };
   const cleanClaude = (entry: Record<string, unknown>): { enabled: boolean } => {
     const rest = { ...entry };
     delete rest.defaultScope;
     return rest as { enabled: boolean };
   };
-  const cleanCopilot = (entry: Record<string, unknown>): { enabled: boolean; exclusiveSkillsWithClaude: boolean } => {
-    const rest = { ...entry };
-    delete rest.defaultScope;
-    if (typeof rest['exclusiveSkillsWithClaude'] !== 'boolean') {
-      rest['exclusiveSkillsWithClaude'] = false;
-    }
-    return rest as { enabled: boolean; exclusiveSkillsWithClaude: boolean };
-  };
   return {
     ...settings,
     adapters: {
       claude: cleanClaude(adapters.claude),
-      copilot: cleanCopilot(adapters.copilot),
     },
   };
 };

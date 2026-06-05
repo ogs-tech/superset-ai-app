@@ -17,8 +17,6 @@ import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
-import { CopilotAdapter } from './infrastructure/adapters/copilot-adapter.js';
-import { CopilotInstructionsGen } from './application/services/copilot-instructions-gen.js';
 import { SchemaValidator } from './application/services/schema-validator.js';
 import type { Adapter } from './application/ports/adapter.js';
 import type { CredentialStorePort } from './application/ports/credential-store-port.js';
@@ -38,7 +36,6 @@ import { SkillService } from './application/services/skill-service.js';
 import { AgentService } from './application/services/agent-service.js';
 import { CommandService } from './application/services/command-service.js';
 import { HookService } from './application/services/hook-service.js';
-import { ReferenceService } from './application/services/reference-service.js';
 import { GlobalInstructionService } from './application/services/global-instruction-service.js';
 import { MarketplaceService } from './application/services/marketplace-service.js';
 import { MarketplaceSeeder } from './application/services/marketplace-seeder.js';
@@ -81,16 +78,6 @@ async function wireIpc(): Promise<void> {
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
-  const copilotInstructionsGen = new CopilotInstructionsGen({
-    customizationRepository: customizationRepo,
-    workspaceFs: nodeFsAdapter,
-    workspacePath,
-  });
-  const copilotAdapter = new CopilotAdapter({
-    homedir: homedir(),
-    workspacePath,
-    copilotInstructionsGen,
-  });
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
@@ -98,7 +85,6 @@ async function wireIpc(): Promise<void> {
     workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
-      [copilotAdapter.adapterId, copilotAdapter],
     ]),
   });
   const schemaValidator = new SchemaValidator();
@@ -188,7 +174,6 @@ async function wireIpc(): Promise<void> {
     cache: pluginCache,
     fs: nodeFsAdapter,
   });
-  const referenceService = new ReferenceService(customizationService);
   const globalInstructionService = new GlobalInstructionService(customizationService);
   const marketplacesCacheRoot = (scope: 'personal' | 'project'): string =>
     scope === 'personal'
@@ -214,7 +199,6 @@ async function wireIpc(): Promise<void> {
     agentService,
     commandService,
     hookService,
-    referenceService,
     globalInstructionService,
     marketplaceService,
     appQuit: () => app.quit(),

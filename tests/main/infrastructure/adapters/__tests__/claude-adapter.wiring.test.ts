@@ -30,7 +30,6 @@ const skillPersonal: Customization = {
 const buildSettings = (claudeEnabled: boolean): Settings => ({
   adapters: {
     claude: { enabled: claudeEnabled },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

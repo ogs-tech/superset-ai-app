@@ -14,7 +14,7 @@ export const DEFAULT_GI_DESCRIPTION =
 
 export const DEFAULT_GI_BODY = `# Global instructions
 
-Personal preferences and conventions that apply across every workspace and every enabled assistant (Claude Code, Copilot, …).
+Personal preferences and conventions that apply across every workspace and every enabled assistant (Claude Code, …).
 
 *When rules in this file conflict, Action safety wins over Engineering defaults wins over How-to-work-with-me.* Safety > correctness > style.
 

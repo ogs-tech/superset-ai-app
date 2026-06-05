@@ -12,17 +12,14 @@ const settings = {
 };
 
 describe('AdapterManager.syncOne counts destinations by scope', () => {
-  it('returns 6 results for project scope with 2 adapters and 3 repos', async () => {
-    const adapters = [
-      new FakeAdapter('claude', '/workspace/personal/claude'),
-      new FakeAdapter('copilot', '/workspace/personal/copilot'),
-    ];
+  it('returns 3 results for project scope with 1 adapter and 3 repos', async () => {
+    const adapters = [new FakeAdapter('claude', '/workspace/personal/claude')];
     const { manager, fs, registerCustomization } = await setupAdapterManager(adapters, settings);
     const customization = {
-      id: 'reference/foo',
+      id: 'agent/foo',
       frontmatter: {
         name: 'foo',
-        type: 'reference' as const,
+        type: 'agent' as const,
         description: 'desc',
         scopes: ['project' as const],
         version: '1.0.0',
@@ -32,20 +29,16 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
       body: '# foo',
     };
     await registerCustomization(customization);
-    fs.createFile('/workspace/references/foo.md', '# foo');
+    fs.createFile('/workspace/agents/foo.md', '# foo');
 
     const result = await manager.syncOne({ customization });
 
-    expect(result).toHaveLength(6);
+    expect(result).toHaveLength(3);
     expect(result.filter((item) => item.adapter === 'claude')).toHaveLength(3);
-    expect(result.filter((item) => item.adapter === 'copilot')).toHaveLength(3);
   });
 
-  it('returns 2 results for personal scope with 2 adapters', async () => {
-    const adapters = [
-      new FakeAdapter('claude', '/workspace/personal/claude'),
-      new FakeAdapter('copilot', '/workspace/personal/copilot'),
-    ];
+  it('returns 1 result for personal scope with 1 adapter', async () => {
+    const adapters = [new FakeAdapter('claude', '/workspace/personal/claude')];
     const { manager, fs, registerCustomization } = await setupAdapterManager(adapters, defaultSettings);
     const customization = {
       id: 'skill/foo',
@@ -65,6 +58,6 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
 
     const result = await manager.syncOne({ customization });
 
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(1);
   });
 });

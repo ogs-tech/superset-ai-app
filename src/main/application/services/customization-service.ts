@@ -35,7 +35,7 @@ export interface DeleteCustomizationResult {
 /**
  * Shared engine for customization persistence: validation, ID formatting,
  * timestamp stamping, rename handling, and adapter sync. Backs the typed
- * facades (SkillService, AgentService, ReferenceService, GlobalInstructionService).
+ * facades (SkillService, AgentService, GlobalInstructionService).
  * Renderers go through the typed IPCs, never this service directly.
  */
 export class CustomizationService {

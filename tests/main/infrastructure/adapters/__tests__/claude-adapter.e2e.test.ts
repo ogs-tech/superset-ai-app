@@ -45,7 +45,6 @@ const agentProject: Customization = {
 const buildSettings = (linkedRepos: LinkedRepo[] = []): Settings => ({
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos,
   ui: { theme: 'system' },
