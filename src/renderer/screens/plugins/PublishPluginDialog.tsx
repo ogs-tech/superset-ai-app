@@ -57,7 +57,7 @@ export function PublishPluginDialog({
       try {
         const result = await callIpc<{ hasToken: boolean }>('credentials.hasGithubToken', {});
         setGithubTokenMissing(!result.hasToken);
-      } catch (err) {
+      } catch {
         // If check fails, assume token is missing for safety
         setGithubTokenMissing(true);
       }

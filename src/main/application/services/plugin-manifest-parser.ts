@@ -13,7 +13,7 @@ export class PluginManifestParser {
     let content: string;
     try {
       content = await this.fs.readFile(manifestPath);
-    } catch (err) {
+    } catch {
       throw new ManifestInvalidError(
         'Plugin manifest not found — the repository must contain .claude-plugin/plugin.json at its root',
         { path: manifestPath },

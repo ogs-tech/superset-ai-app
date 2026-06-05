@@ -261,7 +261,6 @@ describe('PluginPublisher', () => {
       cache.seedMeta(SCOPE, ownedMeta);
 
       // Make git.push throw after createRepo succeeds
-      const originalPush = git.push.bind(git);
       vi.spyOn(git, 'push').mockRejectedValue(new Error('push failed: connection refused'));
 
       await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(

@@ -226,19 +226,8 @@ export class PluginPublisher {
     githubApi: GitHubApiPort;
     clock: ClockPort;
   }): Promise<PluginPublishInfo> {
-    const {
-      pluginDir,
-      entry,
-      meta,
-      scope,
-      version,
-      commitMessage,
-      pat,
-      cache,
-      git,
-      githubApi,
-      clock,
-    } = ctx;
+    const { pluginDir, entry, meta, scope, version, commitMessage, cache, git, githubApi, clock } =
+      ctx;
 
     const existingPublish = entry.publish!;
 

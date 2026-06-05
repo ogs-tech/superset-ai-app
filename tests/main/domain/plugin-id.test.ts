@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import type { PluginId } from '../../../src/main/domain/plugin-id.js';
 import {
   pluginId,
   tryPluginId,

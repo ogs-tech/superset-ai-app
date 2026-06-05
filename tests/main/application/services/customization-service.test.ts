@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { CustomizationService } from '../../../../src/main/application/services/customization-service.js';
 import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';

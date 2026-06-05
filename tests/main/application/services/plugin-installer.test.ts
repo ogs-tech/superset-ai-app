@@ -3,7 +3,6 @@ import { PluginInstaller } from '../../../../src/main/application/services/plugi
 import { FakePluginCachePort } from '../../../../src/main/application/services/__fixtures__/fake-plugin-cache-port.js';
 import { FakeClaudeSettingsPort } from '../../../../src/main/application/services/__fixtures__/fake-claude-settings-port.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
-import type { PluginId } from '../../../../src/main/domain/plugin-id.js';
 
 const ID = pluginId('my-plugin');
 const SCOPE = 'personal' as const;
