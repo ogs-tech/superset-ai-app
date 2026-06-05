@@ -19,7 +19,10 @@ import { pluginId } from '../../../../src/main/domain/plugin-id.js';
 import { semVer } from '../../../../src/main/domain/semver.js';
 import type { PluginId } from '../../../../src/main/domain/plugin-id.js';
 import type { PluginSummary } from '../../../../src/main/application/services/plugin-installer.js';
-import type { MetaFile, MetaEntry } from '../../../../src/main/application/schemas/meta-file.schema.js';
+import type {
+  MetaFile,
+  MetaEntry,
+} from '../../../../src/main/application/schemas/meta-file.schema.js';
 import type { PluginManifest } from '../../../../src/main/domain/plugin-manifest.js';
 import type { PluginPublishInfo } from '../../../../src/main/domain/plugin-publish-info.js';
 
@@ -600,7 +603,13 @@ describe('PluginService', () => {
             description: 'A plugin',
             author: { name: 'Author' },
             category: 'tools',
-            source: { source: 'git-subdir', url: 'https://github.com/owner/repo.git', path: 'plugins/my-plugin', ref: 'v1.0.0', sha: 'abc123' },
+            source: {
+              source: 'git-subdir',
+              url: 'https://github.com/owner/repo.git',
+              path: 'plugins/my-plugin',
+              ref: 'v1.0.0',
+              sha: 'abc123',
+            },
           },
         ],
       });
@@ -657,7 +666,12 @@ describe('PluginService', () => {
           description: 'desc',
           author: { name: 'Author' },
           category: 'tools',
-          source: { source: 'git-subdir', url: GIT_URL, path: 'plugins/my-imported-plugin', ref: 'v1.0.0' },
+          source: {
+            source: 'git-subdir',
+            url: GIT_URL,
+            path: 'plugins/my-imported-plugin',
+            ref: 'v1.0.0',
+          },
         },
         SCOPE,
       );

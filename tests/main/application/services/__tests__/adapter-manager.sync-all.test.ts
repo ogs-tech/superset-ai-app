@@ -3,7 +3,9 @@ import { FakeAdapter } from '../../../../../src/main/application/services/__fixt
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
 import type { Customization } from '../../../../../src/shared/customization.js';
 
-const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}): Customization => ({
+const baseCustomization = (
+  overrides: Partial<Customization['frontmatter']> = {},
+): Customization => ({
   id: `${overrides.type ?? 'skill'}/${overrides.name ?? 'foo'}`,
   frontmatter: {
     name: 'foo',
@@ -83,7 +85,11 @@ describe('AdapterManager error mapping', () => {
     const { manager, registerCustomization, symlinkManager } = await setupAdapterManager([adapter]);
     const skill = baseCustomization({ name: 'omega', type: 'skill' });
     await registerCustomization(skill);
-    (symlinkManager as unknown as { create: (args: { source: string; destination: string }) => Promise<never> }).create = async () => {
+    (
+      symlinkManager as unknown as {
+        create: (args: { source: string; destination: string }) => Promise<never>;
+      }
+    ).create = async () => {
       throw new Error('disk on fire');
     };
 

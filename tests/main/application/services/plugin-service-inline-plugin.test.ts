@@ -60,7 +60,11 @@ describe('PluginService inline-plugin synthesis', () => {
     name: 'pyright-lsp',
     description: 'Python language server (Pyright)',
     // git-subdir source; the fake clone ignores it and lays down a bare subdir.
-    source: { source: 'git-subdir', url: 'https://example.com/official.git', path: 'plugins/pyright-lsp' },
+    source: {
+      source: 'git-subdir',
+      url: 'https://example.com/official.git',
+      path: 'plugins/pyright-lsp',
+    },
     // Inline fields carried via the manifest's .passthrough() (not on the type).
     ...({
       version: '1.0.0',

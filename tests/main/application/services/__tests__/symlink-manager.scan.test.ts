@@ -14,9 +14,15 @@ describe('SymlinkManager.scanByTarget', () => {
     await fs.symlink({ target: '/workspace/skills/a/SKILL.md', path: '/workspace/scan/a-link' });
     await fs.symlink({ target: '/other/outside.md', path: '/workspace/scan/outside-link' });
     await fs.mkdir('/workspace/scan/sub', { recursive: true });
-    await fs.symlink({ target: '/workspace/references/foo.md', path: '/workspace/scan/sub/foo-link' });
+    await fs.symlink({
+      target: '/workspace/references/foo.md',
+      path: '/workspace/scan/sub/foo-link',
+    });
 
-    const result = await manager.scanByTarget({ rootPath: '/workspace/scan', workspacePath: '/workspace' });
+    const result = await manager.scanByTarget({
+      rootPath: '/workspace/scan',
+      workspacePath: '/workspace',
+    });
 
     expect(result.map((item) => item.path).sort()).toEqual([
       '/workspace/scan/a-link',

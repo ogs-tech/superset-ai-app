@@ -136,7 +136,9 @@ export class PluginInstaller {
     });
 
     // C': remove from settings + cleanup marketplace if empty
-    await settings.mutate(scope, (s) => cleanupMarketplaceIfEmpty(removePlugin(s, id, marketplaceId)));
+    await settings.mutate(scope, (s) =>
+      cleanupMarketplaceIfEmpty(removePlugin(s, id, marketplaceId)),
+    );
 
     // B': unlink symlink
     await settings.unlink(scope, id);

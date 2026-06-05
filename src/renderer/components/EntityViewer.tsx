@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Container, Paper, Stack, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReactMarkdown from 'react-markdown';
 import { ReadOnlyNotice } from './ReadOnlyNotice.js';
@@ -25,16 +18,8 @@ export function EntityViewer({ entity, title, onBack }: EntityViewerProps): Reac
   const pluginId = isPlugin && entity.source.kind === 'plugin' ? entity.source.pluginId : null;
 
   return (
-    <Container
-      component="main"
-      data-testid="entity-viewer"
-      maxWidth="md"
-      sx={{ py: 4 }}
-    >
-      <Stack
-        direction="row"
-        sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}
-      >
+    <Container component="main" data-testid="entity-viewer" maxWidth="md" sx={{ py: 4 }}>
+      <Stack direction="row" sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" component="h1">
           {title}: {entity.frontmatter.name}
         </Typography>

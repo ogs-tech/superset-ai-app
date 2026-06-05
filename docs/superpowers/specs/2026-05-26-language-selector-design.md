@@ -6,13 +6,13 @@ Add a language selector to the Settings screen that automatically manages a `<la
 
 ## Options
 
-| Key | Label (UI) | Prompt injected into Global Instructions |
-|-----|-----------|----------------------------------------|
-| `off` | Off | *Block removed entirely* |
+| Key      | Label (UI)            | Prompt injected into Global Instructions                                                                                          |
+| -------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `off`    | Off                   | _Block removed entirely_                                                                                                          |
 | `mirror` | Mirror (same as user) | Reply in the same language the user writes in. Write all code, comments, test descriptions, and technical identifiers in English. |
-| `pt-BR` | Portugues (pt-BR) | Reply in pt-BR. Write all code, comments, test descriptions, and technical identifiers in English. |
-| `en` | English | Reply in English. Write all code, comments, test descriptions, and technical identifiers in English. |
-| `es` | Espanol | Reply in Spanish. Write all code, comments, test descriptions, and technical identifiers in English. |
+| `pt-BR`  | Portugues (pt-BR)     | Reply in pt-BR. Write all code, comments, test descriptions, and technical identifiers in English.                                |
+| `en`     | English               | Reply in English. Write all code, comments, test descriptions, and technical identifiers in English.                              |
+| `es`     | Espanol               | Reply in Spanish. Write all code, comments, test descriptions, and technical identifiers in English.                              |
 
 The "code in English" convention is always present (except `off`).
 
@@ -80,6 +80,7 @@ Renderer: update local settings state; show toast or SyncReportModal
 Location: `src/main/application/services/language-section.ts`
 
 Logic:
+
 1. Match `<language>` block via regex: `/<language>[\s\S]*?<\/language>/`
 2. If `language === 'off'`:
    - Remove the block and any blank lines immediately before it (so the body doesn't end with excess whitespace)
@@ -102,24 +103,27 @@ Encapsulates the full operation (settings update + global instruction update) at
 
 ## Edge Cases
 
-| Case | Behavior |
-|------|----------|
-| Global instruction does not exist | Create from template, then add language block |
-| User manually edited the `<language>` block in editor | Next selector change overwrites it |
-| User manually removed the `<language>` block | Selector recreates it on next change |
-| `settings.json` missing `language` field | Default to `'off'`, no block added |
+| Case                                                             | Behavior                                                                                                                                       |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Global instruction does not exist                                | Create from template, then add language block                                                                                                  |
+| User manually edited the `<language>` block in editor            | Next selector change overwrites it                                                                                                             |
+| User manually removed the `<language>` block                     | Selector recreates it on next change                                                                                                           |
+| `settings.json` missing `language` field                         | Default to `'off'`, no block added                                                                                                             |
 | User changes language while global instruction has unsaved edits | Settings.setLanguage reads persisted body, not editor state — this is fine since language change happens in Settings screen, not in the editor |
 
 ## Testing
 
 ### Unit tests
+
 - `updateLanguageSection`: insert when no block exists, replace existing block, remove on `off`, handle body with no trailing newline, handle body with multiple blank lines at end
 
 ### Service/IPC tests
+
 - `settings.setLanguage` handler: verify settings updated + global instruction body contains correct block + sync triggered
 - `settings.setLanguage` with `off`: verify block removed from body
 
 ### Renderer tests
+
 - Language Select renders with current value from settings
 - Changing selection calls `settings.setLanguage` IPC
 - Info note visibility toggles with off/non-off
@@ -128,10 +132,12 @@ Encapsulates the full operation (settings update + global instruction update) at
 ## Files to Create/Modify
 
 ### New files
+
 - `src/main/application/services/language-section.ts` — pure function `updateLanguageSection`
 - Tests for the above
 
 ### Modified files
+
 - `src/shared/settings.ts` — add `LanguagePreference` type, add `language` to `Settings`, update `getDefaults()`
 - `src/main/application/services/settings-service.ts` — no changes needed (merge handles new fields)
 - `src/main/ipc/registry.ts` — register `settings.setLanguage` handler

@@ -13,11 +13,7 @@ export function renderFieldValue<T>(field: FieldDef<T>, item: T): unknown {
   return getFieldValue(item, field.key);
 }
 
-export function filterBySearch<T>(
-  items: T[],
-  fields: FieldDef<T>[],
-  query: string,
-): T[] {
+export function filterBySearch<T>(items: T[], fields: FieldDef<T>[], query: string): T[] {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return items;
   const searchable = fields.filter((f) => f.searchable);

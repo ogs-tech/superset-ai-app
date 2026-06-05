@@ -50,9 +50,9 @@ describe('<MarketplaceDetail>', () => {
       screen.getByTestId('entity-grid-card-marketplace-plugin-plugin-bravo'),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
-    ).toHaveTextContent('Install');
+    expect(screen.getByTestId('marketplace-plugin-install-plugin-alpha')).toHaveTextContent(
+      'Install',
+    );
 
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
@@ -62,10 +62,7 @@ describe('<MarketplaceDetail>', () => {
     render(<MarketplaceDetail marketplace={marketplace} />);
 
     await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha');
-    await user.type(
-      screen.getByTestId('entity-grid-search-marketplace-plugin'),
-      'bravo',
-    );
+    await user.type(screen.getByTestId('entity-grid-search-marketplace-plugin'), 'bravo');
 
     expect(
       screen.queryByTestId('entity-grid-card-marketplace-plugin-plugin-alpha'),
@@ -77,35 +74,30 @@ describe('<MarketplaceDetail>', () => {
 
   it('marks already-installed plugins as Installed', async () => {
     call.mockImplementation((method: string) => {
-      if (method === 'plugin.list')
-        return Promise.resolve(ok([{ id: 'plugin-alpha' }]));
+      if (method === 'plugin.list') return Promise.resolve(ok([{ id: 'plugin-alpha' }]));
       return Promise.resolve(ok(undefined));
     });
 
     render(<MarketplaceDetail marketplace={marketplace} />);
 
     await waitFor(() => {
-      expect(
-        screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
-      ).toHaveTextContent('Installed');
+      expect(screen.getByTestId('marketplace-plugin-install-plugin-alpha')).toHaveTextContent(
+        'Installed',
+      );
     });
-    expect(
-      screen.getByTestId('marketplace-plugin-install-plugin-bravo'),
-    ).toHaveTextContent('Install');
+    expect(screen.getByTestId('marketplace-plugin-install-plugin-bravo')).toHaveTextContent(
+      'Install',
+    );
   });
 
   it('opens the install preview dialog when Install is clicked', async () => {
     const user = userEvent.setup();
     render(<MarketplaceDetail marketplace={marketplace} />);
 
-    const button = await screen.findByTestId(
-      'marketplace-plugin-install-plugin-alpha',
-    );
+    const button = await screen.findByTestId('marketplace-plugin-install-plugin-alpha');
     await user.click(button);
 
-    expect(
-      await screen.findByTestId('plugin-install-preview-dialog'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('plugin-install-preview-dialog')).toBeInTheDocument();
   });
 
   it('shows an empty state when the marketplace has no plugins', async () => {
@@ -118,27 +110,17 @@ describe('<MarketplaceDetail>', () => {
       />,
     );
 
-    expect(
-      await screen.findByText(/No plugins listed in this marketplace/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No plugins listed in this marketplace/i)).toBeInTheDocument();
   });
 
   it('renders the official badge for the official marketplace', async () => {
     render(<MarketplaceDetail marketplace={marketplace} />);
-    expect(
-      await screen.findByTestId('marketplace-official-badge'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('marketplace-official-badge')).toBeInTheDocument();
   });
 
   it('shows a manifest warning when the manifest is missing', () => {
-    render(
-      <MarketplaceDetail
-        marketplace={{ id: 'broken', source: marketplace.source }}
-      />,
-    );
-    expect(
-      screen.getByText(/Marketplace manifest could not be loaded/i),
-    ).toBeInTheDocument();
+    render(<MarketplaceDetail marketplace={{ id: 'broken', source: marketplace.source }} />);
+    expect(screen.getByText(/Marketplace manifest could not be loaded/i)).toBeInTheDocument();
   });
 
   it('renders the install error inline when install fails', async () => {
@@ -171,16 +153,12 @@ describe('<MarketplaceDetail>', () => {
 
     render(<MarketplaceDetail marketplace={marketplace} />);
 
-    await user.click(
-      await screen.findByTestId('marketplace-plugin-install-plugin-alpha'),
-    );
+    await user.click(await screen.findByTestId('marketplace-plugin-install-plugin-alpha'));
     const confirm = await screen.findByTestId('plugin-install-confirm');
     await waitFor(() => expect(confirm).not.toBeDisabled());
     await user.click(confirm);
 
-    const errorEl = await screen.findByTestId(
-      'marketplace-plugin-error-plugin-alpha',
-    );
+    const errorEl = await screen.findByTestId('marketplace-plugin-error-plugin-alpha');
     expect(within(errorEl.parentElement!).getByText(/boom/)).toBeInTheDocument();
   });
 });

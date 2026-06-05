@@ -7,7 +7,10 @@ import type { Settings } from '../../../../src/shared/settings.js';
 import type { SyncResult } from '../../../../src/shared/customization.js';
 
 const baseSettings: Settings = {
-  adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+  adapters: {
+    claude: { enabled: true },
+    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
+  },
   linkedRepos: [],
   ui: { theme: 'system' },
   language: 'off',
@@ -26,7 +29,8 @@ const setupRoute = (overrides: Record<string, unknown> = {}): void => {
     if (method in overrides) return Promise.resolve(overrides[method]);
     if (method === 'settings.get') return Promise.resolve(ok(baseSettings));
     if (method === 'repo.list') return Promise.resolve(ok([]));
-    if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [stubSyncResult] }));
+    if (method === 'adapter.setEnabled')
+      return Promise.resolve(ok({ syncReport: [stubSyncResult] }));
     if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 5 }));
     if (method === 'adapter.removeAll') return Promise.resolve(ok([]));
     return Promise.resolve(ok(undefined));
@@ -38,12 +42,16 @@ describe('<Settings> — adapters section toggle-on (AC#15)', () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
-      adapters: { claude: { enabled: false }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+      adapters: {
+        claude: { enabled: false },
+        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
+      },
     };
     call.mockImplementation((method: string) => {
       if (method === 'settings.get') return Promise.resolve(ok(initial));
       if (method === 'repo.list') return Promise.resolve(ok([]));
-      if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [stubSyncResult] }));
+      if (method === 'adapter.setEnabled')
+        return Promise.resolve(ok({ syncReport: [stubSyncResult] }));
       if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));
       return Promise.resolve(ok(undefined));
     });
@@ -53,7 +61,10 @@ describe('<Settings> — adapters section toggle-on (AC#15)', () => {
     await user.click(toggle);
 
     await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('adapter.setEnabled', expect.objectContaining({ adapterId: 'claude', enabled: true })),
+      expect(call).toHaveBeenCalledWith(
+        'adapter.setEnabled',
+        expect.objectContaining({ adapterId: 'claude', enabled: true }),
+      ),
     );
   });
 });
@@ -71,9 +82,7 @@ describe('<Settings> — adapters section toggle-off (AC#14)', () => {
       expect(call).toHaveBeenCalledWith('adapter.countDestinations', { adapterId: 'claude' }),
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId('confirm-disable-modal')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByTestId('confirm-disable-modal')).toBeInTheDocument());
   });
 
   it('clicking "Sim" calls adapter.setEnabled with removeSymlinks:true', async () => {

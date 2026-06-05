@@ -30,19 +30,13 @@ type DeepPartial<T> = {
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const deepMerge = <T extends Record<string, unknown>>(
-  base: T,
-  patch: DeepPartial<T>,
-): T => {
+const deepMerge = <T extends Record<string, unknown>>(base: T, patch: DeepPartial<T>): T => {
   const result: Record<string, unknown> = { ...base };
   for (const [key, patchValue] of Object.entries(patch)) {
     if (patchValue === undefined) continue;
     const baseValue = (base as Record<string, unknown>)[key];
     if (isPlainObject(baseValue) && isPlainObject(patchValue)) {
-      result[key] = deepMerge(
-        baseValue,
-        patchValue as DeepPartial<Record<string, unknown>>,
-      );
+      result[key] = deepMerge(baseValue, patchValue as DeepPartial<Record<string, unknown>>);
     } else {
       result[key] = patchValue;
     }
@@ -65,7 +59,10 @@ export class SettingsService {
   async merge(partial: DeepPartial<Settings>): Promise<Settings> {
     const loaded = await this.repository.load();
     const current = loaded === null ? getDefaults() : stripLegacyFields(loaded);
-    const next = deepMerge(current as unknown as Record<string, unknown>, partial as DeepPartial<Record<string, unknown>>) as unknown as Settings;
+    const next = deepMerge(
+      current as unknown as Record<string, unknown>,
+      partial as DeepPartial<Record<string, unknown>>,
+    ) as unknown as Settings;
     await this.repository.save(next);
     return next;
   }

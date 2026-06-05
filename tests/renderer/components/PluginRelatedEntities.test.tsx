@@ -8,9 +8,7 @@ const skill = (id: string, pluginId: string | null) => ({
   id,
   frontmatter: { name: id, description: `${id} desc` },
   body: `# ${id}`,
-  source: pluginId
-    ? { kind: 'plugin' as const, pluginId }
-    : { kind: 'workspace' as const },
+  source: pluginId ? { kind: 'plugin' as const, pluginId } : { kind: 'workspace' as const },
 });
 
 let call: CallSpy;
@@ -30,23 +28,17 @@ describe('<PluginRelatedEntities>', () => {
             skill('workspace-skill', null),
           ]),
         );
-      if (method === 'agent.list')
-        return Promise.resolve(ok([skill('mine-agent', 'my-plugin')]));
-      if (method === 'command.list')
-        return Promise.resolve(ok([skill('mine-cmd', 'my-plugin')]));
+      if (method === 'agent.list') return Promise.resolve(ok([skill('mine-agent', 'my-plugin')]));
+      if (method === 'command.list') return Promise.resolve(ok([skill('mine-cmd', 'my-plugin')]));
       return Promise.resolve(ok(undefined));
     });
 
     renderWithQuery(<PluginRelatedEntities pluginId="my-plugin" />);
 
-    const skillsGroup = await screen.findByTestId(
-      'plugin-related-group-skills',
-    );
+    const skillsGroup = await screen.findByTestId('plugin-related-group-skills');
     expect(within(skillsGroup).getByText('mine-skill')).toBeInTheDocument();
     expect(within(skillsGroup).queryByText('other-skill')).not.toBeInTheDocument();
-    expect(
-      within(skillsGroup).queryByText('workspace-skill'),
-    ).not.toBeInTheDocument();
+    expect(within(skillsGroup).queryByText('workspace-skill')).not.toBeInTheDocument();
 
     const agentsGroup = screen.getByTestId('plugin-related-group-agents');
     expect(within(agentsGroup).getByText('mine-agent')).toBeInTheDocument();
@@ -63,9 +55,7 @@ describe('<PluginRelatedEntities>', () => {
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(<PluginRelatedEntities pluginId="my-plugin" />);
-    expect(
-      await screen.findByText(/no related entities/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/no related entities/i)).toBeInTheDocument();
   });
 
   it('queries the IPC with the provided scope', async () => {
@@ -75,9 +65,7 @@ describe('<PluginRelatedEntities>', () => {
       if (method === 'command.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
     });
-    renderWithQuery(
-      <PluginRelatedEntities pluginId="my-plugin" scope="project" />,
-    );
+    renderWithQuery(<PluginRelatedEntities pluginId="my-plugin" scope="project" />);
     await screen.findByText(/no related entities/i);
     const skillCall = call.mock.calls.find(([m]) => m === 'skill.list');
     expect(skillCall?.[1]).toEqual({ scope: 'project' });
@@ -85,8 +73,7 @@ describe('<PluginRelatedEntities>', () => {
 
   it('clicking a related skill opens the customization view drawer', async () => {
     call.mockImplementation((method: string) => {
-      if (method === 'skill.list')
-        return Promise.resolve(ok([skill('mine-skill', 'my-plugin')]));
+      if (method === 'skill.list') return Promise.resolve(ok([skill('mine-skill', 'my-plugin')]));
       if (method === 'agent.list') return Promise.resolve(ok([]));
       if (method === 'command.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
@@ -97,8 +84,6 @@ describe('<PluginRelatedEntities>', () => {
     const row = await screen.findByRole('button', { name: /mine-skill/ });
     await user.click(row);
 
-    expect(
-      await screen.findByTestId('detail-drawer-customization'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('detail-drawer-customization')).toBeInTheDocument();
   });
 });

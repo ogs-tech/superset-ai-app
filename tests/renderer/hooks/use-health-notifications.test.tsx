@@ -42,7 +42,10 @@ describe('useHealthNotifications', () => {
     expect(call).toHaveBeenCalledTimes(1);
     const [method, params] = call.mock.calls[0]!;
     expect(method).toBe('health.notify');
-    expect(params).toMatchObject({ title: expect.any(String), body: expect.stringContaining('e2') });
+    expect(params).toMatchObject({
+      title: expect.any(String),
+      body: expect.stringContaining('e2'),
+    });
   });
 
   it('does not re-notify for an error id already seen', () => {

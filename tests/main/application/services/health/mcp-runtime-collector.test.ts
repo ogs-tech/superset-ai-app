@@ -11,10 +11,8 @@ const setup = () => {
   return { runtime, collector };
 };
 
-const byTarget = (
-  checks: Awaited<ReturnType<McpRuntimeCollector['collect']>>,
-  target: string,
-) => checks.find((c) => c.target === target);
+const byTarget = (checks: Awaited<ReturnType<McpRuntimeCollector['collect']>>, target: string) =>
+  checks.find((c) => c.target === target);
 
 describe('McpRuntimeCollector', () => {
   it('reports category mcp-runtime', () => {

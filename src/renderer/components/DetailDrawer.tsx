@@ -48,11 +48,7 @@ export function DetailDrawer({
         }}
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: 'center', flexWrap: 'wrap' }}
-          >
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
             <Typography variant="h6" component="h2" sx={{ wordBreak: 'break-word' }}>
               {title}
             </Typography>

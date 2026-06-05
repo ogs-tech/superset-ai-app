@@ -1,11 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  Box,
-  ButtonBase,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, ButtonBase, Paper, Stack, Typography } from '@mui/material';
 import { CustomizationViewDrawer } from './CustomizationViewDrawer.js';
 import {
   useCustomizationList,
@@ -28,9 +22,7 @@ function filterByPlugin(
   items: CustomizationListItem[] | undefined,
   pluginId: string,
 ): CustomizationListItem[] {
-  return (items ?? []).filter(
-    (i) => i.source.kind === 'plugin' && i.source.pluginId === pluginId,
-  );
+  return (items ?? []).filter((i) => i.source.kind === 'plugin' && i.source.pluginId === pluginId);
 }
 
 export function PluginRelatedEntities({

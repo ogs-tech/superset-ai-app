@@ -75,17 +75,12 @@ export class SkillService {
     return out;
   }
 
-
   async get(id: SkillId): Promise<Skill> {
     const c = await this.base.get({ id: formatCustomizationId('skill', id) });
     return toSkill(c);
   }
 
-  async save(input: {
-    skill: Skill;
-    isCreate?: boolean;
-    scope?: Scope;
-  }): Promise<SaveSkillResult> {
+  async save(input: { skill: Skill; isCreate?: boolean; scope?: Scope }): Promise<SaveSkillResult> {
     if (input.skill.source.kind === 'plugin') {
       throw new OperationNotAllowedForOriginError(
         `Cannot save a skill provided by plugin '${input.skill.source.pluginId}'`,
@@ -107,11 +102,7 @@ export class SkillService {
     };
   }
 
-  async delete(input: {
-    id: SkillId;
-    removeSymlinks: boolean;
-    scope?: Scope;
-  }): Promise<{
+  async delete(input: { id: SkillId; removeSymlinks: boolean; scope?: Scope }): Promise<{
     ok: true;
     syncReport?: SyncResult[];
   }> {

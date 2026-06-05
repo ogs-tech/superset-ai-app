@@ -36,7 +36,11 @@ import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
 import { RestoreConfirmDialog } from './settings/RestoreConfirmDialog.js';
 import type { SyncResult } from '../../shared/customization.js';
-import type { LanguagePreference, LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
+import type {
+  LanguagePreference,
+  LinkedRepoView,
+  Settings as SettingsModel,
+} from '../../shared/settings.js';
 
 const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string }[] = [
   { value: 'off', label: 'Off' },
@@ -121,10 +125,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     })();
   }, []);
 
-  const handleAdapterToggle = async (
-    key: 'claude',
-    enabled: boolean,
-  ): Promise<void> => {
+  const handleAdapterToggle = async (key: 'claude', enabled: boolean): Promise<void> => {
     if (enabled) {
       const result = await callIpc<{ syncReport: SyncResult[] }>('adapter.setEnabled', {
         adapterId: key,
@@ -320,7 +321,10 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           </Select>
         </FormControl>
         {settings.language !== 'off' && (
-          <Stack direction="row" sx={{ mt: 1.5, gap: 0.5, alignItems: 'center', color: 'text.secondary' }}>
+          <Stack
+            direction="row"
+            sx={{ mt: 1.5, gap: 0.5, alignItems: 'center', color: 'text.secondary' }}
+          >
             <InfoOutlinedIcon fontSize="small" />
             <Typography variant="caption">
               Code, comments, and test descriptions are always written in English.

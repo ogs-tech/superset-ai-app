@@ -47,7 +47,9 @@ export class SafeStorageCredentials implements CredentialStorePort {
 
   private async assertAvailable(): Promise<void> {
     if (!(await this.isAvailable())) {
-      throw new CredentialStoreUnavailableError('Credential store unavailable: safeStorage not available');
+      throw new CredentialStoreUnavailableError(
+        'Credential store unavailable: safeStorage not available',
+      );
     }
   }
 

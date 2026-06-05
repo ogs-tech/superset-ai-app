@@ -28,9 +28,7 @@ describe('ClaudeAdapter — Adapter port contract', () => {
   });
 
   it('throws DomainError(internal, missing-homedir) when homedir is null', () => {
-    expect(() => new ClaudeAdapter({ homedir: null as unknown as string })).toThrow(
-      DomainError,
-    );
+    expect(() => new ClaudeAdapter({ homedir: null as unknown as string })).toThrow(DomainError);
   });
 
   it('throws DomainError(internal, missing-homedir) when homedir is an empty string', () => {

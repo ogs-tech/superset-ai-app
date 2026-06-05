@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Skillforge / superset-ai-app** — an Electron desktop app that centralizes AI customizations (skills, agent profiles, commands, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) via **symbolic links**. Single-developer dogfooding spike — no backend, no API, no telemetry.
 
 Authoritative docs live in `docs/` (Diátaxis):
+
 - `docs/explanation/prd.md` — goals, scope, stop rules
 - `docs/reference/architecture.md` — hexagonal layout
 - `docs/reference/ipc-contract.md` — every IPC method
@@ -16,22 +17,23 @@ Authoritative docs live in `docs/` (Diátaxis):
 
 ## Common commands
 
-| Task | Command |
-|---|---|
-| Dev server (Electron + Vite HMR) | `npm run dev` |
-| Production build (main + preload + renderer to `out/`) | `npm run build` |
-| Full test suite (both projects) | `npm test` |
-| Watch mode | `npm run test:watch` |
-| Run a single test file | `npx vitest run tests/main/application/services/skill-service.test.ts` |
-| Run only the node project | `npx vitest --project node` |
-| Run only the jsdom project | `npx vitest --project jsdom` |
-| Lint | `npm run lint` |
-| Typecheck (both node + web tsconfigs) | `npm run typecheck` |
-| Format | `npm run format` |
+| Task                                                   | Command                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Dev server (Electron + Vite HMR)                       | `npm run dev`                                                          |
+| Production build (main + preload + renderer to `out/`) | `npm run build`                                                        |
+| Full test suite (both projects)                        | `npm test`                                                             |
+| Watch mode                                             | `npm run test:watch`                                                   |
+| Run a single test file                                 | `npx vitest run tests/main/application/services/skill-service.test.ts` |
+| Run only the node project                              | `npx vitest --project node`                                            |
+| Run only the jsdom project                             | `npx vitest --project jsdom`                                           |
+| Lint                                                   | `npm run lint`                                                         |
+| Typecheck (both node + web tsconfigs)                  | `npm run typecheck`                                                    |
+| Format                                                 | `npm run format`                                                       |
 
 `npm` is the canonical package manager — `package-lock.json` is committed; `yarn.lock` is local-only.
 
 Tests are split into two Vitest projects (`vitest.config.ts`):
+
 - **`node`** — runs `tests/main/**` and `tests/shared/**` in node env (services, IPC, infrastructure).
 - **`jsdom`** — runs `tests/renderer/**` in jsdom env with `tests/renderer/setup.ts` for Testing Library.
 

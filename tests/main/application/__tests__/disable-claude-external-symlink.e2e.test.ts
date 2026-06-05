@@ -23,7 +23,15 @@ const baseSettings: Settings = {
 
 const skillPersonal: Customization = {
   id: 'skill/my-skill',
-  frontmatter: { name: 'my-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
+  frontmatter: {
+    name: 'my-skill',
+    type: 'skill',
+    description: 'desc',
+    scopes: ['personal'],
+    version: '1.0.0',
+    createdAt: '',
+    updatedAt: '',
+  },
   body: '# skill',
 };
 

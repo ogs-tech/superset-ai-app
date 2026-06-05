@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import {
-  useHealthReport,
-  healthQueryKey,
-} from '../../../src/renderer/hooks/use-health-report.js';
+import { useHealthReport, healthQueryKey } from '../../../src/renderer/hooks/use-health-report.js';
 import type { HealthReport } from '../../../src/shared/health.js';
 import { mockApi, ok, makeTestQueryClient, type CallSpy } from '../test-utils.js';
 

@@ -23,25 +23,57 @@ const baseSettings: Settings = {
 
 const skillPersonal: Customization = {
   id: 'skill/my-skill',
-  frontmatter: { name: 'my-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
+  frontmatter: {
+    name: 'my-skill',
+    type: 'skill',
+    description: 'desc',
+    scopes: ['personal'],
+    version: '1.0.0',
+    createdAt: '',
+    updatedAt: '',
+  },
   body: '# skill',
 };
 
 const agentPersonal: Customization = {
   id: 'agent/my-agent',
-  frontmatter: { name: 'my-agent', type: 'agent', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
+  frontmatter: {
+    name: 'my-agent',
+    type: 'agent',
+    description: 'desc',
+    scopes: ['personal'],
+    version: '1.0.0',
+    createdAt: '',
+    updatedAt: '',
+  },
   body: '# agent',
 };
 
 const skillProject: Customization = {
   id: 'skill/proj-skill',
-  frontmatter: { name: 'proj-skill', type: 'skill', description: 'desc', scopes: ['project'], version: '1.0.0', createdAt: '', updatedAt: '' },
+  frontmatter: {
+    name: 'proj-skill',
+    type: 'skill',
+    description: 'desc',
+    scopes: ['project'],
+    version: '1.0.0',
+    createdAt: '',
+    updatedAt: '',
+  },
   body: '# proj skill',
 };
 
 const skillRealFile: Customization = {
   id: 'skill/real-skill',
-  frontmatter: { name: 'real-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
+  frontmatter: {
+    name: 'real-skill',
+    type: 'skill',
+    description: 'desc',
+    scopes: ['personal'],
+    version: '1.0.0',
+    createdAt: '',
+    updatedAt: '',
+  },
   body: '# real skill',
 };
 

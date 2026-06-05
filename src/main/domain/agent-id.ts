@@ -24,10 +24,9 @@ export function tryAgentId(raw: string): Result<AgentId, AgentIdInvalidError> {
   if (typeof raw !== 'string') {
     return {
       ok: false,
-      error: new AgentIdInvalidError(
-        `Invalid agent ID: expected string, got ${typeof raw}`,
-        { raw: String(raw) },
-      ),
+      error: new AgentIdInvalidError(`Invalid agent ID: expected string, got ${typeof raw}`, {
+        raw: String(raw),
+      }),
     };
   }
   if (!AGENT_ID_PATTERN.test(raw)) {

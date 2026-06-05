@@ -1,12 +1,4 @@
-import {
-  Box,
-  Card,
-  Chip,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Box, Card, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import type { CardSlots, EntityDef, RowAction } from './types.js';
 import { getFieldValue, renderFieldValue } from './utils.js';
 
@@ -29,15 +21,10 @@ export function CardView<T>({
   const primary = visibleFields.find((f) => f.primary);
   const secondary = visibleFields.find((f) => f.secondary);
   const badges = visibleFields.filter((f) => f.badge);
-  const others = visibleFields.filter(
-    (f) => !f.primary && !f.secondary && !f.badge,
-  );
+  const others = visibleFields.filter((f) => !f.primary && !f.secondary && !f.badge);
 
   return (
-    <Stack
-      spacing={1}
-      data-testid={`entity-grid-cards-${entity.name}`}
-    >
+    <Stack spacing={1} data-testid={`entity-grid-cards-${entity.name}`}>
       {items.map((item) => {
         const banner = cardSlots?.topBanner?.(item);
         const footer = cardSlots?.footer?.(item);
@@ -65,11 +52,7 @@ export function CardView<T>({
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 {cardSlots?.header?.(item)}
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center', flexWrap: 'wrap' }}
-                >
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {primary && (
                     <Typography
                       variant="body2"
@@ -84,8 +67,7 @@ export function CardView<T>({
                   )}
                   {badges.map((field) => {
                     const value = renderFieldValue(field, item);
-                    if (value === null || value === undefined || value === '')
-                      return null;
+                    if (value === null || value === undefined || value === '') return null;
                     return (
                       <Chip
                         key={field.key}
@@ -113,23 +95,13 @@ export function CardView<T>({
                   </Typography>
                 )}
                 {others.length > 0 && (
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{ mt: 0.25, flexWrap: 'wrap' }}
-                  >
+                  <Stack direction="row" spacing={1.5} sx={{ mt: 0.25, flexWrap: 'wrap' }}>
                     {others.map((field) => {
                       const value = renderFieldValue(field, item);
-                      if (value === null || value === undefined || value === '')
-                        return null;
+                      if (value === null || value === undefined || value === '') return null;
                       return (
-                        <Typography
-                          key={field.key}
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          <strong>{field.label}:</strong>{' '}
-                          {value as React.ReactNode}
+                        <Typography key={field.key} variant="caption" color="text.secondary">
+                          <strong>{field.label}:</strong> {value as React.ReactNode}
                         </Typography>
                       );
                     })}
@@ -151,11 +123,7 @@ export function CardView<T>({
                         <span>
                           <IconButton
                             size="small"
-                            color={
-                              action.variant === 'destructive'
-                                ? 'error'
-                                : 'default'
-                            }
+                            color={action.variant === 'destructive' ? 'error' : 'default'}
                             disabled={action.disabled?.(item)}
                             onClick={(e) => {
                               e.stopPropagation();

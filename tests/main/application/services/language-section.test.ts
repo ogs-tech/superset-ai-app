@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { updateLanguageSection, LANGUAGE_PROMPTS } from '../../../../src/main/application/services/language-section.js';
+import {
+  updateLanguageSection,
+  LANGUAGE_PROMPTS,
+} from '../../../../src/main/application/services/language-section.js';
 
 describe('updateLanguageSection', () => {
   const sampleBody = '# Global instructions\n\nSome content here.\n';
@@ -8,8 +11,8 @@ describe('updateLanguageSection', () => {
     const result = updateLanguageSection(sampleBody, 'pt-BR');
     expect(result).toBe(
       '# Global instructions\n\nSome content here.\n\n<language>\n' +
-      LANGUAGE_PROMPTS['pt-BR'] +
-      '\n</language>\n',
+        LANGUAGE_PROMPTS['pt-BR'] +
+        '\n</language>\n',
     );
   });
 
@@ -17,9 +20,7 @@ describe('updateLanguageSection', () => {
     const body = '# Global instructions\n\n<language>\nOld prompt\n</language>\n';
     const result = updateLanguageSection(body, 'en');
     expect(result).toBe(
-      '# Global instructions\n\n<language>\n' +
-      LANGUAGE_PROMPTS['en'] +
-      '\n</language>\n',
+      '# Global instructions\n\n<language>\n' + LANGUAGE_PROMPTS['en'] + '\n</language>\n',
     );
   });
 
@@ -39,8 +40,8 @@ describe('updateLanguageSection', () => {
     const result = updateLanguageSection(body, 'mirror');
     expect(result).toBe(
       '# Global instructions\n\nContent.\n\n<language>\n' +
-      LANGUAGE_PROMPTS['mirror'] +
-      '\n</language>\n',
+        LANGUAGE_PROMPTS['mirror'] +
+        '\n</language>\n',
     );
   });
 

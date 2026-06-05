@@ -24,10 +24,9 @@ export function tryCommandId(raw: string): Result<CommandId, CommandIdInvalidErr
   if (typeof raw !== 'string') {
     return {
       ok: false,
-      error: new CommandIdInvalidError(
-        `Invalid command ID: expected string, got ${typeof raw}`,
-        { raw: String(raw) },
-      ),
+      error: new CommandIdInvalidError(`Invalid command ID: expected string, got ${typeof raw}`, {
+        raw: String(raw),
+      }),
     };
   }
   if (!COMMAND_ID_PATTERN.test(raw)) {

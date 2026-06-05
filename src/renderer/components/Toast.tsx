@@ -13,7 +13,11 @@ interface ToastProps {
   durationMs?: number;
 }
 
-export function Toast({ toast, onDismiss, durationMs = 4000 }: ToastProps): React.ReactElement | null {
+export function Toast({
+  toast,
+  onDismiss,
+  durationMs = 4000,
+}: ToastProps): React.ReactElement | null {
   return (
     <Snackbar
       open={toast !== null}

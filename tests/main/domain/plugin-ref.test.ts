@@ -140,15 +140,11 @@ describe('parsePluginRef', () => {
   });
 
   it('throws on invalid kind', () => {
-    expect(() => parsePluginRef({ kind: 'invalid', value: 'test' })).toThrow(
-      PluginRefInvalidError,
-    );
+    expect(() => parsePluginRef({ kind: 'invalid', value: 'test' })).toThrow(PluginRefInvalidError);
   });
 
   it('throws on empty branch value', () => {
-    expect(() => parsePluginRef({ kind: 'branch', value: '' })).toThrow(
-      PluginRefInvalidError,
-    );
+    expect(() => parsePluginRef({ kind: 'branch', value: '' })).toThrow(PluginRefInvalidError);
   });
 
   it('throws on empty tag value', () => {
@@ -160,9 +156,7 @@ describe('parsePluginRef', () => {
   });
 
   it('throws on non-hex sha', () => {
-    expect(() => parsePluginRef({ kind: 'sha', value: 'xyz123' })).toThrow(
-      PluginRefInvalidError,
-    );
+    expect(() => parsePluginRef({ kind: 'sha', value: 'xyz123' })).toThrow(PluginRefInvalidError);
   });
 
   it('throws PluginRefInvalidError on null input', () => {

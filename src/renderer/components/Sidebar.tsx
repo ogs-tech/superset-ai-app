@@ -122,7 +122,9 @@ function readCollapsedGroups(): Set<string> {
     const raw = window.localStorage.getItem(GROUPS_STORAGE_KEY);
     if (!raw) return new Set();
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? new Set(parsed.filter((id): id is string => typeof id === 'string')) : new Set();
+    return Array.isArray(parsed)
+      ? new Set(parsed.filter((id): id is string => typeof id === 'string'))
+      : new Set();
   } catch {
     return new Set();
   }
@@ -135,7 +137,12 @@ interface SidebarProps {
   healthSeverity?: SidebarHealthSeverity;
 }
 
-export function Sidebar({ active, onNavigate, onOpenSettings, healthSeverity }: SidebarProps): React.ReactElement {
+export function Sidebar({
+  active,
+  onNavigate,
+  onOpenSettings,
+  healthSeverity,
+}: SidebarProps): React.ReactElement {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(STORAGE_KEY) === '1';
@@ -227,7 +234,11 @@ export function Sidebar({ active, onNavigate, onOpenSettings, healthSeverity }: 
             onClick={() => setCollapsed((c) => !c)}
             sx={{ color: 'text.secondary' }}
           >
-            {collapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+            {collapsed ? (
+              <ChevronRightIcon fontSize="small" />
+            ) : (
+              <ChevronLeftIcon fontSize="small" />
+            )}
           </IconButton>
         </Tooltip>
       </Toolbar>
@@ -349,10 +360,7 @@ export function Sidebar({ active, onNavigate, onOpenSettings, healthSeverity }: 
                   <SettingsIcon fontSize="small" />
                 </ListItemIcon>
                 {!collapsed && (
-                  <ListItemText
-                    primary="Settings"
-                    slotProps={{ primary: { variant: 'body2' } }}
-                  />
+                  <ListItemText primary="Settings" slotProps={{ primary: { variant: 'body2' } }} />
                 )}
               </ListItemButton>
             </Tooltip>

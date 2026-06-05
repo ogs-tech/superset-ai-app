@@ -60,9 +60,7 @@ describe('SafeStorageCredentials', () => {
     vi.mocked(safeStorage.isEncryptionAvailable).mockReturnValueOnce(false);
     credentials = new SafeStorageCredentials(dir);
 
-    await expect(credentials.get('test.key')).rejects.toThrow(
-      CredentialStoreUnavailableError,
-    );
+    await expect(credentials.get('test.key')).rejects.toThrow(CredentialStoreUnavailableError);
   });
 
   it('isAvailable=false throws CredentialStoreUnavailableError on delete', async () => {
@@ -70,16 +68,12 @@ describe('SafeStorageCredentials', () => {
     vi.mocked(safeStorage.isEncryptionAvailable).mockReturnValueOnce(false);
     credentials = new SafeStorageCredentials(dir);
 
-    await expect(credentials.delete('test.key')).rejects.toThrow(
-      CredentialStoreUnavailableError,
-    );
+    await expect(credentials.delete('test.key')).rejects.toThrow(CredentialStoreUnavailableError);
   });
 
   it('isAvailable caches result: call twice, verify mock called once', async () => {
     const { safeStorage } = await import('electron');
-    const mockIsEncryptionAvailable = vi.mocked(
-      safeStorage.isEncryptionAvailable,
-    );
+    const mockIsEncryptionAvailable = vi.mocked(safeStorage.isEncryptionAvailable);
     mockIsEncryptionAvailable.mockClear();
 
     await credentials.isAvailable();

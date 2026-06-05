@@ -19,11 +19,9 @@ export class ClaudeAdapter implements Adapter {
 
   constructor(deps: ClaudeAdapterDeps) {
     if (deps.homedir === undefined || deps.homedir === null || deps.homedir === '') {
-      throw new DomainError(
-        'internal',
-        'ClaudeAdapter requires a non-empty homedir',
-        { reason: 'missing-homedir' },
-      );
+      throw new DomainError('internal', 'ClaudeAdapter requires a non-empty homedir', {
+        reason: 'missing-homedir',
+      });
     }
     this.homedir = deps.homedir;
   }

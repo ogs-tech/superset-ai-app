@@ -12,11 +12,12 @@ A single Electron IPC channel routes every renderer ↔ main call. The renderer 
 ```ts
 const IPC_CHANNEL = 'ipc:call';
 
-interface Envelope { method: string; params: unknown; }
+interface Envelope {
+  method: string;
+  params: unknown;
+}
 
-type IpcResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: IpcError };
+type IpcResult<T> = { ok: true; data: T } | { ok: false; error: IpcError };
 
 interface IpcError {
   kind: IpcErrorKind;
@@ -58,12 +59,12 @@ const list = await callIpc<Customization[]>('customization.list');
 
 [`src/main/ipc/dispatcher.ts`](../../src/main/ipc/dispatcher.ts) wraps every handler in a try/catch:
 
-| Thrown | `IpcError.kind` | Notes |
-|---|---|---|
-| `DomainError(kind, …)` | `kind` (carried verbatim) | `details` propagated when present. |
-| `Error` | `internal` | Message preserved; details dropped. |
-| Anything else | `internal` | Message: `"Unknown error"`. |
-| Unknown method | `not_found` | Returned without invoking any handler. |
+| Thrown                 | `IpcError.kind`           | Notes                                  |
+| ---------------------- | ------------------------- | -------------------------------------- |
+| `DomainError(kind, …)` | `kind` (carried verbatim) | `details` propagated when present.     |
+| `Error`                | `internal`                | Message preserved; details dropped.    |
+| Anything else          | `internal`                | Message: `"Unknown error"`.            |
+| Unknown method         | `not_found`               | Returned without invoking any handler. |
 
 ## Methods
 
@@ -71,114 +72,114 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 
 ### `app`
 
-| Method | Params | Result |
-|---|---|---|
-| `app.getHomeDir` | — | `string` (user home directory). |
+| Method           | Params | Result                          |
+| ---------------- | ------ | ------------------------------- |
+| `app.getHomeDir` | —      | `string` (user home directory). |
 
 ### `settings`
 
-| Method | Params | Result |
-|---|---|---|
-| `settings.get` | — | `Settings \| null` |
-| `settings.save` | `Settings` | `void` |
+| Method           | Params              | Result                     |
+| ---------------- | ------------------- | -------------------------- |
+| `settings.get`   | —                   | `Settings \| null`         |
+| `settings.save`  | `Settings`          | `void`                     |
 | `settings.merge` | `Partial<Settings>` | `Settings` (merged result) |
 
 `Settings` shape lives in [`src/shared/settings.ts`](../../src/shared/settings.ts).
 
 ### `repo`
 
-| Method | Params | Result |
-|---|---|---|
-| `repo.detectGit` | `{ path: string }` | `boolean` |
-| `repo.getCurrentBranch` | `{ path: string }` | `string` |
-| `repo.link` | `{ path: string; name?: string }` | `LinkedRepoView` |
-| `repo.unlink` | `{ id: string }` | `void` |
-| `repo.list` | — | `LinkedRepoView[]` |
+| Method                  | Params                            | Result             |
+| ----------------------- | --------------------------------- | ------------------ |
+| `repo.detectGit`        | `{ path: string }`                | `boolean`          |
+| `repo.getCurrentBranch` | `{ path: string }`                | `string`           |
+| `repo.link`             | `{ path: string; name?: string }` | `LinkedRepoView`   |
+| `repo.unlink`           | `{ id: string }`                  | `void`             |
+| `repo.list`             | —                                 | `LinkedRepoView[]` |
 
 `repo.link` rejects with `{ kind: 'validation' }` if `path` is not a git repository.
 
 ### `workspace`
 
-| Method | Params | Result |
-|---|---|---|
-| `workspace.bootstrap` | `{ workspacePath: string }` | `void` |
-| `workspace.exists` | `{ path: string }` | `boolean` |
-| `workspace.getActive` | — | `string` |
-| `workspace.setActive` | `{ workspacePath: string }` | `void` |
+| Method                | Params                      | Result    |
+| --------------------- | --------------------------- | --------- |
+| `workspace.bootstrap` | `{ workspacePath: string }` | `void`    |
+| `workspace.exists`    | `{ path: string }`          | `boolean` |
+| `workspace.getActive` | —                           | `string`  |
+| `workspace.setActive` | `{ workspacePath: string }` | `void`    |
 
 `workspace.getActive` and `workspace.setActive` reject with `{ kind: 'internal' }` if the `workspaceLocator` dependency is not wired.
 
 ### `dialog`
 
-| Method | Params | Result |
-|---|---|---|
+| Method                | Params                                 | Result                                 |
+| --------------------- | -------------------------------------- | -------------------------------------- |
 | `dialog.selectFolder` | `{ defaultPath?: string }` (or `null`) | `{ canceled: boolean; path?: string }` |
 
 ### `skill`
 
-| Method | Params | Result |
-|---|---|---|
-| `skill.list` | `{ scope?: 'personal' \| 'project' }` | `Skill[]` (workspace + plugin-provided, with `source` field) |
-| `skill.get` | `{ id: string }` | `Skill` |
-| `skill.save` | `{ skill: Skill; isCreate?: boolean }` | `{ skill: Skill; syncReport: SyncResult[] }` |
-| `skill.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+| Method         | Params                                    | Result                                                       |
+| -------------- | ----------------------------------------- | ------------------------------------------------------------ |
+| `skill.list`   | `{ scope?: 'personal' \| 'project' }`     | `Skill[]` (workspace + plugin-provided, with `source` field) |
+| `skill.get`    | `{ id: string }`                          | `Skill`                                                      |
+| `skill.save`   | `{ skill: Skill; isCreate?: boolean }`    | `{ skill: Skill; syncReport: SyncResult[] }`                 |
+| `skill.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }`                                               |
 
 Saving or deleting a plugin-provided skill (`source.kind === 'plugin'`) raises `OperationNotAllowedForOriginError` (`kind: 'internal'` unless mapped). See [`src/main/application/schemas/skill.ts`](../../src/main/application/schemas/skill.ts).
 
 ### `agent`
 
-| Method | Params | Result |
-|---|---|---|
-| `agent.list` | `{ scope?: 'personal' \| 'project' }` | `Agent[]` (workspace + plugin-provided) |
-| `agent.get` | `{ id: string }` | `Agent` |
-| `agent.save` | `{ agent: Agent; isCreate?: boolean }` | `{ agent: Agent; syncReport: SyncResult[] }` |
-| `agent.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+| Method         | Params                                    | Result                                       |
+| -------------- | ----------------------------------------- | -------------------------------------------- |
+| `agent.list`   | `{ scope?: 'personal' \| 'project' }`     | `Agent[]` (workspace + plugin-provided)      |
+| `agent.get`    | `{ id: string }`                          | `Agent`                                      |
+| `agent.save`   | `{ agent: Agent; isCreate?: boolean }`    | `{ agent: Agent; syncReport: SyncResult[] }` |
+| `agent.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }`                               |
 
 Same plugin-source guard as `skill.*`.
 
 ### `global-instruction`
 
-| Method | Params | Result |
-|---|---|---|
-| `global-instruction.get` | `{ id: 'default' }` | `GlobalInstruction` |
+| Method                    | Params                                                         | Result                                                               |
+| ------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `global-instruction.get`  | `{ id: 'default' }`                                            | `GlobalInstruction`                                                  |
 | `global-instruction.save` | `{ globalInstruction: GlobalInstruction; isCreate?: boolean }` | `{ globalInstruction: GlobalInstruction; syncReport: SyncResult[] }` |
 
 The id is fixed to `'default'`; only one instance per machine.
 
 ### `marketplace`
 
-| Method | Params | Result |
-|---|---|---|
-| `marketplace.list` | `{ scope: 'personal' \| 'project' }` | `MarketplaceSummary[]` (record + parsed manifest if available) |
-| `marketplace.get` | `{ scope; id }` | `MarketplaceSummary \| null` |
-| `marketplace.add` | `{ scope; id; source: { path: string } }` | `void` (persists to `extraKnownMarketplaces`) |
-| `marketplace.remove` | `{ scope; id }` | `void` |
-| `marketplace.refresh` | `{ scope; id }` | `MarketplaceSummary \| null` (re-parses manifest from disk) |
+| Method                | Params                                    | Result                                                         |
+| --------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| `marketplace.list`    | `{ scope: 'personal' \| 'project' }`      | `MarketplaceSummary[]` (record + parsed manifest if available) |
+| `marketplace.get`     | `{ scope; id }`                           | `MarketplaceSummary \| null`                                   |
+| `marketplace.add`     | `{ scope; id; source: { path: string } }` | `void` (persists to `extraKnownMarketplaces`)                  |
+| `marketplace.remove`  | `{ scope; id }`                           | `void`                                                         |
+| `marketplace.refresh` | `{ scope; id }`                           | `MarketplaceSummary \| null` (re-parses manifest from disk)    |
 
 Existing `marketplace.detect` and `plugin.installFromMarketplace` (in the `plugin` namespace) handle URL detection and plugin installation from a marketplace entry.
 
-### `customization` *(deprecated)*
+### `customization` _(deprecated)_
 
 Retained for the legacy `CustomizationList` screen used by `PluginEditor` and for cross-type search results.
 
-| Method | Params | Result |
-|---|---|---|
-| `customization.list` | `{ type?: CustomizationType; root?: 'customizations' \| 'plugin:<id>' }` | `Customization[]` |
-| `customization.get` | `{ id: string; root? }` | `Customization` |
-| `customization.save` | `{ customization: Customization; isCreate?: boolean; root? }` | `{ customization: Customization; syncReport: SyncResult[] }` |
-| `customization.delete` | `{ id: string; removeSymlinks: boolean; root? }` | `{ ok: true }` |
-| `customization.search` | `{ query: string; options?: SearchOptions }` | `SearchOutput` |
+| Method                 | Params                                                                   | Result                                                       |
+| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `customization.list`   | `{ type?: CustomizationType; root?: 'customizations' \| 'plugin:<id>' }` | `Customization[]`                                            |
+| `customization.get`    | `{ id: string; root? }`                                                  | `Customization`                                              |
+| `customization.save`   | `{ customization: Customization; isCreate?: boolean; root? }`            | `{ customization: Customization; syncReport: SyncResult[] }` |
+| `customization.delete` | `{ id: string; removeSymlinks: boolean; root? }`                         | `{ ok: true }`                                               |
+| `customization.search` | `{ query: string; options?: SearchOptions }`                             | `SearchOutput`                                               |
 
 `CustomizationType`, `Customization`, `SyncResult` — see [`src/shared/customization.ts`](../../src/shared/customization.ts) and [Customization schema](customization-schema.md). Prefer the typed namespaces above for new code.
 
 ### `adapter`
 
-| Method | Params | Result |
-|---|---|---|
-| `adapter.syncAll` | `{ adapterId?: string }` (or none) | `SyncResult[]` |
-| `adapter.removeAll` | `{ adapterId: string }` | `RemoveAdapterResult` |
-| `adapter.setEnabled` | `{ adapterId: string; enabled: boolean; removeSymlinks?: boolean; runSyncAll?: boolean }` | See below |
-| `adapter.countDestinations` | `{ adapterId: string }` | `{ count: number }` |
+| Method                      | Params                                                                                    | Result                |
+| --------------------------- | ----------------------------------------------------------------------------------------- | --------------------- |
+| `adapter.syncAll`           | `{ adapterId?: string }` (or none)                                                        | `SyncResult[]`        |
+| `adapter.removeAll`         | `{ adapterId: string }`                                                                   | `RemoveAdapterResult` |
+| `adapter.setEnabled`        | `{ adapterId: string; enabled: boolean; removeSymlinks?: boolean; runSyncAll?: boolean }` | See below             |
+| `adapter.countDestinations` | `{ adapterId: string }`                                                                   | `{ count: number }`   |
 
 `adapter.setEnabled` returns:
 
@@ -197,17 +198,17 @@ interface RemoveAdapterResult {
 
 ### `plugin`
 
-| Method | Params | Result |
-|---|---|---|
-| `plugin.import` | `{ url: string; ref?: string; scope?: string }` | `PluginSummary` |
-| `plugin.list` | `{ scope?: string }` | `PluginListItem[]` |
-| `plugin.get` | `{ id: string; scope?: string }` | `PluginDetail` |
-| `plugin.update` | `{ id: string; scope?: string }` | `PluginSummary` |
-| `plugin.remove` | `{ id: string; scope?: string }` | `void` |
-| `plugin.toggle` | `{ id: string; scope?: string; enabled: boolean }` | `PluginSummary` |
-| `plugin.createOwned` | `{ id: string; version: string; description?: string; scope?: string }` | `PluginSummary` |
-| `plugin.deleteOwned` | `{ id: string; scope?: string }` | `void` |
-| `plugin.publish` | `{ id: string; scope?: string; repoName?: string; visibility?: 'public' \| 'private'; version: string; commitMessage?: string }` | `PluginPublishInfo` |
+| Method               | Params                                                                                                                           | Result              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `plugin.import`      | `{ url: string; ref?: string; scope?: string }`                                                                                  | `PluginSummary`     |
+| `plugin.list`        | `{ scope?: string }`                                                                                                             | `PluginListItem[]`  |
+| `plugin.get`         | `{ id: string; scope?: string }`                                                                                                 | `PluginDetail`      |
+| `plugin.update`      | `{ id: string; scope?: string }`                                                                                                 | `PluginSummary`     |
+| `plugin.remove`      | `{ id: string; scope?: string }`                                                                                                 | `void`              |
+| `plugin.toggle`      | `{ id: string; scope?: string; enabled: boolean }`                                                                               | `PluginSummary`     |
+| `plugin.createOwned` | `{ id: string; version: string; description?: string; scope?: string }`                                                          | `PluginSummary`     |
+| `plugin.deleteOwned` | `{ id: string; scope?: string }`                                                                                                 | `void`              |
+| `plugin.publish`     | `{ id: string; scope?: string; repoName?: string; visibility?: 'public' \| 'private'; version: string; commitMessage?: string }` | `PluginPublishInfo` |
 
 **Plugin types:**
 
@@ -248,11 +249,11 @@ interface PluginPublishInfo {
 
 ### `credentials`
 
-| Method | Params | Result |
-|---|---|---|
-| `credentials.setGithubToken` | `{ token: string }` | `void` |
-| `credentials.clearGithubToken` | — | `void` |
-| `credentials.hasGithubToken` | — | `{ hasToken: boolean }` |
+| Method                         | Params              | Result                  |
+| ------------------------------ | ------------------- | ----------------------- |
+| `credentials.setGithubToken`   | `{ token: string }` | `void`                  |
+| `credentials.clearGithubToken` | —                   | `void`                  |
+| `credentials.hasGithubToken`   | —                   | `{ hasToken: boolean }` |
 
 **Credential storage:**
 
@@ -262,10 +263,10 @@ interface PluginPublishInfo {
 
 ### `health`
 
-| Method | Params | Result |
-|---|---|---|
+| Method             | Params                                                        | Result         |
+| ------------------ | ------------------------------------------------------------- | -------------- |
 | `health.getReport` | `{ scope?: 'personal' \| 'project' }` (default: `'personal'`) | `HealthReport` |
-| `health.notify` | `{ title: string; body: string }` | `void` |
+| `health.notify`    | `{ title: string; body: string }`                             | `void`         |
 
 **Types** (see [`src/shared/health.ts`](../../src/shared/health.ts)):
 
@@ -274,19 +275,19 @@ type Severity = 'ok' | 'warning' | 'error';
 type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink';
 
 interface HealthCheck {
-  id: string;           // stable id used for notification diffing
+  id: string; // stable id used for notification diffing
   category: HealthCategory;
   severity: Severity;
   title: string;
   detail?: string;
-  target?: string;      // MCP/plugin/symlink name this check concerns
+  target?: string; // MCP/plugin/symlink name this check concerns
   remediation?: string; // actionable hint, e.g. "Run /mcp to authenticate"
-  observedAt: string;   // ISO timestamp
+  observedAt: string; // ISO timestamp
 }
 
 interface HealthReport {
   generatedAt: string;
-  worst: Severity;      // drives the nav badge color
+  worst: Severity; // drives the nav badge color
   counts: { ok: number; warning: number; error: number };
   checks: HealthCheck[];
 }

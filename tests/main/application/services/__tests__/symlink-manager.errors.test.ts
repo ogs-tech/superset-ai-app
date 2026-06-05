@@ -18,18 +18,28 @@ const createManager = (failOn: FailOnRule[]) => {
 
 describe('SymlinkManager error handling', () => {
   it('returns io error when symlink creation fails', async () => {
-    const { manager } = createManager([{ op: 'symlink' as const, path: '/workspace/.claude/broken', code: 'EACCES' }]);
+    const { manager } = createManager([
+      { op: 'symlink' as const, path: '/workspace/.claude/broken', code: 'EACCES' },
+    ]);
     await expect(
-      manager.create({ source: '/workspace/skills/foo/SKILL.md', destination: '/workspace/.claude/broken' }),
+      manager.create({
+        source: '/workspace/skills/foo/SKILL.md',
+        destination: '/workspace/.claude/broken',
+      }),
     ).rejects.toMatchObject({ kind: 'io', details: { code: 'EACCES' } });
   });
 
   it('returns io error when unlink fails during symlink replacement', async () => {
-    const { fs, manager } = createManager([{ op: 'unlink' as const, path: '/workspace/.claude/broken', code: 'EACCES' }]);
+    const { fs, manager } = createManager([
+      { op: 'unlink' as const, path: '/workspace/.claude/broken', code: 'EACCES' },
+    ]);
     await fs.mkdir('/workspace/.claude', { recursive: true });
     await fs.symlink({ target: '/workspace/old.md', path: '/workspace/.claude/broken' });
     await expect(
-      manager.create({ source: '/workspace/skills/foo/SKILL.md', destination: '/workspace/.claude/broken' }),
+      manager.create({
+        source: '/workspace/skills/foo/SKILL.md',
+        destination: '/workspace/.claude/broken',
+      }),
     ).rejects.toMatchObject({ kind: 'io', details: { code: 'EACCES' } });
   });
 });

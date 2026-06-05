@@ -21,10 +21,7 @@ beforeEach(() => {
   call = mockApi();
 });
 
-const setupRoute = (
-  list: LinkedRepoView[] = [],
-  overrides: Record<string, unknown> = {},
-) => {
+const setupRoute = (list: LinkedRepoView[] = [], overrides: Record<string, unknown> = {}) => {
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
     if (method === 'settings.get') return Promise.resolve(ok(baseSettings));
@@ -44,12 +41,8 @@ describe('<Settings> — linked repos section', () => {
 
     await user.click(await screen.findByRole('button', { name: /add repo/i }));
 
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(/not a git/i),
-    );
-    expect(
-      call.mock.calls.find((c) => c[0] === 'repo.link'),
-    ).toBeUndefined();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/not a git/i));
+    expect(call.mock.calls.find((c) => c[0] === 'repo.link')).toBeUndefined();
   });
 
   it('valid repo opens confirmation modal; confirm calls repo.link, cancel does not', async () => {
@@ -73,19 +66,13 @@ describe('<Settings> — linked repos section', () => {
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
-    expect(
-      call.mock.calls.find((c) => c[0] === 'repo.link'),
-    ).toBeUndefined();
+    expect(call.mock.calls.find((c) => c[0] === 'repo.link')).toBeUndefined();
 
     await user.click(screen.getByRole('button', { name: /add repo/i }));
     await screen.findByRole('dialog');
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
-    await waitFor(() =>
-      expect(
-        call.mock.calls.find((c) => c[0] === 'repo.link'),
-      ).toBeDefined(),
-    );
+    await waitFor(() => expect(call.mock.calls.find((c) => c[0] === 'repo.link')).toBeDefined());
   });
 
   it('adding the same path twice results in a single entry in the list', async () => {

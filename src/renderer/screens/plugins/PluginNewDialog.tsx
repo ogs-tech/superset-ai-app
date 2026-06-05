@@ -19,7 +19,12 @@ interface PluginNewDialogProps {
   onSuccess: (pluginId: string) => void;
 }
 
-export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDialogProps): React.ReactElement {
+export function PluginNewDialog({
+  open,
+  scope,
+  onClose,
+  onSuccess,
+}: PluginNewDialogProps): React.ReactElement {
   const [id, setId] = useState('');
   const [version, setVersion] = useState('0.1.0');
   const [description, setDescription] = useState('');
@@ -37,7 +42,9 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
       return false;
     }
     if (!idRegex.test(value)) {
-      setIdError('Must start with a letter, contain only lowercase letters, digits, and hyphens (max 64 characters)');
+      setIdError(
+        'Must start with a letter, contain only lowercase letters, digits, and hyphens (max 64 characters)',
+      );
       return false;
     }
     setIdError(null);

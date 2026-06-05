@@ -154,7 +154,12 @@ describe('PluginManifestParser', () => {
       JSON.stringify({
         hooks: {
           SessionStart: [
-            { hooks: [{ type: 'command', command: 'a' }, { type: 'command', command: 'b' }] },
+            {
+              hooks: [
+                { type: 'command', command: 'a' },
+                { type: 'command', command: 'b' },
+              ],
+            },
           ],
           Stop: [{ hooks: [{ type: 'command', command: 'c' }] }],
         },

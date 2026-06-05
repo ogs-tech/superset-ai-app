@@ -33,9 +33,7 @@ describe('SettingsService — legacy defaultScope strip on load', () => {
     expect(
       (result!.adapters.claude as unknown as { defaultScope?: string }).defaultScope,
     ).toBeUndefined();
-    expect(
-      (result!.adapters as unknown as { copilot?: unknown }).copilot,
-    ).toBeUndefined();
+    expect((result!.adapters as unknown as { copilot?: unknown }).copilot).toBeUndefined();
   });
 
   it('persists the cleaned shape when merge is called over legacy state', async () => {
@@ -48,9 +46,7 @@ describe('SettingsService — legacy defaultScope strip on load', () => {
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(next.adapters.claude).toEqual({ enabled: true });
-    expect(
-      (next.adapters as unknown as { copilot?: unknown }).copilot,
-    ).toBeUndefined();
+    expect((next.adapters as unknown as { copilot?: unknown }).copilot).toBeUndefined();
     expect((save.mock.calls[0]![0] as Settings).adapters.claude).toEqual({ enabled: true });
   });
 });

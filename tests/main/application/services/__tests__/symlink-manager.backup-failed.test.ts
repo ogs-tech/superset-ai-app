@@ -5,7 +5,13 @@ import { SymlinkManager } from '../../../../../src/main/application/services/sym
 
 describe('SymlinkManager.backup-failed-aborts', () => {
   it('propagates backup failure and does not overwrite the destination', async () => {
-    const fs = new InMemoryFileSystem([{ op: 'copyFile', path: '/workspace/_backups/20260426T100000/references/foo.md', code: 'ENOSPC' }]);
+    const fs = new InMemoryFileSystem([
+      {
+        op: 'copyFile',
+        path: '/workspace/_backups/20260426T100000/references/foo.md',
+        code: 'ENOSPC',
+      },
+    ]);
     const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
     const manager = new SymlinkManager(fs, clock, '/workspace');
     const source = '/workspace/skills/foo/SKILL.md';

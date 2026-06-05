@@ -33,7 +33,11 @@ export const setupAdapterManager = async (
     await customizationRepo.save({ customization });
   };
   const fs = new InMemoryFileSystem();
-  const symlinkManager = new SymlinkManager(fs, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), workspacePath);
+  const symlinkManager = new SymlinkManager(
+    fs,
+    new FixedClock(new Date('2026-04-26T10:00:00.000Z')),
+    workspacePath,
+  );
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
@@ -41,5 +45,13 @@ export const setupAdapterManager = async (
     workspacePath,
     adapters: new Map(adapters.map((adapter) => [adapter.adapterId, adapter])),
   });
-  return { settingsService, customizationRepo, symlinkManager, manager, fs, registerCustomization, workspacePath };
+  return {
+    settingsService,
+    customizationRepo,
+    symlinkManager,
+    manager,
+    fs,
+    registerCustomization,
+    workspacePath,
+  };
 };

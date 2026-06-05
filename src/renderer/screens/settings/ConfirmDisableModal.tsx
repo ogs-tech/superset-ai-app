@@ -40,10 +40,7 @@ export function ConfirmDisableModal({
       </DialogContent>
       <DialogActions>
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-          <Button
-            data-testid="confirm-cancel-btn"
-            onClick={onCancel}
-          >
+          <Button data-testid="confirm-cancel-btn" onClick={onCancel}>
             Cancel
           </Button>
           <Button

@@ -36,9 +36,6 @@ export function useCustomizationList(
 
 export function useInvalidateCustomization() {
   const qc = useQueryClient();
-  return (
-    type: CustomizationType,
-    scope: CustomizationScope = 'personal',
-  ): Promise<void> =>
+  return (type: CustomizationType, scope: CustomizationScope = 'personal'): Promise<void> =>
     qc.invalidateQueries({ queryKey: customizationQueryKey(type, scope) });
 }

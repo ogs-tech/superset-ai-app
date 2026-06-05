@@ -101,11 +101,7 @@ export function PluginImportDialog({
           )}
 
           {marketplaceWarning && (
-            <Alert
-              severity="warning"
-              role="alert"
-              data-testid="plugin-import-marketplace-warning"
-            >
+            <Alert severity="warning" role="alert" data-testid="plugin-import-marketplace-warning">
               {marketplaceWarning}
             </Alert>
           )}

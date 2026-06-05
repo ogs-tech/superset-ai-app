@@ -10,14 +10,12 @@ import { createAppTheme } from './theme.js';
 
 function Root(): React.ReactElement {
   const prefersDark =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches;
+    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const [mode, setMode] = useState<PaletteMode>(prefersDark ? 'dark' : 'light');
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = (e: MediaQueryListEvent): void =>
-      setMode(e.matches ? 'dark' : 'light');
+    const handler = (e: MediaQueryListEvent): void => setMode(e.matches ? 'dark' : 'light');
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);

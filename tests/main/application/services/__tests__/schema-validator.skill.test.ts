@@ -19,7 +19,10 @@ describe('SchemaValidator — skill (AC#3, AC#4)', () => {
   });
 
   it('valid skill with optional tags → ok: true', () => {
-    const result = new SchemaValidator().validate({ ...validSkill, tags: ['tag-a', 'tag-b'] } as CustomizationFrontmatter);
+    const result = new SchemaValidator().validate({
+      ...validSkill,
+      tags: ['tag-a', 'tag-b'],
+    } as CustomizationFrontmatter);
     expect(result.ok).toBe(true);
   });
 });

@@ -1,12 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { SkillList } from '../../../../src/renderer/screens/skills/SkillList.js';
-import {
-  mockApi,
-  ok,
-  renderWithQuery,
-  type CallSpy,
-} from '../../test-utils.js';
+import { mockApi, ok, renderWithQuery, type CallSpy } from '../../test-utils.js';
 
 let call: CallSpy;
 
@@ -62,25 +57,17 @@ describe('<SkillList>', () => {
     });
     renderWithQuery(<SkillList />);
 
+    expect(await screen.findByTestId(cardId('local', { kind: 'workspace' }))).toBeInTheDocument();
     expect(
-      await screen.findByTestId(cardId('local', { kind: 'workspace' })),
+      await screen.findByTestId(cardId('from-plugin', { kind: 'plugin', pluginId: 'superpowers' })),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByTestId(
-        cardId('from-plugin', { kind: 'plugin', pluginId: 'superpowers' }),
-      ),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByTestId('plugin-origin-badge-superpowers'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('plugin-origin-badge-superpowers')).toBeInTheDocument();
   });
 
   it('hides all row action buttons for plugin-sourced skills', async () => {
     call.mockImplementation((method: string) => {
       if (method === 'skill.list')
-        return Promise.resolve(
-          ok([skill('from-plugin', { kind: 'plugin', pluginId: 'p' })]),
-        );
+        return Promise.resolve(ok([skill('from-plugin', { kind: 'plugin', pluginId: 'p' })]));
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(<SkillList />);
@@ -101,17 +88,9 @@ describe('<SkillList>', () => {
     });
     renderWithQuery(<SkillList />);
 
-    const card = await screen.findByTestId(
-      cardId('local', { kind: 'workspace' }),
-    );
-    expect(
-      within(card).getByRole('button', { name: 'Edit' }),
-    ).toBeInTheDocument();
-    expect(
-      within(card).getByRole('button', { name: 'Duplicate' }),
-    ).toBeInTheDocument();
-    expect(
-      within(card).getByRole('button', { name: 'Delete' }),
-    ).toBeInTheDocument();
+    const card = await screen.findByTestId(cardId('local', { kind: 'workspace' }));
+    expect(within(card).getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Duplicate' })).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
   });
 });

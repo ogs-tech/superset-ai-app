@@ -13,9 +13,7 @@ export class FsSettingsRepository implements SettingsRepository {
   constructor(private readonly filePathSource: FilePathSource) {}
 
   private async resolvePath(): Promise<string> {
-    return typeof this.filePathSource === 'function'
-      ? this.filePathSource()
-      : this.filePathSource;
+    return typeof this.filePathSource === 'function' ? this.filePathSource() : this.filePathSource;
   }
 
   async load(): Promise<Settings | null> {

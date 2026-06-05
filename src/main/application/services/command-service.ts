@@ -106,11 +106,7 @@ export class CommandService {
     };
   }
 
-  async delete(input: {
-    id: CommandId;
-    removeSymlinks: boolean;
-    scope?: Scope;
-  }): Promise<{
+  async delete(input: { id: CommandId; removeSymlinks: boolean; scope?: Scope }): Promise<{
     ok: true;
     syncReport?: SyncResult[];
   }> {

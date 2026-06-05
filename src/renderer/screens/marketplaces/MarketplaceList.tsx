@@ -24,10 +24,7 @@ import { DetailDrawer } from '../../components/DetailDrawer.js';
 import { MarketplaceDetail } from './MarketplaceDetail.js';
 import { MarketplaceImportDialog } from './MarketplaceImportDialog.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
-import type {
-  EntityDef,
-  RowAction,
-} from '../../components/EntityDataGrid/index.js';
+import type { EntityDef, RowAction } from '../../components/EntityDataGrid/index.js';
 
 interface MarketplacePlugin {
   name: string;
@@ -82,8 +79,7 @@ export function MarketplaceList(): React.ReactElement {
   const qc = useQueryClient();
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [confirmRemove, setConfirmRemove] =
-    useState<MarketplaceSummary | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<MarketplaceSummary | null>(null);
   const [selected, setSelected] = useState<MarketplaceSummary | null>(null);
 
   const { data, isLoading, error } = useQuery<MarketplaceSummary[]>({
@@ -92,9 +88,7 @@ export function MarketplaceList(): React.ReactElement {
       const list = await callIpc<MarketplaceSummary[]>('marketplace.list', {
         scope: 'personal',
       });
-      return Array.isArray(list)
-        ? list.filter((m) => m.id !== LOCAL_MARKETPLACE_ID)
-        : [];
+      return Array.isArray(list) ? list.filter((m) => m.id !== LOCAL_MARKETPLACE_ID) : [];
     },
   });
 
@@ -139,8 +133,7 @@ export function MarketplaceList(): React.ReactElement {
         primary: true,
         searchable: true,
         render: (item) => {
-          const isOfficial =
-            item.source.kind === 'github' && item.source.repo === OFFICIAL_REPO;
+          const isOfficial = item.source.kind === 'github' && item.source.repo === OFFICIAL_REPO;
           return (
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Box component="span">{item.manifest?.name ?? item.id}</Box>
@@ -163,8 +156,7 @@ export function MarketplaceList(): React.ReactElement {
         badge: true,
         searchable: true,
         render: (item) => {
-          const isLocal =
-            item.id === LOCAL_MARKETPLACE_ID || item.source.kind === 'directory';
+          const isLocal = item.id === LOCAL_MARKETPLACE_ID || item.source.kind === 'directory';
           return isLocal ? 'local' : sourceLabel(item.source).badge;
         },
       },
@@ -186,9 +178,7 @@ export function MarketplaceList(): React.ReactElement {
           const label = sourceLabel(item.source);
           return (
             <Box>
-              {item.manifest?.description && (
-                <span>{item.manifest.description} · </span>
-              )}
+              {item.manifest?.description && <span>{item.manifest.description} · </span>}
               {label.href ? (
                 <Link
                   href={label.href}
@@ -224,16 +214,8 @@ export function MarketplaceList(): React.ReactElement {
   ];
 
   return (
-    <Container
-      component="main"
-      data-testid="marketplace-list"
-      maxWidth="lg"
-      sx={{ py: 2.5 }}
-    >
-      <Stack
-        direction="row"
-        sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}
-      >
+    <Container component="main" data-testid="marketplace-list" maxWidth="lg" sx={{ py: 2.5 }}>
+      <Stack direction="row" sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h5" component="h1">
           Marketplaces
         </Typography>
@@ -278,9 +260,8 @@ export function MarketplaceList(): React.ReactElement {
         <DialogTitle>Remove marketplace</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Remove marketplace <strong>{confirmRemove?.id}</strong>? This will
-            not delete any installed plugins; only the marketplace registration
-            is removed.
+            Remove marketplace <strong>{confirmRemove?.id}</strong>? This will not delete any
+            installed plugins; only the marketplace registration is removed.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

@@ -38,7 +38,11 @@ export class MarketplaceSeeder {
   }
 }
 
-export function isOfficialMarketplace(source: { kind: string; repo?: string; url?: string }): boolean {
+export function isOfficialMarketplace(source: {
+  kind: string;
+  repo?: string;
+  url?: string;
+}): boolean {
   if (source.kind === 'github' && source.repo === OFFICIAL_MARKETPLACE_REPO) {
     return true;
   }

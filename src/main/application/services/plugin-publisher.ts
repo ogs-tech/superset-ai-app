@@ -50,10 +50,9 @@ export class PluginPublisher {
     const meta = await cache.readMeta(scope);
     const entry = meta.plugins.find((p) => p.id === id);
     if (entry == null) {
-      throw new OperationNotAllowedForOriginError(
-        `Plugin '${id}' not found in ${scope} scope`,
-        { operation: 'publish' },
-      );
+      throw new OperationNotAllowedForOriginError(`Plugin '${id}' not found in ${scope} scope`, {
+        operation: 'publish',
+      });
     }
 
     // 2. Check origin='owned'
@@ -207,9 +206,7 @@ export class PluginPublisher {
 
     const updatedMeta = {
       ...meta,
-      plugins: meta.plugins.map((p) =>
-        p.id === entry.id ? { ...p, publish: publishInfo } : p,
-      ),
+      plugins: meta.plugins.map((p) => (p.id === entry.id ? { ...p, publish: publishInfo } : p)),
     };
     await cache.writeMeta(scope, updatedMeta);
 
@@ -273,10 +270,9 @@ export class PluginPublisher {
     const tagName = `v${version}`;
     const tagAlreadyExists = await githubApi.tagExists({ owner, name: repoName, tag: tagName });
     if (tagAlreadyExists) {
-      throw new TagConflictError(
-        `Tag '${tagName}' already exists on '${owner}/${repoName}'`,
-        { tag: tagName },
-      );
+      throw new TagConflictError(`Tag '${tagName}' already exists on '${owner}/${repoName}'`, {
+        tag: tagName,
+      });
     }
 
     // 4. Commit uncommitted changes if any
@@ -307,9 +303,7 @@ export class PluginPublisher {
 
     const updatedMeta = {
       ...meta,
-      plugins: meta.plugins.map((p) =>
-        p.id === entry.id ? { ...p, publish: publishInfo } : p,
-      ),
+      plugins: meta.plugins.map((p) => (p.id === entry.id ? { ...p, publish: publishInfo } : p)),
     };
     await cache.writeMeta(scope, updatedMeta);
 

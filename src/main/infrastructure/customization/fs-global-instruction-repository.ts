@@ -4,11 +4,18 @@ import type {
   GlobalInstruction,
   GlobalInstructionFrontmatter,
 } from '../../application/schemas/global-instruction.js';
-import { globalInstructionId, type GlobalInstructionId } from '../../domain/global-instruction-id.js';
+import {
+  globalInstructionId,
+  type GlobalInstructionId,
+} from '../../domain/global-instruction-id.js';
 import { WORKSPACE_SOURCE } from '../../domain/customization-source.js';
 import { formatCustomizationId } from '../../domain/customization-id.js';
 
-function toGlobalInstruction(c: { id: string; frontmatter: unknown; body: string }): GlobalInstruction {
+function toGlobalInstruction(c: {
+  id: string;
+  frontmatter: unknown;
+  body: string;
+}): GlobalInstruction {
   const fm = c.frontmatter as GlobalInstructionFrontmatter;
   return {
     id: globalInstructionId(fm.name),

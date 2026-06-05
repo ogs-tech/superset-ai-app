@@ -6,7 +6,10 @@ import type { PluginManifest } from '../../domain/plugin-manifest.js';
 import type { PluginPublishInfo } from '../../domain/plugin-publish-info.js';
 import type { PluginRef } from '../../domain/plugin-ref.js';
 import type { SemVer } from '../../domain/semver.js';
-import { PluginCollisionError, OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
+import {
+  PluginCollisionError,
+  OperationNotAllowedForOriginError,
+} from '../../domain/plugin-errors.js';
 import { normalizeGitUrl } from '../../domain/plugin-source.js';
 import type { MarketplaceManifest, MarketplacePlugin } from '../../domain/marketplace-manifest.js';
 import type { GitPort } from '../ports/git-port.js';
@@ -116,15 +119,17 @@ export class PluginService {
     const meta = await cache.readMeta(scope);
     const existing = meta.plugins.find((p) => p.id === id);
     if (existing != null) {
-      throw new PluginCollisionError(
-        `Plugin '${id}' already exists (origin: ${existing.origin})`,
-        { id },
-      );
+      throw new PluginCollisionError(`Plugin '${id}' already exists (origin: ${existing.origin})`, {
+        id,
+      });
     }
 
     // 4. Install (moves tmpDir to final dir, registers in settings + meta)
     const pluginDir = cache.pluginDir(scope, id);
-    const source: { kind: 'git'; url: string; ref?: PluginRef } = { kind: 'git', url: normalizedUrl };
+    const source: { kind: 'git'; url: string; ref?: PluginRef } = {
+      kind: 'git',
+      url: normalizedUrl,
+    };
     if (ref != null) {
       source.ref = ref;
     }
@@ -147,9 +152,9 @@ export class PluginService {
    * entries pointing back at the marketplace URL, so they can be installed
    * without any special-casing in importFromMarketplace.
    */
-  async detect(url: string): Promise<
-    { kind: 'marketplace'; manifest: MarketplaceManifest } | { kind: 'plugin' }
-  > {
+  async detect(
+    url: string,
+  ): Promise<{ kind: 'marketplace'; manifest: MarketplaceManifest } | { kind: 'plugin' }> {
     const { git, marketplaceParser } = this.deps;
     const normalizedUrl = normalizeGitUrl(url);
 
@@ -182,9 +187,7 @@ export class PluginService {
    * the temp dir. Returns id, version, description, and the artifacts list so the
    * UI can show what skills/agents/commands/hooks/MCP/LSP will be added.
    */
-  async previewFromMarketplace(
-    plugin: MarketplacePlugin,
-  ): Promise<PluginManifest> {
+  async previewFromMarketplace(plugin: MarketplacePlugin): Promise<PluginManifest> {
     const { git, parser } = this.deps;
 
     const tmpDir = path.join(
@@ -229,10 +232,9 @@ export class PluginService {
     const meta = await cache.readMeta(scope);
     const existing = meta.plugins.find((p) => p.id === id);
     if (existing != null) {
-      throw new PluginCollisionError(
-        `Plugin '${id}' already exists (origin: ${existing.origin})`,
-        { id },
-      );
+      throw new PluginCollisionError(`Plugin '${id}' already exists (origin: ${existing.origin})`, {
+        id,
+      });
     }
 
     const pluginDir = cache.pluginDir(scope, id);
@@ -380,9 +382,7 @@ export class PluginService {
     // Update meta
     await cache.writeMeta(scope, {
       ...meta,
-      plugins: meta.plugins.map((p) =>
-        p.id === id ? { ...p, enabled } : p,
-      ),
+      plugins: meta.plugins.map((p) => (p.id === id ? { ...p, enabled } : p)),
     });
   }
 
@@ -493,10 +493,7 @@ export class PluginService {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function expandLocalSource(
-  plugin: MarketplacePlugin,
-  marketplaceUrl: string,
-): MarketplacePlugin {
+function expandLocalSource(plugin: MarketplacePlugin, marketplaceUrl: string): MarketplacePlugin {
   if (typeof plugin.source !== 'string') return plugin;
   const localPath = plugin.source.replace(/^\.\//, '');
   return {
@@ -561,7 +558,11 @@ async function writeSynthesizedManifest(dir: string, plugin: MarketplacePlugin):
 
   const manifestDir = path.join(dir, '.claude-plugin');
   await fs.mkdir(manifestDir, { recursive: true });
-  await fs.writeFile(path.join(manifestDir, 'plugin.json'), JSON.stringify(manifest, null, 2), 'utf8');
+  await fs.writeFile(
+    path.join(manifestDir, 'plugin.json'),
+    JSON.stringify(manifest, null, 2),
+    'utf8',
+  );
 }
 
 async function cloneMarketplaceSource(
@@ -575,7 +576,15 @@ async function cloneMarketplaceSource(
     );
   }
 
-  const s = source as { source?: string; url?: string; path?: string; ref?: string; sha?: string; repo?: string; commit?: string };
+  const s = source as {
+    source?: string;
+    url?: string;
+    path?: string;
+    ref?: string;
+    sha?: string;
+    repo?: string;
+    commit?: string;
+  };
 
   if (s.source === 'git-subdir') {
     const { sha } = await git.cloneSubdir(s.url!, s.path!, s.ref, tmpDir);

@@ -4,7 +4,11 @@ import { setupAdapterManager } from './adapter-manager.helpers.js';
 
 describe('AdapterManager.syncOne shape', () => {
   it('delegates to SettingsService and returns SyncResult[] with adapter destination status', async () => {
-    const adapter = new FakeAdapter('claude', '/workspace/personal/claude', (repoPath) => `${repoPath}/.claude`);
+    const adapter = new FakeAdapter(
+      'claude',
+      '/workspace/personal/claude',
+      (repoPath) => `${repoPath}/.claude`,
+    );
     const { manager, fs, registerCustomization } = await setupAdapterManager([adapter]);
     const customization = {
       id: 'skill/foo',

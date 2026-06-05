@@ -72,8 +72,12 @@ describe('FsSkillRepository', () => {
   });
 
   it('lists only skills with workspace source', async () => {
-    await base.save({ customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'x' } });
-    await base.save({ customization: { id: 'agent/bar', frontmatter: fm('agent', 'bar'), body: 'y' } });
+    await base.save({
+      customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'x' },
+    });
+    await base.save({
+      customization: { id: 'agent/bar', frontmatter: fm('agent', 'bar'), body: 'y' },
+    });
     const skills = await repo.list();
     expect(skills).toHaveLength(1);
     const [s] = skills;
@@ -97,7 +101,9 @@ describe('FsSkillRepository', () => {
   });
 
   it('delete removes the skill', async () => {
-    await base.save({ customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'x' } });
+    await base.save({
+      customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'x' },
+    });
     await repo.delete({ id: skillId('foo') });
     expect(await repo.exists({ id: skillId('foo') })).toBe(false);
   });
@@ -107,8 +113,12 @@ describe('FsAgentRepository', () => {
   it('lists only agents', async () => {
     const base = new FakeCustomizationRepository();
     const repo = new FsAgentRepository(base);
-    await base.save({ customization: { id: 'agent/reviewer', frontmatter: fm('agent', 'reviewer'), body: 'a' } });
-    await base.save({ customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'b' } });
+    await base.save({
+      customization: { id: 'agent/reviewer', frontmatter: fm('agent', 'reviewer'), body: 'a' },
+    });
+    await base.save({
+      customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'b' },
+    });
     const agents = await repo.list();
     expect(agents).toHaveLength(1);
     expect(agents[0]!.id).toBe('reviewer');

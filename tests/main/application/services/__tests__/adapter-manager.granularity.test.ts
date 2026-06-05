@@ -5,8 +5,11 @@ import { setupAdapterManager } from './adapter-manager.helpers.js';
 describe('AdapterManager sync granularity by customization type', () => {
   it('creates a directory symlink for skill customizations and file symlinks for agent customizations', async () => {
     const skillAdapter = new FakeAdapter('claude', '/workspace/personal/claude-skill');
-    const { manager: skillManager, fs: skillFs, registerCustomization: registerSkill } =
-      await setupAdapterManager([skillAdapter]);
+    const {
+      manager: skillManager,
+      fs: skillFs,
+      registerCustomization: registerSkill,
+    } = await setupAdapterManager([skillAdapter]);
 
     const skillCustomization = {
       id: 'skill/alpha',
@@ -32,8 +35,11 @@ describe('AdapterManager sync granularity by customization type', () => {
     expect((await skillFs.lstat(skillTarget)).kind).toBe('directory');
 
     const agentAdapter = new FakeAdapter('claude', '/workspace/personal/claude-agent');
-    const { manager: agentManager, fs: agentFs, registerCustomization: registerAgent } =
-      await setupAdapterManager([agentAdapter]);
+    const {
+      manager: agentManager,
+      fs: agentFs,
+      registerCustomization: registerAgent,
+    } = await setupAdapterManager([agentAdapter]);
 
     const agentCustomization = {
       id: 'agent/beta',

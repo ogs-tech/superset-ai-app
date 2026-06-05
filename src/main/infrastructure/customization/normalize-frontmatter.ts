@@ -1,4 +1,7 @@
-import type { CustomizationFrontmatter, CustomizationScope } from '../../../shared/customization.js';
+import type {
+  CustomizationFrontmatter,
+  CustomizationScope,
+} from '../../../shared/customization.js';
 
 const VALID_SCOPES: readonly CustomizationScope[] = ['personal', 'project'];
 

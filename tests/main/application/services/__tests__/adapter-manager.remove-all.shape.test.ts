@@ -42,7 +42,10 @@ const setup = async () => {
   const customizationRepo = new InMemoryCustomizationRepository();
   await customizationRepo.save({ customization: skillCustomization });
   const fs = new InMemoryFileSystem();
-  await fs.symlink({ target: join(WORKSPACE, 'skills/test/SKILL.md'), path: join(HOMEDIR, '.claude/skills/test') });
+  await fs.symlink({
+    target: join(WORKSPACE, 'skills/test/SKILL.md'),
+    path: join(HOMEDIR, '.claude/skills/test'),
+  });
   const sm = new SymlinkManager(fs, new FixedClock(new Date()), WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const manager = new AdapterManager({

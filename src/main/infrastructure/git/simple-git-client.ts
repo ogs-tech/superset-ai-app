@@ -33,7 +33,12 @@ export class SimpleGitClient implements GitPort {
     return { sha };
   }
 
-  async cloneSubdir(url: string, subdir: string, ref: string | undefined, dest: string): Promise<{ sha: string }> {
+  async cloneSubdir(
+    url: string,
+    subdir: string,
+    ref: string | undefined,
+    dest: string,
+  ): Promise<{ sha: string }> {
     const tmpRepoDir = `${dest}__repo`;
     try {
       if (!ref) {
@@ -138,7 +143,12 @@ export class SimpleGitClient implements GitPort {
     return remotes.some((r) => r.name === name);
   }
 
-  async push(dir: string, remote: string, ref: string, opts?: { setUpstream?: boolean }): Promise<void> {
+  async push(
+    dir: string,
+    remote: string,
+    ref: string,
+    opts?: { setUpstream?: boolean },
+  ): Promise<void> {
     const args = opts?.setUpstream ? ['-u'] : [];
     await simpleGit(dir).push(remote, ref, args);
   }

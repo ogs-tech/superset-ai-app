@@ -128,14 +128,13 @@ const claudeHookHandlerEntrySchema = z
   .object({
     matcher: z.string().optional(),
     description: z.string().optional(),
-    hooks: z.array(hookHandlerSchema.and(z.object({ _sdeAiId: z.string().optional() }).passthrough())),
+    hooks: z.array(
+      hookHandlerSchema.and(z.object({ _sdeAiId: z.string().optional() }).passthrough()),
+    ),
   })
   .passthrough();
 
-export const claudeHooksFieldSchema = z.record(
-  z.string(),
-  z.array(claudeHookHandlerEntrySchema),
-);
+export const claudeHooksFieldSchema = z.record(z.string(), z.array(claudeHookHandlerEntrySchema));
 
 export type ClaudeHookHandlerEntry = z.infer<typeof claudeHookHandlerEntrySchema>;
 export type ClaudeHooksField = z.infer<typeof claudeHooksFieldSchema>;

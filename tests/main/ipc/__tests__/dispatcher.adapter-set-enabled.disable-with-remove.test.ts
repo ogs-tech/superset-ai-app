@@ -10,7 +10,11 @@ const buildDeps = () => {
   const removeAdapterSymlinks = vi.fn().mockResolvedValue(stubRemoveResult);
   const merge = vi.fn().mockResolvedValue({});
   const adapterManager = { removeAdapterSymlinks } as unknown as AdapterManager;
-  const settingsService = { merge, load: vi.fn().mockResolvedValue(null), getDefaults: vi.fn().mockReturnValue({}) } as unknown as SettingsService;
+  const settingsService = {
+    merge,
+    load: vi.fn().mockResolvedValue(null),
+    getDefaults: vi.fn().mockReturnValue({}),
+  } as unknown as SettingsService;
   return { adapterManager, settingsService, removeAdapterSymlinks, merge };
 };
 

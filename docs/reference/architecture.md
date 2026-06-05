@@ -38,6 +38,7 @@ src/main/
 Located at `src/main/application/services/`:
 
 Per-entity facades (1ª class):
+
 - `skill-service` — CRUD over skills + provenance merge with installed plugins.
 - `agent-service` — CRUD over agents + provenance merge.
 - `global-instruction-service` — single-slot (`default`) global instruction.
@@ -45,10 +46,12 @@ Per-entity facades (1ª class):
 - `plugin-provenance` — scans `_meta.json` and plugin dirs to map skills/agents to their providing plugin.
 
 Plugin lifecycle:
+
 - `plugin-service` — import, list, get, update, remove, toggle, createOwned, deleteOwned, publish.
 - `plugin-installer`, `plugin-author-service`, `plugin-publisher`, `plugin-manifest-parser`, `marketplace-parser`.
 
 Cross-cutting:
+
 - `adapter-manager` — orchestrates the Claude adapter.
 - `symlink-manager` — creates and reconciles symlinks.
 - `repo-service` — operations on linked repositories.
@@ -59,6 +62,7 @@ Cross-cutting:
 - `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink) into a `HealthReport`; exposed via the `health.*` IPC namespace.
 
 Legacy (deprecated, internal):
+
 - `customization-service` — umbrella service backing the per-entity facades; retained for the legacy `customization.*` IPC and the `CustomizationList` screen used by `PluginEditor`. Future PRs should split this into a `customization-core` helper and let the facades own the lifecycle.
 
 ### Tool adapters
@@ -89,7 +93,7 @@ src/renderer/
 
 ## Data flow (typical user action)
 
-1. The user triggers an action in a renderer screen — e.g. *create customization*.
+1. The user triggers an action in a renderer screen — e.g. _create customization_.
 2. The renderer calls `callIpc('customization.create', payload)` exposed by **preload**.
 3. The handler in `src/main/ipc/` invokes the matching application service.
 4. The service calls a **port**; **infrastructure** does the I/O (file write, symlink, dialog).
@@ -130,7 +134,7 @@ The plugin system extends the SDE customizations framework with package manageme
 - `PluginPublisher` — tag releases, push to GitHub, publish registry entries.
 - `PluginService` — unified interface for list, get, toggle, remove operations across import/owned modes.
 
-**_meta.json v2 schema** — owned plugins carry full authorship and publish metadata:
+**\_meta.json v2 schema** — owned plugins carry full authorship and publish metadata:
 
 ```json
 {

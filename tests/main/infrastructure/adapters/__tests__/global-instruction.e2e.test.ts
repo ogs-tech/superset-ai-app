@@ -30,9 +30,7 @@ const globalInstruction = (): Customization => ({
   body: `# default\n`,
 });
 
-const baseSettings = (
-  overrides: Partial<Settings['adapters']> = {},
-): Settings => ({
+const baseSettings = (overrides: Partial<Settings['adapters']> = {}): Settings => ({
   adapters: {
     claude: { enabled: true },
     ...overrides,
@@ -56,9 +54,7 @@ const setup = async () => {
     customizationRepository: customizationRepo,
     symlinkManager,
     workspacePath: WORKSPACE,
-    adapters: new Map<string, Adapter>([
-      [claudeAdapter.adapterId, claudeAdapter],
-    ]),
+    adapters: new Map<string, Adapter>([[claudeAdapter.adapterId, claudeAdapter]]),
   });
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
   return { customizationService, fs };
@@ -73,9 +69,7 @@ describe('global-instruction — end-to-end save syncs to the Claude adapter', (
       isCreate: true,
     });
 
-    const claudeOk = result.syncReport.find(
-      (r) => r.adapter === 'claude' && r.status === 'ok',
-    );
+    const claudeOk = result.syncReport.find((r) => r.adapter === 'claude' && r.status === 'ok');
     expect(claudeOk).toBeDefined();
 
     const destination = '/Users/alice/.claude/CLAUDE.md';

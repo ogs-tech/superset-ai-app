@@ -4,9 +4,7 @@ import type { GlobalInstruction } from '../application/schemas/global-instructio
 import { globalInstructionId } from '../domain/global-instruction-id.js';
 import { asObject, asString } from './_validators.js';
 
-export function buildGlobalInstructionHandlers(
-  service: GlobalInstructionService,
-): IpcHandlers {
+export function buildGlobalInstructionHandlers(service: GlobalInstructionService): IpcHandlers {
   return {
     'global-instruction.get': async (params) => {
       const raw = asObject(params, 'global-instruction.get');

@@ -70,11 +70,7 @@ export function MarketplaceImportDialog({
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {error && (
-            <Alert
-              severity="error"
-              role="alert"
-              data-testid="marketplace-import-error"
-            >
+            <Alert severity="error" role="alert" data-testid="marketplace-import-error">
               {error}
             </Alert>
           )}

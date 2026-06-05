@@ -49,14 +49,13 @@ function getPluginErrorKind(err: unknown): IpcErrorKind | null {
     err instanceof PluginCollisionError ||
     err instanceof OwnPluginIdCollisionError ||
     err instanceof OperationNotAllowedForOriginError
-  ) return 'validation';
+  )
+    return 'validation';
 
   if (err instanceof RefNotFoundError) return 'not_found';
 
-  if (
-    err instanceof SettingsLockTimeoutError ||
-    err instanceof CredentialStoreUnavailableError
-  ) return 'io';
+  if (err instanceof SettingsLockTimeoutError || err instanceof CredentialStoreUnavailableError)
+    return 'io';
 
   if (err instanceof PublishAuthMissingError) return 'auth';
 
@@ -64,7 +63,8 @@ function getPluginErrorKind(err: unknown): IpcErrorKind | null {
     err instanceof RepoAlreadyExistsError ||
     err instanceof TagConflictError ||
     err instanceof PublishConflictError
-  ) return 'conflict';
+  )
+    return 'conflict';
 
   return null;
 }

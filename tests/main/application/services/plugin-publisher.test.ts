@@ -13,7 +13,10 @@ import {
 } from '../../../../src/main/domain/plugin-errors.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
 import { semVer } from '../../../../src/main/domain/semver.js';
-import type { MetaFile, MetaEntry } from '../../../../src/main/application/schemas/meta-file.schema.js';
+import type {
+  MetaFile,
+  MetaEntry,
+} from '../../../../src/main/application/schemas/meta-file.schema.js';
 import type { PluginManifestParser } from '../../../../src/main/application/services/plugin-manifest-parser.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -103,7 +106,14 @@ describe('PluginPublisher', () => {
     githubApi.setOwner(FAKE_OWNER);
     credentials.seed('github.pat', FAKE_PAT);
 
-    publisher = new PluginPublisher({ cache, git, githubApi, credentials, parser, clock: fakeClock });
+    publisher = new PluginPublisher({
+      cache,
+      git,
+      githubApi,
+      credentials,
+      parser,
+      clock: fakeClock,
+    });
   });
 
   // ── 1. First publish happy path ──────────────────────────────────────────
@@ -171,14 +181,21 @@ describe('PluginPublisher', () => {
     it('throws PublishAuthMissingError before any git/api calls when PAT is absent', async () => {
       cache.seedMeta(SCOPE, ownedMeta);
       credentials = new FakeCredentialStorePort(); // no PAT seeded
-      publisher = new PluginPublisher({ cache, git, githubApi, credentials, parser, clock: fakeClock });
+      publisher = new PluginPublisher({
+        cache,
+        git,
+        githubApi,
+        credentials,
+        parser,
+        clock: fakeClock,
+      });
 
       const whoamiSpy = vi.spyOn(githubApi, 'whoami');
       const initSpy = vi.spyOn(git, 'init');
 
-      await expect(
-        publisher.publish({ id: ID, scope: SCOPE, version: VERSION }),
-      ).rejects.toThrow(PublishAuthMissingError);
+      await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(
+        PublishAuthMissingError,
+      );
 
       expect(whoamiSpy).not.toHaveBeenCalled();
       expect(initSpy).not.toHaveBeenCalled();
@@ -191,9 +208,9 @@ describe('PluginPublisher', () => {
     it('throws OperationNotAllowedForOriginError for imported plugins', async () => {
       cache.seedMeta(SCOPE, importedMeta);
 
-      await expect(
-        publisher.publish({ id: ID, scope: SCOPE, version: VERSION }),
-      ).rejects.toThrow(OperationNotAllowedForOriginError);
+      await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(
+        OperationNotAllowedForOriginError,
+      );
     });
 
     it('throws OperationNotAllowedForOriginError with correct details', async () => {
@@ -217,9 +234,9 @@ describe('PluginPublisher', () => {
 
       const createRepoSpy = vi.spyOn(githubApi, 'createRepo');
 
-      await expect(
-        publisher.publish({ id: ID, scope: SCOPE, version: VERSION }),
-      ).rejects.toThrow(RepoAlreadyExistsError);
+      await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(
+        RepoAlreadyExistsError,
+      );
 
       expect(createRepoSpy).not.toHaveBeenCalled();
     });
@@ -247,9 +264,9 @@ describe('PluginPublisher', () => {
       const originalPush = git.push.bind(git);
       vi.spyOn(git, 'push').mockRejectedValue(new Error('push failed: connection refused'));
 
-      await expect(
-        publisher.publish({ id: ID, scope: SCOPE, version: VERSION }),
-      ).rejects.toThrow('push failed');
+      await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(
+        'push failed',
+      );
 
       // Meta should NOT have been updated
       const meta = cache.getMeta(SCOPE);
@@ -313,9 +330,9 @@ describe('PluginPublisher', () => {
       // Remote SHA is DIFFERENT from lastPublishedSha
       git.setRemoteSha(PLUGIN_DIR, 'origin', 'main', 'diverged-sha-xyz');
 
-      await expect(
-        publisher.publish({ id: ID, scope: SCOPE, version: VERSION }),
-      ).rejects.toThrow(PublishConflictError);
+      await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(
+        PublishConflictError,
+      );
     });
 
     it('includes localSha and remoteSha in error details', async () => {
@@ -327,7 +344,9 @@ describe('PluginPublisher', () => {
         .catch((e: unknown) => e);
 
       expect(err).toBeInstanceOf(PublishConflictError);
-      expect((err as PublishConflictError).details?.localSha).toBe(existingPublish.lastPublishedSha);
+      expect((err as PublishConflictError).details?.localSha).toBe(
+        existingPublish.lastPublishedSha,
+      );
       expect((err as PublishConflictError).details?.remoteSha).toBe('diverged-sha-xyz');
     });
   });
@@ -342,9 +361,9 @@ describe('PluginPublisher', () => {
       // Tag already exists
       githubApi.seedTag(FAKE_OWNER, ID, `v${VERSION}`);
 
-      await expect(
-        publisher.publish({ id: ID, scope: SCOPE, version: VERSION }),
-      ).rejects.toThrow(TagConflictError);
+      await expect(publisher.publish({ id: ID, scope: SCOPE, version: VERSION })).rejects.toThrow(
+        TagConflictError,
+      );
     });
 
     it('includes tag name in error details', async () => {
@@ -374,15 +393,19 @@ describe('PluginPublisher', () => {
       const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation((...args: unknown[]) => {
         loggedMessages.push(args.map(String).join(' '));
       });
-      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation((...args: unknown[]) => {
-        loggedMessages.push(args.map(String).join(' '));
-      });
+      const consoleDebugSpy = vi
+        .spyOn(console, 'debug')
+        .mockImplementation((...args: unknown[]) => {
+          loggedMessages.push(args.map(String).join(' '));
+        });
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
         loggedMessages.push(args.map(String).join(' '));
       });
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-        loggedMessages.push(args.map(String).join(' '));
-      });
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation((...args: unknown[]) => {
+          loggedMessages.push(args.map(String).join(' '));
+        });
 
       try {
         await publisher.publish({ id: ID, scope: SCOPE, version: VERSION });
@@ -403,11 +426,11 @@ describe('PluginPublisher', () => {
       cache.seedMeta(SCOPE, ownedMeta);
 
       const addRemoteCalls: string[] = [];
-      const addRemoteSpy = vi.spyOn(git, 'addRemote').mockImplementation(
-        async (_dir: string, _name: string, url: string) => {
+      const addRemoteSpy = vi
+        .spyOn(git, 'addRemote')
+        .mockImplementation(async (_dir: string, _name: string, url: string) => {
           addRemoteCalls.push(url);
-        },
-      );
+        });
 
       await publisher.publish({ id: ID, scope: SCOPE, version: VERSION });
 

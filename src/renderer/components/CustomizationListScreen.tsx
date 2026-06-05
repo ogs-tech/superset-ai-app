@@ -27,10 +27,7 @@ import {
   useInvalidateCustomization,
   type CustomizationListItem,
 } from '../hooks/use-customization-list.js';
-import type {
-  Customization,
-  CustomizationType,
-} from '../../shared/customization.js';
+import type { Customization, CustomizationType } from '../../shared/customization.js';
 import { blankCustomization } from '../lib/blank-customization.js';
 
 interface CustomizationListScreenProps {
@@ -53,16 +50,12 @@ export function CustomizationListScreen({
   listMethod,
   deleteMethod,
 }: CustomizationListScreenProps): React.ReactElement {
-  const { data, isLoading, error } = useCustomizationList(
-    entityType,
-    listMethod,
-  );
+  const { data, isLoading, error } = useCustomizationList(entityType, listMethod);
   const invalidate = useInvalidateCustomization();
 
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [editor, setEditor] = useState<Editor>({ kind: 'closed' });
-  const [confirmDelete, setConfirmDelete] =
-    useState<CustomizationListItem | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<CustomizationListItem | null>(null);
   const [viewing, setViewing] = useState<CustomizationListItem | null>(null);
 
   const items = data ?? [];
@@ -132,9 +125,7 @@ export function CustomizationListScreen({
         render: (item) => (
           <Stack direction="row" sx={{ alignItems: 'center' }}>
             <Box component="span">{item.frontmatter.name}</Box>
-            {item.source.kind === 'plugin' && (
-              <PluginOriginBadge pluginId={item.source.pluginId} />
-            )}
+            {item.source.kind === 'plugin' && <PluginOriginBadge pluginId={item.source.pluginId} />}
           </Stack>
         ),
       },
@@ -147,8 +138,7 @@ export function CustomizationListScreen({
     ],
   };
 
-  const isWorkspace = (item: CustomizationListItem): boolean =>
-    item.source.kind === 'workspace';
+  const isWorkspace = (item: CustomizationListItem): boolean => item.source.kind === 'workspace';
 
   const actions: RowAction<CustomizationListItem>[] = [
     {
@@ -187,10 +177,7 @@ export function CustomizationListScreen({
       maxWidth="lg"
       sx={{ py: 2.5 }}
     >
-      <Stack
-        direction="row"
-        sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}
-      >
+      <Stack direction="row" sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h5" component="h1">
           {title}
         </Typography>
@@ -229,11 +216,7 @@ export function CustomizationListScreen({
             <Typography variant="body2" sx={{ mb: 2 }}>
               No {singular}s yet.
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={startCreate}
-            >
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={startCreate}>
               Create your first {singular}
             </Button>
           </Box>
@@ -254,11 +237,7 @@ export function CustomizationListScreen({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDelete(null)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDeleteConfirmed}
-          >
+          <Button variant="contained" color="error" onClick={handleDeleteConfirmed}>
             Confirm
           </Button>
         </DialogActions>

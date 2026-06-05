@@ -32,11 +32,7 @@ export interface Settings {
   language: LanguagePreference;
 }
 
-export const WorkspacePaths = [
-  'skills',
-  'agents',
-  '_backups',
-] as const;
+export const WorkspacePaths = ['skills', 'agents', '_backups'] as const;
 
 export type WorkspacePath = (typeof WorkspacePaths)[number];
 

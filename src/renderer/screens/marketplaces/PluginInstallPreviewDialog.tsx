@@ -148,7 +148,11 @@ export function PluginInstallPreviewDialog({
             )}
 
             <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 0.5 }}
+              >
                 This plugin will add
               </Typography>
 
@@ -242,7 +246,9 @@ function ArtifactGroup({ icon, label, color, items }: ArtifactGroupProps): React
               component="li"
               variant="caption"
               color="text.secondary"
-              sx={{ fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace' }}
+              sx={{
+                fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+              }}
             >
               {item}
             </Typography>

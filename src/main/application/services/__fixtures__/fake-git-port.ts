@@ -43,7 +43,12 @@ export class FakeGitPort implements GitPort {
     return { sha };
   }
 
-  async cloneSubdir(url: string, _subdir: string, ref: string | undefined, dest: string): Promise<{ sha: string }> {
+  async cloneSubdir(
+    url: string,
+    _subdir: string,
+    ref: string | undefined,
+    dest: string,
+  ): Promise<{ sha: string }> {
     this.maybeThrow();
     const key = `${url}@${ref ?? ''}`;
     const sha = this.shas.get(key) ?? `fake-sha-${Date.now()}`;
@@ -101,7 +106,12 @@ export class FakeGitPort implements GitPort {
     return this.remotes.get(dir)?.has(name) ?? false;
   }
 
-  async push(_dir: string, _remote: string, _ref: string, _opts?: { setUpstream?: boolean }): Promise<void> {
+  async push(
+    _dir: string,
+    _remote: string,
+    _ref: string,
+    _opts?: { setUpstream?: boolean },
+  ): Promise<void> {
     this.maybeThrow();
   }
 

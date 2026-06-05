@@ -5,15 +5,17 @@ import type { AdapterManager } from '../../../../src/main/application/services/a
 import type { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 import type { SyncResult } from '../../../../src/shared/customization.js';
 
-const stubSyncReport: SyncResult[] = [
-  { adapter: 'claude', destination: '/dest/a', status: 'ok' },
-];
+const stubSyncReport: SyncResult[] = [{ adapter: 'claude', destination: '/dest/a', status: 'ok' }];
 
 const buildDeps = () => {
   const syncAll = vi.fn().mockResolvedValue(stubSyncReport);
   const merge = vi.fn().mockResolvedValue({});
   const adapterManager = { syncAll } as unknown as AdapterManager;
-  const settingsService = { merge, load: vi.fn().mockResolvedValue(null), getDefaults: vi.fn().mockReturnValue({}) } as unknown as SettingsService;
+  const settingsService = {
+    merge,
+    load: vi.fn().mockResolvedValue(null),
+    getDefaults: vi.fn().mockReturnValue({}),
+  } as unknown as SettingsService;
   return { adapterManager, settingsService, syncAll, merge };
 };
 

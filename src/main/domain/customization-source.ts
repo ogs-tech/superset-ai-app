@@ -1,8 +1,6 @@
 import type { PluginId } from './plugin-id.js';
 
-export type CustomizationSource =
-  | { kind: 'workspace' }
-  | { kind: 'plugin'; pluginId: PluginId };
+export type CustomizationSource = { kind: 'workspace' } | { kind: 'plugin'; pluginId: PluginId };
 
 export const WORKSPACE_SOURCE: CustomizationSource = { kind: 'workspace' };
 
@@ -16,8 +14,6 @@ export function isPluginSource(
   return source.kind === 'plugin';
 }
 
-export function isWorkspaceSource(
-  source: CustomizationSource,
-): source is { kind: 'workspace' } {
+export function isWorkspaceSource(source: CustomizationSource): source is { kind: 'workspace' } {
   return source.kind === 'workspace';
 }

@@ -26,38 +26,20 @@ const plugin: CustomizationListItem = {
 
 describe('<CustomizationViewDrawer>', () => {
   it('does not render when entity is null', () => {
-    render(
-      <CustomizationViewDrawer
-        entity={null}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<CustomizationViewDrawer entity={null} onClose={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.queryByTestId(/detail-drawer/i)).not.toBeInTheDocument();
   });
 
   it('renders Edit button for workspace items', async () => {
     const onEdit = vi.fn();
-    render(
-      <CustomizationViewDrawer
-        entity={workspace}
-        onClose={vi.fn()}
-        onEdit={onEdit}
-      />,
-    );
+    render(<CustomizationViewDrawer entity={workspace} onClose={vi.fn()} onEdit={onEdit} />);
     expect(screen.getByText('Skill body')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /edit/i }));
     expect(onEdit).toHaveBeenCalledWith(workspace);
   });
 
   it('hides Edit button and shows read-only notice for plugin items', () => {
-    render(
-      <CustomizationViewDrawer
-        entity={plugin}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<CustomizationViewDrawer entity={plugin} onClose={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/my-plugin/).length).toBeGreaterThan(0);
   });

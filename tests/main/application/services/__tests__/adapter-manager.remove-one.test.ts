@@ -4,7 +4,9 @@ import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.
 import type { Customization } from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
-const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}): Customization => ({
+const baseCustomization = (
+  overrides: Partial<Customization['frontmatter']> = {},
+): Customization => ({
   id: `${overrides.type ?? 'skill'}/${overrides.name ?? 'foo'}`,
   frontmatter: {
     name: 'foo',
@@ -79,11 +81,17 @@ describe('AdapterManager.removeOne', () => {
 
   it('maps generic Error from symlinkManager.removeIfExists into status=error envelope', async () => {
     const adapter = new FakeAdapter('claude', '/personal/claude/skills/omega');
-    const { manager, registerCustomization, symlinkManager, fs } = await setupAdapterManager([adapter]);
+    const { manager, registerCustomization, symlinkManager, fs } = await setupAdapterManager([
+      adapter,
+    ]);
     const skill = baseCustomization({ name: 'omega', type: 'skill' });
     await registerCustomization(skill);
     await fs.symlink({ target: '/workspace/skills/omega', path: '/personal/claude/skills/omega' });
-    (symlinkManager as unknown as { removeIfExists: (args: { destination: string }) => Promise<never> }).removeIfExists = async () => {
+    (
+      symlinkManager as unknown as {
+        removeIfExists: (args: { destination: string }) => Promise<never>;
+      }
+    ).removeIfExists = async () => {
       throw new Error('disk on fire');
     };
 

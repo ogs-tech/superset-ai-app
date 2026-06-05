@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Link,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Chip, Link, Stack, Typography } from '@mui/material';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { PluginInstallPreviewDialog } from './PluginInstallPreviewDialog.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
-import type {
-  CardSlots,
-  EntityDef,
-} from '../../components/EntityDataGrid/index.js';
+import type { CardSlots, EntityDef } from '../../components/EntityDataGrid/index.js';
 
 interface MarketplacePlugin {
   name: string;
@@ -78,9 +67,7 @@ function installButtonLabel(state: InstallState | undefined): string {
   return 'Install';
 }
 
-export function MarketplaceDetail({
-  marketplace,
-}: MarketplaceDetailProps): React.ReactElement {
+export function MarketplaceDetail({ marketplace }: MarketplaceDetailProps): React.ReactElement {
   const [installStates, setInstallStates] = useState<Record<string, InstallState>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -143,7 +130,8 @@ export function MarketplaceDetail({
   };
 
   const plugins = marketplace.manifest?.plugins ?? [];
-  const isLocal = marketplace.id === LOCAL_MARKETPLACE_ID || marketplace.source.kind === 'directory';
+  const isLocal =
+    marketplace.id === LOCAL_MARKETPLACE_ID || marketplace.source.kind === 'directory';
   const isOfficial =
     marketplace.source.kind === 'github' && marketplace.source.repo === OFFICIAL_REPO;
   const label = sourceLabel(marketplace.source);
@@ -279,9 +267,7 @@ export function MarketplaceDetail({
               color: 'text.secondary',
             }}
           >
-            <Typography variant="body2">
-              No plugins listed in this marketplace.
-            </Typography>
+            <Typography variant="body2">No plugins listed in this marketplace.</Typography>
           </Box>
         }
       />
@@ -289,9 +275,7 @@ export function MarketplaceDetail({
       <PluginInstallPreviewDialog
         open={previewPlugin !== null}
         plugin={previewPlugin}
-        installing={
-          previewPlugin !== null && installStates[previewPlugin.name] === 'loading'
-        }
+        installing={previewPlugin !== null && installStates[previewPlugin.name] === 'loading'}
         onCancel={() => setPreviewPlugin(null)}
         onConfirm={() => void handleConfirmInstall()}
       />

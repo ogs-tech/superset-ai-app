@@ -5,7 +5,10 @@ import { InMemoryCustomizationRepository } from '../../../../src/main/infrastruc
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { DomainError } from '../../../../src/main/domain/errors.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
-import type { Customization, CustomizationFrontmatter } from '../../../../src/shared/customization.js';
+import type {
+  Customization,
+  CustomizationFrontmatter,
+} from '../../../../src/shared/customization.js';
 
 const FROZEN = new Date('2026-04-26T10:00:00.000Z');
 
@@ -153,11 +156,7 @@ describe('CustomizationService.list', () => {
     });
 
     const all = await service.list();
-    expect(all.map((a) => a.id).sort()).toEqual([
-      'agent/baz',
-      'command/bar',
-      'skill/foo',
-    ]);
+    expect(all.map((a) => a.id).sort()).toEqual(['agent/baz', 'command/bar', 'skill/foo']);
   });
 });
 
@@ -374,4 +373,3 @@ describe('CustomizationService.save — DomainError instance', () => {
     await expect(service.save({ customization: broken })).rejects.toBeInstanceOf(DomainError);
   });
 });
-

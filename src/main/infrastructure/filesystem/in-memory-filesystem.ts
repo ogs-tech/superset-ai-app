@@ -1,6 +1,9 @@
 import { dirname, normalize, relative } from 'node:path';
 import type { FileSystemEntry } from '../../application/ports/filesystem-port.js';
-import type { FileStat, WritableFileSystemPort } from '../../application/ports/writable-filesystem-port.js';
+import type {
+  FileStat,
+  WritableFileSystemPort,
+} from '../../application/ports/writable-filesystem-port.js';
 
 type ErrorWithCode = Error & { code?: string };
 
@@ -12,7 +15,19 @@ interface FileSystemEntryRecord {
 }
 
 interface FailOnRule {
-  op: 'lstat' | 'readlink' | 'symlink' | 'unlink' | 'mkdir' | 'copyFile' | 'readdir' | 'pathExists' | 'writeFile' | 'rename' | 'chmod' | 'stat';
+  op:
+    | 'lstat'
+    | 'readlink'
+    | 'symlink'
+    | 'unlink'
+    | 'mkdir'
+    | 'copyFile'
+    | 'readdir'
+    | 'pathExists'
+    | 'writeFile'
+    | 'rename'
+    | 'chmod'
+    | 'stat';
   path: string;
   code: string;
 }
@@ -31,7 +46,9 @@ export class InMemoryFileSystem implements WritableFileSystemPort {
 
   private checkFail(op: FailOnRule['op'], path: string): void {
     const normalized = this.normalize(path);
-    const rule = this.failOn.find((item) => item.op === op && this.normalize(item.path) === normalized);
+    const rule = this.failOn.find(
+      (item) => item.op === op && this.normalize(item.path) === normalized,
+    );
     if (rule) {
       const err = new Error(`Mock failure ${op} ${normalized}`) as Error & { code?: string };
       err.code = rule.code;

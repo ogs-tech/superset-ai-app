@@ -12,22 +12,23 @@
 
 ## File Structure
 
-| Action | File | Responsibility |
-|--------|------|----------------|
-| Modify | `src/shared/settings.ts` | Add `LanguagePreference` type, `language` field to `Settings`, update `getDefaults()` |
-| Create | `src/main/application/services/language-section.ts` | Pure function `updateLanguageSection(body, language)` and prompt map |
-| Create | `tests/main/application/services/language-section.test.ts` | Unit tests for the pure function |
-| Modify | `src/main/ipc/registry.ts` | Register `settings.setLanguage` handler |
-| Modify | `src/main/ipc/_validators.ts` | Add `asLanguagePreference` validator |
-| Modify | `src/renderer/screens/Settings.tsx` | Add Language section with MUI Select |
-| Modify | `tests/renderer/screens/Settings.test.tsx` | Tests for language selector UI |
-| Modify | `tests/main/application/services/settings-service.test.ts` | Update `baseSettings` to include `language` |
+| Action | File                                                       | Responsibility                                                                        |
+| ------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Modify | `src/shared/settings.ts`                                   | Add `LanguagePreference` type, `language` field to `Settings`, update `getDefaults()` |
+| Create | `src/main/application/services/language-section.ts`        | Pure function `updateLanguageSection(body, language)` and prompt map                  |
+| Create | `tests/main/application/services/language-section.test.ts` | Unit tests for the pure function                                                      |
+| Modify | `src/main/ipc/registry.ts`                                 | Register `settings.setLanguage` handler                                               |
+| Modify | `src/main/ipc/_validators.ts`                              | Add `asLanguagePreference` validator                                                  |
+| Modify | `src/renderer/screens/Settings.tsx`                        | Add Language section with MUI Select                                                  |
+| Modify | `tests/renderer/screens/Settings.test.tsx`                 | Tests for language selector UI                                                        |
+| Modify | `tests/main/application/services/settings-service.test.ts` | Update `baseSettings` to include `language`                                           |
 
 ---
 
 ### Task 1: Add `LanguagePreference` type and `language` field to Settings
 
 **Files:**
+
 - Modify: `src/shared/settings.ts:24-57`
 - Modify: `tests/main/application/services/settings-service.test.ts:7-14`
 - Modify: `tests/renderer/screens/Settings.test.tsx:8-15`
@@ -151,6 +152,7 @@ git commit -m "feat: add LanguagePreference type and language field to Settings"
 ### Task 2: Create pure function `updateLanguageSection`
 
 **Files:**
+
 - Create: `src/main/application/services/language-section.ts`
 - Create: `tests/main/application/services/language-section.test.ts`
 
@@ -160,7 +162,10 @@ Create `tests/main/application/services/language-section.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { updateLanguageSection, LANGUAGE_PROMPTS } from '../../../../src/main/application/services/language-section.js';
+import {
+  updateLanguageSection,
+  LANGUAGE_PROMPTS,
+} from '../../../../src/main/application/services/language-section.js';
 
 describe('updateLanguageSection', () => {
   const sampleBody = '# Global instructions\n\nSome content here.\n';
@@ -169,8 +174,8 @@ describe('updateLanguageSection', () => {
     const result = updateLanguageSection(sampleBody, 'pt-BR');
     expect(result).toBe(
       '# Global instructions\n\nSome content here.\n\n<language>\n' +
-      LANGUAGE_PROMPTS['pt-BR'] +
-      '\n</language>\n',
+        LANGUAGE_PROMPTS['pt-BR'] +
+        '\n</language>\n',
     );
   });
 
@@ -178,9 +183,7 @@ describe('updateLanguageSection', () => {
     const body = '# Global instructions\n\n<language>\nOld prompt\n</language>\n';
     const result = updateLanguageSection(body, 'en');
     expect(result).toBe(
-      '# Global instructions\n\n<language>\n' +
-      LANGUAGE_PROMPTS['en'] +
-      '\n</language>\n',
+      '# Global instructions\n\n<language>\n' + LANGUAGE_PROMPTS['en'] + '\n</language>\n',
     );
   });
 
@@ -200,8 +203,8 @@ describe('updateLanguageSection', () => {
     const result = updateLanguageSection(body, 'mirror');
     expect(result).toBe(
       '# Global instructions\n\nContent.\n\n<language>\n' +
-      LANGUAGE_PROMPTS['mirror'] +
-      '\n</language>\n',
+        LANGUAGE_PROMPTS['mirror'] +
+        '\n</language>\n',
     );
   });
 
@@ -246,10 +249,7 @@ export const LANGUAGE_PROMPTS: Record<Exclude<LanguagePreference, 'off'>, string
 
 const LANGUAGE_BLOCK_RE = /\n*<language>[\s\S]*?<\/language>\n?/;
 
-export function updateLanguageSection(
-  body: string,
-  language: LanguagePreference,
-): string {
+export function updateLanguageSection(body: string, language: LanguagePreference): string {
   if (language === 'off') {
     const cleaned = body.replace(LANGUAGE_BLOCK_RE, '');
     const trimmed = cleaned.replace(/\s+$/, '');
@@ -274,6 +274,7 @@ Run: `npx vitest run tests/main/application/services/language-section.test.ts -v
 Expected: ALL PASS
 
 If any test fails, adjust the regex or formatting logic to satisfy the exact expected output. The key behaviors:
+
 - `off` → remove block + trailing blank lines, ensure single trailing newline
 - non-off + no block → append with preceding blank line
 - non-off + block exists → replace in-place
@@ -290,6 +291,7 @@ git commit -m "feat: add updateLanguageSection pure function"
 ### Task 3: Add `asLanguagePreference` validator
 
 **Files:**
+
 - Modify: `src/main/ipc/_validators.ts`
 
 - [ ] **Step 1: Add the validator**
@@ -331,6 +333,7 @@ git commit -m "feat: add asLanguagePreference validator"
 ### Task 4: Add `settings.setLanguage` IPC handler
 
 **Files:**
+
 - Modify: `src/main/ipc/registry.ts:122-130`
 
 - [ ] **Step 1: Write the failing test**
@@ -502,6 +505,7 @@ git commit -m "feat: add settings.setLanguage IPC handler"
 ### Task 5: Add Language section to Settings UI
 
 **Files:**
+
 - Modify: `src/renderer/screens/Settings.tsx:1-517`
 - Modify: `tests/renderer/screens/Settings.test.tsx`
 
@@ -518,10 +522,7 @@ Update the import on line 6 to include `LanguagePreference`.
 Then update `setupRoute` to also handle `settings.setLanguage`:
 
 ```typescript
-const setupRoute = (
-  initial: Settings = baseSettings,
-  overrides: Record<string, unknown> = {},
-) => {
+const setupRoute = (initial: Settings = baseSettings, overrides: Record<string, unknown> = {}) => {
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
     if (method === 'settings.get') return Promise.resolve(ok(initial));
@@ -531,7 +532,8 @@ const setupRoute = (
       return Promise.resolve(ok({ settings: initial, syncReport: [] }));
     if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [] }));
     if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));
-    if (method === 'adapter.syncAll' || method === 'adapter.removeAll') return Promise.resolve(ok([]));
+    if (method === 'adapter.syncAll' || method === 'adapter.removeAll')
+      return Promise.resolve(ok([]));
     return Promise.resolve(ok(undefined));
   });
 };
@@ -626,7 +628,11 @@ Note: `Alert` is already imported. Add `FormControl`, `InputLabel`, `MenuItem`, 
 Add the import for the type:
 
 ```typescript
-import type { LanguagePreference, LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
+import type {
+  LanguagePreference,
+  LinkedRepoView,
+  Settings as SettingsModel,
+} from '../../shared/settings.js';
 ```
 
 Add the language options constant outside the component:
@@ -666,38 +672,41 @@ const handleLanguageChange = async (language: LanguagePreference): Promise<void>
 Add the UI section in the JSX, between the Adapters `Paper` and the Linked repos `Paper` (after line 299):
 
 ```tsx
-      <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
-          Language
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Controls the language prompt in your global instructions.
-        </Typography>
-        <FormControl size="small" sx={{ minWidth: 240 }}>
-          <InputLabel id="language-select-label">Language</InputLabel>
-          <Select
-            labelId="language-select-label"
-            label="Language"
-            value={settings.language}
-            disabled={languageLoading}
-            onChange={(e) => void handleLanguageChange(e.target.value as LanguagePreference)}
-          >
-            {LANGUAGE_OPTIONS.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {settings.language !== 'off' && (
-          <Stack direction="row" sx={{ mt: 1.5, gap: 0.5, alignItems: 'center', color: 'text.secondary' }}>
-            <InfoOutlinedIcon fontSize="small" />
-            <Typography variant="caption">
-              Code, comments, and test descriptions are always written in English.
-            </Typography>
-          </Stack>
-        )}
-      </Paper>
+<Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
+  <Typography variant="h6" component="h2" gutterBottom>
+    Language
+  </Typography>
+  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+    Controls the language prompt in your global instructions.
+  </Typography>
+  <FormControl size="small" sx={{ minWidth: 240 }}>
+    <InputLabel id="language-select-label">Language</InputLabel>
+    <Select
+      labelId="language-select-label"
+      label="Language"
+      value={settings.language}
+      disabled={languageLoading}
+      onChange={(e) => void handleLanguageChange(e.target.value as LanguagePreference)}
+    >
+      {LANGUAGE_OPTIONS.map((opt) => (
+        <MenuItem key={opt.value} value={opt.value}>
+          {opt.label}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+  {settings.language !== 'off' && (
+    <Stack
+      direction="row"
+      sx={{ mt: 1.5, gap: 0.5, alignItems: 'center', color: 'text.secondary' }}
+    >
+      <InfoOutlinedIcon fontSize="small" />
+      <Typography variant="caption">
+        Code, comments, and test descriptions are always written in English.
+      </Typography>
+    </Stack>
+  )}
+</Paper>
 ```
 
 - [ ] **Step 4: Run the renderer tests to verify they pass**
@@ -737,6 +746,7 @@ Run: `npm run dev`
 - [ ] **Step 2: Verify in the browser/Electron window**
 
 Open the Settings screen and verify:
+
 1. The Language section appears between Adapters and Linked repos
 2. The select defaults to "Off"
 3. Selecting "Português (pt-BR)" triggers the IPC call

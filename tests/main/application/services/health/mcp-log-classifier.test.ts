@@ -30,15 +30,15 @@ describe('classifyMcpLog', () => {
   });
 
   it('classifies "failed to connect" as error', () => {
-    expect(
-      classifyMcpLog([line({ error: 'failed to connect to server gmail' })]).state,
-    ).toBe('error');
+    expect(classifyMcpLog([line({ error: 'failed to connect to server gmail' })]).state).toBe(
+      'error',
+    );
   });
 
   it('classifies a non-zero exit as error', () => {
-    expect(
-      classifyMcpLog([line({ error: 'Server process exited with code 1' })]).state,
-    ).toBe('error');
+    expect(classifyMcpLog([line({ error: 'Server process exited with code 1' })]).state).toBe(
+      'error',
+    );
   });
 
   it('classifies a WARNING (no failure signal) as warning', () => {

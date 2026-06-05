@@ -6,12 +6,7 @@ import { DetailDrawer } from '../../../src/renderer/components/DetailDrawer.js';
 describe('<DetailDrawer>', () => {
   it('does not render content when closed', () => {
     render(
-      <DetailDrawer
-        open={false}
-        onClose={vi.fn()}
-        title="Hello"
-        testId="x"
-      >
+      <DetailDrawer open={false} onClose={vi.fn()} title="Hello" testId="x">
         <div>body</div>
       </DetailDrawer>,
     );
@@ -20,13 +15,7 @@ describe('<DetailDrawer>', () => {
 
   it('renders title, subtitle and content when open', () => {
     render(
-      <DetailDrawer
-        open
-        onClose={vi.fn()}
-        title="Hello"
-        subtitle="world"
-        testId="x"
-      >
+      <DetailDrawer open onClose={vi.fn()} title="Hello" subtitle="world" testId="x">
         <div>body</div>
       </DetailDrawer>,
     );

@@ -62,8 +62,7 @@ export function EntityDataGrid<T>({
     return [currentPageSize, ...PAGE_SIZE_OPTIONS].sort((a, b) => a - b);
   }, [currentPageSize]);
 
-  const showFooter =
-    filtered.length > Math.min(currentPageSize, ...PAGE_SIZE_OPTIONS);
+  const showFooter = filtered.length > Math.min(currentPageSize, ...PAGE_SIZE_OPTIONS);
 
   return (
     <Box data-testid={`entity-grid-${entity.name}`}>
@@ -172,11 +171,7 @@ interface EmptyBlockProps {
   fallback?: React.ReactNode;
 }
 
-function EmptyBlock({
-  isFiltered,
-  entityPlural,
-  fallback,
-}: EmptyBlockProps): React.ReactElement {
+function EmptyBlock({ isFiltered, entityPlural, fallback }: EmptyBlockProps): React.ReactElement {
   if (isFiltered) {
     return (
       <Box
@@ -190,9 +185,7 @@ function EmptyBlock({
           color: 'text.secondary',
         }}
       >
-        <Typography variant="body2">
-          No {entityPlural} match your search.
-        </Typography>
+        <Typography variant="body2">No {entityPlural} match your search.</Typography>
       </Box>
     );
   }
@@ -213,4 +206,3 @@ function EmptyBlock({
     </Box>
   );
 }
-

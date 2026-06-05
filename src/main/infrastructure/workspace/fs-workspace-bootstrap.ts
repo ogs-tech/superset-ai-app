@@ -6,7 +6,7 @@ const IO_ERRNO_CODES = new Set(['EACCES', 'ENOSPC', 'EROFS', 'EPERM']);
 
 const errnoCode = (err: unknown): string | undefined =>
   typeof err === 'object' && err !== null
-    ? (err as { code?: unknown }).code as string | undefined
+    ? ((err as { code?: unknown }).code as string | undefined)
     : undefined;
 
 export class FsWorkspaceBootstrap implements FileSystemMutator {

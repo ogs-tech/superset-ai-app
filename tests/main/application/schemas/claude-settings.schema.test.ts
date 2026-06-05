@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { claudeSettingsSchema, type ClaudeSettings } from '../../../../src/main/application/schemas/claude-settings.schema.js';
+import {
+  claudeSettingsSchema,
+  type ClaudeSettings,
+} from '../../../../src/main/application/schemas/claude-settings.schema.js';
 
 describe('claudeSettingsSchema', () => {
   it('parses empty object {} with defaults', () => {
@@ -15,7 +18,7 @@ describe('claudeSettingsSchema', () => {
   it('parses full settings object with marketplace and enabled plugins', () => {
     const input = {
       extraKnownMarketplaces: {
-        'local': {
+        local: {
           source: {
             source: 'directory',
             path: '/Users/user/workspace/plugins',
@@ -99,7 +102,7 @@ describe('claudeSettingsSchema', () => {
   it('parses partial settings with only extraKnownMarketplaces (enabledPlugins defaults)', () => {
     const input = {
       extraKnownMarketplaces: {
-        'local': {
+        local: {
           source: {
             source: 'directory',
             path: '/Users/user/workspace/plugins',
@@ -117,7 +120,7 @@ describe('claudeSettingsSchema', () => {
   it('preserves unknown fields inside marketplace objects via passthrough', () => {
     const input = {
       extraKnownMarketplaces: {
-        'local': {
+        local: {
           source: {
             source: 'directory',
             path: '/Users/user/workspace/plugins',
@@ -141,7 +144,7 @@ describe('claudeSettingsSchema', () => {
   it('infers ClaudeSettings type correctly', () => {
     const settings: ClaudeSettings = {
       extraKnownMarketplaces: {
-        'local': {
+        local: {
           source: {
             source: 'directory',
             path: '/path/to/plugins',

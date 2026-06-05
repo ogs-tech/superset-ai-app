@@ -116,7 +116,7 @@ describe('ClaudePluginAdapter', () => {
       // Seed initial settings with the plugin enabled
       const initialSettings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/personal',

@@ -1,7 +1,10 @@
 import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { FileSystemEntry } from '../../application/ports/filesystem-port.js';
-import type { FileStat, WritableFileSystemPort } from '../../application/ports/writable-filesystem-port.js';
+import type {
+  FileStat,
+  WritableFileSystemPort,
+} from '../../application/ports/writable-filesystem-port.js';
 
 const toEntryKind = async (path: string): Promise<FileSystemEntry['kind']> => {
   const stat = await fs.lstat(path);

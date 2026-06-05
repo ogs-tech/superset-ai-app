@@ -24,13 +24,13 @@ and out of scope for this iteration.
 The app only syncs configs to Claude Code via symlinks; it does **not** run MCPs. But
 Claude Code persists enough state on disk for the app to read:
 
-| Signal | Source file(s) |
-|---|---|
-| MCPs configured | `~/.claude.json` → `mcpServers` (global) + `projects[*].mcpServers` |
-| MCPs "in alert" (need auth) | `~/.claude/mcp-needs-auth-cache.json` |
-| MCP runtime health | `~/Library/Caches/claude-cli-nodejs/<project-slug>/mcp-logs-<server>/*.jsonl` |
-| Plugin drift | `PluginService.list(scope)` (already computes a `drift` field) |
-| Symlink integrity | `SymlinkManager` validation (already exists) |
+| Signal                      | Source file(s)                                                                |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| MCPs configured             | `~/.claude.json` → `mcpServers` (global) + `projects[*].mcpServers`           |
+| MCPs "in alert" (need auth) | `~/.claude/mcp-needs-auth-cache.json`                                         |
+| MCP runtime health          | `~/Library/Caches/claude-cli-nodejs/<project-slug>/mcp-logs-<server>/*.jsonl` |
+| Plugin drift                | `PluginService.list(scope)` (already computes a `drift` field)                |
+| Symlink integrity           | `SymlinkManager` validation (already exists)                                  |
 
 **"mcps em alertas" is literally `mcp-needs-auth-cache.json`** — the list of MCP servers
 Claude Code flagged as needing authentication.
@@ -47,13 +47,14 @@ false positives. This is an explicit test case.
 ## Chosen approach — Hybrid (pull + live badge + OS notification on new error)
 
 Rejected alternatives:
+
 - **On-demand only** — no live badge, no notification; too passive for "I need to know."
 - **Background watcher + push channel** — most robust but requires inventing a push IPC
   protocol (the app only has request/response `ipc:call` today); too much surface for a
   time-boxed spike.
 
 The hybrid keeps clean pull-based collectors, drives "liveness" with react-query polling
-while the app is open, and fires an OS notification only when a *new* error appears —
+while the app is open, and fires an OS notification only when a _new_ error appears —
 all without a push channel.
 
 ## Architecture
@@ -90,9 +91,9 @@ adapters and services are instantiated and passed to `buildHandlers`.
 
 ```ts
 interface ClaudeRuntimePort {
-  readMcpServers(): Promise<McpServerConfig[]>      // from ~/.claude.json
-  readMcpAuthAlerts(): Promise<McpAuthAlert[]>      // from mcp-needs-auth-cache.json
-  readMcpRuntimeLogs(): Promise<McpLogSummary[]>    // newest jsonl per server, classified
+  readMcpServers(): Promise<McpServerConfig[]>; // from ~/.claude.json
+  readMcpAuthAlerts(): Promise<McpAuthAlert[]>; // from mcp-needs-auth-cache.json
+  readMcpRuntimeLogs(): Promise<McpLogSummary[]>; // newest jsonl per server, classified
 }
 ```
 
@@ -103,8 +104,8 @@ empty result, not an error).
 
 ```ts
 interface HealthCollector {
-  readonly category: HealthCategory
-  collect(scope: Scope): Promise<HealthCheck[]>
+  readonly category: HealthCategory;
+  collect(scope: Scope): Promise<HealthCheck[]>;
 }
 ```
 
@@ -128,25 +129,25 @@ into a `HealthReport` with a `worst` rollup and `counts`.
 ## Data model
 
 ```ts
-type Severity = 'ok' | 'warning' | 'error'
-type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink'
+type Severity = 'ok' | 'warning' | 'error';
+type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink';
 
 interface HealthCheck {
-  id: string            // stable, e.g. "mcp-auth:claude.ai Gmail"
-  category: HealthCategory
-  severity: Severity
-  title: string
-  detail?: string
-  target?: string       // MCP/plugin/symlink name
-  remediation?: string  // e.g. "Run /mcp to authenticate"
-  observedAt: string    // ISO, via SystemClock (never Date.now() directly)
+  id: string; // stable, e.g. "mcp-auth:claude.ai Gmail"
+  category: HealthCategory;
+  severity: Severity;
+  title: string;
+  detail?: string;
+  target?: string; // MCP/plugin/symlink name
+  remediation?: string; // e.g. "Run /mcp to authenticate"
+  observedAt: string; // ISO, via SystemClock (never Date.now() directly)
 }
 
 interface HealthReport {
-  generatedAt: string
-  worst: Severity                                 // drives the badge color
-  counts: { ok: number; warning: number; error: number }
-  checks: HealthCheck[]
+  generatedAt: string;
+  worst: Severity; // drives the badge color
+  counts: { ok: number; warning: number; error: number };
+  checks: HealthCheck[];
 }
 ```
 
@@ -166,10 +167,10 @@ interface HealthReport {
 
 New namespace `health`:
 
-| Method | Params | Result |
-|---|---|---|
-| `health.getReport` | `{ scope: Scope }` | `HealthReport` |
-| `health.notify` | `{ title: string; body: string }` | `void` |
+| Method             | Params                            | Result         |
+| ------------------ | --------------------------------- | -------------- |
+| `health.getReport` | `{ scope: Scope }`                | `HealthReport` |
+| `health.notify`    | `{ title: string; body: string }` | `void`         |
 
 Types in `src/shared/health.ts`. Handlers in `src/main/ipc/registry.ts`; raw params
 validated with `_validators.ts` helpers. Renderer calls via `callIpc<T>(...)`.

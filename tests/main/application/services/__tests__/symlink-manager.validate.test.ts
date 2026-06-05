@@ -26,7 +26,10 @@ describe('SymlinkManager.validate', () => {
     await fs.mkdir('/workspace/.claude', { recursive: true });
     await fs.symlink({ target: '/workspace/elsewhere/file.md', path: destination });
 
-    const state = await manager.validate({ destination, source: '/workspace/skills/source/SKILL.md' });
+    const state = await manager.validate({
+      destination,
+      source: '/workspace/skills/source/SKILL.md',
+    });
     expect(state).toBe('symlink-to-other');
   });
 

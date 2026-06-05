@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { hookId, tryHookId, isValidHookId, HookIdInvalidError } from '../../../src/main/domain/hook-id.js';
+import {
+  hookId,
+  tryHookId,
+  isValidHookId,
+  HookIdInvalidError,
+} from '../../../src/main/domain/hook-id.js';
 
 describe('HookId', () => {
   it('accepts uuid v4 format', () => {

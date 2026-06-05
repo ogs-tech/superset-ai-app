@@ -19,9 +19,7 @@ export function marketplaceId(raw: string): MarketplaceId {
   return result.value;
 }
 
-export function tryMarketplaceId(
-  raw: string,
-): Result<MarketplaceId, MarketplaceIdInvalidError> {
+export function tryMarketplaceId(raw: string): Result<MarketplaceId, MarketplaceIdInvalidError> {
   if (typeof raw !== 'string') {
     return {
       ok: false,
@@ -34,10 +32,9 @@ export function tryMarketplaceId(
   if (!MARKETPLACE_ID_PATTERN.test(raw)) {
     return {
       ok: false,
-      error: new MarketplaceIdInvalidError(
-        `Invalid marketplace ID: '${raw}' (${reasonFor(raw)})`,
-        { raw },
-      ),
+      error: new MarketplaceIdInvalidError(`Invalid marketplace ID: '${raw}' (${reasonFor(raw)})`, {
+        raw,
+      }),
     };
   }
   return { ok: true, value: raw as MarketplaceId };

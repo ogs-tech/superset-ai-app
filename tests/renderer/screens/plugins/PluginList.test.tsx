@@ -53,9 +53,7 @@ describe('<PluginList>', () => {
     const card = await screen.findByTestId('entity-grid-card-plugin-my-plugin');
     await user.click(card);
 
-    expect(
-      await screen.findByTestId('detail-drawer-plugin'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('detail-drawer-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('plugin-list')).toBeInTheDocument();
     expect(await screen.findByTestId('plugin-detail')).toBeInTheDocument();
 

@@ -116,14 +116,7 @@ describe('ClaudeSettingsFile', () => {
       // Should not throw
       await expect(adapter.symlink('personal', id, target2)).resolves.toBeUndefined();
 
-      const linkPath = path.join(
-        tmpDir,
-        'personal',
-        'plugins',
-        'cache',
-        'local',
-        id,
-      );
+      const linkPath = path.join(tmpDir, 'personal', 'plugins', 'cache', 'local', id);
       const linkStat = await lstat(linkPath);
       expect(linkStat.isSymbolicLink()).toBe(true);
     });
@@ -134,14 +127,7 @@ describe('ClaudeSettingsFile', () => {
       const adapter = makeAdapter(tmpDir);
       const id = 'my-plugin' as PluginId;
       const targetDir = path.join(tmpDir, 'target-plugin-dir');
-      const linkPath = path.join(
-        tmpDir,
-        'personal',
-        'plugins',
-        'cache',
-        'local',
-        id,
-      );
+      const linkPath = path.join(tmpDir, 'personal', 'plugins', 'cache', 'local', id);
 
       await adapter.symlink('personal', id, targetDir);
       await adapter.unlink('personal', id);

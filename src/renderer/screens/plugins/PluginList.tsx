@@ -20,18 +20,13 @@ import { PublishPluginDialog } from './PublishPluginDialog.js';
 import { PluginDetail } from './PluginDetail.js';
 import { DetailDrawer } from '../../components/DetailDrawer.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
-import type {
-  EntityDef,
-} from '../../components/EntityDataGrid/index.js';
+import type { EntityDef } from '../../components/EntityDataGrid/index.js';
 
 interface PluginListProps {
   scope: 'personal' | 'project';
 }
 
-type DialogState =
-  | { kind: 'closed' }
-  | { kind: 'import' }
-  | { kind: 'publish'; pluginId: string };
+type DialogState = { kind: 'closed' } | { kind: 'import' } | { kind: 'publish'; pluginId: string };
 
 interface RowMenuState {
   anchorEl: HTMLElement;
@@ -56,13 +51,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
   const items = data ?? [];
 
   const toggleMutation = useMutation({
-    mutationFn: async ({
-      item,
-      enabled,
-    }: {
-      item: PluginListItemIpc;
-      enabled: boolean;
-    }) => {
+    mutationFn: async ({ item, enabled }: { item: PluginListItemIpc; enabled: boolean }) => {
       await callIpc('plugin.toggle', {
         id: item.id,
         scope: item.scope,
@@ -86,18 +75,13 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
 
-  const openRowMenu = (
-    event: React.MouseEvent<HTMLElement>,
-    pluginId: string,
-  ): void => {
+  const openRowMenu = (event: React.MouseEvent<HTMLElement>, pluginId: string): void => {
     setRowMenu({ anchorEl: event.currentTarget, pluginId });
   };
 
   const closeRowMenu = (): void => setRowMenu(null);
 
-  const activeItem = rowMenu
-    ? items.find((i) => i.id === rowMenu.pluginId)
-    : undefined;
+  const activeItem = rowMenu ? items.find((i) => i.id === rowMenu.pluginId) : undefined;
 
   const entity: EntityDef<PluginListItemIpc> = {
     name: 'plugin',
@@ -126,16 +110,8 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
   };
 
   return (
-    <Container
-      component="main"
-      data-testid="plugin-list"
-      maxWidth="lg"
-      sx={{ py: 2.5 }}
-    >
-      <Stack
-        direction="row"
-        sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}
-      >
+    <Container component="main" data-testid="plugin-list" maxWidth="lg" sx={{ py: 2.5 }}>
+      <Stack direction="row" sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h5" component="h1">
           Plugins
         </Typography>
@@ -160,10 +136,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         cardSlots={{
           topBanner: (item) =>
             item.drift ? (
-              <Alert
-                severity="warning"
-                sx={{ borderRadius: 0, py: 0.5, fontSize: 13 }}
-              >
+              <Alert severity="warning" sx={{ borderRadius: 0, py: 0.5, fontSize: 13 }}>
                 {item.drift.details ?? `Drift detected: ${item.drift.kind}`}
               </Alert>
             ) : null,
@@ -176,9 +149,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
             >
               <Switch
                 checked={item.enabled}
-                onChange={(e) =>
-                  toggleMutation.mutate({ item, enabled: e.target.checked })
-                }
+                onChange={(e) => toggleMutation.mutate({ item, enabled: e.target.checked })}
                 slotProps={{ input: { 'aria-label': `Toggle ${item.id}` } }}
                 size="small"
               />
@@ -194,11 +165,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         }}
       />
 
-      <Menu
-        anchorEl={rowMenu?.anchorEl ?? null}
-        open={rowMenu !== null}
-        onClose={closeRowMenu}
-      >
+      <Menu anchorEl={rowMenu?.anchorEl ?? null} open={rowMenu !== null} onClose={closeRowMenu}>
         {activeItem?.origin === 'imported' && [
           activeItem.installedRef?.kind === 'branch' && (
             <MenuItem
@@ -268,8 +235,8 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         pluginId={dialog.kind === 'publish' ? dialog.pluginId : ''}
         currentVersion={
           dialog.kind === 'publish'
-            ? items.find((i) => i.id === dialog.pluginId)?.publishInfo
-                ?.lastPublishedVersion || undefined
+            ? items.find((i) => i.id === dialog.pluginId)?.publishInfo?.lastPublishedVersion ||
+              undefined
             : undefined
         }
         hasPublishInfo={
@@ -291,9 +258,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         title={selected?.id ?? ''}
         testId="plugin"
       >
-        {selected && (
-          <PluginDetail pluginId={selected.id} scope={selected.scope} />
-        )}
+        {selected && <PluginDetail pluginId={selected.id} scope={selected.scope} />}
       </DetailDrawer>
     </Container>
   );

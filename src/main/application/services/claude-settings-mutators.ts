@@ -10,7 +10,10 @@ export const LOCAL_MARKETPLACE = 'local';
  * plugins installed from a known marketplace (e.g. claude-plugins-official)
  * the marketplace is assumed to already be registered by the user/Claude.
  */
-export function addMarketplaceIfMissing(s: ClaudeSettings, marketplacePath: string): ClaudeSettings {
+export function addMarketplaceIfMissing(
+  s: ClaudeSettings,
+  marketplacePath: string,
+): ClaudeSettings {
   if (s.extraKnownMarketplaces?.[LOCAL_MARKETPLACE]) {
     return s;
   }

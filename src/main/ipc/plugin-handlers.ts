@@ -51,8 +51,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
     },
 
     'plugin.list': async (params) => {
-      const raw =
-        params !== null && params !== undefined ? asObject(params, 'plugin.list') : {};
+      const raw = params !== null && params !== undefined ? asObject(params, 'plugin.list') : {};
       const scope = asScope(raw['scope']);
       return pluginService.list(scope);
     },
@@ -91,8 +90,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
       const id = pluginId(asString(raw['id'], 'id'));
       const version = semVer(asString(raw['version'], 'version'));
       const scope = asScope(raw['scope']);
-      const description =
-        typeof raw['description'] === 'string' ? raw['description'] : undefined;
+      const description = typeof raw['description'] === 'string' ? raw['description'] : undefined;
       return pluginService.createOwned({
         id,
         version,
@@ -136,8 +134,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
       const id = pluginId(asString(raw['id'], 'id'));
       const scope = asScope(raw['scope']);
       const version = semVer(asString(raw['version'], 'version'));
-      const repoName =
-        typeof raw['repoName'] === 'string' ? raw['repoName'] : undefined;
+      const repoName = typeof raw['repoName'] === 'string' ? raw['repoName'] : undefined;
       const visibility =
         raw['visibility'] === 'private' ? ('private' as const) : ('public' as const);
       const commitMessage =

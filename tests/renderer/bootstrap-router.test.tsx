@@ -35,9 +35,7 @@ describe('<App> bootstrap router', () => {
       'customization.list': ok([]),
     });
     render(<App />);
-    await waitFor(() =>
-      expect(screen.getByTestId('main-screen')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByTestId('main-screen')).toBeInTheDocument());
   });
 
   it('renders <Main> after seeding defaults when settings.get returns null', async () => {
@@ -48,8 +46,6 @@ describe('<App> bootstrap router', () => {
       'customization.list': ok([]),
     });
     render(<App />);
-    await waitFor(() =>
-      expect(screen.getByTestId('main-screen')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByTestId('main-screen')).toBeInTheDocument());
   });
 });

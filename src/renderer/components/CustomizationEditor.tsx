@@ -38,7 +38,10 @@ interface TypedSaveResult {
   entity: TypedEntity;
 }
 
-const SAVE_BY_TYPE: Record<CustomizationType, { method: string; payloadKey: string; resultKey: string }> = {
+const SAVE_BY_TYPE: Record<
+  CustomizationType,
+  { method: string; payloadKey: string; resultKey: string }
+> = {
   skill: { method: 'skill.save', payloadKey: 'skill', resultKey: 'skill' },
   agent: { method: 'agent.save', payloadKey: 'agent', resultKey: 'agent' },
   'global-instruction': {
@@ -119,7 +122,11 @@ export function CustomizationEditor({
       }
       await onSaved(saved);
     } catch (err) {
-      if (err instanceof IpcCallError && err.kind === 'validation' && Array.isArray(err.details?.errors)) {
+      if (
+        err instanceof IpcCallError &&
+        err.kind === 'validation' &&
+        Array.isArray(err.details?.errors)
+      ) {
         const errors = err.details.errors as Array<{ path: string; message: string }>;
         const count = errors.length;
         const list = errors.map((e) => `${e.path}: ${e.message}`).join('\n');
@@ -134,12 +141,7 @@ export function CustomizationEditor({
   };
 
   return (
-    <Container
-      component="main"
-      data-testid="customization-editor"
-      maxWidth="lg"
-      sx={{ py: 4 }}
-    >
+    <Container component="main" data-testid="customization-editor" maxWidth="lg" sx={{ py: 4 }}>
       <Stack
         direction="row"
         spacing={2}
@@ -260,8 +262,7 @@ export function CustomizationEditor({
                 htmlInput: {
                   'data-testid': 'body-textarea',
                   style: {
-                    fontFamily:
-                      '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+                    fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
                     fontSize: '0.9rem',
                     lineHeight: 1.5,
                   },

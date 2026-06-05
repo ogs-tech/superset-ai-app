@@ -9,11 +9,7 @@ export type RemoveIfPointsResult =
   | 'skipped-real-file'
   | 'skipped-out-of-workspace';
 
-export type SymlinkValidateState =
-  | 'none'
-  | 'symlink-to-source'
-  | 'symlink-to-other'
-  | 'real-file';
+export type SymlinkValidateState = 'none' | 'symlink-to-source' | 'symlink-to-other' | 'real-file';
 
 export interface SymlinkCreateResult {
   status: 'ok' | 'conflict';
@@ -175,7 +171,10 @@ export class SymlinkManager {
     return this.scanDirectory(root, workspace);
   }
 
-  private async scanDirectory(rootPath: string, workspacePath: string): Promise<SymlinkScanResult[]> {
+  private async scanDirectory(
+    rootPath: string,
+    workspacePath: string,
+  ): Promise<SymlinkScanResult[]> {
     const items: SymlinkScanResult[] = [];
     const entries = await this.fs.readdir(rootPath);
     for (const name of entries) {
@@ -202,7 +201,9 @@ export class SymlinkManager {
     const rawTarget = await this.fs.readlink(destinationPath);
     const resolvedTarget = resolve(dirname(destinationPath), rawTarget);
     const resolvedWorkspace = resolve(workspacePath);
-    return resolvedTarget.startsWith(resolvedWorkspace + sep) || resolvedTarget === resolvedWorkspace;
+    return (
+      resolvedTarget.startsWith(resolvedWorkspace + sep) || resolvedTarget === resolvedWorkspace
+    );
   }
 
   async removeIfPointsToWorkspace(
@@ -219,7 +220,10 @@ export class SymlinkManager {
     const resolvedTarget = resolve(dirname(destinationPath), rawTarget);
     const resolvedWorkspace = resolve(workspacePath);
 
-    if (!resolvedTarget.startsWith(resolvedWorkspace + sep) && resolvedTarget !== resolvedWorkspace) {
+    if (
+      !resolvedTarget.startsWith(resolvedWorkspace + sep) &&
+      resolvedTarget !== resolvedWorkspace
+    ) {
       return 'skipped-out-of-workspace';
     }
 
@@ -243,7 +247,12 @@ export class SymlinkManager {
     let attempt = 0;
     while (true) {
       const suffix = attempt === 0 ? '' : `-${attempt}`;
-      const backupPath = resolve(this.workspacePath, '_backups', `${timestamp}${suffix}`, relativeTarget);
+      const backupPath = resolve(
+        this.workspacePath,
+        '_backups',
+        `${timestamp}${suffix}`,
+        relativeTarget,
+      );
       if (!(await this.fs.pathExists(backupPath))) {
         return backupPath;
       }

@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Box,
-  Button,
-  Chip,
-  Container,
-  Divider,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Chip, Container, Divider, Paper, Stack, Typography } from '@mui/material';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import EditIcon from '@mui/icons-material/Edit';
@@ -111,9 +102,7 @@ function parseSections(body: string): DisplaySection[] {
  * destinations returned by claude-adapter so the user knows exactly what gets
  * written.
  */
-const DESTINATIONS = [
-  { assistant: 'Claude Code', path: '~/.claude/CLAUDE.md' },
-] as const;
+const DESTINATIONS = [{ assistant: 'Claude Code', path: '~/.claude/CLAUDE.md' }] as const;
 
 const fadeIn = {
   '@keyframes giFadeIn': {
@@ -160,7 +149,8 @@ export function GlobalInstructionScreen(): React.ReactElement {
   const openEdit = (): void => {
     if (existing) setEditor({ customization: existing, isCreate: false });
   };
-  const openTemplate = (): void => setEditor({ customization: defaultGlobalInstruction(), isCreate: true });
+  const openTemplate = (): void =>
+    setEditor({ customization: defaultGlobalInstruction(), isCreate: true });
   const openBlank = (): void =>
     setEditor({ customization: blankCustomization('global-instruction'), isCreate: true });
 
@@ -322,9 +312,9 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
           Start with the SDE profile
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 560 }}>
-          A curated, opinionated set of preferences and conventions — ready to use as-is or to
-          shape into your own. Personal preferences, applied across every workspace and every
-          enabled assistant.
+          A curated, opinionated set of preferences and conventions — ready to use as-is or to shape
+          into your own. Personal preferences, applied across every workspace and every enabled
+          assistant.
         </Typography>
       </Box>
 
@@ -366,10 +356,7 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
   );
 }
 
-function renderConfigured(
-  existing: Customization,
-  onEdit: () => void,
-): React.ReactElement {
+function renderConfigured(existing: Customization, onEdit: () => void): React.ReactElement {
   const description = existing.frontmatter.description?.trim();
   const lineCount = existing.body.split('\n').filter((l) => l.trim()).length;
   const sections = parseSections(existing.body);

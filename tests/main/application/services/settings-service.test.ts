@@ -39,9 +39,7 @@ describe('SettingsService.load', () => {
 
   it('propagates DomainError from the repository without swallowing it', async () => {
     const domainErr = new DomainError('io', 'disk on fire', { path: '/x' });
-    const service = new SettingsService(
-      stubRepo({ load: () => Promise.reject(domainErr) }),
-    );
+    const service = new SettingsService(stubRepo({ load: () => Promise.reject(domainErr) }));
 
     await expect(service.load()).rejects.toBe(domainErr);
   });
@@ -51,9 +49,7 @@ describe('SettingsService.merge', () => {
   it('applies a deep-merge over the persisted state', async () => {
     const persisted = baseSettings();
     const save = vi.fn().mockResolvedValue(undefined);
-    const service = new SettingsService(
-      stubRepo({ load: () => Promise.resolve(persisted), save }),
-    );
+    const service = new SettingsService(stubRepo({ load: () => Promise.resolve(persisted), save }));
 
     const result = await service.merge({
       adapters: { claude: { enabled: false } },
@@ -69,9 +65,7 @@ describe('SettingsService.merge', () => {
   it('persists the consolidated object via repository.save', async () => {
     const persisted = baseSettings();
     const save = vi.fn().mockResolvedValue(undefined);
-    const service = new SettingsService(
-      stubRepo({ load: () => Promise.resolve(persisted), save }),
-    );
+    const service = new SettingsService(stubRepo({ load: () => Promise.resolve(persisted), save }));
 
     const result = await service.merge({ ui: { theme: 'light' } });
 
@@ -82,9 +76,7 @@ describe('SettingsService.merge', () => {
 
   it('uses defaults as the base when no settings are persisted yet', async () => {
     const save = vi.fn().mockResolvedValue(undefined);
-    const service = new SettingsService(
-      stubRepo({ load: () => Promise.resolve(null), save }),
-    );
+    const service = new SettingsService(stubRepo({ load: () => Promise.resolve(null), save }));
 
     const result = await service.merge({ ui: { theme: 'dark' } });
 
@@ -95,9 +87,7 @@ describe('SettingsService.merge', () => {
   it('replaces array fields wholesale (no element-wise merge)', async () => {
     const persisted = baseSettings();
     const save = vi.fn().mockResolvedValue(undefined);
-    const service = new SettingsService(
-      stubRepo({ load: () => Promise.resolve(persisted), save }),
-    );
+    const service = new SettingsService(stubRepo({ load: () => Promise.resolve(persisted), save }));
 
     const result = await service.merge({ linkedRepos: [] });
 

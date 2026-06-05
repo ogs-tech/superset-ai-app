@@ -1,20 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Box,
-  Container,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Container, Stack, Typography } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
 import { EntityDataGrid } from '../../components/EntityDataGrid/index.js';
-import type {
-  EntityDef,
-  RowAction,
-} from '../../components/EntityDataGrid/index.js';
+import type { EntityDef, RowAction } from '../../components/EntityDataGrid/index.js';
 
 interface HookHandler {
   type: 'command' | 'http' | 'mcp_tool' | 'prompt' | 'agent';
@@ -73,9 +65,7 @@ export function HookList(): React.ReactElement {
         render: (item) => (
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Box component="span">{describeHandler(item.handler)}</Box>
-            {item.source.kind === 'plugin' && (
-              <PluginOriginBadge pluginId={item.source.pluginId} />
-            )}
+            {item.source.kind === 'plugin' && <PluginOriginBadge pluginId={item.source.pluginId} />}
           </Stack>
         ),
       },

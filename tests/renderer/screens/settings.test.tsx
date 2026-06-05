@@ -21,10 +21,7 @@ beforeEach(() => {
   call = mockApi();
 });
 
-const setupRoute = (
-  initial: Settings = baseSettings,
-  overrides: Record<string, unknown> = {},
-) => {
+const setupRoute = (initial: Settings = baseSettings, overrides: Record<string, unknown> = {}) => {
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
     if (method === 'settings.get') return Promise.resolve(ok(initial));
@@ -34,7 +31,8 @@ const setupRoute = (
       return Promise.resolve(ok({ settings: initial, syncReport: [] }));
     if (method === 'adapter.setEnabled') return Promise.resolve(ok({ syncReport: [] }));
     if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 0 }));
-    if (method === 'adapter.syncAll' || method === 'adapter.removeAll') return Promise.resolve(ok([]));
+    if (method === 'adapter.syncAll' || method === 'adapter.removeAll')
+      return Promise.resolve(ok([]));
     return Promise.resolve(ok(undefined));
   });
 };
@@ -51,9 +49,7 @@ describe('<Settings> — toggles', () => {
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith('adapter.countDestinations', { adapterId: 'claude' }),
     );
-    await waitFor(() =>
-      expect(screen.getByTestId('confirm-disable-modal')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByTestId('confirm-disable-modal')).toBeInTheDocument());
   });
 
   it('toggling claude on calls adapter.setEnabled with enabled:true', async () => {
@@ -72,7 +68,10 @@ describe('<Settings> — toggles', () => {
     await user.click(toggle);
 
     await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('adapter.setEnabled', expect.objectContaining({ adapterId: 'claude', enabled: true })),
+      expect(call).toHaveBeenCalledWith(
+        'adapter.setEnabled',
+        expect.objectContaining({ adapterId: 'claude', enabled: true }),
+      ),
     );
   });
 });
@@ -91,7 +90,10 @@ describe('<Settings> — no per-adapter default scope', () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
-      adapters: { claude: { enabled: false }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+      adapters: {
+        claude: { enabled: false },
+        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
+      },
     };
     setupRoute(initial);
     render(<SettingsScreen />);
@@ -99,9 +101,7 @@ describe('<Settings> — no per-adapter default scope', () => {
     await user.click(await screen.findByLabelText('Claude'));
 
     await waitFor(() =>
-      expect(
-        call.mock.calls.find((c) => c[0] === 'adapter.setEnabled'),
-      ).toBeDefined(),
+      expect(call.mock.calls.find((c) => c[0] === 'adapter.setEnabled')).toBeDefined(),
     );
     for (const c of call.mock.calls) {
       if (c[0] !== 'adapter.setEnabled') continue;
@@ -168,4 +168,3 @@ describe('<Settings> — language selector', () => {
     ).not.toBeInTheDocument();
   });
 });
-

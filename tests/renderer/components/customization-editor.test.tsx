@@ -80,10 +80,7 @@ describe('<CustomizationEditor>', () => {
     await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() =>
-      expect(call).toHaveBeenCalledWith(
-        'skill.save',
-        expect.objectContaining({ isCreate: true }),
-      ),
+      expect(call).toHaveBeenCalledWith('skill.save', expect.objectContaining({ isCreate: true })),
     );
 
     expect(await screen.findByTestId('toast')).toHaveAttribute('data-variant', 'success');

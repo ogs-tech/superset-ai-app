@@ -30,10 +30,7 @@ export class McpRuntimeCollector implements HealthCollector {
     const byServer = new Map<string, McpLogSummary>();
     for (const log of logs) byServer.set(log.server, log);
 
-    const names = new Set<string>([
-      ...servers.map((s) => s.name),
-      ...logs.map((l) => l.server),
-    ]);
+    const names = new Set<string>([...servers.map((s) => s.name), ...logs.map((l) => l.server)]);
 
     const observedAt = this.clock.now().toISOString();
     const checks: HealthCheck[] = [];
@@ -45,8 +42,7 @@ export class McpRuntimeCollector implements HealthCollector {
         id: `mcp-runtime:${name}`,
         category: 'mcp-runtime',
         severity,
-        title:
-          severity === 'ok' ? `MCP "${name}" healthy` : `MCP "${name}" runtime problem`,
+        title: severity === 'ok' ? `MCP "${name}" healthy` : `MCP "${name}" runtime problem`,
         target: name,
         observedAt,
         ...(summary?.detail !== undefined ? { detail: summary.detail } : {}),

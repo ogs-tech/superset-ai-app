@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EntityDataGrid } from '../../src/renderer/components/EntityDataGrid/index.js';
-import type {
-  EntityDef,
-  RowAction,
-} from '../../src/renderer/components/EntityDataGrid/index.js';
+import type { EntityDef, RowAction } from '../../src/renderer/components/EntityDataGrid/index.js';
 
 interface Item {
   id: string;
@@ -54,12 +51,8 @@ describe('<EntityDataGrid>', () => {
 
   it('does not expose the view-mode toggle (table view hidden)', () => {
     render(<EntityDataGrid<Item> entity={entity} data={items} />);
-    expect(
-      screen.queryByTestId('entity-grid-view-table-thing'),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId('entity-grid-view-card-thing'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('entity-grid-view-table-thing')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('entity-grid-view-card-thing')).not.toBeInTheDocument();
     expect(screen.queryByTestId('entity-grid-table-thing')).not.toBeInTheDocument();
   });
 
@@ -87,14 +80,10 @@ describe('<EntityDataGrid>', () => {
       description: `desc ${i}`,
       category: 'X',
     }));
-    render(
-      <EntityDataGrid<Item> entity={entity} data={many} pageSize={2} />,
-    );
+    render(<EntityDataGrid<Item> entity={entity} data={many} pageSize={2} />);
     const grid = screen.getByTestId('entity-grid-cards-thing');
     expect(within(grid).getAllByText(/Item \d/)).toHaveLength(2);
-    expect(
-      screen.getByTestId('entity-grid-pagination-thing'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('entity-grid-pagination-thing')).toBeInTheDocument();
   });
 
   it('invokes row action with the correct item', async () => {
@@ -107,13 +96,7 @@ describe('<EntityDataGrid>', () => {
         onClick: (item) => clicked.push(item),
       },
     ];
-    render(
-      <EntityDataGrid<Item>
-        entity={entity}
-        data={items}
-        actions={actions}
-      />,
-    );
+    render(<EntityDataGrid<Item> entity={entity} data={items} actions={actions} />);
     const bravoCard = screen.getByTestId('entity-grid-card-thing-2');
     await user.click(within(bravoCard).getByRole('button', { name: 'Inspect' }));
     expect(clicked).toHaveLength(1);

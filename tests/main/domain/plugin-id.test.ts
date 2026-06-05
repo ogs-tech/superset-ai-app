@@ -52,7 +52,9 @@ describe('PluginId', () => {
 
     it('should throw PluginIdInvalidError on underscore', () => {
       expect(() => pluginId('a_b')).toThrow(PluginIdInvalidError);
-      expect(() => pluginId('a_b')).toThrow(/can only contain lowercase letters, digits, and hyphens/);
+      expect(() => pluginId('a_b')).toThrow(
+        /can only contain lowercase letters, digits, and hyphens/,
+      );
     });
 
     it('should include raw value in error details', () => {

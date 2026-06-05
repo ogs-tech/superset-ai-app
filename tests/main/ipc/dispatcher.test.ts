@@ -109,7 +109,11 @@ describe('createDispatcher', () => {
 
 describe('createDispatcher — plugin error mapping', () => {
   const makeDispatch = (err: Error) =>
-    createDispatcher({ 'test.op': () => { throw err; } });
+    createDispatcher({
+      'test.op': () => {
+        throw err;
+      },
+    });
 
   it('maps PublishAuthMissingError to auth', async () => {
     const result = await makeDispatch(new PublishAuthMissingError('missing token'))('test.op', {});
@@ -120,7 +124,9 @@ describe('createDispatcher — plugin error mapping', () => {
   });
 
   it('maps RepoAlreadyExistsError to conflict', async () => {
-    const result = await makeDispatch(new RepoAlreadyExistsError('repo exists', { repoName: 'foo' }))('test.op', {});
+    const result = await makeDispatch(
+      new RepoAlreadyExistsError('repo exists', { repoName: 'foo' }),
+    )('test.op', {});
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('conflict');
@@ -135,7 +141,10 @@ describe('createDispatcher — plugin error mapping', () => {
   });
 
   it('maps TagConflictError to conflict', async () => {
-    const result = await makeDispatch(new TagConflictError('tag exists', { tag: 'v1.0.0' }))('test.op', {});
+    const result = await makeDispatch(new TagConflictError('tag exists', { tag: 'v1.0.0' }))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('conflict');
@@ -143,7 +152,10 @@ describe('createDispatcher — plugin error mapping', () => {
   });
 
   it('maps PluginCollisionError to validation', async () => {
-    const result = await makeDispatch(new PluginCollisionError('collision', { id: 'my-plugin' }))('test.op', {});
+    const result = await makeDispatch(new PluginCollisionError('collision', { id: 'my-plugin' }))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('validation');
@@ -151,14 +163,20 @@ describe('createDispatcher — plugin error mapping', () => {
   });
 
   it('maps OwnPluginIdCollisionError to validation', async () => {
-    const result = await makeDispatch(new OwnPluginIdCollisionError('own collision'))('test.op', {});
+    const result = await makeDispatch(new OwnPluginIdCollisionError('own collision'))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('validation');
   });
 
   it('maps PluginIdInvalidError to validation', async () => {
-    const result = await makeDispatch(new PluginIdInvalidError('bad id', { raw: '!!invalid!!' }))('test.op', {});
+    const result = await makeDispatch(new PluginIdInvalidError('bad id', { raw: '!!invalid!!' }))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('validation');
@@ -173,21 +191,30 @@ describe('createDispatcher — plugin error mapping', () => {
   });
 
   it('maps SemVerInvalidError to validation', async () => {
-    const result = await makeDispatch(new SemVerInvalidError('bad version', { raw: 'x.y.z' }))('test.op', {});
+    const result = await makeDispatch(new SemVerInvalidError('bad version', { raw: 'x.y.z' }))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('validation');
   });
 
   it('maps OperationNotAllowedForOriginError to validation', async () => {
-    const result = await makeDispatch(new OperationNotAllowedForOriginError('not allowed'))('test.op', {});
+    const result = await makeDispatch(new OperationNotAllowedForOriginError('not allowed'))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('validation');
   });
 
   it('maps RefNotFoundError to not_found', async () => {
-    const result = await makeDispatch(new RefNotFoundError('ref missing', { ref: 'v9.9.9' }))('test.op', {});
+    const result = await makeDispatch(new RefNotFoundError('ref missing', { ref: 'v9.9.9' }))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('not_found');
@@ -202,7 +229,10 @@ describe('createDispatcher — plugin error mapping', () => {
   });
 
   it('maps CredentialStoreUnavailableError to io', async () => {
-    const result = await makeDispatch(new CredentialStoreUnavailableError('store unavailable'))('test.op', {});
+    const result = await makeDispatch(new CredentialStoreUnavailableError('store unavailable'))(
+      'test.op',
+      {},
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.kind).toBe('io');

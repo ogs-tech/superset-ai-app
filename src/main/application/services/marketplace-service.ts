@@ -8,11 +8,12 @@ import type {
 } from '../ports/marketplace-repository.js';
 import type { Scope } from '../ports/scope.js';
 import type { GitPort } from '../ports/git-port.js';
-import { marketplaceId, tryMarketplaceId, type MarketplaceId } from '../../domain/marketplace-id.js';
-import type {
-  MarketplaceManifest,
-  MarketplacePlugin,
-} from '../../domain/marketplace-manifest.js';
+import {
+  marketplaceId,
+  tryMarketplaceId,
+  type MarketplaceId,
+} from '../../domain/marketplace-id.js';
+import type { MarketplaceManifest, MarketplacePlugin } from '../../domain/marketplace-manifest.js';
 import { normalizeGitUrl } from '../../domain/plugin-source.js';
 
 export interface MarketplaceSummary extends MarketplaceRecord {
@@ -106,11 +107,7 @@ export class MarketplaceService {
         await fs.rm(cachePath, { recursive: true, force: true }).catch(() => {});
         const url = sourceCloneUrl(record.source);
         const ref = sourceRef(record.source);
-        await git.clone(
-          url,
-          ref ? { kind: 'branch', value: ref } : undefined,
-          cachePath,
-        );
+        await git.clone(url, ref ? { kind: 'branch', value: ref } : undefined, cachePath);
         // Persist cachePath if it wasn't set
         if (record.source.cachePath !== cachePath) {
           const updated: MarketplaceSourceRecord = { ...record.source, cachePath };
@@ -132,9 +129,7 @@ export class MarketplaceService {
   ): Promise<{ id: MarketplaceId; manifest: MarketplaceManifest }> {
     const { git, parser, cacheDirRoot, repository } = this.deps;
     if (git == null || parser == null || cacheDirRoot == null) {
-      throw new Error(
-        'MarketplaceService.addFromUrl requires git, parser, and cacheDirRoot deps',
-      );
+      throw new Error('MarketplaceService.addFromUrl requires git, parser, and cacheDirRoot deps');
     }
 
     const normalizedUrl = normalizeGitUrl(url);
@@ -162,9 +157,7 @@ export class MarketplaceService {
     }
 
     // Ensure unique id within the scope
-    const existingIds = new Set(
-      (await repository.list(scope)).map((m) => m.id as string),
-    );
+    const existingIds = new Set((await repository.list(scope)).map((m) => m.id as string));
     let finalId = candidateId;
     let counter = 2;
     while (existingIds.has(finalId)) {

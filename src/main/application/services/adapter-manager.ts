@@ -1,5 +1,9 @@
 import { join } from 'node:path';
-import type { Customization, SyncResult, SyncResultDetails } from '../../../shared/customization.js';
+import type {
+  Customization,
+  SyncResult,
+  SyncResultDetails,
+} from '../../../shared/customization.js';
 import type { SettingsService } from './settings-service.js';
 import type { CustomizationRepository } from '../ports/customization-repository.js';
 import type { Adapter } from '../ports/adapter.js';
@@ -53,7 +57,8 @@ export class AdapterManager {
   constructor(private readonly deps: AdapterManagerDeps) {}
 
   async syncOne(command: SyncOneCommand): Promise<SyncResult[]> {
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const enabledAdapters = this.enabledAdapters(settings);
     const results: SyncResult[] = [];
 
@@ -85,7 +90,8 @@ export class AdapterManager {
   }
 
   async syncAll(command: SyncAllCommand): Promise<SyncResult[]> {
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const enabledAdapters = this.enabledAdapters(settings).filter((adapter) =>
       command.adapterId ? adapter.adapterId === command.adapterId : true,
     );
@@ -102,7 +108,11 @@ export class AdapterManager {
 
         for (const destination of destinations) {
           results.push(
-            await this.syncDestination(adapter.adapterId, this.customizationSourcePath(customization, this.deps.workspacePath), destination.destination),
+            await this.syncDestination(
+              adapter.adapterId,
+              this.customizationSourcePath(customization, this.deps.workspacePath),
+              destination.destination,
+            ),
           );
         }
 
@@ -120,7 +130,8 @@ export class AdapterManager {
   }
 
   async removeOne(command: RemoveOneCommand): Promise<SyncResult[]> {
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const results: SyncResult[] = [];
 
     for (const adapter of this.deps.adapters.values()) {
@@ -139,7 +150,8 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(command.adapterId);
     if (!adapter) return [];
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const customizations = await this.deps.customizationRepository.list();
     const results: SyncResult[] = [];
 
@@ -159,7 +171,8 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return { removed: 0, skipped: 0, errors: [] };
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const workspacePath = this.deps.workspacePath;
     const customizations = await this.deps.customizationRepository.list();
     let removed = 0;
@@ -173,7 +186,10 @@ export class AdapterManager {
       });
       for (const dest of destinations) {
         try {
-          const result = await this.deps.symlinkManager.removeIfPointsToWorkspace(dest.destination, workspacePath);
+          const result = await this.deps.symlinkManager.removeIfPointsToWorkspace(
+            dest.destination,
+            workspacePath,
+          );
           if (result === 'removed') {
             removed++;
           } else {
@@ -196,7 +212,8 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return 0;
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const settings =
+      (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const workspacePath = this.deps.workspacePath;
     const customizations = await this.deps.customizationRepository.list();
     let count = 0;
@@ -208,7 +225,10 @@ export class AdapterManager {
       });
       for (const dest of destinations) {
         try {
-          const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
+          const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(
+            dest.destination,
+            workspacePath,
+          );
           if (isWorkspaceLink) count++;
         } catch {
           // skip
@@ -284,10 +304,14 @@ export class AdapterManager {
     }
   }
 
-  private enabledAdapters(settings: NonNullable<Awaited<ReturnType<SettingsService['load']>>>): Adapter[] {
+  private enabledAdapters(
+    settings: NonNullable<Awaited<ReturnType<SettingsService['load']>>>,
+  ): Adapter[] {
     const adapters: Adapter[] = [];
     for (const adapter of this.deps.adapters.values()) {
-      const adapterConfig = (settings.adapters as Record<string, { enabled: boolean }>)[adapter.adapterId];
+      const adapterConfig = (settings.adapters as Record<string, { enabled: boolean }>)[
+        adapter.adapterId
+      ];
       if (adapterConfig?.enabled) {
         adapters.push(adapter);
       }
@@ -302,11 +326,7 @@ export class AdapterManager {
       return join(workspacePath, 'skills', name);
     }
     const folder =
-      type === 'agent'
-        ? 'agents'
-        : type === 'command'
-          ? 'commands'
-          : 'global-instructions';
+      type === 'agent' ? 'agents' : type === 'command' ? 'commands' : 'global-instructions';
     return join(workspacePath, folder, `${name}.md`);
   }
 

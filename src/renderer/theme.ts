@@ -25,8 +25,7 @@ export function createAppTheme(mode: PaletteMode): Theme {
       borderRadius: 8,
     },
     typography: {
-      fontFamily:
-        '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontFamily: '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       h1: { fontWeight: 600, letterSpacing: '-0.02em' },
       h2: { fontWeight: 600, letterSpacing: '-0.02em' },
       h3: { fontWeight: 600, letterSpacing: '-0.01em' },

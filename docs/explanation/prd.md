@@ -92,5 +92,5 @@ Decision logged in this PRD (changelog) or a dedicated file. The 8-week soft cap
 
 ## Changelog
 
-- **2026-05-04** — Reinstated under `docs/explanation/`. Updated terminology: *artifacts* → *customizations*; added `global-instruction` as a fourth customization type. Pointer to architecture moved to `reference/architecture.md`.
+- **2026-05-04** — Reinstated under `docs/explanation/`. Updated terminology: _artifacts_ → _customizations_; added `global-instruction` as a fourth customization type. Pointer to architecture moved to `reference/architecture.md`.
 - **2026-04-29** — Last revision before docs were removed.

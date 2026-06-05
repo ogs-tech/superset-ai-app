@@ -23,7 +23,10 @@ describe('SchemaValidator — scopes (AC#8)', () => {
   });
 
   it('scopes: ["personal","personal"] → kind "unique"', () => {
-    const result = new SchemaValidator().validate({ ...validBase, scopes: ['personal', 'personal'] });
+    const result = new SchemaValidator().validate({
+      ...validBase,
+      scopes: ['personal', 'personal'],
+    });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     const err = result.errors.find((e) => e.path === 'frontmatter.scopes');
@@ -32,7 +35,10 @@ describe('SchemaValidator — scopes (AC#8)', () => {
   });
 
   it('scopes: ["invalid"] → kind "enum"', () => {
-    const result = new SchemaValidator().validate({ ...validBase, scopes: ['invalid' as 'personal'] });
+    const result = new SchemaValidator().validate({
+      ...validBase,
+      scopes: ['invalid' as 'personal'],
+    });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors.some((e) => e.kind === 'enum')).toBe(true);

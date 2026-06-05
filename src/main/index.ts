@@ -91,12 +91,15 @@ async function wireIpc(): Promise<void> {
     customizationRepository: customizationRepo,
     symlinkManager,
     workspacePath,
-    adapters: new Map<string, Adapter>([
-      [claudeAdapter.adapterId, claudeAdapter],
-    ]),
+    adapters: new Map<string, Adapter>([[claudeAdapter.adapterId, claudeAdapter]]),
   });
   const schemaValidator = new SchemaValidator();
-  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
+  const customizationService = new CustomizationService(
+    customizationRepo,
+    clock,
+    adapterManager,
+    schemaValidator,
+  );
 
   const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));
 

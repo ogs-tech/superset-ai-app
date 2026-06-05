@@ -15,7 +15,10 @@ import { agentId } from '../../../../src/main/domain/agent-id.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
 import { OperationNotAllowedForOriginError } from '../../../../src/main/domain/plugin-errors.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
-import type { Customization, CustomizationFrontmatter } from '../../../../src/shared/customization.js';
+import type {
+  Customization,
+  CustomizationFrontmatter,
+} from '../../../../src/shared/customization.js';
 import type { SkillFrontmatter } from '../../../../src/main/application/schemas/skill.js';
 
 const FROZEN = new Date('2026-04-26T10:00:00.000Z');
@@ -119,7 +122,11 @@ describe('SkillService — provenance merging', () => {
   it('list merges workspace skills with plugin-provided skills', async () => {
     const { repo, cache, fs, skills } = setup();
     await repo.save({
-      customization: { id: 'skill/local', frontmatter: fm('skill', 'local'), body: 'l' } as Customization,
+      customization: {
+        id: 'skill/local',
+        frontmatter: fm('skill', 'local'),
+        body: 'l',
+      } as Customization,
     });
     const pid = pluginId('superpowers');
     cache.seedMeta('personal', {
@@ -153,7 +160,11 @@ describe('SkillService — provenance merging', () => {
   it('list prefers workspace when name collides with a plugin-provided skill', async () => {
     const { repo, cache, fs, skills } = setup();
     await repo.save({
-      customization: { id: 'skill/foo', frontmatter: fm('skill', 'foo'), body: 'workspace' } as Customization,
+      customization: {
+        id: 'skill/foo',
+        frontmatter: fm('skill', 'foo'),
+        body: 'workspace',
+      } as Customization,
     });
     const pid = pluginId('superpowers');
     cache.seedMeta('personal', {
@@ -168,10 +179,7 @@ describe('SkillService — provenance merging', () => {
         },
       ],
     });
-    await fs.writeFile(
-      `${cache.pluginDir('personal', pid)}/skills/foo/SKILL.md`,
-      skillFile('foo'),
-    );
+    await fs.writeFile(`${cache.pluginDir('personal', pid)}/skills/foo/SKILL.md`, skillFile('foo'));
 
     const list = await skills.list('personal');
     expect(list).toHaveLength(1);
@@ -208,10 +216,7 @@ describe('SkillService — provenance merging', () => {
         },
       ],
     });
-    await fs.writeFile(
-      `${cache.pluginDir('personal', pid)}/skills/foo/SKILL.md`,
-      skillFile('foo'),
-    );
+    await fs.writeFile(`${cache.pluginDir('personal', pid)}/skills/foo/SKILL.md`, skillFile('foo'));
     await expect(
       skills.save({
         skill: {
@@ -240,10 +245,7 @@ describe('SkillService — provenance merging', () => {
         },
       ],
     });
-    await fs.writeFile(
-      `${cache.pluginDir('personal', pid)}/skills/foo/SKILL.md`,
-      skillFile('foo'),
-    );
+    await fs.writeFile(`${cache.pluginDir('personal', pid)}/skills/foo/SKILL.md`, skillFile('foo'));
     await expect(
       skills.delete({ id: skillId('foo'), removeSymlinks: false, scope: 'personal' }),
     ).rejects.toThrow(OperationNotAllowedForOriginError);

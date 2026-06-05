@@ -207,9 +207,9 @@ describe('buildHandlers', () => {
     deps.repoReaderSpy.exists.mockResolvedValue(false);
     const handlers = buildHandlers(deps);
 
-    await expect(
-      handlers['repo.link']?.({ path: '/not-a-repo' }),
-    ).rejects.toBeInstanceOf(DomainError);
+    await expect(handlers['repo.link']?.({ path: '/not-a-repo' })).rejects.toBeInstanceOf(
+      DomainError,
+    );
     expect(deps.settingsRepoSpy.save).not.toHaveBeenCalled();
   });
 

@@ -4,7 +4,12 @@ import type { ClaudeSettingsPort } from '../ports/claude-settings-port.js';
 import type { PluginCachePort } from '../ports/plugin-cache-port.js';
 import type { FileSystemPort } from '../ports/filesystem-port.js';
 import type { Scope } from '../ports/scope.js';
-import type { Hook, HookHandler, ClaudeHookHandlerEntry, ClaudeHooksField } from '../schemas/hook.js';
+import type {
+  Hook,
+  HookHandler,
+  ClaudeHookHandlerEntry,
+  ClaudeHooksField,
+} from '../schemas/hook.js';
 import { claudeHooksFieldSchema } from '../schemas/hook.js';
 import type { HookId } from '../../domain/hook-id.js';
 import { hookId } from '../../domain/hook-id.js';
@@ -197,9 +202,7 @@ function upsertOwnedHook(
   const next: ClaudeHooksField = { ...hooks };
   // Remove any pre-existing entry with the same id across all events.
   for (const [event, blocks] of Object.entries(next)) {
-    const cleaned = blocks
-      .map((b) => stripById(b, hook.id))
-      .filter((b) => b.hooks.length > 0);
+    const cleaned = blocks.map((b) => stripById(b, hook.id)).filter((b) => b.hooks.length > 0);
     if (cleaned.length === 0) {
       delete next[event];
     } else {
@@ -221,9 +224,7 @@ function upsertOwnedHook(
 function removeOwnedHook(hooks: ClaudeHooksField, id: HookId): ClaudeHooksField {
   const next: ClaudeHooksField = {};
   for (const [event, blocks] of Object.entries(hooks)) {
-    const cleaned = blocks
-      .map((b) => stripById(b, id))
-      .filter((b) => b.hooks.length > 0);
+    const cleaned = blocks.map((b) => stripById(b, id)).filter((b) => b.hooks.length > 0);
     if (cleaned.length > 0) {
       next[event] = cleaned;
     }

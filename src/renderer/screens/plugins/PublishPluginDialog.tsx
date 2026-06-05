@@ -137,10 +137,12 @@ export function PublishPluginDialog({
         scope,
         version: version.trim(),
         ...(commitMessage.trim() ? { commitMessage: commitMessage.trim() } : {}),
-        ...((!hasPublishInfo) ? {
-          repoName: repoName.trim(),
-          visibility,
-        } : {}),
+        ...(!hasPublishInfo
+          ? {
+              repoName: repoName.trim(),
+              visibility,
+            }
+          : {}),
       };
 
       await callIpc<void>('plugin.publish', request);
@@ -239,9 +241,7 @@ export function PublishPluginDialog({
             onChange={(e) => setVersion(e.target.value)}
             disabled={loading || githubTokenMissing}
             data-testid="publish-version-input"
-            helperText={
-              hasPublishInfo ? 'Must be higher than the current version' : undefined
-            }
+            helperText={hasPublishInfo ? 'Must be higher than the current version' : undefined}
           />
 
           <TextField

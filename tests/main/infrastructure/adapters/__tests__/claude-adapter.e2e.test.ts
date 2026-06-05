@@ -75,7 +75,10 @@ describe('ClaudeAdapter — end-to-end via CustomizationService', () => {
   it('save(skill, scope=personal) creates symlink at <homedir>/.claude/skills/<slug> resolving to <workspace>/skills/<slug>', async () => {
     const { customizationService, fs } = await setup(buildSettings());
 
-    const result = await customizationService.save({ customization: skillPersonal, isCreate: true });
+    const result = await customizationService.save({
+      customization: skillPersonal,
+      isCreate: true,
+    });
 
     expect(result.syncReport).toHaveLength(1);
     expect(result.syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });

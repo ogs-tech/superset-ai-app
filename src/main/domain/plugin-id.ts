@@ -27,10 +27,9 @@ export function tryPluginId(raw: string): Result<PluginId, PluginIdInvalidError>
   if (typeof raw !== 'string') {
     return {
       ok: false,
-      error: new PluginIdInvalidError(
-        `Invalid plugin ID: expected string, got ${typeof raw}`,
-        { raw: String(raw) },
-      ),
+      error: new PluginIdInvalidError(`Invalid plugin ID: expected string, got ${typeof raw}`, {
+        raw: String(raw),
+      }),
     };
   }
 

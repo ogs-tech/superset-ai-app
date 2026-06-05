@@ -11,7 +11,10 @@ import { agentId } from '../../../../src/main/domain/agent-id.js';
 import { commandId } from '../../../../src/main/domain/command-id.js';
 import { globalInstructionId } from '../../../../src/main/domain/global-instruction-id.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
-import type { Customization, CustomizationFrontmatter } from '../../../../src/shared/customization.js';
+import type {
+  Customization,
+  CustomizationFrontmatter,
+} from '../../../../src/shared/customization.js';
 import type { SkillFrontmatter } from '../../../../src/main/application/schemas/skill.js';
 import type { AgentFrontmatter } from '../../../../src/main/application/schemas/agent.js';
 import type { CommandFrontmatter } from '../../../../src/main/application/schemas/command.js';

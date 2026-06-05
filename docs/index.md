@@ -19,12 +19,12 @@ Single source of truth for AI customizations in your workspace; live copies in `
 
 This project follows the [Diátaxis](https://diataxis.fr/) framework. Each quadrant answers a different reader question; pick the one that matches your need.
 
-| Quadrant | When to read | Folder |
-|---|---|---|
-| **Tutorials** | I'm new and want to learn by doing | `tutorials/` |
-| **How-to guides** | I have a specific task to complete | `how-to/` |
-| **Reference** | I need exact facts (schemas, contracts, layout) | `reference/` |
-| **Explanation** | I want to understand the design decisions | `explanation/` |
+| Quadrant          | When to read                                    | Folder         |
+| ----------------- | ----------------------------------------------- | -------------- |
+| **Tutorials**     | I'm new and want to learn by doing              | `tutorials/`   |
+| **How-to guides** | I have a specific task to complete              | `how-to/`      |
+| **Reference**     | I need exact facts (schemas, contracts, layout) | `reference/`   |
+| **Explanation**   | I want to understand the design decisions       | `explanation/` |
 
 ### Tutorials — learn by doing
 
@@ -51,14 +51,14 @@ This project follows the [Diátaxis](https://diataxis.fr/) framework. Each quadr
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Shell | Electron 41 |
-| UI | React 19 + TypeScript 5.9 |
-| Build | electron-vite + Vite 7 |
-| Tests | Vitest + Testing Library |
-| Validation | Zod 4 |
-| Markdown | react-markdown + YAML |
+| Layer      | Technology                |
+| ---------- | ------------------------- |
+| Shell      | Electron 41               |
+| UI         | React 19 + TypeScript 5.9 |
+| Build      | electron-vite + Vite 7    |
+| Tests      | Vitest + Testing Library  |
+| Validation | Zod 4                     |
+| Markdown   | react-markdown + YAML     |
 
 Pure TypeScript — no backend, API, database, auth, or telemetry.
 

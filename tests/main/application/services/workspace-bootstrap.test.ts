@@ -33,9 +33,7 @@ describe('WorkspaceBootstrapService.create', () => {
 
   it('propagates errors from the mutator without swallowing them', async () => {
     const err = new Error('EACCES: permission denied');
-    const service = new WorkspaceBootstrapService(
-      mutator(() => Promise.reject(err)),
-    );
+    const service = new WorkspaceBootstrapService(mutator(() => Promise.reject(err)));
 
     await expect(service.create('/tmp/ws')).rejects.toBe(err);
   });

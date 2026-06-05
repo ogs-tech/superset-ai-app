@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PluginAuthorService } from '../../../../src/main/application/services/plugin-author-service.js';
-import type { PluginInstallerLike, PluginManifestParserLike } from '../../../../src/main/application/services/plugin-author-service.js';
+import type {
+  PluginInstallerLike,
+  PluginManifestParserLike,
+} from '../../../../src/main/application/services/plugin-author-service.js';
 import { FakePluginCachePort } from '../../../../src/main/application/services/__fixtures__/fake-plugin-cache-port.js';
-import { OwnPluginIdCollisionError, OperationNotAllowedForOriginError } from '../../../../src/main/domain/plugin-errors.js';
+import {
+  OwnPluginIdCollisionError,
+  OperationNotAllowedForOriginError,
+} from '../../../../src/main/domain/plugin-errors.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
 import { semVer } from '../../../../src/main/domain/semver.js';
 import type { PluginId } from '../../../../src/main/domain/plugin-id.js';

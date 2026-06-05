@@ -15,12 +15,7 @@ import { formatCustomizationId, parseCustomizationId } from '../../domain/custom
 import { parseMarkdown, serializeMarkdown } from '../markdown/frontmatter.js';
 import { normalizeCustomizationFrontmatter } from './normalize-frontmatter.js';
 
-const ARTIFACT_TYPES: CustomizationType[] = [
-  'skill',
-  'agent',
-  'global-instruction',
-  'command',
-];
+const ARTIFACT_TYPES: CustomizationType[] = ['skill', 'agent', 'global-instruction', 'command'];
 
 const FOLDER_BY_TYPE: Record<CustomizationType, string> = {
   skill: 'skills',
@@ -82,10 +77,7 @@ export class FsCustomizationRepository implements CustomizationRepository {
       customization.body,
     );
 
-    const tempPath = join(
-      dir,
-      `.${basename(filePath)}.${randomBytes(8).toString('hex')}.tmp`,
-    );
+    const tempPath = join(dir, `.${basename(filePath)}.${randomBytes(8).toString('hex')}.tmp`);
     await fs.writeFile(tempPath, content, 'utf8');
     try {
       await fs.rename(tempPath, filePath);

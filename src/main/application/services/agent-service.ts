@@ -80,11 +80,7 @@ export class AgentService {
     return toAgent(c);
   }
 
-  async save(input: {
-    agent: Agent;
-    isCreate?: boolean;
-    scope?: Scope;
-  }): Promise<SaveAgentResult> {
+  async save(input: { agent: Agent; isCreate?: boolean; scope?: Scope }): Promise<SaveAgentResult> {
     if (input.agent.source.kind === 'plugin') {
       throw new OperationNotAllowedForOriginError(
         `Cannot save an agent provided by plugin '${input.agent.source.pluginId}'`,
@@ -106,11 +102,7 @@ export class AgentService {
     };
   }
 
-  async delete(input: {
-    id: AgentId;
-    removeSymlinks: boolean;
-    scope?: Scope;
-  }): Promise<{
+  async delete(input: { id: AgentId; removeSymlinks: boolean; scope?: Scope }): Promise<{
     ok: true;
     syncReport?: SyncResult[];
   }> {

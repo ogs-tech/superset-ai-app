@@ -13,6 +13,7 @@
 ## File Structure
 
 **New files:**
+
 - `src/renderer/components/DetailDrawer.tsx` — generic right-anchored drawer with header/close button, used by all three flows
 - `src/renderer/screens/templates/TemplateViewDrawer.tsx` — view-only content for a `Template` (description + body markdown)
 - `src/renderer/components/CustomizationViewDrawer.tsx` — view-only content for a `CustomizationListItem` (description + body markdown + plugin notice)
@@ -23,6 +24,7 @@
 - `tests/renderer/components/CustomizationListScreen.test.tsx`
 
 **Modified files:**
+
 - `src/renderer/screens/marketplaces/MarketplaceDetail.tsx` — drop outer `Container`/back button so the drawer is the chrome (extract content; render as embedded)
 - `src/renderer/screens/marketplaces/MarketplaceList.tsx` — replace "early-return full-screen" pattern with drawer rendering
 - `src/renderer/screens/templates/TemplateList.tsx` — add `onRowClick` → drawer; remove the "View" row action
@@ -31,6 +33,7 @@
 - `tests/renderer/screens/marketplaces/MarketplaceDetail.test.tsx` — update for embedded layout (no Container/back button)
 
 **Untouched (out of scope for this plan):**
+
 - `EntityDataGrid` types & implementation (the existing `onRowClick` prop is sufficient)
 - `PluginList`, `HookList`, `StarterPackScreen` (no current detail UX)
 - `TemplateEditor`, `CustomizationEditor` (editor flows stay full-screen)
@@ -42,6 +45,7 @@
 Reusable right-anchored drawer with header (title, optional subtitle, optional badges, close button) + scrollable content area. All three screens consume this — same look & feel everywhere.
 
 **Files:**
+
 - Create: `src/renderer/components/DetailDrawer.tsx`
 - Test: `tests/renderer/components/DetailDrawer.test.tsx`
 
@@ -58,12 +62,7 @@ import { DetailDrawer } from '../../../src/renderer/components/DetailDrawer.js';
 describe('<DetailDrawer>', () => {
   it('does not render content when closed', () => {
     render(
-      <DetailDrawer
-        open={false}
-        onClose={vi.fn()}
-        title="Hello"
-        testId="x"
-      >
+      <DetailDrawer open={false} onClose={vi.fn()} title="Hello" testId="x">
         <div>body</div>
       </DetailDrawer>,
     );
@@ -72,13 +71,7 @@ describe('<DetailDrawer>', () => {
 
   it('renders title, subtitle and content when open', () => {
     render(
-      <DetailDrawer
-        open
-        onClose={vi.fn()}
-        title="Hello"
-        subtitle="world"
-        testId="x"
-      >
+      <DetailDrawer open onClose={vi.fn()} title="Hello" subtitle="world" testId="x">
         <div>body</div>
       </DetailDrawer>,
     );
@@ -161,11 +154,7 @@ export function DetailDrawer({
         }}
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: 'center', flexWrap: 'wrap' }}
-          >
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
             <Typography variant="h6" component="h2" sx={{ wordBreak: 'break-word' }}>
               {title}
             </Typography>
@@ -206,6 +195,7 @@ git commit -m "feat: add DetailDrawer wrapper for entity detail views"
 `MarketplaceDetail` today renders its own `<Container>` and a back button. The drawer provides that chrome now, so we strip the outer page chrome and let the parent (the drawer) wrap the content.
 
 **Files:**
+
 - Modify: `src/renderer/screens/marketplaces/MarketplaceDetail.tsx`
 - Test: `tests/renderer/screens/marketplaces/MarketplaceDetail.test.tsx`
 
@@ -251,9 +241,7 @@ interface MarketplaceDetailProps {
 The refactored signature and shell:
 
 ```tsx
-export function MarketplaceDetail({
-  marketplace,
-}: MarketplaceDetailProps): React.ReactElement {
+export function MarketplaceDetail({ marketplace }: MarketplaceDetailProps): React.ReactElement {
   // ... (state, effects, handlers unchanged) ...
   return (
     <Box data-testid="marketplace-detail">
@@ -306,7 +294,9 @@ export function MarketplaceDetail({
         cardSlots={cardSlots}
         searchPlaceholder="Search plugins"
         emptyState={
-          {/* keep the existing emptyState exactly as-is */}
+          {
+            /* keep the existing emptyState exactly as-is */
+          }
         }
       />
 
@@ -337,6 +327,7 @@ git commit -m "refactor: drop page chrome from MarketplaceDetail for drawer embe
 Replace `if (selected) return <MarketplaceDetail />` with a sibling `<DetailDrawer>` that renders `<MarketplaceDetail>` when `selected` is set.
 
 **Files:**
+
 - Modify: `src/renderer/screens/marketplaces/MarketplaceList.tsx`
 - Test: `tests/renderer/screens/marketplaces/MarketplaceList.test.tsx`
 
@@ -459,6 +450,7 @@ git commit -m "feat: open marketplace detail in drawer instead of full-screen re
 Reusable view content for templates: shows description and the markdown body, plus a "Read-only" notice for plugin-sourced templates (currently templates only have workspace source — but we keep the contract symmetric with customizations).
 
 **Files:**
+
 - Create: `src/renderer/screens/templates/TemplateViewDrawer.tsx`
 - Test: `tests/renderer/screens/templates/TemplateViewDrawer.test.tsx`
 
@@ -487,20 +479,12 @@ const sample: Template = {
 
 describe('<TemplateViewDrawer>', () => {
   it('does not render when template is null', () => {
-    render(
-      <TemplateViewDrawer template={null} onClose={vi.fn()} onEdit={vi.fn()} />,
-    );
+    render(<TemplateViewDrawer template={null} onClose={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.queryByTestId(/detail-drawer/i)).not.toBeInTheDocument();
   });
 
   it('renders template name, description and body', () => {
-    render(
-      <TemplateViewDrawer
-        template={sample}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<TemplateViewDrawer template={sample} onClose={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.getByRole('heading', { name: 'Skill Starter' })).toBeInTheDocument();
     expect(screen.getByText('Starting point for skills')).toBeInTheDocument();
     expect(screen.getByText('Markdown content here.')).toBeInTheDocument();
@@ -508,13 +492,7 @@ describe('<TemplateViewDrawer>', () => {
 
   it('calls onEdit when the Edit button is clicked', async () => {
     const onEdit = vi.fn();
-    render(
-      <TemplateViewDrawer
-        template={sample}
-        onClose={vi.fn()}
-        onEdit={onEdit}
-      />,
-    );
+    render(<TemplateViewDrawer template={sample} onClose={vi.fn()} onEdit={onEdit} />);
     await userEvent.click(screen.getByRole('button', { name: /edit/i }));
     expect(onEdit).toHaveBeenCalledWith(sample);
   });
@@ -557,16 +535,8 @@ export function TemplateViewDrawer({
       badges={
         template ? (
           <>
-            <Chip
-              size="small"
-              variant="outlined"
-              label={template.frontmatter.targetType}
-            />
-            <Chip
-              size="small"
-              variant="outlined"
-              label={`v${template.frontmatter.version}`}
-            />
+            <Chip size="small" variant="outlined" label={template.frontmatter.targetType} />
+            <Chip size="small" variant="outlined" label={`v${template.frontmatter.version}`} />
           </>
         ) : undefined
       }
@@ -618,6 +588,7 @@ git commit -m "feat: add TemplateViewDrawer for read-only template preview"
 Clicking a template row opens `TemplateViewDrawer`. The "Edit" button inside the drawer closes the drawer and opens the existing full-screen `TemplateEditor`. The redundant "View" row action is removed (replaced by row click).
 
 **Files:**
+
 - Modify: `src/renderer/screens/templates/TemplateList.tsx`
 - Test: `tests/renderer/screens/templates/TemplateList.test.tsx` (new)
 
@@ -780,6 +751,7 @@ git commit -m "feat: open template details in drawer on row click"
 Mirrors `TemplateViewDrawer` but for `CustomizationListItem` (used by skills/agents/commands/refs/global-instructions). Includes the read-only notice for plugin-sourced items, and an Edit button that only appears for workspace items.
 
 **Files:**
+
 - Create: `src/renderer/components/CustomizationViewDrawer.tsx`
 - Test: `tests/renderer/components/CustomizationViewDrawer.test.tsx`
 
@@ -816,38 +788,20 @@ const plugin: CustomizationListItem = {
 
 describe('<CustomizationViewDrawer>', () => {
   it('does not render when entity is null', () => {
-    render(
-      <CustomizationViewDrawer
-        entity={null}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<CustomizationViewDrawer entity={null} onClose={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.queryByTestId(/detail-drawer/i)).not.toBeInTheDocument();
   });
 
   it('renders Edit button for workspace items', async () => {
     const onEdit = vi.fn();
-    render(
-      <CustomizationViewDrawer
-        entity={workspace}
-        onClose={vi.fn()}
-        onEdit={onEdit}
-      />,
-    );
+    render(<CustomizationViewDrawer entity={workspace} onClose={vi.fn()} onEdit={onEdit} />);
     expect(screen.getByText('Skill body')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /edit/i }));
     expect(onEdit).toHaveBeenCalledWith(workspace);
   });
 
   it('hides Edit button and shows read-only notice for plugin items', () => {
-    render(
-      <CustomizationViewDrawer
-        entity={plugin}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<CustomizationViewDrawer entity={plugin} onClose={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
     expect(screen.getByText(/my-plugin/)).toBeInTheDocument();
   });
@@ -884,8 +838,7 @@ export function CustomizationViewDrawer({
   onEdit,
 }: CustomizationViewDrawerProps): React.ReactElement {
   const isWorkspace = entity?.source.kind === 'workspace';
-  const pluginId =
-    entity?.source.kind === 'plugin' ? entity.source.pluginId : null;
+  const pluginId = entity?.source.kind === 'plugin' ? entity.source.pluginId : null;
 
   return (
     <DetailDrawer
@@ -897,9 +850,7 @@ export function CustomizationViewDrawer({
           ? entity.frontmatter.description
           : undefined
       }
-      badges={
-        pluginId ? <PluginOriginBadge pluginId={pluginId} /> : undefined
-      }
+      badges={pluginId ? <PluginOriginBadge pluginId={pluginId} /> : undefined}
       testId="customization"
     >
       {entity && (
@@ -951,6 +902,7 @@ git commit -m "feat: add CustomizationViewDrawer for read-only customization pre
 Same pattern as Task 5 but for the customization screen (skills/agents/commands/refs/global-instructions). Clicking opens the drawer; "Edit" inside the drawer closes it and opens the existing full-screen `CustomizationEditor`. The redundant "View" row action is removed.
 
 **Files:**
+
 - Modify: `src/renderer/components/CustomizationListScreen.tsx`
 - Test: `tests/renderer/components/CustomizationListScreen.test.tsx` (new)
 

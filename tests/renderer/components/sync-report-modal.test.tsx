@@ -35,19 +35,12 @@ describe('<SyncReportModal>', () => {
   });
 
   it('does not render when report contains only ok results', () => {
-    const { container } = render(
-      <SyncReportModal report={[okResult]} onClose={vi.fn()} />,
-    );
+    const { container } = render(<SyncReportModal report={[okResult]} onClose={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it('renders modal with conflict and error entries, hiding ok entries', () => {
-    render(
-      <SyncReportModal
-        report={[okResult, conflictResult, errorResult]}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<SyncReportModal report={[okResult, conflictResult, errorResult]} onClose={vi.fn()} />);
 
     const modal = screen.getByRole('dialog');
     expect(modal).toBeInTheDocument();
@@ -56,9 +49,7 @@ describe('<SyncReportModal>', () => {
   });
 
   it('shows adapter, destination, and backup path when present', () => {
-    render(
-      <SyncReportModal report={[conflictResult]} onClose={vi.fn()} />,
-    );
+    render(<SyncReportModal report={[conflictResult]} onClose={vi.fn()} />);
 
     const item = screen.getByTestId('sync-report-item');
     expect(item).toHaveTextContent('claude');

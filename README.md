@@ -14,13 +14,13 @@ Customization types: `skill` · `agent` · `global-instruction` · `command`. Sc
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Shell | Electron 41 |
-| UI | React 19 + TypeScript 5.9 |
-| Build | electron-vite + Vite 7 |
-| Tests | Vitest + Testing Library |
-| Validation | Zod 4 |
+| Layer      | Technology                |
+| ---------- | ------------------------- |
+| Shell      | Electron 41               |
+| UI         | React 19 + TypeScript 5.9 |
+| Build      | electron-vite + Vite 7    |
+| Tests      | Vitest + Testing Library  |
+| Validation | Zod 4                     |
 
 Pure TypeScript — no backend, API, database, auth, or telemetry.
 
@@ -37,16 +37,16 @@ On first launch, pick a workspace folder. Full walkthrough: [docs/tutorials/gett
 
 ## Scripts
 
-| Script | Purpose |
-|---|---|
-| `npm run dev` | Start the app in development (electron-vite). |
-| `npm run build` | Production build (main + preload + renderer). |
-| `npm run preview` | Preview the production build. |
-| `npm test` | Run the test suite once. |
-| `npm run test:watch` | Run tests in watch mode. |
-| `npm run lint` | Lint with ESLint. |
-| `npm run typecheck` | Typecheck Node and web TS configs. |
-| `npm run format` | Format with Prettier. |
+| Script               | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `npm run dev`        | Start the app in development (electron-vite). |
+| `npm run build`      | Production build (main + preload + renderer). |
+| `npm run preview`    | Preview the production build.                 |
+| `npm test`           | Run the test suite once.                      |
+| `npm run test:watch` | Run tests in watch mode.                      |
+| `npm run lint`       | Lint with ESLint.                             |
+| `npm run typecheck`  | Typecheck Node and web TS configs.            |
+| `npm run format`     | Format with Prettier.                         |
 
 ## Documentation
 

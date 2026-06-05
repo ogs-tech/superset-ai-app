@@ -6,7 +6,8 @@ export class FakeAdapter implements Adapter {
   constructor(
     public readonly adapterId: string,
     private readonly personalDestination: string,
-    private readonly projectDestinationTemplate: (repoPath: string) => string = (repoPath) => `${repoPath}/.fake-adapter`,
+    private readonly projectDestinationTemplate: (repoPath: string) => string = (repoPath) =>
+      `${repoPath}/.fake-adapter`,
   ) {}
 
   resolveDestinations(args: {

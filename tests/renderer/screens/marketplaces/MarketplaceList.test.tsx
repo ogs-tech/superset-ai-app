@@ -2,12 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MarketplaceList } from '../../../../src/renderer/screens/marketplaces/MarketplaceList.js';
-import {
-  mockApi,
-  ok,
-  renderWithQuery,
-  type CallSpy,
-} from '../../test-utils.js';
+import { mockApi, ok, renderWithQuery, type CallSpy } from '../../test-utils.js';
 
 let call: CallSpy;
 
@@ -22,12 +17,8 @@ describe('<MarketplaceList>', () => {
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(<MarketplaceList />);
-    expect(
-      await screen.findByText(/No marketplaces yet/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId('import-marketplace-button'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No marketplaces yet/i)).toBeInTheDocument();
+    expect(screen.getByTestId('import-marketplace-button')).toBeInTheDocument();
   });
 
   it('renders marketplace items with manifest info', async () => {
@@ -51,13 +42,9 @@ describe('<MarketplaceList>', () => {
     renderWithQuery(<MarketplaceList />);
 
     expect(
-      await screen.findByTestId(
-        'entity-grid-card-marketplace-claude-plugins-official',
-      ),
+      await screen.findByTestId('entity-grid-card-marketplace-claude-plugins-official'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('Claude Plugins Official'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Claude Plugins Official')).toBeInTheDocument();
     expect(screen.getByText(/1 plugin/)).toBeInTheDocument();
   });
 
@@ -70,9 +57,7 @@ describe('<MarketplaceList>', () => {
     renderWithQuery(<MarketplaceList />);
     await screen.findByText(/No marketplaces yet/i);
     await user.click(screen.getByTestId('import-marketplace-button'));
-    expect(
-      screen.getByTestId('marketplace-import-dialog'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('marketplace-import-dialog')).toBeInTheDocument();
   });
 
   it('opens marketplace detail drawer when a card is clicked', async () => {

@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { SchemaValidator } from '../../../../../src/main/application/services/schema-validator.js';
-import type { CustomizationFrontmatter, CustomizationType } from '../../../../../src/shared/customization.js';
+import type {
+  CustomizationFrontmatter,
+  CustomizationType,
+} from '../../../../../src/shared/customization.js';
 
 const validBase = (type: CustomizationType): CustomizationFrontmatter => ({
   name: type === 'global-instruction' ? 'default' : 'my-customization',

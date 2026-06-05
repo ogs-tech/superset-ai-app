@@ -39,7 +39,15 @@ describe('CustomizationService.save — SchemaValidator integration (AC#14)', ()
 
     await expect(service.save({ customization: invalidCustomization })).rejects.toMatchObject({
       kind: 'validation',
-      details: { errors: expect.arrayContaining([expect.objectContaining({ path: expect.any(String), kind: expect.any(String), message: expect.any(String) })]) },
+      details: {
+        errors: expect.arrayContaining([
+          expect.objectContaining({
+            path: expect.any(String),
+            kind: expect.any(String),
+            message: expect.any(String),
+          }),
+        ]),
+      },
     });
   });
 

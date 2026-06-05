@@ -58,8 +58,7 @@ export function HealthScreen(): React.ReactElement {
           </Typography>
           {data && (
             <Typography variant="body2" color="text.secondary">
-              {data.counts.error} error(s), {data.counts.warning} warning(s),{' '}
-              {data.counts.ok} ok
+              {data.counts.error} error(s), {data.counts.warning} warning(s), {data.counts.ok} ok
             </Typography>
           )}
         </Box>

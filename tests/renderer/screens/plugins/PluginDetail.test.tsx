@@ -57,9 +57,7 @@ describe('<PluginDetail>', () => {
   it('does not render Open editor / Publish action buttons', async () => {
     call.mockImplementation((method: string) => {
       if (method === 'plugin.get')
-        return Promise.resolve(
-          ok({ ...importedDetail, origin: 'owned' as const }),
-        );
+        return Promise.resolve(ok({ ...importedDetail, origin: 'owned' as const }));
       if (method === 'skill.list') return Promise.resolve(ok([]));
       if (method === 'agent.list') return Promise.resolve(ok([]));
       if (method === 'command.list') return Promise.resolve(ok([]));
@@ -67,12 +65,8 @@ describe('<PluginDetail>', () => {
     });
     renderWithQuery(<PluginDetail pluginId="my-plugin" scope="personal" />);
     await screen.findByText('1.2.3');
-    expect(
-      screen.queryByRole('button', { name: /open editor/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /^publish$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /open editor/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument();
   });
 
   it('shows error message when plugin.get fails', async () => {

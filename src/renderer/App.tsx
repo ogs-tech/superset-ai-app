@@ -28,9 +28,7 @@ function AppRoot(): React.ReactElement {
   const bootstrap = useCallback(async (): Promise<void> => {
     try {
       const current = await callIpc<Settings | null>('settings.get', {});
-      const settings =
-        current ??
-        (await callIpc<Settings>('settings.merge', {}));
+      const settings = current ?? (await callIpc<Settings>('settings.merge', {}));
       setView({ kind: 'main', settings });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'I/O error';
@@ -73,16 +71,8 @@ function AppRoot(): React.ReactElement {
   }
 
   if (view.kind === 'settings') {
-    return (
-      <SettingsScreen
-        onBack={() => setView({ kind: 'main', settings: view.settings })}
-      />
-    );
+    return <SettingsScreen onBack={() => setView({ kind: 'main', settings: view.settings })} />;
   }
 
-  return (
-    <Main
-      onOpenSettings={() => setView({ kind: 'settings', settings: view.settings })}
-    />
-  );
+  return <Main onOpenSettings={() => setView({ kind: 'settings', settings: view.settings })} />;
 }

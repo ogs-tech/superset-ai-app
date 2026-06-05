@@ -87,7 +87,12 @@ export class SchemaValidator {
         result = commandSchema.safeParse(frontmatter);
         break;
       default:
-        return { ok: false, errors: [{ path: 'frontmatter.type', kind: 'enum', message: `Unknown type: ${String(type)}` }] };
+        return {
+          ok: false,
+          errors: [
+            { path: 'frontmatter.type', kind: 'enum', message: `Unknown type: ${String(type)}` },
+          ],
+        };
     }
 
     if (!result.success) {

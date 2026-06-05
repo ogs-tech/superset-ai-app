@@ -39,7 +39,10 @@ describe('AdapterManager.syncOne counts destinations by scope', () => {
 
   it('returns 1 result for personal scope with 1 adapter', async () => {
     const adapters = [new FakeAdapter('claude', '/workspace/personal/claude')];
-    const { manager, fs, registerCustomization } = await setupAdapterManager(adapters, defaultSettings);
+    const { manager, fs, registerCustomization } = await setupAdapterManager(
+      adapters,
+      defaultSettings,
+    );
     const customization = {
       id: 'skill/foo',
       frontmatter: {

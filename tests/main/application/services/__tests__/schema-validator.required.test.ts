@@ -13,7 +13,13 @@ const validBase: CustomizationFrontmatter = {
 };
 
 const requiredFields: Array<keyof CustomizationFrontmatter> = [
-  'name', 'type', 'description', 'scopes', 'version', 'createdAt', 'updatedAt',
+  'name',
+  'type',
+  'description',
+  'scopes',
+  'version',
+  'createdAt',
+  'updatedAt',
 ];
 
 describe('SchemaValidator — required fields (AC#5)', () => {
@@ -21,7 +27,9 @@ describe('SchemaValidator — required fields (AC#5)', () => {
     it(`missing ${field} → error with kind "required" at frontmatter.${field}`, () => {
       const incomplete = { ...validBase } as Record<string, unknown>;
       delete incomplete[field];
-      const result = new SchemaValidator().validate(incomplete as unknown as CustomizationFrontmatter);
+      const result = new SchemaValidator().validate(
+        incomplete as unknown as CustomizationFrontmatter,
+      );
       expect(result.ok).toBe(false);
       if (result.ok) return;
       const err = result.errors.find((e) => e.path === `frontmatter.${field}`);

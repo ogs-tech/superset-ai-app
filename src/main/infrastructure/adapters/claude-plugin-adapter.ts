@@ -33,9 +33,7 @@ export class ClaudePluginAdapter {
    * @param id - The plugin ID to uninstall
    */
   async uninstall(scope: Scope, id: PluginId): Promise<void> {
-    await this.settings.mutate(scope, (s) =>
-      cleanupMarketplaceIfEmpty(removePlugin(s, id)),
-    );
+    await this.settings.mutate(scope, (s) => cleanupMarketplaceIfEmpty(removePlugin(s, id)));
   }
 
   /**

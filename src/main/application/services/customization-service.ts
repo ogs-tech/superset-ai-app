@@ -1,4 +1,8 @@
-import type { Customization, CustomizationFrontmatter, SyncResult } from '../../../shared/customization.js';
+import type {
+  Customization,
+  CustomizationFrontmatter,
+  SyncResult,
+} from '../../../shared/customization.js';
 import type { ClockPort } from '../../application/ports/clock-port.js';
 import type {
   CustomizationListQuery,
@@ -58,7 +62,10 @@ export class CustomizationService {
     const { customization, isCreate = false } = command;
     this.validateCustomization(customization);
 
-    const id = formatCustomizationId(customization.frontmatter.type, customization.frontmatter.name);
+    const id = formatCustomizationId(
+      customization.frontmatter.type,
+      customization.frontmatter.name,
+    );
     const previousId = customization.id;
     const isRename = !isCreate && previousId !== '' && previousId !== id;
     const exists = await this.repository.exists({ id });
@@ -149,7 +156,12 @@ export class CustomizationService {
     }
 
     const missing: string[] = [];
-    const REQUIRED_FIELDS: Array<keyof CustomizationFrontmatter> = ['name', 'type', 'description', 'version'];
+    const REQUIRED_FIELDS: Array<keyof CustomizationFrontmatter> = [
+      'name',
+      'type',
+      'description',
+      'version',
+    ];
     for (const field of REQUIRED_FIELDS) {
       const value = fm[field];
       if (value === undefined || value === null || value === '') {

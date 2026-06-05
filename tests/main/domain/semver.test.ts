@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { compareSemVer, semVer, SemVerInvalidError, trySemVer } from '../../../src/main/domain/semver.js';
+import {
+  compareSemVer,
+  semVer,
+  SemVerInvalidError,
+  trySemVer,
+} from '../../../src/main/domain/semver.js';
 
 describe('semVer', () => {
   describe('valid versions', () => {
@@ -189,10 +194,7 @@ describe('compareSemVer', () => {
     });
 
     it('returns 0 for identical versions with pre-release', () => {
-      const result = compareSemVer(
-        semVer('1.0.0-rc.1'),
-        semVer('1.0.0-rc.1'),
-      );
+      const result = compareSemVer(semVer('1.0.0-rc.1'), semVer('1.0.0-rc.1'));
       expect(result).toBe(0);
     });
   });
@@ -209,26 +211,17 @@ describe('compareSemVer', () => {
     });
 
     it('compares pre-releases lexicographically when base is same', () => {
-      const result = compareSemVer(
-        semVer('1.0.0-alpha'),
-        semVer('1.0.0-beta'),
-      );
+      const result = compareSemVer(semVer('1.0.0-alpha'), semVer('1.0.0-beta'));
       expect(result).toBe(-1);
     });
 
     it('compares rc vs alpha pre-releases', () => {
-      const result = compareSemVer(
-        semVer('1.0.0-alpha'),
-        semVer('1.0.0-rc.1'),
-      );
+      const result = compareSemVer(semVer('1.0.0-alpha'), semVer('1.0.0-rc.1'));
       expect(result).toBe(-1);
     });
 
     it('handles numeric pre-releases in order', () => {
-      const result = compareSemVer(
-        semVer('1.0.0-rc.1'),
-        semVer('1.0.0-rc.2'),
-      );
+      const result = compareSemVer(semVer('1.0.0-rc.1'), semVer('1.0.0-rc.2'));
       expect(result).toBe(-1);
     });
   });

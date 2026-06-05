@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Box,
-  Chip,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Chip, CircularProgress, Paper, Stack, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type {
@@ -26,11 +18,7 @@ function refDisplay(ref: PluginRefIpc | undefined): string {
   return `${ref.kind}: ${ref.value}`;
 }
 
-function ArtifactList({
-  artifacts,
-}: {
-  artifacts: PluginArtifacts;
-}): React.ReactElement {
+function ArtifactList({ artifacts }: { artifacts: PluginArtifacts }): React.ReactElement {
   const items: string[] = [];
   if (artifacts.skills.length > 0) {
     items.push(`Skills: ${artifacts.skills.join(', ')}`);
@@ -66,14 +54,14 @@ function ArtifactList({
   );
 }
 
-export function PluginDetail({
-  pluginId,
-  scope,
-}: PluginDetailProps): React.ReactElement {
-  const { data: detail, isLoading, error } = useQuery<PluginDetailIpc>({
+export function PluginDetail({ pluginId, scope }: PluginDetailProps): React.ReactElement {
+  const {
+    data: detail,
+    isLoading,
+    error,
+  } = useQuery<PluginDetailIpc>({
     queryKey: ['plugin.detail', scope, pluginId],
-    queryFn: () =>
-      callIpc<PluginDetailIpc>('plugin.get', { id: pluginId, scope }),
+    queryFn: () => callIpc<PluginDetailIpc>('plugin.get', { id: pluginId, scope }),
   });
 
   if (isLoading) {
@@ -86,7 +74,11 @@ export function PluginDetail({
 
   if (error) {
     const message = error instanceof IpcCallError ? error.message : String(error);
-    return <Alert severity="error" data-testid="plugin-detail">{message}</Alert>;
+    return (
+      <Alert severity="error" data-testid="plugin-detail">
+        {message}
+      </Alert>
+    );
   }
 
   if (!detail) return <Box data-testid="plugin-detail" />;
@@ -104,10 +96,14 @@ export function PluginDetail({
           Basic Information
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>ID:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            ID:
+          </Typography>
           <Typography variant="body2">{detail.id}</Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Origin:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            Origin:
+          </Typography>
           <Box>
             <Chip
               label={detail.origin}
@@ -116,13 +112,19 @@ export function PluginDetail({
             />
           </Box>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Scope:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            Scope:
+          </Typography>
           <Typography variant="body2">{detail.scope}</Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Enabled:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            Enabled:
+          </Typography>
           <Typography variant="body2">{detail.enabled ? 'Yes' : 'No'}</Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Installed at:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            Installed at:
+          </Typography>
           <Typography variant="body2">{detail.installedAt}</Typography>
         </Box>
       </Paper>
@@ -133,12 +135,16 @@ export function PluginDetail({
             Manifest
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Version:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Version:
+            </Typography>
             <Typography variant="body2">{detail.manifest.version}</Typography>
 
             {detail.manifest.description && (
               <>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>Description:</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Description:
+                </Typography>
                 <Typography variant="body2">{detail.manifest.description}</Typography>
               </>
             )}
@@ -152,15 +158,21 @@ export function PluginDetail({
             Source
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>URL:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              URL:
+            </Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
               {detail.source.url}
             </Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Ref:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Ref:
+            </Typography>
             <Typography variant="body2">{refDisplay(detail.source.ref)}</Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Installed ref:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Installed ref:
+            </Typography>
             <Typography variant="body2">{refDisplay(detail.installedRef)}</Typography>
           </Box>
         </Paper>
@@ -172,18 +184,26 @@ export function PluginDetail({
             Publish Information
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Remote URL:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Remote URL:
+            </Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
               {detail.publishInfo.remoteUrl}
             </Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Visibility:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Visibility:
+            </Typography>
             <Typography variant="body2">{detail.publishInfo.visibility}</Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Last published:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Last published:
+            </Typography>
             <Typography variant="body2">{detail.publishInfo.lastPublishedAt}</Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Version:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Version:
+            </Typography>
             <Typography variant="body2">{detail.publishInfo.lastPublishedVersion}</Typography>
           </Box>
         </Paper>

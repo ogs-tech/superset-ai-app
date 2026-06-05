@@ -106,9 +106,7 @@ describe('HookService', () => {
         extraKnownMarketplaces: {},
         enabledPlugins: {},
         hooks: {
-          SessionStart: [
-            { matcher: 'startup', hooks: [{ type: 'command', command: 'manual' }] },
-          ],
+          SessionStart: [{ matcher: 'startup', hooks: [{ type: 'command', command: 'manual' }] }],
         },
       });
       const service = new HookService(settings);
@@ -205,9 +203,7 @@ describe('HookService', () => {
         `${cache.pluginDir('personal', pid)}/hooks/hooks.json`,
         JSON.stringify({
           hooks: {
-            SessionStart: [
-              { matcher: 'x', hooks: [{ type: 'command', command: 'cmd' }] },
-            ],
+            SessionStart: [{ matcher: 'x', hooks: [{ type: 'command', command: 'cmd' }] }],
           },
         }),
       );
@@ -249,9 +245,7 @@ describe('HookService', () => {
         `${cache.pluginDir('personal', pid)}/hooks/hooks.json`,
         JSON.stringify({
           hooks: {
-            SessionStart: [
-              { matcher: 'x', hooks: [{ type: 'command', command: 'cmd' }] },
-            ],
+            SessionStart: [{ matcher: 'x', hooks: [{ type: 'command', command: 'cmd' }] }],
           },
         }),
       );
@@ -261,9 +255,9 @@ describe('HookService', () => {
       const pluginHook = listed[0];
       if (!pluginHook) throw new Error('expected one plugin hook');
 
-      await expect(
-        service.delete({ id: hookId(pluginHook.id) }),
-      ).rejects.toBeInstanceOf(OperationNotAllowedForOriginError);
+      await expect(service.delete({ id: hookId(pluginHook.id) })).rejects.toBeInstanceOf(
+        OperationNotAllowedForOriginError,
+      );
     });
   });
 });

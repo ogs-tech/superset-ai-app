@@ -8,7 +8,10 @@ import { InMemoryCustomizationRepository } from '../../../../../src/main/infrast
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
-import type { Customization, CustomizationFrontmatter } from '../../../../../src/shared/customization.js';
+import type {
+  Customization,
+  CustomizationFrontmatter,
+} from '../../../../../src/shared/customization.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const FROZEN = new Date('2026-04-26T10:00:00.000Z');
@@ -83,7 +86,9 @@ describe('CustomizationService.save — syncReport population', () => {
     await service.save({ customization: makeCustomization() });
     const backupsBefore = await listBackups(fs);
 
-    const second = await service.save({ customization: makeCustomization({ body: '# Foo updated\n' }) });
+    const second = await service.save({
+      customization: makeCustomization({ body: '# Foo updated\n' }),
+    });
     const backupsAfter = await listBackups(fs);
 
     expect(second.syncReport).toHaveLength(1);

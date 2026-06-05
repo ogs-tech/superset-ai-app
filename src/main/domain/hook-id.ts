@@ -19,10 +19,9 @@ export function tryHookId(raw: string): Result<HookId, HookIdInvalidError> {
   if (typeof raw !== 'string') {
     return {
       ok: false,
-      error: new HookIdInvalidError(
-        `Invalid hook ID: expected string, got ${typeof raw}`,
-        { raw: String(raw) },
-      ),
+      error: new HookIdInvalidError(`Invalid hook ID: expected string, got ${typeof raw}`, {
+        raw: String(raw),
+      }),
     };
   }
   if (!HOOK_ID_PATTERN.test(raw)) {

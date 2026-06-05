@@ -13,7 +13,9 @@ import type { MarketplaceService } from '../../../src/main/application/services/
 const fakeSkillService = () =>
   ({
     list: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue({ id: 'foo', body: 'b', frontmatter: {}, source: { kind: 'workspace' } }),
+    get: vi
+      .fn()
+      .mockResolvedValue({ id: 'foo', body: 'b', frontmatter: {}, source: { kind: 'workspace' } }),
     save: vi.fn().mockResolvedValue({ skill: { id: 'foo' }, syncReport: [] }),
     delete: vi.fn().mockResolvedValue({ ok: true }),
   }) as unknown as SkillService;
@@ -77,7 +79,12 @@ describe('command-handlers', () => {
   const fakeCommandService = () =>
     ({
       list: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue({ id: 'feature-dev', body: 'b', frontmatter: {}, source: { kind: 'workspace' } }),
+      get: vi.fn().mockResolvedValue({
+        id: 'feature-dev',
+        body: 'b',
+        frontmatter: {},
+        source: { kind: 'workspace' },
+      }),
       save: vi.fn().mockResolvedValue({ command: { id: 'feature-dev' }, syncReport: [] }),
       delete: vi.fn().mockResolvedValue({ ok: true }),
     }) as unknown as CommandService;
@@ -124,7 +131,9 @@ describe('command-handlers', () => {
 
   it('command.delete rejects missing removeSymlinks', async () => {
     const h = buildCommandHandlers(fakeCommandService());
-    await expect(h['command.delete']!({ id: 'feature-dev' })).rejects.toMatchObject({ kind: 'validation' });
+    await expect(h['command.delete']!({ id: 'feature-dev' })).rejects.toMatchObject({
+      kind: 'validation',
+    });
   });
 });
 
@@ -134,9 +143,7 @@ describe('global-instruction-handlers', () => {
       get: vi.fn(),
     } as unknown as GlobalInstructionService;
     const h = buildGlobalInstructionHandlers(svc);
-    await expect(h['global-instruction.get']!({ id: 'other' })).rejects.toThrow(
-      /must be one of/,
-    );
+    await expect(h['global-instruction.get']!({ id: 'other' })).rejects.toThrow(/must be one of/);
   });
 
   it('global-instruction.get accepts default', async () => {
@@ -180,9 +187,9 @@ describe('marketplace-handlers', () => {
       remove: vi.fn().mockResolvedValue(undefined),
     } as unknown as MarketplaceService;
     const h = buildMarketplaceHandlers(svc);
-    await expect(
-      h['marketplace.remove']!({ scope: 'invalid', id: 'foo' }),
-    ).rejects.toMatchObject({ kind: 'validation' });
+    await expect(h['marketplace.remove']!({ scope: 'invalid', id: 'foo' })).rejects.toMatchObject({
+      kind: 'validation',
+    });
   });
 
   it('marketplace.refresh calls service.refresh', async () => {

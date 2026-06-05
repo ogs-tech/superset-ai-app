@@ -41,11 +41,7 @@ export function TableView<T>({
         overflowY: 'auto',
       }}
     >
-      <Table
-        size="small"
-        stickyHeader
-        data-testid={`entity-grid-table-${entity.name}`}
-      >
+      <Table size="small" stickyHeader data-testid={`entity-grid-table-${entity.name}`}>
         <TableHead>
           <TableRow>
             {columns.map((col) => (
@@ -106,11 +102,7 @@ export function TableView<T>({
                   onClick={(e) => e.stopPropagation()}
                   sx={{ whiteSpace: 'nowrap' }}
                 >
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    sx={{ justifyContent: 'flex-end' }}
-                  >
+                  <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
                     {actions
                       .filter((a) => !a.hidden?.(item))
                       .map((action) => (
@@ -118,11 +110,7 @@ export function TableView<T>({
                           <span>
                             <IconButton
                               size="small"
-                              color={
-                                action.variant === 'destructive'
-                                  ? 'error'
-                                  : 'default'
-                              }
+                              color={action.variant === 'destructive' ? 'error' : 'default'}
                               disabled={action.disabled?.(item)}
                               onClick={(e) => {
                                 e.stopPropagation();

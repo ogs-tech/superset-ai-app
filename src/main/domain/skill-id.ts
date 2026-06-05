@@ -24,10 +24,9 @@ export function trySkillId(raw: string): Result<SkillId, SkillIdInvalidError> {
   if (typeof raw !== 'string') {
     return {
       ok: false,
-      error: new SkillIdInvalidError(
-        `Invalid skill ID: expected string, got ${typeof raw}`,
-        { raw: String(raw) },
-      ),
+      error: new SkillIdInvalidError(`Invalid skill ID: expected string, got ${typeof raw}`, {
+        raw: String(raw),
+      }),
     };
   }
   if (!SKILL_ID_PATTERN.test(raw)) {

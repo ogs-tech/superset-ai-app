@@ -11,10 +11,7 @@ export const LANGUAGE_PROMPTS: Record<Exclude<LanguagePreference, 'off'>, string
 
 const LANGUAGE_BLOCK_RE = /\n*<language>[\s\S]*?<\/language>\n?/;
 
-export function updateLanguageSection(
-  body: string,
-  language: LanguagePreference,
-): string {
+export function updateLanguageSection(body: string, language: LanguagePreference): string {
   if (language === 'off') {
     const cleaned = body.replace(LANGUAGE_BLOCK_RE, '');
     const trimmed = cleaned.replace(/\s+$/, '');

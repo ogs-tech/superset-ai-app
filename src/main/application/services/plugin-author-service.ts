@@ -3,7 +3,10 @@ import type { Scope } from '../ports/scope.js';
 import type { PluginId } from '../../domain/plugin-id.js';
 import type { SemVer } from '../../domain/semver.js';
 import type { PluginManifest } from '../../domain/plugin-manifest.js';
-import { OwnPluginIdCollisionError, OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
+import {
+  OwnPluginIdCollisionError,
+  OperationNotAllowedForOriginError,
+} from '../../domain/plugin-errors.js';
 import type { PluginSummary } from './plugin-installer.js';
 import type { PluginOrigin } from '../../domain/plugin-origin.js';
 

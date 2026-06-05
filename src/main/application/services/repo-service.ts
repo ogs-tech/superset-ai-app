@@ -2,8 +2,7 @@ import type { RepoReader } from '../ports/repo-reader.js';
 
 const REF_PREFIX = 'ref: refs/heads/';
 
-const joinPosix = (...parts: string[]): string =>
-  parts.join('/').replace(/\/+/g, '/');
+const joinPosix = (...parts: string[]): string => parts.join('/').replace(/\/+/g, '/');
 
 export class RepoService {
   constructor(private readonly reader: RepoReader) {}

@@ -28,8 +28,9 @@ export class ConfigDriftCollector implements HealthCollector {
     const observedAt = this.clock.now().toISOString();
 
     return items
-      .filter((item): item is PluginListItem & { drift: NonNullable<PluginListItem['drift']> } =>
-        item.drift !== undefined,
+      .filter(
+        (item): item is PluginListItem & { drift: NonNullable<PluginListItem['drift']> } =>
+          item.drift !== undefined,
       )
       .map((item) => {
         const id = String(item.id);

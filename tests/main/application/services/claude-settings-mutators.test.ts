@@ -16,7 +16,7 @@ const emptySettings = (): ClaudeSettings => ({
 
 const settingsWithMarketplace = (marketplacePath: string): ClaudeSettings => ({
   extraKnownMarketplaces: {
-    'local': {
+    local: {
       source: {
         source: 'directory',
         path: marketplacePath,
@@ -307,7 +307,7 @@ describe('claude-settings-mutators', () => {
     it('removes the marketplace when last plugin is removed', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -325,7 +325,7 @@ describe('claude-settings-mutators', () => {
     it('keeps the marketplace when other local plugins still exist', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -345,7 +345,7 @@ describe('claude-settings-mutators', () => {
     it('keeps the marketplace when disabled local plugins exist', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -375,7 +375,7 @@ describe('claude-settings-mutators', () => {
     it('preserves other marketplaces when cleaning up local', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -400,7 +400,7 @@ describe('claude-settings-mutators', () => {
     it('does not mutate the input settings', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -419,7 +419,7 @@ describe('claude-settings-mutators', () => {
     it('handles edge case: only non-local plugins exist', () => {
       const settings: ClaudeSettings = {
         extraKnownMarketplaces: {
-          'local': {
+          local: {
             source: {
               source: 'directory',
               path: '/workspace/plugins',
@@ -439,7 +439,11 @@ describe('claude-settings-mutators', () => {
 
   describe('per-marketplace attribution', () => {
     it('enablePlugin uses provided marketplaceId in the key', () => {
-      const result = enablePlugin(emptySettings(), pluginId('feature-dev'), 'claude-plugins-official');
+      const result = enablePlugin(
+        emptySettings(),
+        pluginId('feature-dev'),
+        'claude-plugins-official',
+      );
       expect(result.enabledPlugins['feature-dev@claude-plugins-official']).toBe(true);
       expect(result.enabledPlugins['feature-dev@local']).toBeUndefined();
     });

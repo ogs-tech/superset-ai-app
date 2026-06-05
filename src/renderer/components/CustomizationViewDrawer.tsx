@@ -18,8 +18,7 @@ export function CustomizationViewDrawer({
   onEdit,
 }: CustomizationViewDrawerProps): React.ReactElement {
   const isWorkspace = entity?.source.kind === 'workspace';
-  const pluginId =
-    entity?.source.kind === 'plugin' ? entity.source.pluginId : null;
+  const pluginId = entity?.source.kind === 'plugin' ? entity.source.pluginId : null;
 
   return (
     <DetailDrawer
@@ -31,9 +30,7 @@ export function CustomizationViewDrawer({
           ? entity.frontmatter.description
           : undefined
       }
-      badges={
-        pluginId ? <PluginOriginBadge pluginId={pluginId} /> : undefined
-      }
+      badges={pluginId ? <PluginOriginBadge pluginId={pluginId} /> : undefined}
       testId="customization"
     >
       {entity && (

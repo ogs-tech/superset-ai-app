@@ -15,7 +15,12 @@ import type { HookService } from '../application/services/hook-service.js';
 import type { MarketplaceService } from '../application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
-import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
+import {
+  getDefaults,
+  type LinkedRepo,
+  type LinkedRepoView,
+  type Settings,
+} from '../../shared/settings.js';
 import type { IpcHandlers } from './dispatcher.js';
 import { buildPluginHandlers } from './plugin-handlers.js';
 import { buildCredentialsHandlers } from './credentials-handlers.js';
@@ -151,9 +156,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
         path: repoPath,
       };
 
-      const nextRepos = existing
-        ? current.linkedRepos
-        : [...current.linkedRepos, entry];
+      const nextRepos = existing ? current.linkedRepos : [...current.linkedRepos, entry];
       await settingsService.merge({ linkedRepos: nextRepos });
 
       const branch = await repoService.getCurrentBranch(repoPath);
@@ -180,7 +183,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'dialog.selectFolder': (params) => {
-      const raw = params === undefined || params === null ? {} : asObject(params, 'dialog.selectFolder');
+      const raw =
+        params === undefined || params === null ? {} : asObject(params, 'dialog.selectFolder');
       const dialogParams: SelectFolderParams = {};
       if (typeof raw['defaultPath'] === 'string') {
         dialogParams.defaultPath = raw['defaultPath'];
@@ -189,7 +193,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'adapter.syncAll': async (params) => {
-      const raw = params === undefined || params === null ? {} : asObject(params, 'adapter.syncAll');
+      const raw =
+        params === undefined || params === null ? {} : asObject(params, 'adapter.syncAll');
       const adapterId = raw['adapterId'];
       if (adapterId !== undefined && typeof adapterId !== 'string') {
         throw new DomainError('validation', `Invalid 'adapterId'`);
@@ -224,9 +229,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
         return removeResult;
       } else {
         await settingsService.merge({ adapters: { [adapterId]: { enabled: true } } });
-        const syncReport = runSyncAll
-          ? await adapterManager.syncAll({ adapterId })
-          : [];
+        const syncReport = runSyncAll ? await adapterManager.syncAll({ adapterId }) : [];
         return { syncReport };
       }
     },

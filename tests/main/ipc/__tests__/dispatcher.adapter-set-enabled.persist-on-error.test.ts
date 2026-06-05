@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { buildHandlers, type IpcDeps } from '../../../../src/main/ipc/registry.js';
 import { createDispatcher } from '../../../../src/main/ipc/dispatcher.js';
-import type { AdapterManager, SymlinkError } from '../../../../src/main/application/services/adapter-manager.js';
+import type {
+  AdapterManager,
+  SymlinkError,
+} from '../../../../src/main/application/services/adapter-manager.js';
 import type { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 
 const buildDeps = () => {
@@ -9,7 +12,11 @@ const buildDeps = () => {
   const removeAdapterSymlinks = vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors });
   const merge = vi.fn().mockResolvedValue({});
   const adapterManager = { removeAdapterSymlinks } as unknown as AdapterManager;
-  const settingsService = { merge, load: vi.fn().mockResolvedValue(null), getDefaults: vi.fn().mockReturnValue({}) } as unknown as SettingsService;
+  const settingsService = {
+    merge,
+    load: vi.fn().mockResolvedValue(null),
+    getDefaults: vi.fn().mockReturnValue({}),
+  } as unknown as SettingsService;
   return { adapterManager, settingsService, merge, errors };
 };
 

@@ -17,10 +17,7 @@ const entry = (destination: string): SymlinkPlanEntry => ({
   scope: 'personal',
 });
 
-const setup = (
-  entries: SymlinkPlanEntry[],
-  states: Record<string, SymlinkValidateState>,
-) => {
+const setup = (entries: SymlinkPlanEntry[], states: Record<string, SymlinkValidateState>) => {
   const planner: SymlinkPlanner = { planDestinations: () => Promise.resolve(entries) };
   const validator: SymlinkValidator = {
     validate: ({ destination }) => Promise.resolve(states[destination] ?? 'none'),
