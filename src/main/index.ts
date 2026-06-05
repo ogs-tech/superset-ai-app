@@ -45,6 +45,8 @@ import { ElectronNotificationAdapter } from './infrastructure/notification/elect
 import { HealthService } from './application/services/health/health-service.js';
 import { McpAuthCollector } from './application/services/health/mcp-auth-collector.js';
 import { McpRuntimeCollector } from './application/services/health/mcp-runtime-collector.js';
+import { ConfigDriftCollector } from './application/services/health/config-drift-collector.js';
+import { SymlinkCollector } from './application/services/health/symlink-collector.js';
 import type { HealthCollector } from './application/services/health/health-collector.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
@@ -203,7 +205,8 @@ async function wireIpc(): Promise<void> {
   const healthCollectors: HealthCollector[] = [
     new McpAuthCollector(claudeRuntimeReader, clock),
     new McpRuntimeCollector(claudeRuntimeReader, clock),
-    // TODO(Task 13/15): add ConfigDriftCollector(pluginService, clock) and SymlinkCollector(adapterManager, symlinkManager, clock) once implemented
+    new ConfigDriftCollector(pluginService, clock),
+    new SymlinkCollector(adapterManager, symlinkManager, clock),
   ];
   const healthService = new HealthService(healthCollectors, clock);
   const notificationPort = new ElectronNotificationAdapter();
