@@ -25,6 +25,9 @@ import { buildCommandHandlers } from './command-handlers.js';
 import { buildHookHandlers } from './hook-handlers.js';
 import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
+import { buildHealthHandlers } from './health-handlers.js';
+import type { HealthService } from '../application/services/health/health-service.js';
+import type { NotificationPort } from '../application/ports/notification-port.js';
 import { updateLanguageSection } from '../application/services/language-section.js';
 import { asLanguagePreference } from './_validators.js';
 import { globalInstructionId } from '../domain/global-instruction-id.js';
@@ -42,6 +45,8 @@ export interface IpcDeps {
   hookService: HookService;
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
+  healthService: HealthService;
+  notificationPort: NotificationPort;
   appQuit: () => void;
 }
 
@@ -86,6 +91,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     hookService,
     globalInstructionService,
     marketplaceService,
+    healthService,
+    notificationPort,
     appQuit,
   } = deps;
 
@@ -246,5 +253,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     ...buildHookHandlers(hookService),
     ...buildGlobalInstructionHandlers(globalInstructionService),
     ...buildMarketplaceHandlers(marketplaceService),
+    ...buildHealthHandlers(healthService, notificationPort),
   };
 }
