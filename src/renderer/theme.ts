@@ -9,6 +9,7 @@ export function createAppTheme(mode: PaletteMode): Theme {
       primary: { main: isDark ? '#7aa2ff' : '#2b5cff' },
       secondary: { main: isDark ? '#b88dff' : '#6f42c1' },
       error: { main: isDark ? '#ff6b6b' : '#d32f2f' },
+      warning: { main: isDark ? '#ffb74d' : '#ed6c02' },
       success: { main: isDark ? '#5fd58a' : '#2e7d32' },
       background: {
         default: isDark ? '#0f1115' : '#fafbfc',
