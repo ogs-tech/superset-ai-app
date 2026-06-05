@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -178,6 +178,50 @@ describe('SimpleGitClient', () => {
 
       const remoteSha = await client.remoteSha(dir, 'origin', 'nonexistent-branch');
       expect(remoteSha).toBeNull();
+    });
+  });
+
+  describe('clone', () => {
+    // Builds a local source repo with two commits and returns the first SHA,
+    // so a SHA-pinned clone must check out an ancestor — not HEAD.
+    async function makeSourceRepoWithHistory(): Promise<{ url: string; oldSha: string }> {
+      const url = await createTmp();
+      await client.init(url);
+      await configureGitUser(url);
+
+      await writeFile(path.join(url, 'plugin.txt'), 'v1');
+      await client.add(url);
+      const { sha: oldSha } = await client.commit(url, 'first');
+
+      await writeFile(path.join(url, 'plugin.txt'), 'v2');
+      await client.add(url);
+      await client.commit(url, 'second');
+
+      return { url, oldSha };
+    }
+
+    it('clones a specific commit SHA (regression: --branch rejects SHAs)', async () => {
+      const { url, oldSha } = await makeSourceRepoWithHistory();
+      const dest = path.join(await makeTmpDir(), 'cloned');
+      tmpDirs.push(path.dirname(dest));
+
+      const { sha } = await client.clone(url, { kind: 'sha', value: oldSha }, dest);
+
+      expect(sha).toBe(oldSha);
+      const content = await readFile(path.join(dest, 'plugin.txt'), 'utf8');
+      expect(content).toBe('v1');
+    });
+
+    it('clones the default branch when no ref is given', async () => {
+      const { url } = await makeSourceRepoWithHistory();
+      const dest = path.join(await makeTmpDir(), 'cloned');
+      tmpDirs.push(path.dirname(dest));
+
+      const { sha } = await client.clone(url, undefined, dest);
+
+      expect(sha).toMatch(/^[a-f0-9]{40}$/);
+      const content = await readFile(path.join(dest, 'plugin.txt'), 'utf8');
+      expect(content).toBe('v2');
     });
   });
 

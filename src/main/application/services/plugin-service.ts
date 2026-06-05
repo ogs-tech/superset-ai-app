@@ -194,7 +194,7 @@ export class PluginService {
 
     try {
       await cloneMarketplaceSource(git, plugin.source, tmpDir);
-      return await parser.parse(tmpDir);
+      return await parsePluginManifest(parser, tmpDir, plugin);
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }
@@ -223,7 +223,7 @@ export class PluginService {
 
     const cloneResult = await cloneMarketplaceSource(git, plugin.source, tmpDir);
 
-    const manifest = await parser.parse(tmpDir);
+    const manifest = await parsePluginManifest(parser, tmpDir, plugin);
     const id = manifest.id;
 
     const meta = await cache.readMeta(scope);
@@ -503,6 +503,65 @@ function expandLocalSource(
     ...plugin,
     source: { source: 'git-subdir', url: marketplaceUrl, path: localPath },
   };
+}
+
+/**
+ * Parse the plugin manifest from a cloned source dir, synthesizing one first for
+ * inline-defined plugins.
+ *
+ * LSP/MCP plugins on the official marketplace are defined entirely in the
+ * marketplace entry (an inline `lspServers`/`mcpServers` block) and ship no
+ * `.claude-plugin/plugin.json` in their source subdir — that dir holds only a
+ * LICENSE and README. The parser would reject them as "manifest not found". When
+ * the entry is inline and the subdir genuinely lacks a manifest, we write one
+ * synthesized from the entry so the install can proceed; the inline server block
+ * is carried into the plugin.json verbatim for Claude Code to read.
+ *
+ * We only synthesize when no manifest file exists — a present-but-invalid
+ * manifest still surfaces its real schema error rather than being masked.
+ */
+async function parsePluginManifest(
+  parser: PluginManifestParserLike,
+  tmpDir: string,
+  plugin: MarketplacePlugin,
+): Promise<PluginManifest> {
+  if (isInlinePlugin(plugin) && !(await manifestExists(tmpDir))) {
+    await writeSynthesizedManifest(tmpDir, plugin);
+  }
+  return parser.parse(tmpDir);
+}
+
+/** A plugin whose behavior lives in an inline `lspServers`/`mcpServers` block. */
+function isInlinePlugin(plugin: MarketplacePlugin): boolean {
+  const raw = plugin as Record<string, unknown>;
+  return isNonEmptyObject(raw['lspServers']) || isNonEmptyObject(raw['mcpServers']);
+}
+
+function isNonEmptyObject(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && Object.keys(value).length > 0;
+}
+
+async function manifestExists(dir: string): Promise<boolean> {
+  return fs
+    .access(path.join(dir, '.claude-plugin', 'plugin.json'))
+    .then(() => true)
+    .catch(() => false);
+}
+
+/** Write a `.claude-plugin/plugin.json` derived from an inline marketplace entry. */
+async function writeSynthesizedManifest(dir: string, plugin: MarketplacePlugin): Promise<void> {
+  const raw = plugin as Record<string, unknown>;
+  const manifest: Record<string, unknown> = {
+    name: plugin.name,
+    version: typeof raw['version'] === 'string' ? raw['version'] : '1.0.0',
+    description: plugin.description,
+  };
+  if (isNonEmptyObject(raw['lspServers'])) manifest['lspServers'] = raw['lspServers'];
+  if (isNonEmptyObject(raw['mcpServers'])) manifest['mcpServers'] = raw['mcpServers'];
+
+  const manifestDir = path.join(dir, '.claude-plugin');
+  await fs.mkdir(manifestDir, { recursive: true });
+  await fs.writeFile(path.join(manifestDir, 'plugin.json'), JSON.stringify(manifest, null, 2), 'utf8');
 }
 
 async function cloneMarketplaceSource(

@@ -20,11 +20,14 @@ export class SimpleGitClient implements GitPort {
   }
 
   async clone(url: string, ref: PluginRef | undefined, dest: string): Promise<{ sha: string }> {
-    const git = simpleGit();
-    if (ref) {
-      await git.clone(url, dest, ['--branch', ref.value, '--depth', '1']);
+    if (!ref) {
+      await simpleGit().clone(url, dest);
+    } else if (ref.kind === 'sha') {
+      // `git clone --branch` only accepts branch/tag names; a commit SHA fails
+      // with "Remote branch <sha> not found". Fetch the exact commit instead.
+      await this.cloneAtSha(url, ref.value, dest);
     } else {
-      await git.clone(url, dest);
+      await simpleGit().clone(url, dest, ['--branch', ref.value, '--depth', '1']);
     }
     const sha = await this.currentSha(dest);
     return { sha };
@@ -33,10 +36,18 @@ export class SimpleGitClient implements GitPort {
   async cloneSubdir(url: string, subdir: string, ref: string | undefined, dest: string): Promise<{ sha: string }> {
     const tmpRepoDir = `${dest}__repo`;
     try {
-      if (ref) {
-        await simpleGit().clone(url, tmpRepoDir, ['--branch', ref, '--depth', '1']);
-      } else {
+      if (!ref) {
         await simpleGit().clone(url, tmpRepoDir, ['--depth', '1']);
+      } else {
+        try {
+          await simpleGit().clone(url, tmpRepoDir, ['--branch', ref, '--depth', '1']);
+        } catch {
+          // `ref` may be a commit SHA, which `--branch` rejects. Retry by
+          // fetching the exact commit (this method takes a bare string, so we
+          // can't tell branch from SHA up front).
+          await fs.rm(tmpRepoDir, { recursive: true, force: true }).catch(() => {});
+          await this.cloneAtSha(url, ref, tmpRepoDir);
+        }
       }
       const sha = await this.currentSha(tmpRepoDir);
       await fs.rename(path.join(tmpRepoDir, subdir), dest);
@@ -44,6 +55,27 @@ export class SimpleGitClient implements GitPort {
     } finally {
       await fs.rm(tmpRepoDir, { recursive: true, force: true }).catch(() => {});
     }
+  }
+
+  /**
+   * Clone a repository checked out at a specific commit SHA.
+   *
+   * `git clone --branch` only resolves branch and tag names, so pinning to a
+   * commit requires the init + fetch-by-commit dance. GitHub permits fetching an
+   * arbitrary reachable SHA (`uploadpack.allowAnySHA1InWant`); for servers that
+   * disallow it we fall back to a full fetch before checking out.
+   */
+  private async cloneAtSha(url: string, sha: string, dest: string): Promise<void> {
+    await fs.mkdir(dest, { recursive: true });
+    const git = simpleGit(dest);
+    await git.init();
+    await git.addRemote('origin', url);
+    try {
+      await git.fetch(['--depth', '1', 'origin', sha]);
+    } catch {
+      await git.fetch(['origin']);
+    }
+    await git.checkout(sha);
   }
 
   async pull(dir: string): Promise<{ sha: string }> {
