@@ -144,13 +144,6 @@ export function CustomizationListScreen({
         secondary: true,
         searchable: true,
       },
-      {
-        key: 'source.kind',
-        label: 'Source',
-        badge: true,
-        render: (item) =>
-          item.source.kind === 'plugin' ? `plugin:${item.source.pluginId}` : 'workspace',
-      },
     ],
   };
 

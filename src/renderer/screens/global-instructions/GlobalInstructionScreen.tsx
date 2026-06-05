@@ -108,12 +108,11 @@ function parseSections(body: string): DisplaySection[] {
 
 /**
  * Where the single `default` slot is symlinked once saved — mirrors the
- * destinations returned by claude-adapter and copilot-adapter so the user knows
- * exactly what gets written.
+ * destinations returned by claude-adapter so the user knows exactly what gets
+ * written.
  */
 const DESTINATIONS = [
   { assistant: 'Claude Code', path: '~/.claude/CLAUDE.md' },
-  { assistant: 'GitHub Copilot', path: '~/.copilot/instructions/copilot-instructions.md' },
 ] as const;
 
 const fadeIn = {

@@ -96,15 +96,6 @@ export function HookList(): React.ReactElement {
         secondary: true,
         searchable: true,
       },
-      {
-        key: 'source.kind',
-        label: 'Source',
-        hideInCard: true,
-        render: (item) =>
-          item.source.kind === 'plugin'
-            ? `plugin:${item.source.pluginId}`
-            : 'workspace',
-      },
     ],
   };
 
