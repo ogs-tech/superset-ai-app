@@ -9,6 +9,9 @@ import { GlobalInstructionScreen } from './global-instructions/GlobalInstruction
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
 import { StarterPackScreen } from './starter-pack/StarterPackScreen.js';
+import { HealthScreen } from './health/HealthScreen.js';
+import { useHealthReport } from '../hooks/use-health-report.js';
+import { useHealthNotifications } from '../hooks/use-health-notifications.js';
 
 interface MainProps {
   onOpenSettings: () => void;
@@ -16,6 +19,8 @@ interface MainProps {
 
 export function Main({ onOpenSettings }: MainProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<SidebarTab>('starter-pack');
+  const { data: healthReport } = useHealthReport('personal');
+  useHealthNotifications(healthReport);
 
   return (
     <Box
@@ -26,6 +31,7 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         active={activeTab}
         onNavigate={setActiveTab}
         onOpenSettings={onOpenSettings}
+        {...(healthReport ? { healthSeverity: healthReport.worst } : {})}
       />
       <Box
         component="main"
@@ -43,6 +49,7 @@ export function Main({ onOpenSettings }: MainProps): React.ReactElement {
         {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
         {activeTab === 'plugins' && <PluginList scope="personal" />}
         {activeTab === 'marketplaces' && <MarketplaceList />}
+        {activeTab === 'diagnostics' && <HealthScreen />}
       </Box>
     </Box>
   );
