@@ -1,18 +1,17 @@
-import { join } from 'node:path';
 import type { CustomizationService } from './customization-service.js';
-import type { PluginProvenanceService } from './plugin-provenance.js';
 import type { Command, CommandFrontmatter } from '../schemas/command.js';
 import type { CommandId } from '../../domain/command-id.js';
 import type { SyncResult } from '../../../shared/customization.js';
-import type { PluginCachePort } from '../ports/plugin-cache-port.js';
-import type { FileSystemPort } from '../ports/filesystem-port.js';
 import type { Scope } from '../ports/scope.js';
 import { commandId } from '../../domain/command-id.js';
 import { WORKSPACE_SOURCE, pluginSource } from '../../domain/customization-source.js';
 import { formatCustomizationId } from '../../domain/customization-id.js';
-import { parseMarkdown } from '../../infrastructure/markdown/frontmatter.js';
 import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
-import { provenanceKey } from './plugin-provenance.js';
+import {
+  collectPluginEntities,
+  assertNotPluginSourced,
+  type PluginEntityDeps,
+} from './customization-plugin-helpers.js';
 
 export interface SaveCommandResult {
   command: Command;
@@ -29,11 +28,7 @@ function toCommand(c: { id: string; frontmatter: unknown; body: string }): Comma
   };
 }
 
-export interface PluginProvenanceDepsForCommands {
-  provenance: PluginProvenanceService;
-  cache: PluginCachePort;
-  fs: FileSystemPort;
-}
+export type PluginProvenanceDepsForCommands = PluginEntityDeps;
 
 export class CommandService {
   constructor(
@@ -52,27 +47,24 @@ export class CommandService {
 
   private async collectPluginCommands(scope: Scope): Promise<Command[]> {
     if (!this.pluginDeps) return [];
-    const { provenance, cache, fs } = this.pluginDeps;
-    const map = await provenance.forScope(scope);
-    const out: Command[] = [];
-    for (const [key, pid] of map.entries()) {
-      if (!key.startsWith('command/')) continue;
-      const name = key.slice('command/'.length);
-      const file = join(cache.pluginDir(scope, pid), 'commands', `${name}.md`);
-      try {
-        const raw = await fs.readFile(file);
-        const { frontmatter, body } = parseMarkdown<Partial<CommandFrontmatter>>(raw);
-        out.push({
+    return collectPluginEntities(
+      this.pluginDeps,
+      {
+        keyPrefix: 'command/',
+        relPath: (name) => `commands/${name}.md`,
+        build: ({ name, frontmatter, body, pluginId }) => ({
           id: commandId(name),
-          frontmatter: { ...frontmatter, name, type: 'command' } as CommandFrontmatter,
-          source: pluginSource(pid),
+          frontmatter: {
+            ...(frontmatter as Partial<CommandFrontmatter>),
+            name,
+            type: 'command',
+          } as CommandFrontmatter,
+          source: pluginSource(pluginId),
           body,
-        });
-      } catch {
-        // skip
-      }
-    }
-    return out;
+        }),
+      },
+      scope,
+    );
   }
 
   async get(id: CommandId): Promise<Command> {
@@ -91,7 +83,12 @@ export class CommandService {
         { origin: 'plugin', operation: 'save' },
       );
     }
-    await this.assertNotPluginSourced('save', input.command.id, input.scope ?? 'personal');
+    await assertNotPluginSourced(this.pluginDeps, {
+      type: 'command',
+      operation: 'save',
+      name: input.command.id,
+      scope: input.scope ?? 'personal',
+    });
     const result = await this.base.save({
       customization: {
         id: formatCustomizationId('command', input.command.id),
@@ -106,34 +103,19 @@ export class CommandService {
     };
   }
 
-  async delete(input: {
-    id: CommandId;
-    removeSymlinks: boolean;
-    scope?: Scope;
-  }): Promise<{
+  async delete(input: { id: CommandId; removeSymlinks: boolean; scope?: Scope }): Promise<{
     ok: true;
     syncReport?: SyncResult[];
   }> {
-    await this.assertNotPluginSourced('delete', input.id, input.scope ?? 'personal');
+    await assertNotPluginSourced(this.pluginDeps, {
+      type: 'command',
+      operation: 'delete',
+      name: input.id,
+      scope: input.scope ?? 'personal',
+    });
     return this.base.delete({
       id: formatCustomizationId('command', input.id),
       removeSymlinks: input.removeSymlinks,
     });
-  }
-
-  private async assertNotPluginSourced(
-    operation: 'save' | 'delete',
-    id: CommandId,
-    scope: Scope,
-  ): Promise<void> {
-    if (!this.pluginDeps) return;
-    const map = await this.pluginDeps.provenance.forScope(scope);
-    const pid = map.get(provenanceKey({ type: 'command', name: id }));
-    if (pid != null) {
-      throw new OperationNotAllowedForOriginError(
-        `Cannot ${operation} command '${id}' provided by plugin '${pid}'`,
-        { origin: 'plugin', operation },
-      );
-    }
   }
 }

@@ -28,7 +28,8 @@ src/main/
 ├── application/
 │   ├── ports/       # Interfaces — what the core needs from the outside
 │   ├── services/    # Use cases (see below)
-│   └── schemas/     # Zod schemas
+│   ├── schemas/     # Zod schemas
+│   └── markdown/    # pure frontmatter parse/serialize (no I/O)
 ├── infrastructure/  # Adapter implementations (filesystem, git, dialog, settings, …)
 └── ipc/             # IPC handlers — wire services to renderer requests
 ```
@@ -154,8 +155,6 @@ The plugin system extends the SDE customizations framework with package manageme
   ]
 }
 ```
-
-**ClaudePluginAdapter helper** — utility that wraps plugins as Claude settings adapters, exposing installed plugin modules as `.claude/settings.json` entries so Claude can load and apply them at runtime.
 
 ## See also
 
