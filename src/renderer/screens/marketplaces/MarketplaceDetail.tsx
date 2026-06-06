@@ -8,7 +8,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import VerifiedIcon from '@mui/icons-material/Verified';
+import { BadgeCheck } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { PluginInstallPreviewDialog } from './PluginInstallPreviewDialog.js';
@@ -232,7 +233,7 @@ export function MarketplaceDetail({
           />
           {isOfficial && (
             <Chip
-              icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
+              icon={<Icon glyph={BadgeCheck} size={14} />}
               label="official"
               size="small"
               color="primary"

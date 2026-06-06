@@ -11,8 +11,8 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import DownloadIcon from '@mui/icons-material/Download';
+import { MoreVertical, Download } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc } from '../../lib/ipc.js';
 import type { PluginListItemIpc } from '../../../shared/plugin-ipc-types.js';
 import { PluginImportDialog } from './PluginImportDialog.js';
@@ -151,7 +151,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         toolbarActions={
           <Button
             variant="outlined"
-            startIcon={<DownloadIcon />}
+            startIcon={<Icon glyph={Download} size={16} />}
             onClick={() => setDialog({ kind: 'import' })}
           >
             Import plugin
@@ -187,7 +187,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
                 onClick={(e) => openRowMenu(e, item.id)}
                 aria-label={`More options for ${item.id}`}
               >
-                <MoreVertIcon fontSize="small" />
+                <Icon glyph={MoreVertical} size={16} />
               </IconButton>
             </Stack>
           ),

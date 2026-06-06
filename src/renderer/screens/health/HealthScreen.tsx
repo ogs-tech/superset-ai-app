@@ -8,8 +8,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { useHealthReport } from '../../hooks/use-health-report.js';
 import type { HealthCategory, HealthCheck, Severity } from '../../../shared/health.js';
 
@@ -66,7 +66,7 @@ export function HealthScreen(): React.ReactElement {
         <Button
           variant="outlined"
           size="small"
-          startIcon={<RefreshIcon />}
+          startIcon={<Icon glyph={RefreshCw} size={16} />}
           data-testid="health-refresh"
           disabled={isFetching}
           onClick={() => void refetch()}
@@ -94,7 +94,9 @@ export function HealthScreen(): React.ReactElement {
             color: 'text.secondary',
           }}
         >
-          <CheckCircleIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
+          <Box component="span" sx={{ color: 'success.main', display: 'inline-flex', mb: 1 }}>
+            <Icon glyph={CheckCircle2} size={40} />
+          </Box>
           <Typography variant="body1">Everything looks healthy.</Typography>
         </Box>
       )}

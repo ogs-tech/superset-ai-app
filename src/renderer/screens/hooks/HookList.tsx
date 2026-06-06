@@ -6,7 +6,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
+import { Trash2 } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
@@ -102,7 +103,7 @@ export function HookList(): React.ReactElement {
   const actions: RowAction<Hook>[] = [
     {
       label: 'Delete',
-      icon: <DeleteOutlineIcon fontSize="small" />,
+      icon: <Icon glyph={Trash2} size={16} />,
       variant: 'destructive',
       hidden: (item) => item.source.kind !== 'workspace',
       onClick: (item) => deleteMutation.mutate(item),

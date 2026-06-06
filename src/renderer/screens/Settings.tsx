@@ -27,10 +27,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import AddIcon from '@mui/icons-material/Add';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { ArrowLeft, Unlink, Plus, Info } from 'lucide-react';
+import { Icon } from '../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
@@ -266,7 +264,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           Settings
         </Typography>
         {onBack && (
-          <Button variant="text" startIcon={<ArrowBackIcon />} onClick={onBack}>
+          <Button variant="text" startIcon={<Icon glyph={ArrowLeft} size={16} />} onClick={onBack}>
             Back
           </Button>
         )}
@@ -321,7 +319,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         </FormControl>
         {settings.language !== 'off' && (
           <Stack direction="row" sx={{ mt: 1.5, gap: 0.5, alignItems: 'center', color: 'text.secondary' }}>
-            <InfoOutlinedIcon fontSize="small" />
+            <Icon glyph={Info} size={16} />
             <Typography variant="caption">
               Code, comments, and test descriptions are always written in English.
             </Typography>
@@ -337,7 +335,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           <Typography variant="h6" component="h2">
             Linked repos
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => void handleAddRepo()}>
+          <Button variant="contained" startIcon={<Icon glyph={Plus} size={16} />} onClick={() => void handleAddRepo()}>
             Add repo
           </Button>
         </Stack>
@@ -377,7 +375,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
                       onClick={() => void handleUnlink(repo.id)}
                       aria-label="Unlink"
                     >
-                      <LinkOffIcon fontSize="small" />
+                      <Icon glyph={Unlink} size={16} />
                     </IconButton>
                   </Tooltip>
                 }

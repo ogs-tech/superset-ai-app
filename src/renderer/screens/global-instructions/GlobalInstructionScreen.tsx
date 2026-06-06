@@ -10,15 +10,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ForumRoundedIcon from '@mui/icons-material/ForumRounded';
-import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
-import HandshakeRoundedIcon from '@mui/icons-material/HandshakeRounded';
-import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
-import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
+import { Globe, WandSparkles, Pencil, CheckCircle2, MessagesSquare, Zap, Handshake, Shield, FileText } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { CustomizationEditor } from '../../components/CustomizationEditor.js';
@@ -47,25 +40,25 @@ const SECTIONS: readonly DisplaySection[] = [
   {
     title: 'How to work with me',
     blurb: 'Concise replies, one focused question when blocked, no ceremony.',
-    icon: <ForumRoundedIcon fontSize="small" />,
+    icon: <Icon glyph={MessagesSquare} size={16} />,
     accent: '#2b5cff',
   },
   {
     title: 'Engineering defaults',
     blurb: 'TDD where it fits, root-cause fixes, lint + typecheck before done.',
-    icon: <BoltRoundedIcon fontSize="small" />,
+    icon: <Icon glyph={Zap} size={16} />,
     accent: '#0a7d6b',
   },
   {
     title: 'Communication',
     blurb: 'Be specific, state trade-offs, surface uncertainty out loud.',
-    icon: <HandshakeRoundedIcon fontSize="small" />,
+    icon: <Icon glyph={Handshake} size={16} />,
     accent: '#c9760a',
   },
   {
     title: 'Action safety',
     blurb: 'Reversible? Act. Hard to undo? Pause and confirm first.',
-    icon: <ShieldRoundedIcon fontSize="small" />,
+    icon: <Icon glyph={Shield} size={16} />,
     accent: '#c2255c',
   },
 ];
@@ -100,7 +93,7 @@ function parseSections(body: string): DisplaySection[] {
     sections.push(
       known
         ? { ...known, blurb: blurb || known.blurb }
-        : { title, blurb, icon: <NotesRoundedIcon fontSize="small" />, accent: ACCENT },
+        : { title, blurb, icon: <Icon glyph={FileText} size={16} />, accent: ACCENT },
     );
   }
   return sections;
@@ -200,7 +193,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
             backgroundColor: `${ACCENT}1a`,
           }}
         >
-          <PublicRoundedIcon />
+          <Icon glyph={Globe} size={20} />
         </Box>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
@@ -215,7 +208,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
             label="Configured"
             color="success"
             size="small"
-            icon={<CheckCircleIcon fontSize="small" />}
+            icon={<Icon glyph={CheckCircle2} size={16} />}
             sx={{ ml: 'auto' }}
           />
         )}
@@ -350,7 +343,7 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
         >
           <Button
             variant="contained"
-            startIcon={<AutoFixHighIcon />}
+            startIcon={<Icon glyph={WandSparkles} size={16} />}
             onClick={onTemplate}
             data-testid="gi-use-template"
             sx={{ bgcolor: ACCENT, '&:hover': { bgcolor: '#5a35a3' } }}
@@ -397,7 +390,7 @@ function renderConfigured(
         </Box>
         <Button
           variant="outlined"
-          startIcon={<EditIcon fontSize="small" />}
+          startIcon={<Icon glyph={Pencil} size={16} />}
           onClick={onEdit}
           data-testid="gi-edit"
           sx={{ flexShrink: 0 }}

@@ -15,17 +15,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SearchIcon from '@mui/icons-material/Search';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import TuneIcon from '@mui/icons-material/Tune';
-import ExtensionIcon from '@mui/icons-material/Extension';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import DataObjectIcon from '@mui/icons-material/DataObject';
-import HubIcon from '@mui/icons-material/Hub';
+import { Rocket, CheckCircle2, ArrowRight, ChevronDown, Search, SquareTerminal, SlidersHorizontal, Puzzle, Sparkles, Braces, Network } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { SidebarTab } from '../../components/Sidebar.js';
 import { PluginInstallPreviewDialog } from '../marketplaces/PluginInstallPreviewDialog.js';
@@ -63,7 +54,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
     id: 'core-dev',
     label: 'Core dev workflow',
     description: 'The everyday loop — build, review, refactor, ship.',
-    icon: <TerminalIcon />,
+    icon: <Icon glyph={SquareTerminal} size={20} />,
     accent: '#2b5cff',
     plugins: [
       'feature-dev',
@@ -80,7 +71,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
     id: 'claude-setup',
     label: 'Claude Code setup',
     description: 'Tune Claude Code itself — config, memory, and guardrails.',
-    icon: <TuneIcon />,
+    icon: <Icon glyph={SlidersHorizontal} size={20} />,
     accent: '#6f42c1',
     plugins: ['claude-code-setup', 'claude-md-management', 'hookify'],
   },
@@ -88,7 +79,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
     id: 'build-for-claude',
     label: 'Build for Claude',
     description: 'Author your own plugins, agents, and MCP servers.',
-    icon: <ExtensionIcon />,
+    icon: <Icon glyph={Puzzle} size={20} />,
     accent: '#0a7d6b',
     plugins: [
       'agent-sdk-dev',
@@ -103,7 +94,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
     id: 'output-styles',
     label: 'Output styles',
     description: 'Change how Claude explains and teaches as it works.',
-    icon: <AutoAwesomeIcon />,
+    icon: <Icon glyph={Sparkles} size={20} />,
     accent: '#c9760a',
     plugins: ['explanatory-output-style', 'learning-output-style'],
   },
@@ -111,7 +102,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
     id: 'language-servers',
     label: 'Language servers',
     description: 'Per-language LSPs — add only the ones you code in.',
-    icon: <DataObjectIcon />,
+    icon: <Icon glyph={Braces} size={20} />,
     accent: '#2e7d32',
     defaultCollapsed: true,
     plugins: [
@@ -129,7 +120,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
     id: 'integrations',
     label: 'Integrations',
     description: 'Connect external tools and services via MCP.',
-    icon: <HubIcon />,
+    icon: <Icon glyph={Network} size={20} />,
     accent: '#c2255c',
     defaultCollapsed: true,
     plugins: [
@@ -329,7 +320,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             backgroundColor: '#2b5cff1a',
           }}
         >
-          <RocketLaunchIcon />
+          <Icon glyph={Rocket} size={20} />
         </Box>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
@@ -368,13 +359,13 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             label="Configured"
             color="success"
             size="small"
-            icon={<CheckCircleIcon fontSize="small" />}
+            icon={<Icon glyph={CheckCircle2} size={16} />}
           />
         ) : (
           <Button
             variant="outlined"
             size="small"
-            endIcon={<ArrowForwardIcon />}
+            endIcon={<Icon glyph={ArrowRight} size={16} />}
             onClick={() => onNavigate('global-instructions')}
           >
             Configure
@@ -410,7 +401,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
+                      <Icon glyph={Search} size={16} />
                     </InputAdornment>
                   ),
                 },
@@ -434,7 +425,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
           </Typography>
           <Button
             size="small"
-            endIcon={<ArrowForwardIcon />}
+            endIcon={<Icon glyph={ArrowRight} size={16} />}
             onClick={() => onNavigate('marketplaces')}
           >
             Browse marketplaces
@@ -534,7 +525,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                       <Chip
                         size="small"
                         color="success"
-                        icon={<CheckCircleIcon fontSize="small" />}
+                        icon={<Icon glyph={CheckCircle2} size={16} />}
                         label="Installed"
                       />
                     ) : (
@@ -560,7 +551,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                         transition: 'transform 160ms',
                       }}
                     >
-                      <ExpandMoreIcon />
+                      <Icon glyph={ChevronDown} size={18} />
                     </IconButton>
                   </Stack>
                 </Stack>
@@ -606,7 +597,11 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                             >
                               {p.name}
                             </Typography>
-                            {done && <CheckCircleIcon color="success" fontSize="small" />}
+                            {done && (
+                              <Box component="span" sx={{ color: 'success.main', display: 'inline-flex' }}>
+                                <Icon glyph={CheckCircle2} size={16} />
+                              </Box>
+                            )}
                           </Stack>
                           <Typography
                             variant="caption"
@@ -646,7 +641,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
           <Stack direction="row" sx={{ mt: 1, justifyContent: 'flex-end' }}>
             <Button
               size="small"
-              endIcon={<ArrowForwardIcon />}
+              endIcon={<Icon glyph={ArrowRight} size={16} />}
               onClick={() => onNavigate('marketplaces')}
             >
               Browse all marketplaces

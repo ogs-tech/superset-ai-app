@@ -1,5 +1,6 @@
 import { Alert, Box, Button, Container, Stack, Typography } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
+import { CircleAlert } from 'lucide-react';
+import { Icon } from '../components/ds/Icon.js';
 
 interface IoErrorProps {
   message: string;
@@ -12,7 +13,9 @@ export function IoError({ message, onRetry, onCancel }: IoErrorProps): React.Rea
     <Container component="main" data-testid="io-error-screen" maxWidth="sm" sx={{ py: 6 }}>
       <Stack spacing={3} sx={{ alignItems: 'flex-start' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <ErrorOutlineIcon color="error" />
+          <Box component="span" sx={{ color: 'error.main', display: 'inline-flex' }}>
+            <Icon glyph={CircleAlert} size={18} />
+          </Box>
           <Typography variant="h4" component="h1">
             I/O error
           </Typography>

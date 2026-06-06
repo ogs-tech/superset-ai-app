@@ -14,10 +14,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
-import VerifiedIcon from '@mui/icons-material/Verified';
+import { Download, RefreshCw, Trash2, BadgeCheck } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { DetailDrawer } from '../../components/DetailDrawer.js';
@@ -146,7 +144,7 @@ export function MarketplaceList(): React.ReactElement {
               <Box component="span">{item.manifest?.name ?? item.id}</Box>
               {isOfficial && (
                 <Chip
-                  icon={<VerifiedIcon sx={{ fontSize: 14 }} />}
+                  icon={<Icon glyph={BadgeCheck} size={14} />}
                   label="official"
                   size="small"
                   color="primary"
@@ -212,12 +210,12 @@ export function MarketplaceList(): React.ReactElement {
   const actions: RowAction<MarketplaceSummary>[] = [
     {
       label: 'Refresh',
-      icon: <RefreshIcon fontSize="small" />,
+      icon: <Icon glyph={RefreshCw} size={16} />,
       onClick: (item) => refreshMutation.mutate(item.id),
     },
     {
       label: 'Remove',
-      icon: <DeleteOutlineIcon fontSize="small" />,
+      icon: <Icon glyph={Trash2} size={16} />,
       variant: 'destructive',
       onClick: (item) => setConfirmRemove(item),
     },
@@ -250,7 +248,7 @@ export function MarketplaceList(): React.ReactElement {
         toolbarActions={
           <Button
             variant="outlined"
-            startIcon={<DownloadIcon />}
+            startIcon={<Icon glyph={Download} size={16} />}
             onClick={() => setShowImport(true)}
             data-testid="import-marketplace-button"
           >

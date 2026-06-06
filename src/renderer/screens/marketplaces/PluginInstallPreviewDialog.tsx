@@ -13,12 +13,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import HubIcon from '@mui/icons-material/Hub';
-import LanguageIcon from '@mui/icons-material/Language';
-import PowerIcon from '@mui/icons-material/Power';
+import { Sparkles, Bot, SquareTerminal, Network, Languages, Power } from 'lucide-react';
+import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 
 interface MarketplacePlugin {
@@ -151,25 +147,25 @@ export function PluginInstallPreviewDialog({
               </Typography>
 
               <ArtifactGroup
-                icon={<AutoAwesomeIcon fontSize="small" />}
+                icon={<Icon glyph={Sparkles} size={16} />}
                 label="Skills"
                 color="#6f42c1"
                 items={manifest.artifacts.skills}
               />
               <ArtifactGroup
-                icon={<SmartToyIcon fontSize="small" />}
+                icon={<Icon glyph={Bot} size={16} />}
                 label="Agents"
                 color="#0ea5e9"
                 items={manifest.artifacts.agents}
               />
               <ArtifactGroup
-                icon={<TerminalIcon fontSize="small" />}
+                icon={<Icon glyph={SquareTerminal} size={16} />}
                 label="Commands"
                 color="#f59e0b"
                 items={manifest.artifacts.commands}
               />
               <ArtifactCount
-                icon={<PowerIcon fontSize="small" />}
+                icon={<Icon glyph={Power} size={16} />}
                 label="Hooks"
                 color="#10b981"
                 count={manifest.artifacts.hooks}
@@ -180,12 +176,12 @@ export function PluginInstallPreviewDialog({
 
             <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
               <CapabilityFlag
-                icon={<HubIcon fontSize="small" />}
+                icon={<Icon glyph={Network} size={16} />}
                 label="MCP"
                 enabled={manifest.artifacts.mcp}
               />
               <CapabilityFlag
-                icon={<LanguageIcon fontSize="small" />}
+                icon={<Icon glyph={Languages} size={16} />}
                 label="LSP"
                 enabled={manifest.artifacts.lsp}
               />
