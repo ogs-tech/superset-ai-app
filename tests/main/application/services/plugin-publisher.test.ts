@@ -244,7 +244,6 @@ describe('PluginPublisher', () => {
       cache.seedMeta(SCOPE, ownedMeta);
 
       // Make git.push throw after createRepo succeeds
-      const originalPush = git.push.bind(git);
       vi.spyOn(git, 'push').mockRejectedValue(new Error('push failed: connection refused'));
 
       await expect(
@@ -277,6 +276,23 @@ describe('PluginPublisher', () => {
       const updatedMeta = cache.getMeta(SCOPE);
       const updatedEntry = updatedMeta?.plugins.find((p) => p.id === ID);
       expect(updatedEntry?.publish?.lastPublishedVersion).toBe(VERSION);
+    });
+
+    it('re-points origin at an authenticated URL built from the current PAT', async () => {
+      cache.seedMeta(SCOPE, ownedMetaWithPublish);
+      git.setRemoteSha(PLUGIN_DIR, 'origin', 'main', existingPublish.lastPublishedSha);
+
+      const setUrlSpy = vi.spyOn(git, 'setRemoteUrl');
+
+      await publisher.publish({ id: ID, scope: SCOPE, version: VERSION });
+
+      // Without this, republish reuses the PAT baked into origin at first
+      // publish — a rotated PAT would then break fetch/push.
+      expect(setUrlSpy).toHaveBeenCalledWith(
+        PLUGIN_DIR,
+        'origin',
+        `https://x-access-token:${FAKE_PAT}@github.com/${FAKE_OWNER}/${ID}.git`,
+      );
     });
 
     it('commits uncommitted changes before pushing', async () => {

@@ -8,7 +8,6 @@ import type { LanguagePreference, Settings } from '../../../src/shared/settings.
 const baseSettings: Settings = {
   adapters: {
     claude: { enabled: true },
-    copilot: { enabled: false, exclusiveSkillsWithClaude: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -62,7 +61,6 @@ describe('<Settings> — toggles', () => {
       ...baseSettings,
       adapters: {
         claude: { enabled: false },
-        copilot: { enabled: false, exclusiveSkillsWithClaude: false },
       },
     };
     setupRoute(initial);
@@ -91,7 +89,7 @@ describe('<Settings> — no per-adapter default scope', () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
-      adapters: { claude: { enabled: false }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+      adapters: { claude: { enabled: false } },
     };
     setupRoute(initial);
     render(<SettingsScreen />);

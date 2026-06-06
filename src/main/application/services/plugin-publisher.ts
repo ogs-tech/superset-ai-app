@@ -249,6 +249,11 @@ export class PluginPublisher {
     // Format: https://github.com/{owner}/{repoName}
     const { owner, repoName } = parseGithubUrl(existingPublish.remoteUrl);
 
+    // 0. Re-point origin at an authenticated URL built from the *current* PAT.
+    // First publish bakes the token into origin's URL; without this, republish
+    // reuses that stale token and breaks once the user rotates their PAT.
+    await git.setRemoteUrl(pluginDir, 'origin', buildAuthenticatedUrl(pat, owner, repoName));
+
     // 1. Fetch from origin
     await git.fetch(pluginDir, 'origin');
 

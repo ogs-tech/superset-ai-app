@@ -63,19 +63,17 @@ export function PluginInstallPreviewDialog({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open || !plugin) {
-      setManifest(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
+    if (!open || !plugin) return;
 
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setManifest(null);
 
+    // State resets live inside the async callback so nothing is set
+    // synchronously in the effect body (the synchronous part runs before the
+    // first await, so it still batches with this render — no extra paint).
     void (async () => {
+      setLoading(true);
+      setError(null);
+      setManifest(null);
       try {
         const result = await callIpc<PluginManifest>('plugin.previewFromMarketplace', {
           plugin,

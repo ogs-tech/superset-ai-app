@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Box, Drawer, IconButton, Stack, Typography } from '@mui/material';
+import type { PaperProps } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
 interface DetailDrawerProps {
@@ -32,7 +33,7 @@ export function DetailDrawer({
         paper: {
           sx: { width: { xs: '100%', sm: width } },
           'data-testid': `detail-drawer-${testId}`,
-        },
+        } as PaperProps,
       }}
     >
       <Stack

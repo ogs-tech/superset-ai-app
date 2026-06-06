@@ -73,7 +73,9 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 
 | Method | Params | Result |
 |---|---|---|
-| `app.getHomeDir` | — | `string` (user home directory). |
+| `app.restore` | — | `void` |
+
+> **Destructive.** `app.restore` deletes `~/.superset-ai-app/`, `~/.claude/` and `./.env.local`, then quits the app for a full factory reset.
 
 ### `settings`
 
@@ -82,6 +84,9 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 | `settings.get` | — | `Settings \| null` |
 | `settings.save` | `Settings` | `void` |
 | `settings.merge` | `Partial<Settings>` | `Settings` (merged result) |
+| `settings.setLanguage` | `{ language: LanguagePreference }` | `{ settings: Settings; syncReport: SyncResult[] }` |
+
+`settings.setLanguage` persists the language preference **and** rewrites the `<language>` block of the default global-instruction, returning the sync report from that save.
 
 `Settings` shape lives in [`src/shared/settings.ts`](../../src/shared/settings.ts).
 
@@ -99,14 +104,7 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 
 ### `workspace`
 
-| Method | Params | Result |
-|---|---|---|
-| `workspace.bootstrap` | `{ workspacePath: string }` | `void` |
-| `workspace.exists` | `{ path: string }` | `boolean` |
-| `workspace.getActive` | — | `string` |
-| `workspace.setActive` | `{ workspacePath: string }` | `void` |
-
-`workspace.getActive` and `workspace.setActive` reject with `{ kind: 'internal' }` if the `workspaceLocator` dependency is not wired.
+There is **no `workspace` IPC namespace**. Workspace lifecycle — creating the `~/.superset-ai-app/` directory tree on first run — runs at process startup via `WorkspaceBootstrapService`, called directly from [`src/main/index.ts`](../../src/main/index.ts), not over IPC. The workspace path is fixed.
 
 ### `dialog`
 
@@ -145,6 +143,28 @@ Same plugin-source guard as `skill.*`.
 
 The id is fixed to `'default'`; only one instance per machine.
 
+### `command`
+
+| Method | Params | Result |
+|---|---|---|
+| `command.list` | `{ scope?: 'personal' \| 'project' }` (default `'personal'`) | `Command[]` (workspace + plugin-provided) |
+| `command.get` | `{ id: string }` | `Command` |
+| `command.save` | `{ command: Command; isCreate?: boolean }` | `{ command: Command; syncReport: SyncResult[] }` |
+| `command.delete` | `{ id: string; removeSymlinks: boolean }` | `{ ok: true }` |
+
+Same plugin-source guard as `skill.*`.
+
+### `hook`
+
+Hooks are not Markdown customizations — they live in `.claude/settings.json` — but they share the per-entity facade pattern.
+
+| Method | Params | Result |
+|---|---|---|
+| `hook.list` | `{ scope?: 'personal' \| 'project' }` (default `'personal'`) | `Hook[]` |
+| `hook.get` | `{ id: string; scope?: 'personal' \| 'project' }` | `Hook` |
+| `hook.save` | `{ hook: { id?; event; matcher?; description?; handler }; scope?: 'personal' \| 'project' }` | `{ hook: Hook; syncReport: SyncResult[] }` |
+| `hook.delete` | `{ id: string; scope?: 'personal' \| 'project' }` | `{ ok: true }` |
+
 ### `marketplace`
 
 | Method | Params | Result |
@@ -154,22 +174,16 @@ The id is fixed to `'default'`; only one instance per machine.
 | `marketplace.add` | `{ scope; id; source: { path: string } }` | `void` (persists to `extraKnownMarketplaces`) |
 | `marketplace.remove` | `{ scope; id }` | `void` |
 | `marketplace.refresh` | `{ scope; id }` | `MarketplaceSummary \| null` (re-parses manifest from disk) |
+| `marketplace.addFromUrl` | `{ scope; url: string }` | `{ id; manifest }` (clones/detects a marketplace from a Git URL, then persists it) |
+| `marketplace.detect` | `{ url: string }` | marketplace detection result *(registered in `plugin-handlers.ts`)* |
 
-Existing `marketplace.detect` and `plugin.installFromMarketplace` (in the `plugin` namespace) handle URL detection and plugin installation from a marketplace entry.
+`plugin.installFromMarketplace` and `plugin.previewFromMarketplace` (in the `plugin` namespace) install or inspect a plugin from a marketplace entry.
 
-### `customization` *(deprecated)*
+### `customization` *(removed)*
 
-Retained for the legacy `CustomizationList` screen used by `PluginEditor` and for cross-type search results.
+The `customization.*` IPC namespace has been **removed**. All entity access now goes through the typed namespaces above (`skill`, `agent`, `command`, `hook`, `global-instruction`). The renderer's `CustomizationListScreen` and the `useCustomizationList` hook are parameterized by a concrete `listMethod` (e.g. `skill.list`) rather than calling a `customization.*` method.
 
-| Method | Params | Result |
-|---|---|---|
-| `customization.list` | `{ type?: CustomizationType; root?: 'customizations' \| 'plugin:<id>' }` | `Customization[]` |
-| `customization.get` | `{ id: string; root? }` | `Customization` |
-| `customization.save` | `{ customization: Customization; isCreate?: boolean; root? }` | `{ customization: Customization; syncReport: SyncResult[] }` |
-| `customization.delete` | `{ id: string; removeSymlinks: boolean; root? }` | `{ ok: true }` |
-| `customization.search` | `{ query: string; options?: SearchOptions }` | `SearchOutput` |
-
-`CustomizationType`, `Customization`, `SyncResult` — see [`src/shared/customization.ts`](../../src/shared/customization.ts) and [Customization schema](customization-schema.md). Prefer the typed namespaces above for new code.
+`CustomizationType`, `Customization`, `SyncResult` shared types still live in [`src/shared/customization.ts`](../../src/shared/customization.ts) and [Customization schema](customization-schema.md).
 
 ### `adapter`
 
@@ -204,10 +218,12 @@ interface RemoveAdapterResult {
 | `plugin.get` | `{ id: string; scope?: string }` | `PluginDetail` |
 | `plugin.update` | `{ id: string; scope?: string }` | `PluginSummary` |
 | `plugin.remove` | `{ id: string; scope?: string }` | `void` |
-| `plugin.toggle` | `{ id: string; scope?: string; enabled: boolean }` | `PluginSummary` |
+| `plugin.toggle` | `{ id: string; scope?: string; enabled: boolean }` | `void` |
 | `plugin.createOwned` | `{ id: string; version: string; description?: string; scope?: string }` | `PluginSummary` |
 | `plugin.deleteOwned` | `{ id: string; scope?: string }` | `void` |
 | `plugin.publish` | `{ id: string; scope?: string; repoName?: string; visibility?: 'public' \| 'private'; version: string; commitMessage?: string }` | `PluginPublishInfo` |
+| `plugin.installFromMarketplace` | `{ plugin: MarketplacePlugin; scope?: string; marketplaceId?: string }` | `PluginSummary` |
+| `plugin.previewFromMarketplace` | `{ plugin: MarketplacePlugin }` | `PluginManifest` (artifact counts shown before install) |
 
 **Plugin types:**
 

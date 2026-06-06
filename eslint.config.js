@@ -11,6 +11,20 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Honor the `_`-prefix convention already used across the codebase to mark
+    // intentionally-unused bindings (e.g. `_dir`, `_scope`, unused port-method args).
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
     files: ['src/renderer/**/*.{ts,tsx}'],
     ...react.configs.flat.recommended,
     languageOptions: {

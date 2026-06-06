@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { pluginId } from '../../domain/plugin-id.js';
 import { semVer } from '../../domain/semver.js';
-import type { PluginManifest } from '../../domain/plugin-manifest.js';
 
 // Official marketplace plugins use { name, version?, ... } instead of { id, version, ... }.
 // Preprocess normalises: if no `id`, fall back to `name`; if no `version`, default to '0.0.0'.
