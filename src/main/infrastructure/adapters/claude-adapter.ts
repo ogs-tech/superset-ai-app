@@ -8,9 +8,10 @@ export interface ClaudeAdapterDeps {
   homedir: string;
 }
 
-const SUBFOLDER_BY_TYPE: Record<'skill' | 'agent', string> = {
+const SUBFOLDER_BY_TYPE: Record<'skill' | 'agent' | 'command', string> = {
   skill: '.claude/skills',
   agent: '.claude/agents',
+  command: '.claude/commands',
 };
 
 export class ClaudeAdapter implements Adapter {
@@ -43,11 +44,13 @@ export class ClaudeAdapter implements Adapter {
       ];
     }
 
-    if (type !== 'skill' && type !== 'agent') {
+    if (type !== 'skill' && type !== 'agent' && type !== 'command') {
       return [];
     }
 
     const subfolder = SUBFOLDER_BY_TYPE[type];
+    // Skills are directories synced under their bare name; agents and commands
+    // are single Markdown files.
     const fileName = type === 'skill' ? name : `${name}.md`;
     const out: AdapterDestination[] = [];
 
