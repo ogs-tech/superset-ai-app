@@ -70,8 +70,8 @@ export class PluginCacheFile implements PluginCachePort {
 
     const manifest = {
       name: 'local',
-      owner: { name: 'SDE-AI' },
-      description: 'Plugins managed by SDE-AI',
+      owner: { name: 'OGS' },
+      description: 'Plugins managed by OGS',
       plugins,
     };
 
