@@ -37,6 +37,7 @@ function renderScreen() {
       entityType="skill"
       title="Skills"
       singular="skill"
+      gender="f"
       listMethod="skill.list"
       deleteMethod="skill.delete"
     />,

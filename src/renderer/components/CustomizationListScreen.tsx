@@ -36,6 +36,7 @@ interface CustomizationListScreenProps {
   entityType: CustomizationType;
   title: string;
   singular: string;
+  gender: 'f' | 'm';
   listMethod: string;
   deleteMethod: string;
 }
@@ -49,6 +50,7 @@ export function CustomizationListScreen({
   entityType,
   title,
   singular,
+  gender,
   listMethod,
   deleteMethod,
 }: CustomizationListScreenProps): React.ReactElement {
@@ -151,7 +153,7 @@ export function CustomizationListScreen({
 
   const actions: RowAction<CustomizationListItem>[] = [
     {
-      label: 'Edit',
+      label: 'Editar',
       icon: <Icon glyph={Pencil} size={16} />,
       hidden: (item) => !isWorkspace(item),
       onClick: (item) =>
@@ -161,7 +163,7 @@ export function CustomizationListScreen({
         }),
     },
     {
-      label: 'Duplicate',
+      label: 'Duplicar',
       icon: <Icon glyph={Copy} size={16} />,
       hidden: (item) => !isWorkspace(item),
       onClick: (item) =>
@@ -171,7 +173,7 @@ export function CustomizationListScreen({
         }),
     },
     {
-      label: 'Delete',
+      label: 'Excluir',
       icon: <Icon glyph={Trash2} size={16} />,
       variant: 'destructive',
       hidden: (item) => !isWorkspace(item),
@@ -196,7 +198,7 @@ export function CustomizationListScreen({
             onClick={startCreate}
             data-testid={`new-${entityType}-button`}
           >
-            New
+            Novo
           </Button>
         }
       />
@@ -208,18 +210,18 @@ export function CustomizationListScreen({
         error={error}
         actions={actions}
         onRowClick={(item) => setViewing(item)}
-        searchPlaceholder={`Search ${singular}s…`}
+        searchPlaceholder={`Buscar ${singular}s…`}
         emptyState={
           <EmptyState
             glyph={Sparkles}
-            title={`No ${singular}s yet.`}
+            title={`Nenhum${gender === 'f' ? 'a' : ''} ${singular} ainda`}
             cta={
               <Button
                 variant="outlined"
                 startIcon={<Icon glyph={Plus} size={16} />}
                 onClick={startCreate}
               >
-                Create your first {singular}
+                Criar {singular}
               </Button>
             }
             testId={entityType}
@@ -230,23 +232,23 @@ export function CustomizationListScreen({
       <Dialog
         open={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        aria-label="Confirm deletion"
+        aria-label="Confirmar exclusão"
         data-testid="confirm-delete-dialog"
       >
-        <DialogTitle>Confirm deletion</DialogTitle>
+        <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Remove <strong>{confirmDelete?.frontmatter.name}</strong>?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDelete(null)}>Cancel</Button>
+          <Button onClick={() => setConfirmDelete(null)}>Cancelar</Button>
           <Button
             variant="contained"
             color="error"
             onClick={handleDeleteConfirmed}
           >
-            Confirm
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>

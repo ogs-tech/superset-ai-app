@@ -40,7 +40,7 @@ export function Toolbar({
         size="small"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder={searchPlaceholder ?? 'Search…'}
+        placeholder={searchPlaceholder ?? 'Buscar…'}
         slotProps={{
           input: {
             startAdornment: (

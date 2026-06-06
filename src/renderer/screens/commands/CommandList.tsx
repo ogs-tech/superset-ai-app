@@ -6,6 +6,7 @@ export function CommandList(): React.ReactElement {
       entityType="command"
       title="Commands"
       singular="command"
+      gender="m"
       listMethod="command.list"
       deleteMethod="command.delete"
     />

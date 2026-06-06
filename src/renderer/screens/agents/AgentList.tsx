@@ -6,6 +6,7 @@ export function AgentList(): React.ReactElement {
       entityType="agent"
       title="Agents"
       singular="agent"
+      gender="m"
       listMethod="agent.list"
       deleteMethod="agent.delete"
     />

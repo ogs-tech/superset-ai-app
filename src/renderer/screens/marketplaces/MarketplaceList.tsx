@@ -209,7 +209,7 @@ export function MarketplaceList(): React.ReactElement {
 
   const actions: RowAction<MarketplaceSummary>[] = [
     {
-      label: 'Refresh',
+      label: 'Atualizar',
       icon: <Icon glyph={RefreshCw} size={16} />,
       onClick: (item) => refreshMutation.mutate(item.id),
     },

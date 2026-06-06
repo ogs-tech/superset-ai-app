@@ -7,29 +7,29 @@ import { renderWithTheme } from '../test-utils.js';
 const render = (ui: React.ReactElement) => renderWithTheme(ui);
 
 describe('<IoError>', () => {
-  it('shows "Retry" and "Cancel" buttons', () => {
+  it('shows "Tentar novamente" and "Cancelar" buttons', () => {
     render(<IoError onRetry={vi.fn()} onCancel={vi.fn()} message="EACCES" />);
 
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tentar novamente/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
   });
 
-  it('clicking "Retry" invokes onRetry callback', async () => {
+  it('clicking "Tentar novamente" invokes onRetry callback', async () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();
     render(<IoError onRetry={onRetry} onCancel={vi.fn()} message="EACCES" />);
 
-    await user.click(screen.getByRole('button', { name: /retry/i }));
+    await user.click(screen.getByRole('button', { name: /tentar novamente/i }));
 
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it('clicking "Cancel" invokes onCancel callback', async () => {
+  it('clicking "Cancelar" invokes onCancel callback', async () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();
     render(<IoError onRetry={vi.fn()} onCancel={onCancel} message="EACCES" />);
 
-    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await user.click(screen.getByRole('button', { name: /cancelar/i }));
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });

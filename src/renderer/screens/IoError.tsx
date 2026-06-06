@@ -22,10 +22,10 @@ export function IoError({ message, onRetry, onCancel }: IoErrorProps): React.Rea
         </Alert>
         <Stack direction="row" spacing={1.5}>
           <Button variant="contained" onClick={onRetry}>
-            Retry
+            Tentar novamente
           </Button>
           <Button variant="outlined" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
         </Stack>
       </Stack>

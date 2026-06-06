@@ -46,7 +46,7 @@ describe('<SkillList>', () => {
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(<SkillList />);
-    expect(await screen.findByText(/No skills yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Nenhuma skill ainda/i)).toBeInTheDocument();
   });
 
   it('shows plugin badge for plugin-sourced skills', async () => {
@@ -89,8 +89,8 @@ describe('<SkillList>', () => {
       cardId('from-plugin', { kind: 'plugin', pluginId: 'p' }),
     );
     expect(within(card).queryByRole('button', { name: 'View' })).toBeNull();
-    expect(within(card).queryByRole('button', { name: 'Edit' })).toBeNull();
-    expect(within(card).queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(within(card).queryByRole('button', { name: 'Editar' })).toBeNull();
+    expect(within(card).queryByRole('button', { name: 'Excluir' })).toBeNull();
   });
 
   it('shows edit/delete buttons for workspace skills', async () => {
@@ -105,13 +105,13 @@ describe('<SkillList>', () => {
       cardId('local', { kind: 'workspace' }),
     );
     expect(
-      within(card).getByRole('button', { name: 'Edit' }),
+      within(card).getByRole('button', { name: 'Editar' }),
     ).toBeInTheDocument();
     expect(
-      within(card).getByRole('button', { name: 'Duplicate' }),
+      within(card).getByRole('button', { name: 'Duplicar' }),
     ).toBeInTheDocument();
     expect(
-      within(card).getByRole('button', { name: 'Delete' }),
+      within(card).getByRole('button', { name: 'Excluir' }),
     ).toBeInTheDocument();
   });
 });

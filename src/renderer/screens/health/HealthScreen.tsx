@@ -55,7 +55,7 @@ export function HealthScreen(): React.ReactElement {
     <Container component="main" data-testid="health-screen" maxWidth="lg" sx={{ py: 2.5 }}>
       <ScreenHeader
         kicker="Diagnóstico"
-        title="Diagnostics"
+        title="Diagnóstico"
         subtitle={
           data
             ? `${data.counts.error} error(s), ${data.counts.warning} warning(s), ${data.counts.ok} ok`
@@ -70,7 +70,7 @@ export function HealthScreen(): React.ReactElement {
             disabled={isFetching}
             onClick={() => void refetch()}
           >
-            Refresh
+            Atualizar
           </Button>
         }
       />
@@ -97,7 +97,7 @@ export function HealthScreen(): React.ReactElement {
           <Box component="span" sx={{ color: 'success.main', display: 'inline-flex', mb: 1 }}>
             <Icon glyph={CheckCircle2} size={40} />
           </Box>
-          <Typography variant="body1">Everything looks healthy.</Typography>
+          <Typography variant="body1">Tudo certo por aqui.</Typography>
         </Box>
       )}
 
