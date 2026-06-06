@@ -1,6 +1,7 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material';
+import { Box, Button, Paper, Stack } from '@mui/material';
 import { Pencil } from 'lucide-react';
 import { Icon } from './ds/Icon.js';
+import { Kicker } from './ds/Kicker.js';
 import ReactMarkdown from 'react-markdown';
 import { DetailDrawer } from './DetailDrawer.js';
 import { ReadOnlyNotice } from './ReadOnlyNotice.js';
@@ -53,9 +54,7 @@ export function CustomizationViewDrawer({
             </Stack>
           )}
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              Body
-            </Typography>
+            <Kicker>Body</Kicker>
             <Box sx={{ mt: 1, '& p': { my: 0.5 } }}>
               <ReactMarkdown>{entity.body}</ReactMarkdown>
             </Box>

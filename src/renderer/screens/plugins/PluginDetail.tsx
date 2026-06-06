@@ -1,10 +1,9 @@
 import {
-  Alert,
   Box,
   Chip,
-  CircularProgress,
   Paper,
   Stack,
+  Alert,
   Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +14,7 @@ import type {
   PluginRefIpc,
 } from '../../../shared/plugin-ipc-types.js';
 import { PluginRelatedEntities } from '../../components/PluginRelatedEntities.js';
+import { Kicker, LoadingState, ErrorState } from '../../components/ds/index.js';
 
 interface PluginDetailProps {
   pluginId: string;
@@ -77,16 +77,12 @@ export function PluginDetail({
   });
 
   if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingState kind="detail" testId="plugin-detail" />;
   }
 
   if (error) {
     const message = error instanceof IpcCallError ? error.message : String(error);
-    return <Alert severity="error" data-testid="plugin-detail">{message}</Alert>;
+    return <ErrorState message={message} testId="plugin-detail" />;
   }
 
   if (!detail) return <Box data-testid="plugin-detail" />;
@@ -100,9 +96,7 @@ export function PluginDetail({
       )}
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-          Basic Information
-        </Typography>
+        <Box sx={{ mb: 1 }}><Kicker>Basic Information</Kicker></Box>
         <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
           <Typography variant="body2" sx={{ fontWeight: 500 }}>ID:</Typography>
           <Typography variant="body2">{detail.id}</Typography>
@@ -129,9 +123,7 @@ export function PluginDetail({
 
       {detail.manifest && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            Manifest
-          </Typography>
+          <Box sx={{ mb: 1 }}><Kicker>Manifest</Kicker></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>Version:</Typography>
             <Typography variant="body2">{detail.manifest.version}</Typography>
@@ -148,9 +140,7 @@ export function PluginDetail({
 
       {detail.origin === 'imported' && detail.source && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            Source
-          </Typography>
+          <Box sx={{ mb: 1 }}><Kicker>Source</Kicker></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>URL:</Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
@@ -168,9 +158,7 @@ export function PluginDetail({
 
       {detail.origin === 'owned' && detail.publishInfo && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            Publish Information
-          </Typography>
+          <Box sx={{ mb: 1 }}><Kicker>Publish Information</Kicker></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>Remote URL:</Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
@@ -191,9 +179,7 @@ export function PluginDetail({
 
       {detail.manifest && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            Artifacts
-          </Typography>
+          <Box sx={{ mb: 1 }}><Kicker>Artifacts</Kicker></Box>
           <ArtifactList artifacts={detail.manifest.artifacts} />
         </Paper>
       )}

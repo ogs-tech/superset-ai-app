@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationViewDrawer } from '../../../src/renderer/components/CustomizationViewDrawer.js';
 import type { CustomizationListItem } from '../../../src/renderer/hooks/use-customization-list.js';
+import { renderWithTheme } from '../test-utils.js';
 
 const workspace: CustomizationListItem = {
   id: 'skill-a',
@@ -26,7 +27,7 @@ const plugin: CustomizationListItem = {
 
 describe('<CustomizationViewDrawer>', () => {
   it('does not render when entity is null', () => {
-    render(
+    renderWithTheme(
       <CustomizationViewDrawer
         entity={null}
         onClose={vi.fn()}
@@ -38,7 +39,7 @@ describe('<CustomizationViewDrawer>', () => {
 
   it('renders Edit button for workspace items', async () => {
     const onEdit = vi.fn();
-    render(
+    renderWithTheme(
       <CustomizationViewDrawer
         entity={workspace}
         onClose={vi.fn()}
@@ -51,7 +52,7 @@ describe('<CustomizationViewDrawer>', () => {
   });
 
   it('hides Edit button and shows read-only notice for plugin items', () => {
-    render(
+    renderWithTheme(
       <CustomizationViewDrawer
         entity={plugin}
         onClose={vi.fn()}

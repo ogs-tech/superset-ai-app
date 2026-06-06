@@ -15,6 +15,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import { Kicker } from './ds/Kicker.js';
+import { fonts } from '../tokens.js';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { Toast, type ToastMessage } from './Toast.js';
 import { SyncReportModal } from './SyncReportModal.js';
@@ -164,9 +166,9 @@ export function CustomizationEditor({
       </Stack>
 
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
-          Frontmatter
-        </Typography>
+        <Box sx={{ mb: 2 }}>
+          <Kicker>Frontmatter</Kicker>
+        </Box>
         <Stack spacing={2}>
           <TextField
             label="Name"
@@ -227,9 +229,7 @@ export function CustomizationEditor({
           direction="row"
           sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
         >
-          <Typography variant="h6" component="h2">
-            Body
-          </Typography>
+          <Kicker>Body</Kicker>
           <ToggleButtonGroup
             size="small"
             exclusive
@@ -260,8 +260,7 @@ export function CustomizationEditor({
                 htmlInput: {
                   'data-testid': 'body-textarea',
                   style: {
-                    fontFamily:
-                      '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+                    fontFamily: fonts.mono,
                     fontSize: '0.9rem',
                     lineHeight: 1.5,
                   },

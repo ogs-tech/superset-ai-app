@@ -8,6 +8,8 @@ import {
 } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import { Icon } from './ds/Icon.js';
+import { Kicker } from './ds/Kicker.js';
+import { fonts } from '../tokens.js';
 import ReactMarkdown from 'react-markdown';
 import { ReadOnlyNotice } from './ReadOnlyNotice.js';
 
@@ -36,9 +38,16 @@ export function EntityViewer({ entity, title, onBack }: EntityViewerProps): Reac
         direction="row"
         sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Typography variant="h4" component="h1">
-          {title}: {entity.frontmatter.name}
-        </Typography>
+        <Box>
+          <Kicker>{title}</Kicker>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontFamily: fonts.mono }}
+          >
+            {entity.frontmatter.name}
+          </Typography>
+        </Box>
         <Button variant="text" startIcon={<Icon glyph={ArrowLeft} size={16} />} onClick={onBack}>
           Back
         </Button>
@@ -47,10 +56,8 @@ export function EntityViewer({ entity, title, onBack }: EntityViewerProps): Reac
       {pluginId && <ReadOnlyNotice pluginId={pluginId} />}
 
       <Paper variant="outlined" sx={{ p: 3, mb: 2 }}>
-        <Typography variant="caption" color="text.secondary">
-          Description
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
+        <Kicker>Description</Kicker>
+        <Typography variant="body1" sx={{ mt: 0.5 }}>
           {typeof entity.frontmatter.description === 'string'
             ? entity.frontmatter.description
             : '—'}
@@ -58,9 +65,7 @@ export function EntityViewer({ entity, title, onBack }: EntityViewerProps): Reac
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="caption" color="text.secondary">
-          Body
-        </Typography>
+        <Kicker>Body</Kicker>
         <Box sx={{ mt: 1 }}>
           <ReactMarkdown>{entity.body}</ReactMarkdown>
         </Box>

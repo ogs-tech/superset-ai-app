@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationEditor } from '../../../src/renderer/components/CustomizationEditor.js';
-import { mockApi, ok, fail, type CallSpy } from '../test-utils.js';
+import { mockApi, ok, fail, renderWithTheme, type CallSpy } from '../test-utils.js';
 import type { Customization } from '../../../src/shared/customization.js';
 
 const baseCustomization = (): Customization => ({
@@ -27,7 +27,7 @@ beforeEach(() => {
 
 describe('<CustomizationEditor>', () => {
   it('renders a textarea for the body', () => {
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={baseCustomization()}
         isCreate={true}
@@ -39,7 +39,7 @@ describe('<CustomizationEditor>', () => {
   });
 
   it('renders the markdown preview via react-markdown', () => {
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={baseCustomization()}
         isCreate={true}
@@ -68,7 +68,7 @@ describe('<CustomizationEditor>', () => {
       }),
     );
 
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={initial}
         isCreate={true}
@@ -93,7 +93,7 @@ describe('<CustomizationEditor>', () => {
   it('renders two checkboxes (personal, project) reflecting frontmatter.scopes', () => {
     const initial = baseCustomization();
     initial.frontmatter.scopes = ['personal', 'project'];
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={initial}
         isCreate={false}
@@ -122,7 +122,7 @@ describe('<CustomizationEditor>', () => {
       }),
     );
 
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={initial}
         isCreate={true}
@@ -150,7 +150,7 @@ describe('<CustomizationEditor>', () => {
     const user = userEvent.setup();
     const initial = baseCustomization();
 
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={initial}
         isCreate={true}
@@ -168,7 +168,7 @@ describe('<CustomizationEditor>', () => {
     const user = userEvent.setup();
     call.mockResolvedValue(fail('validation', 'slug inválido'));
 
-    render(
+    renderWithTheme(
       <CustomizationEditor
         initial={baseCustomization()}
         isCreate={true}

@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DetailDrawer } from '../../../src/renderer/components/DetailDrawer.js';
+import { renderWithTheme } from '../test-utils.js';
 
 describe('<DetailDrawer>', () => {
   it('does not render content when closed', () => {
-    render(
+    renderWithTheme(
       <DetailDrawer
         open={false}
         onClose={vi.fn()}
@@ -19,7 +20,7 @@ describe('<DetailDrawer>', () => {
   });
 
   it('renders title, subtitle and content when open', () => {
-    render(
+    renderWithTheme(
       <DetailDrawer
         open
         onClose={vi.fn()}
@@ -38,7 +39,7 @@ describe('<DetailDrawer>', () => {
 
   it('calls onClose when the close button is clicked', async () => {
     const onClose = vi.fn();
-    render(
+    renderWithTheme(
       <DetailDrawer open onClose={onClose} title="Hello" testId="x">
         <div>body</div>
       </DetailDrawer>,
