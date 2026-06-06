@@ -29,77 +29,82 @@ interface PublishPluginDialogProps {
 
 export function PublishPluginDialog({
   open,
+  hasPublishInfo,
+  onClose,
+  ...rest
+}: PublishPluginDialogProps): React.ReactElement {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="publish-plugin-title"
+      data-testid="publish-plugin-dialog"
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle id="publish-plugin-title">
+        {hasPublishInfo ? 'Republish Plugin' : 'Publish Plugin'}
+      </DialogTitle>
+      {/* Mounting the form only while open gives every field a fresh initial
+          value on each open — this replaces the previous setState-in-effect
+          initialization without an effect. */}
+      {open && <PublishPluginForm hasPublishInfo={hasPublishInfo} onClose={onClose} {...rest} />}
+    </Dialog>
+  );
+}
+
+type PublishPluginFormProps = Omit<PublishPluginDialogProps, 'open'>;
+
+function PublishPluginForm({
   pluginId,
   currentVersion,
   hasPublishInfo,
   scope,
   onClose,
   onSuccess,
-}: PublishPluginDialogProps): React.ReactElement {
+}: PublishPluginFormProps): React.ReactElement {
+  const initialVersion = hasPublishInfo ? '' : currentVersion || '0.1.0';
+
   // First publish form fields
-  const [repoName, setRepoName] = useState('');
+  const [repoName, setRepoName] = useState(hasPublishInfo ? '' : pluginId);
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
 
   // Shared form fields
-  const [version, setVersion] = useState('');
-  const [commitMessage, setCommitMessage] = useState('');
+  const [version, setVersion] = useState(initialVersion);
+  const [commitMessage, setCommitMessage] = useState(
+    hasPublishInfo ? '' : `chore: publish v${initialVersion}`,
+  );
 
   // UI state
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [githubTokenMissing, setGithubTokenMissing] = useState(false);
 
-  // Pre-check GitHub token on open
+  // Pre-check the GitHub token. The form mounts when the dialog opens, so this
+  // runs once per open; the IPC result is applied from the async callback.
   useEffect(() => {
-    if (!open) return;
-
-    const checkGithubToken = async () => {
+    let cancelled = false;
+    void (async () => {
       try {
         const result = await callIpc<{ hasToken: boolean }>('credentials.hasGithubToken', {});
-        setGithubTokenMissing(!result.hasToken);
-      } catch (err) {
-        // If check fails, assume token is missing for safety
-        setGithubTokenMissing(true);
+        if (!cancelled) setGithubTokenMissing(!result.hasToken);
+      } catch {
+        // If the check fails, assume the token is missing for safety.
+        if (!cancelled) setGithubTokenMissing(true);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    checkGithubToken();
-  }, [open]);
-
-  // Initialize form values based on first vs. republish
-  useEffect(() => {
-    if (!open) return;
-
-    if (!hasPublishInfo) {
-      // First publish
-      setRepoName(pluginId);
-      setVisibility('public');
-      setVersion(currentVersion || '0.1.0');
-      setCommitMessage(`chore: publish v${currentVersion || '0.1.0'}`);
-    } else {
-      // Republish
-      setVersion('');
-      setCommitMessage('');
+  const handleVersionChange = (next: string): void => {
+    setVersion(next);
+    // Keep the commit message in sync with the version on a first publish,
+    // mirroring the previous auto-fill behavior (republish stays blank).
+    if (next && !hasPublishInfo) {
+      setCommitMessage(`chore: publish v${next}`);
     }
-
-    setError(null);
-  }, [open, hasPublishInfo, pluginId, currentVersion]);
-
-  // Update commit message when version changes
-  useEffect(() => {
-    if (version && !hasPublishInfo) {
-      setCommitMessage(`chore: publish v${version}`);
-    }
-  }, [version, hasPublishInfo]);
-
-  const handleClose = () => {
-    setRepoName('');
-    setVisibility('public');
-    setVersion('');
-    setCommitMessage('');
-    setError(null);
-    setGithubTokenMissing(false);
-    onClose();
   };
 
   const validateForm = (): boolean => {
@@ -137,17 +142,19 @@ export function PublishPluginDialog({
         scope,
         version: version.trim(),
         ...(commitMessage.trim() ? { commitMessage: commitMessage.trim() } : {}),
-        ...((!hasPublishInfo) ? {
-          repoName: repoName.trim(),
-          visibility,
-        } : {}),
+        ...(!hasPublishInfo
+          ? {
+              repoName: repoName.trim(),
+              visibility,
+            }
+          : {}),
       };
 
       await callIpc<void>('plugin.publish', request);
 
       // On success
       onSuccess();
-      handleClose();
+      onClose();
     } catch (err) {
       if (err instanceof IpcCallError) {
         if (err.kind === 'auth') {
@@ -175,17 +182,7 @@ export function PublishPluginDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      aria-labelledby="publish-plugin-title"
-      data-testid="publish-plugin-dialog"
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle id="publish-plugin-title">
-        {hasPublishInfo ? 'Republish Plugin' : 'Publish Plugin'}
-      </DialogTitle>
+    <>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {githubTokenMissing && (
@@ -236,12 +233,10 @@ export function PublishPluginDialog({
             fullWidth
             required
             value={version}
-            onChange={(e) => setVersion(e.target.value)}
+            onChange={(e) => handleVersionChange(e.target.value)}
             disabled={loading || githubTokenMissing}
             data-testid="publish-version-input"
-            helperText={
-              hasPublishInfo ? 'Must be higher than the current version' : undefined
-            }
+            helperText={hasPublishInfo ? 'Must be higher than the current version' : undefined}
           />
 
           <TextField
@@ -264,7 +259,7 @@ export function PublishPluginDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>
+        <Button onClick={onClose} disabled={loading}>
           Cancel
         </Button>
         <Button
@@ -276,6 +271,6 @@ export function PublishPluginDialog({
           {loading ? 'Publishing...' : 'Publish'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </>
   );
 }

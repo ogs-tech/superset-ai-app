@@ -133,6 +133,10 @@ export class SimpleGitClient implements GitPort {
     await git.addRemote(name, url);
   }
 
+  async setRemoteUrl(dir: string, name: string, url: string): Promise<void> {
+    await simpleGit(dir).remote(['set-url', name, url]);
+  }
+
   async hasRemote(dir: string, name: string): Promise<boolean> {
     const remotes = await simpleGit(dir).getRemotes();
     return remotes.some((r) => r.name === name);

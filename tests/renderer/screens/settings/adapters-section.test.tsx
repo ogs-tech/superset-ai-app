@@ -7,7 +7,7 @@ import type { Settings } from '../../../../src/shared/settings.js';
 import type { SyncResult } from '../../../../src/shared/customization.js';
 
 const baseSettings: Settings = {
-  adapters: { claude: { enabled: true }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+  adapters: { claude: { enabled: true } },
   linkedRepos: [],
   ui: { theme: 'system' },
   language: 'off',
@@ -38,7 +38,7 @@ describe('<Settings> — adapters section toggle-on (AC#15)', () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
-      adapters: { claude: { enabled: false }, copilot: { enabled: false, exclusiveSkillsWithClaude: false } },
+      adapters: { claude: { enabled: false } },
     };
     call.mockImplementation((method: string) => {
       if (method === 'settings.get') return Promise.resolve(ok(initial));

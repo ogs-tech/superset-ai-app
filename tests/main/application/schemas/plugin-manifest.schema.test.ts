@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { pluginManifestSchema } from '../../../../src/main/application/schemas/plugin-manifest.schema.js';
-import { PluginIdInvalidError } from '../../../../src/main/domain/plugin-errors.js';
 
 describe('pluginManifestSchema', () => {
   describe('valid manifests', () => {
@@ -79,8 +78,8 @@ describe('pluginManifestSchema', () => {
         expect(result.data.id).toBe('my-plugin');
         expect(result.data.version).toBe('1.0.0');
         expect(result.data.description).toBe('desc');
-        expect((result.data as any).extra_field).toBe('value');
-        expect((result.data as any).another).toBe(42);
+        expect((result.data as Record<string, unknown>).extra_field).toBe('value');
+        expect((result.data as Record<string, unknown>).another).toBe(42);
         expect(result.data.artifacts.mcp).toBe(true);
       }
     });

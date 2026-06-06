@@ -33,7 +33,7 @@ export function useHealthNotifications(report: HealthReport | undefined): void {
         : `${fresh.length} new problems detected: ${fresh.join(', ')}`;
 
     void callIpc('health.notify', {
-      title: 'Skillforge — a problem was detected',
+      title: 'Superset AI — a problem was detected',
       body,
     });
   }, [report]);

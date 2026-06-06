@@ -13,6 +13,7 @@ export interface GitPort {
   add(dir: string, paths?: string[]): Promise<void>;
   commit(dir: string, message: string): Promise<{ sha: string }>;
   addRemote(dir: string, name: string, url: string): Promise<void>;
+  setRemoteUrl(dir: string, name: string, url: string): Promise<void>;
   hasRemote(dir: string, name: string): Promise<boolean>;
   push(dir: string, remote: string, ref: string, opts?: { setUpstream?: boolean }): Promise<void>;
   tag(dir: string, name: string, opts?: { message?: string }): Promise<void>;

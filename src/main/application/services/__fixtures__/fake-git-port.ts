@@ -96,9 +96,20 @@ export class FakeGitPort implements GitPort {
     this.remotes.set(dir, dirRemotes);
   }
 
+  async setRemoteUrl(dir: string, name: string, url: string): Promise<void> {
+    this.maybeThrow();
+    const dirRemotes = this.remotes.get(dir) ?? new Map<string, string>();
+    dirRemotes.set(name, url);
+    this.remotes.set(dir, dirRemotes);
+  }
+
   async hasRemote(dir: string, name: string): Promise<boolean> {
     this.maybeThrow();
     return this.remotes.get(dir)?.has(name) ?? false;
+  }
+
+  getRemoteUrl(dir: string, name: string): string | undefined {
+    return this.remotes.get(dir)?.get(name);
   }
 
   async push(_dir: string, _remote: string, _ref: string, _opts?: { setUpstream?: boolean }): Promise<void> {

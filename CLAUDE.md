@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this app is
 
-**Skillforge / superset-ai-app** — an Electron desktop app that centralizes AI customizations (skills, agent profiles, commands, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) via **symbolic links**. Single-developer dogfooding spike — no backend, no API, no telemetry.
+**Superset AI** (`superset-ai-app`) — an Electron desktop app that centralizes AI customizations (skills, agent profiles, commands, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) via **symbolic links**. No backend, no API, no telemetry.
 
 Authoritative docs live in `docs/` (Diátaxis):
 - `docs/explanation/prd.md` — goals, scope, stop rules
@@ -44,7 +44,7 @@ Coverage targets `application/`, `ipc/`, `infrastructure/`, and `renderer/screen
 - **Composition root:** `src/main/index.ts` wires every adapter + service and passes the `handlers` map to `createDispatcher`.
 - **IPC** — single channel `ipc:call`, envelope `{ method, params }` → `IpcResult<T>`. Full shape, namespaces and per-method tables in `docs/reference/ipc-contract.md`. Renderer uses `callIpc<T>('ns.method', params)` from `src/renderer/lib/ipc.ts`. The dispatcher (`src/main/ipc/dispatcher.ts`) maps `DomainError(kind, …)` → `IpcError.kind` verbatim; plain `Error` → `kind: 'internal'`; unknown method → `kind: 'not_found'`.
 - **Adding a new IPC method:** types in `src/shared/`, handler in `src/main/ipc/registry.ts` (validate raw params with `_validators.ts` helpers), call site uses `callIpc<Result>(...)`.
-- **Per-entity facades vs deprecated umbrella:** `customization-service` is the legacy umbrella; new code uses `skill-service`, `agent-service`, `command-service`, `hook-service`, `global-instruction-service`. They wrap `customization-service` and add plugin-provenance merging. The `customization.*` IPC namespace is retained only for the `CustomizationList` screen inside `PluginEditor` and cross-type search — don't extend it.
+- **Per-entity facades vs deprecated umbrella:** `customization-service` is the legacy umbrella; new code uses `skill-service`, `agent-service`, `command-service`, `hook-service`, `global-instruction-service`. They wrap `customization-service` and add plugin-provenance merging. The `customization.*` IPC namespace has been removed — `CustomizationListScreen` and `useCustomizationList` now call the typed namespaces (e.g. `skill.list`) via a `listMethod` param.
 - **Adapters** — `claude-adapter.ts` under `src/main/infrastructure/adapters/`, implementing the `Adapter` port; `AdapterManager` orchestrates, `SymlinkManager` reconciles links and returns `SyncResult[]`. Targets and sync flow in `docs/reference/architecture.md`.
 - **Plugin-provided entities** (`source.kind === 'plugin'`) are **read-only** — `save`/`delete` raise `OperationNotAllowedForOriginError`.
 - **Customization schema** — Markdown + YAML frontmatter; four types (`skill`, `agent`, `global-instruction`, `command`). Full rules and per-type constraints in `docs/reference/customization-schema.md`. One non-obvious point to remember up front: `global-instruction` requires `name === "default"` and `scopes === ["personal"]`.
@@ -61,4 +61,4 @@ Coverage targets `application/`, `ipc/`, `infrastructure/`, and `renderer/screen
 
 ## Project state
 
-Time-boxed validation spike — full scope, must/should/out-of-scope and stop rules in `docs/explanation/prd.md`. Don't infer scope from the code; check the PRD.
+Transitioning out of the time-boxed validation spike toward a maintained product. The production bar now applies: **green lint + typecheck + tests are a release gate** (no "no new errors" exception). Full scope, must/should/out-of-scope and stop rules in `docs/explanation/prd.md` — note the PRD still uses the spike framing and is due a rewrite. Don't infer scope from the code; check the PRD.

@@ -40,6 +40,8 @@ Located at `src/main/application/services/`:
 Per-entity facades (1ª class):
 - `skill-service` — CRUD over skills + provenance merge with installed plugins.
 - `agent-service` — CRUD over agents + provenance merge.
+- `command-service` — CRUD over commands + provenance merge.
+- `hook-service` — CRUD over hooks stored in `.claude/settings.json`.
 - `global-instruction-service` — single-slot (`default`) global instruction.
 - `marketplace-service` — list/add/remove/refresh marketplaces (`extraKnownMarketplaces`).
 - `plugin-provenance` — scans `_meta.json` and plugin dirs to map skills/agents to their providing plugin.
@@ -55,11 +57,11 @@ Cross-cutting:
 - `search-service` — text search across customizations.
 - `settings-service` — load/merge/persist settings.
 - `schema-validator` — Zod-based validation.
-- `workspace-bootstrap`, `workspace-locator` — workspace lifecycle.
+- `workspace-bootstrap` — creates the `~/.superset-ai-app/` directory tree on first run (called at startup, not via IPC).
 - `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink) into a `HealthReport`; exposed via the `health.*` IPC namespace.
 
 Legacy (deprecated, internal):
-- `customization-service` — umbrella service backing the per-entity facades; retained for the legacy `customization.*` IPC and the `CustomizationList` screen used by `PluginEditor`. Future PRs should split this into a `customization-core` helper and let the facades own the lifecycle.
+- `customization-service` — umbrella service backing the per-entity facades. The `customization.*` IPC namespace has been removed; the `CustomizationListScreen` now calls the typed namespaces. Future PRs should split this into a `customization-core` helper and let the facades own the lifecycle.
 
 ### Tool adapters
 

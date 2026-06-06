@@ -177,7 +177,9 @@ describe('metaFileSchema', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.data as any)._comment).toBe('managed by plugin-registry');
+        expect((result.data as Record<string, unknown>)._comment).toBe(
+          'managed by plugin-registry',
+        );
       }
     });
 
@@ -190,7 +192,7 @@ describe('metaFileSchema', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.data.plugins.at(0) as any)?._extra).toBe(42);
+        expect((result.data.plugins.at(0) as Record<string, unknown> | undefined)?._extra).toBe(42);
       }
     });
   });
