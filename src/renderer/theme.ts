@@ -1,59 +1,97 @@
 import { createTheme, type PaletteMode, type Theme } from '@mui/material/styles';
+import type { ThemeMode } from '../shared/settings.js';
+import {
+  ogs,
+  colorRoles,
+  surfaces,
+  text,
+  divider,
+  radius,
+  shadow,
+  fonts,
+} from './tokens.js';
+
+declare module '@mui/material/styles' {
+  interface Theme {
+    ogs: {
+      surfaces: { canvas: string; paper: string; rail: string; input: string };
+      slate: string;
+      radius: typeof radius;
+      shadow: typeof shadow;
+      fonts: typeof fonts;
+    };
+  }
+  interface ThemeOptions {
+    ogs?: Theme['ogs'];
+  }
+}
+
+/** Resolve the persisted setting + OS preference into a concrete MUI mode. */
+export function resolveThemeMode(setting: ThemeMode, prefersDark: boolean): PaletteMode {
+  if (setting === 'system') return prefersDark ? 'dark' : 'light';
+  return setting;
+}
 
 export function createAppTheme(mode: PaletteMode): Theme {
   const isDark = mode === 'dark';
+  const roles = isDark ? colorRoles.dark : colorRoles.light;
+  const surf = isDark ? surfaces.dark : surfaces.light;
+  const txt = isDark ? text.dark : text.light;
 
   return createTheme({
     palette: {
       mode,
-      primary: { main: isDark ? '#7aa2ff' : '#2b5cff' },
-      secondary: { main: isDark ? '#b88dff' : '#6f42c1' },
-      error: { main: isDark ? '#ff6b6b' : '#d32f2f' },
-      warning: { main: isDark ? '#ffb74d' : '#ed6c02' },
-      success: { main: isDark ? '#5fd58a' : '#2e7d32' },
-      background: {
-        default: isDark ? '#0f1115' : '#fafbfc',
-        paper: isDark ? '#161a22' : '#ffffff',
+      // Ink is the neutral accent and the default filled button (DS "Novo projeto").
+      primary: {
+        main: isDark ? ogs.creamInk : ogs.ink,
+        contrastText: isDark ? ogs.ink : ogs.cream,
       },
-      divider: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-      text: {
-        primary: isDark ? '#e6e8ee' : '#1a1d24',
-        secondary: isDark ? '#9aa3b2' : '#5a6573',
-      },
+      // Azul = action/link. Exposed as info AND secondary (convenience alias).
+      info: { main: roles.azul },
+      secondary: { main: roles.azul },
+      success: { main: roles.verde },
+      warning: { main: roles.ambar },
+      error: { main: roles.erro },
+      background: { default: surf.canvas, paper: surf.paper },
+      divider: isDark ? divider.dark : divider.light,
+      text: { primary: txt.primary, secondary: txt.secondary },
     },
-    shape: {
-      borderRadius: 8,
+    ogs: {
+      surfaces: surf,
+      slate: roles.slate,
+      radius,
+      shadow,
+      fonts,
     },
+    shape: { borderRadius: radius.md },
     typography: {
-      fontFamily:
-        '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      h1: { fontWeight: 600, letterSpacing: '-0.02em' },
-      h2: { fontWeight: 600, letterSpacing: '-0.02em' },
-      h3: { fontWeight: 600, letterSpacing: '-0.01em' },
-      h4: { fontWeight: 600, letterSpacing: '-0.01em', fontSize: '1.6rem' },
+      fontFamily: fonts.sans,
+      h1: { fontWeight: 600, letterSpacing: '-0.02em', fontSize: '2.625rem' }, // 42
+      h2: { fontWeight: 600, letterSpacing: '-0.02em', fontSize: '2rem' }, // 32
+      h3: { fontWeight: 600, letterSpacing: '-0.01em', fontSize: '1.25rem' }, // 20
+      h4: { fontWeight: 600, letterSpacing: '-0.02em', fontSize: '1.625rem' }, // 26
       h5: { fontWeight: 600 },
-      h6: { fontWeight: 600, fontSize: '1.05rem' },
+      h6: { fontWeight: 600, fontSize: '1rem' },
+      body1: { fontSize: '1rem' },
+      body2: { fontSize: '0.875rem' },
       button: { textTransform: 'none', fontWeight: 500 },
     },
     components: {
       MuiButton: {
         defaultProps: { disableElevation: true },
-        styleOverrides: { root: { borderRadius: 8 } },
+        styleOverrides: { root: { borderRadius: radius.sm } },
       },
-      MuiTextField: {
-        defaultProps: { size: 'small' },
-      },
-      MuiToolbar: {
-        styleOverrides: {
-          root: { minHeight: 56 },
-        },
-      },
+      MuiTextField: { defaultProps: { size: 'small' } },
+      MuiToolbar: { styleOverrides: { root: { minHeight: 56 } } },
       MuiTab: {
         styleOverrides: { root: { textTransform: 'none', fontWeight: 500 } },
       },
+      // "Fio antes de sombra": outlined surfaces, hairline border, no shadow.
       MuiPaper: {
+        defaultProps: { variant: 'outlined' },
         styleOverrides: {
           root: { backgroundImage: 'none' },
+          outlined: ({ theme }) => ({ borderColor: theme.palette.divider }),
         },
       },
     },
