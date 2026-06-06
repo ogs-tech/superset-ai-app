@@ -1,5 +1,6 @@
 import { Chip, Tooltip } from '@mui/material';
-import ExtensionIcon from '@mui/icons-material/Extension';
+import { Puzzle } from 'lucide-react';
+import { Icon } from './ds/Icon.js';
 
 interface PluginOriginBadgeProps {
   pluginId: string;
@@ -12,7 +13,7 @@ export function PluginOriginBadge({ pluginId }: PluginOriginBadgeProps): React.R
         size="small"
         variant="outlined"
         color="info"
-        icon={<ExtensionIcon fontSize="small" />}
+        icon={<Icon glyph={Puzzle} size={16} />}
         label={pluginId}
         data-testid={`plugin-origin-badge-${pluginId}`}
         sx={{ ml: 1 }}

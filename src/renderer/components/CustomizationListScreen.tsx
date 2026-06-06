@@ -11,10 +11,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { Plus, Pencil, Trash2, Copy } from 'lucide-react';
+import { Icon } from './ds/Icon.js';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { Toast, type ToastMessage } from './Toast.js';
 import { PluginOriginBadge } from './PluginOriginBadge.js';
@@ -153,7 +151,7 @@ export function CustomizationListScreen({
   const actions: RowAction<CustomizationListItem>[] = [
     {
       label: 'Edit',
-      icon: <EditIcon fontSize="small" />,
+      icon: <Icon glyph={Pencil} size={16} />,
       hidden: (item) => !isWorkspace(item),
       onClick: (item) =>
         setEditor({
@@ -163,7 +161,7 @@ export function CustomizationListScreen({
     },
     {
       label: 'Duplicate',
-      icon: <ContentCopyIcon fontSize="small" />,
+      icon: <Icon glyph={Copy} size={16} />,
       hidden: (item) => !isWorkspace(item),
       onClick: (item) =>
         setEditor({
@@ -173,7 +171,7 @@ export function CustomizationListScreen({
     },
     {
       label: 'Delete',
-      icon: <DeleteOutlineIcon fontSize="small" />,
+      icon: <Icon glyph={Trash2} size={16} />,
       variant: 'destructive',
       hidden: (item) => !isWorkspace(item),
       onClick: (item) => setConfirmDelete(item),
@@ -207,7 +205,7 @@ export function CustomizationListScreen({
         toolbarActions={
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<Icon glyph={Plus} size={16} />}
             onClick={startCreate}
             data-testid={`new-${entityType}-button`}
           >
@@ -231,7 +229,7 @@ export function CustomizationListScreen({
             </Typography>
             <Button
               variant="outlined"
-              startIcon={<AddIcon />}
+              startIcon={<Icon glyph={Plus} size={16} />}
               onClick={startCreate}
             >
               Create your first {singular}

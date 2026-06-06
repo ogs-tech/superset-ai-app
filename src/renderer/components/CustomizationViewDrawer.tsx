@@ -1,5 +1,6 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
+import { Pencil } from 'lucide-react';
+import { Icon } from './ds/Icon.js';
 import ReactMarkdown from 'react-markdown';
 import { DetailDrawer } from './DetailDrawer.js';
 import { ReadOnlyNotice } from './ReadOnlyNotice.js';
@@ -44,7 +45,7 @@ export function CustomizationViewDrawer({
               <Button
                 size="small"
                 variant="outlined"
-                startIcon={<EditIcon fontSize="small" />}
+                startIcon={<Icon glyph={Pencil} size={16} />}
                 onClick={() => onEdit(entity)}
               >
                 Edit

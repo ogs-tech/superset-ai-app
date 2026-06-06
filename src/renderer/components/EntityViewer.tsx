@@ -6,7 +6,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowLeft } from 'lucide-react';
+import { Icon } from './ds/Icon.js';
 import ReactMarkdown from 'react-markdown';
 import { ReadOnlyNotice } from './ReadOnlyNotice.js';
 
@@ -38,7 +39,7 @@ export function EntityViewer({ entity, title, onBack }: EntityViewerProps): Reac
         <Typography variant="h4" component="h1">
           {title}: {entity.frontmatter.name}
         </Typography>
-        <Button variant="text" startIcon={<ArrowBackIcon />} onClick={onBack}>
+        <Button variant="text" startIcon={<Icon glyph={ArrowLeft} size={16} />} onClick={onBack}>
           Back
         </Button>
       </Stack>

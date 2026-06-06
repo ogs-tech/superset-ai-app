@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Box, InputAdornment, Stack, TextField } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { Search } from 'lucide-react';
+import { Icon } from '../ds/Icon.js';
 import type { ViewMode } from './types.js';
 
 interface ToolbarProps {
@@ -35,7 +36,7 @@ export function Toolbar({
           input: {
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <Icon glyph={Search} size={16} />
               </InputAdornment>
             ),
           },

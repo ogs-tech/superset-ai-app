@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Box, Drawer, IconButton, Stack, Typography } from '@mui/material';
 import type { PaperProps } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { X } from 'lucide-react';
+import { Icon } from './ds/Icon.js';
 
 interface DetailDrawerProps {
   open: boolean;
@@ -66,7 +67,7 @@ export function DetailDrawer({
           )}
         </Box>
         <IconButton aria-label="Close" onClick={onClose} size="small">
-          <CloseIcon fontSize="small" />
+          <Icon glyph={X} size={16} />
         </IconButton>
       </Stack>
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 2 }}>{children}</Box>
