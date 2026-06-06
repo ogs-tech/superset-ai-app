@@ -117,6 +117,74 @@ describe('SettingsService.save', () => {
   });
 });
 
+type MergePatch = Parameters<SettingsService['merge']>[0];
+
+describe('SettingsService.save — validation', () => {
+  it('rejects a non-object payload', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const service = new SettingsService(stubRepo({ save }));
+
+    await expect(service.save(null as unknown as Settings)).rejects.toMatchObject({
+      kind: 'validation',
+    });
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('rejects an invalid theme', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const service = new SettingsService(stubRepo({ save }));
+    const bad = { ...baseSettings(), ui: { theme: 'neon' } } as unknown as Settings;
+
+    await expect(service.save(bad)).rejects.toMatchObject({ kind: 'validation' });
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('rejects unknown top-level fields', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const service = new SettingsService(stubRepo({ save }));
+    const bad = { ...baseSettings(), rogue: 1 } as unknown as Settings;
+
+    await expect(service.save(bad)).rejects.toMatchObject({ kind: 'validation' });
+    expect(save).not.toHaveBeenCalled();
+  });
+});
+
+describe('SettingsService.merge — validation', () => {
+  it('rejects a non-object patch instead of throwing a TypeError', async () => {
+    const service = new SettingsService(
+      stubRepo({ load: () => Promise.resolve(baseSettings()) }),
+    );
+
+    await expect(service.merge(null as unknown as MergePatch)).rejects.toMatchObject({
+      kind: 'validation',
+    });
+  });
+
+  it('rejects a patch that yields an invalid language', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const service = new SettingsService(
+      stubRepo({ load: () => Promise.resolve(baseSettings()), save }),
+    );
+
+    await expect(
+      service.merge({ language: 'klingon' } as unknown as MergePatch),
+    ).rejects.toMatchObject({ kind: 'validation' });
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('rejects unknown keys carried in by the patch', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const service = new SettingsService(
+      stubRepo({ load: () => Promise.resolve(baseSettings()), save }),
+    );
+
+    await expect(
+      service.merge({ rogue: true } as unknown as MergePatch),
+    ).rejects.toMatchObject({ kind: 'validation' });
+    expect(save).not.toHaveBeenCalled();
+  });
+});
+
 describe('SettingsService.getDefaults', () => {
   it('returns the canonical default settings', () => {
     const service = new SettingsService(stubRepo());
