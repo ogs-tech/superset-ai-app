@@ -53,14 +53,6 @@ export function renderWithQuery(
   };
 }
 
-/** Renders inside the static OGS ThemeProvider + QueryClientProvider — for component tests that need theme.ogs but also make IPC calls. */
-export function renderWithQueryAndTheme(
-  ui: ReactElement,
-  options?: RenderOptions & { client?: QueryClient },
-) {
-  return renderWithQuery(ui, options);
-}
-
 /** Renders inside the static OGS ThemeProvider only — for pure component tests that access theme.ogs but need no QueryClient. */
 export function renderWithTheme(ui: ReactElement, options?: RenderOptions) {
   return render(ui, {

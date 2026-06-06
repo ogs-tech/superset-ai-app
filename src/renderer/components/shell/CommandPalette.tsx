@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Dialog, List, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
+import type { PaperProps } from '@mui/material';
 import { Search, type LucideIcon } from 'lucide-react';
 import { Icon } from '../ds/Icon.js';
 import { LIBRARY_SUBS, NAV_AREAS, PLUGINS_SUBS, type LibrarySub, type Nav } from './nav.js';
@@ -87,7 +88,7 @@ export function CommandPalette({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm"
-      slotProps={{ paper: { 'data-testid': 'command-palette' as string, elevation: 8 } as object }}>
+      slotProps={{ paper: { 'data-testid': 'command-palette', elevation: 8 } as PaperProps }}>
       <TextField
         autoFocus
         fullWidth

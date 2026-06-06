@@ -27,6 +27,7 @@ describe('createAppTheme — OGS mapping', () => {
     const t = createAppTheme('dark');
     expect(t.palette.primary.main).toBe('#F2EEE5');
     expect(t.palette.background.default).toBe('#0F1828');
+    expect(t.palette.primary.contrastText).toBe('#142036');
   });
   it('exposes OGS custom theme fields', () => {
     const t = createAppTheme('light');

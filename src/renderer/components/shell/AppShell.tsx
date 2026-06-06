@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Box, Container } from '@mui/material';
+import { Box } from '@mui/material';
 import { TopNav } from './TopNav.js';
 import { SubRail } from './SubRail.js';
 import { CommandPalette } from './CommandPalette.js';
@@ -51,9 +51,7 @@ export function AppShell({
       <Box data-testid="app-shell" sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <SubRail nav={nav} onSelect={onNavigate} />
         <Box component="main" sx={{ flexGrow: 1, minWidth: 0, overflowY: 'auto' }}>
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            {children}
-          </Container>
+          {children}
         </Box>
       </Box>
       <CommandPalette
