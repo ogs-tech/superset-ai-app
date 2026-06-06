@@ -1,125 +1,109 @@
-export class PluginIdInvalidError extends Error {
+import { DomainError } from './errors.js';
+
+/**
+ * Plugin-specific errors. Each extends {@link DomainError} and fixes its
+ * `kind` at construction, so the IPC dispatcher maps them to an `IpcError.kind`
+ * through the single `DomainError` path — no parallel instanceof table.
+ *
+ * Constructor params keep narrow `details` shapes for throw-site safety; the
+ * public `.details` is the uniform `Record<string, unknown> | undefined`
+ * inherited from `DomainError`.
+ */
+
+export class PluginIdInvalidError extends DomainError {
   override readonly name = 'PluginIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class ManifestInvalidError extends Error {
+export class ManifestInvalidError extends DomainError {
   override readonly name = 'ManifestInvalidError';
-  readonly details: { path?: string; reason?: string } | undefined;
   constructor(message: string, details?: { path?: string; reason?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class PluginCollisionError extends Error {
+export class PluginCollisionError extends DomainError {
   override readonly name = 'PluginCollisionError';
-  readonly details: { id?: string } | undefined;
   constructor(message: string, details?: { id?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class OwnPluginIdCollisionError extends Error {
+export class OwnPluginIdCollisionError extends DomainError {
   override readonly name = 'OwnPluginIdCollisionError';
-  readonly details: { id?: string } | undefined;
   constructor(message: string, details?: { id?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class RefNotFoundError extends Error {
+export class RefNotFoundError extends DomainError {
   override readonly name = 'RefNotFoundError';
-  readonly details: { ref?: string; url?: string } | undefined;
   constructor(message: string, details?: { ref?: string; url?: string }) {
-    super(message);
-    this.details = details;
+    super('not_found', message, details);
   }
 }
 
-export class SettingsLockTimeoutError extends Error {
+export class SettingsLockTimeoutError extends DomainError {
   override readonly name = 'SettingsLockTimeoutError';
-  readonly details: { path?: string; timeoutMs?: number } | undefined;
   constructor(message: string, details?: { path?: string; timeoutMs?: number }) {
-    super(message);
-    this.details = details;
+    super('io', message, details);
   }
 }
 
-export class DriftDetectedError extends Error {
+export class DriftDetectedError extends DomainError {
   override readonly name = 'DriftDetectedError';
-  readonly details: { id?: string; kind?: string } | undefined;
   constructor(message: string, details?: { id?: string; kind?: string }) {
-    super(message);
-    this.details = details;
+    super('conflict', message, details);
   }
 }
 
-export class SemVerInvalidError extends Error {
+export class SemVerInvalidError extends DomainError {
   override readonly name = 'SemVerInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class PublishAuthMissingError extends Error {
+export class PublishAuthMissingError extends DomainError {
   override readonly name = 'PublishAuthMissingError';
-  readonly details: Record<string, unknown> | undefined;
   constructor(message: string, details?: Record<string, unknown>) {
-    super(message);
-    this.details = details;
+    super('auth', message, details);
   }
 }
 
-export class RepoAlreadyExistsError extends Error {
+export class RepoAlreadyExistsError extends DomainError {
   override readonly name = 'RepoAlreadyExistsError';
-  readonly details: { repoName?: string } | undefined;
   constructor(message: string, details?: { repoName?: string }) {
-    super(message);
-    this.details = details;
+    super('conflict', message, details);
   }
 }
 
-export class PublishConflictError extends Error {
+export class PublishConflictError extends DomainError {
   override readonly name = 'PublishConflictError';
-  readonly details: { localSha?: string; remoteSha?: string } | undefined;
   constructor(message: string, details?: { localSha?: string; remoteSha?: string }) {
-    super(message);
-    this.details = details;
+    super('conflict', message, details);
   }
 }
 
-export class TagConflictError extends Error {
+export class TagConflictError extends DomainError {
   override readonly name = 'TagConflictError';
-  readonly details: { tag?: string } | undefined;
   constructor(message: string, details?: { tag?: string }) {
-    super(message);
-    this.details = details;
+    super('conflict', message, details);
   }
 }
 
-export class CredentialStoreUnavailableError extends Error {
+export class CredentialStoreUnavailableError extends DomainError {
   override readonly name = 'CredentialStoreUnavailableError';
-  readonly details: Record<string, unknown> | undefined;
   constructor(message: string, details?: Record<string, unknown>) {
-    super(message);
-    this.details = details;
+    super('io', message, details);
   }
 }
 
-export class OperationNotAllowedForOriginError extends Error {
+export class OperationNotAllowedForOriginError extends DomainError {
   override readonly name = 'OperationNotAllowedForOriginError';
-  readonly details: { origin?: string; operation?: string } | undefined;
   constructor(message: string, details?: { origin?: string; operation?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
