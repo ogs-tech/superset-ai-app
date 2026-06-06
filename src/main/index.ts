@@ -6,6 +6,7 @@ import { IPC_CHANNEL } from '../shared/ipc-contract.js';
 import { SettingsService } from './application/services/settings-service.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
+import { WorkspaceTeardownService } from './application/services/workspace-teardown.js';
 import { CustomizationService } from './application/services/customization-service.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
@@ -212,6 +213,11 @@ async function wireIpc(): Promise<void> {
   ];
   const healthService = new HealthService(healthCollectors, clock);
   const notificationPort = new ElectronNotificationAdapter();
+  const workspaceTeardownService = new WorkspaceTeardownService(
+    adapterManager,
+    nodeFsAdapter,
+    workspacePath,
+  );
 
   const handlers = buildHandlers({
     settingsService,
@@ -228,6 +234,7 @@ async function wireIpc(): Promise<void> {
     marketplaceService,
     healthService,
     notificationPort,
+    workspaceTeardownService,
     appQuit: () => app.quit(),
   });
   const dispatch = createDispatcher(handlers);

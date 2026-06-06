@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { rm } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
@@ -28,6 +26,7 @@ import { buildMarketplaceHandlers } from './marketplace-handlers.js';
 import { buildHealthHandlers } from './health-handlers.js';
 import type { HealthService } from '../application/services/health/health-service.js';
 import type { NotificationPort } from '../application/ports/notification-port.js';
+import type { WorkspaceTeardownService } from '../application/services/workspace-teardown.js';
 import { updateLanguageSection } from '../application/services/language-section.js';
 import { asLanguagePreference } from './_validators.js';
 import { globalInstructionId } from '../domain/global-instruction-id.js';
@@ -47,6 +46,7 @@ export interface IpcDeps {
   marketplaceService: MarketplaceService;
   healthService: HealthService;
   notificationPort: NotificationPort;
+  workspaceTeardownService: WorkspaceTeardownService;
   appQuit: () => void;
 }
 
@@ -93,6 +93,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     marketplaceService,
     healthService,
     notificationPort,
+    workspaceTeardownService,
     appQuit,
   } = deps;
 
@@ -239,9 +240,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     },
 
     'app.restore': async () => {
-      await rm(join(homedir(), '.superset-ai-app'), { recursive: true, force: true });
-      await rm(join(homedir(), '.claude'), { recursive: true, force: true });
-      await rm(join(process.cwd(), '.env.local'), { force: true });
+      await workspaceTeardownService.restore();
       appQuit();
     },
 

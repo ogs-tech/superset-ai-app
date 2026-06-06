@@ -75,7 +75,7 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 |---|---|---|
 | `app.restore` | — | `void` |
 
-> **Destructive.** `app.restore` deletes `~/.superset-ai-app/`, `~/.claude/` and `./.env.local`, then quits the app for a full factory reset.
+> **Destructive (scoped).** `app.restore` restores the app to its initial state: it removes the app-created symlinks under adapter targets (those pointing into the workspace, via `AdapterManager.removeAllAdapterSymlinks`) and deletes the workspace directory `~/.superset-ai-app/`, then quits. It does **not** delete the rest of `~/.claude/` or any `.env.local` — only this app's own footprint. Orchestrated by `WorkspaceTeardownService`; no raw filesystem access lives in the IPC layer.
 
 ### `settings`
 

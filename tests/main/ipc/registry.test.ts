@@ -19,6 +19,7 @@ import type { HookService } from '../../../src/main/application/services/hook-se
 import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
 import type { HealthService } from '../../../src/main/application/services/health/health-service.js';
 import type { NotificationPort } from '../../../src/main/application/ports/notification-port.js';
+import type { WorkspaceTeardownService } from '../../../src/main/application/services/workspace-teardown.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
@@ -48,6 +49,7 @@ interface Deps {
   hookService: HookService;
   healthService: HealthService;
   notificationPort: NotificationPort;
+  workspaceTeardownService: WorkspaceTeardownService;
   appQuit: () => void;
   settingsRepoSpy: {
     load: ReturnType<typeof vi.fn>;
@@ -111,6 +113,9 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const hookService = null as unknown as HookService;
   const healthService = null as unknown as HealthService;
   const notificationPort = null as unknown as NotificationPort;
+  const workspaceTeardownService = {
+    restore: vi.fn().mockResolvedValue(undefined),
+  } as unknown as WorkspaceTeardownService;
   const credentialStore: CredentialStorePort = {
     get: vi.fn().mockResolvedValue(null),
     set: vi.fn().mockResolvedValue(undefined),
@@ -134,6 +139,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     hookService,
     healthService,
     notificationPort,
+    workspaceTeardownService,
     appQuit: () => undefined,
     settingsRepoSpy,
     repoReaderSpy,
@@ -303,5 +309,23 @@ describe('buildHandlers', () => {
     expect(deps.dialogSpy.selectFolder).toHaveBeenCalledWith({
       defaultPath: '/home',
     });
+  });
+
+  it('app.restore delegates to WorkspaceTeardownService.restore, then quits', async () => {
+    const deps = buildDeps();
+    const restore = vi.fn().mockResolvedValue(undefined);
+    const appQuit = vi.fn();
+    deps.workspaceTeardownService = { restore } as unknown as WorkspaceTeardownService;
+    deps.appQuit = appQuit;
+    const handlers = buildHandlers(deps);
+
+    await handlers['app.restore']?.({});
+
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(appQuit).toHaveBeenCalledTimes(1);
+    // Teardown must complete before the app quits.
+    const restoreOrder = restore.mock.invocationCallOrder[0] ?? Infinity;
+    const quitOrder = appQuit.mock.invocationCallOrder[0] ?? -Infinity;
+    expect(restoreOrder).toBeLessThan(quitOrder);
   });
 });

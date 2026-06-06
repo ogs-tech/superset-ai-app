@@ -30,8 +30,9 @@ export function RestoreConfirmDialog({
       <DialogTitle id="restore-confirm-title">Restaurar para estado inicial?</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Esta ação irá <strong>deletar permanentemente</strong> os diretórios{' '}
-          <code>~/.superset-ai-app</code> e <code>~/.claude</code> e fechar o aplicativo. Isso não pode
+          Esta ação irá <strong>restaurar o app ao estado inicial</strong>: remove o diretório{' '}
+          <code>~/.superset-ai-app</code> e os symlinks que o app criou em <code>~/.claude</code>, e
+          fecha o aplicativo. O restante da sua configuração do Claude não é afetado. Isso não pode
           ser desfeito.
         </DialogContentText>
       </DialogContent>
