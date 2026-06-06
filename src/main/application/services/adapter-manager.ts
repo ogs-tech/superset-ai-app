@@ -192,6 +192,22 @@ export class AdapterManager {
     return { removed, skipped, errors };
   }
 
+  /**
+   * Removes every app-created symlink (those pointing into the workspace) across
+   * all registered adapters, aggregating the per-adapter results. Used by the
+   * factory-reset flow — it never touches symlinks pointing elsewhere or real files.
+   */
+  async removeAllAdapterSymlinks(): Promise<RemoveAdapterResult> {
+    const aggregate: RemoveAdapterResult = { removed: 0, skipped: 0, errors: [] };
+    for (const adapterId of this.deps.adapters.keys()) {
+      const result = await this.removeAdapterSymlinks(adapterId);
+      aggregate.removed += result.removed;
+      aggregate.skipped += result.skipped;
+      aggregate.errors.push(...result.errors);
+    }
+    return aggregate;
+  }
+
   async countDestinations(adapterId: string): Promise<number> {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return 0;
