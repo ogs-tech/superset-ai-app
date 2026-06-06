@@ -115,7 +115,7 @@ export function CustomizationEditor({
         body: typedResult.entity.body,
       };
 
-      setToast({ variant: 'success', message: `${saved.frontmatter.name} saved` });
+      setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
       if (typedResult.syncReport.some((entry) => entry.status !== 'ok')) {
         setSyncReport(typedResult.syncReport);
       }
@@ -148,11 +148,11 @@ export function CustomizationEditor({
         sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}
       >
         <Typography variant="h4" component="h1">
-          {isCreate ? 'New customization' : `Edit ${initial.frontmatter.name}`}
+          {isCreate ? 'Nova customização' : `Editar ${initial.frontmatter.name}`}
         </Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             variant="contained"
@@ -160,7 +160,7 @@ export function CustomizationEditor({
             disabled={saving}
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? 'Salvando…' : 'Salvar'}
           </Button>
         </Stack>
       </Stack>
@@ -236,9 +236,9 @@ export function CustomizationEditor({
             value={bodyView}
             onChange={(_, v: BodyView | null) => v && setBodyView(v)}
           >
-            <ToggleButton value="edit">Edit</ToggleButton>
-            <ToggleButton value="split">Split</ToggleButton>
-            <ToggleButton value="preview">Preview</ToggleButton>
+            <ToggleButton value="edit">Editar</ToggleButton>
+            <ToggleButton value="split">Dividir</ToggleButton>
+            <ToggleButton value="preview">Prévia</ToggleButton>
           </ToggleButtonGroup>
         </Stack>
 

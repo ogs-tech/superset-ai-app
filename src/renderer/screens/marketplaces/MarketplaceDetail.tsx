@@ -74,9 +74,9 @@ function sourceLabel(source: MarketplaceSource): {
 }
 
 function installButtonLabel(state: InstallState | undefined): string {
-  if (state === 'done') return 'Installed';
-  if (state === 'loading') return 'Installing…';
-  return 'Install';
+  if (state === 'done') return 'Instalado';
+  if (state === 'loading') return 'Instalando…';
+  return 'Instalar';
 }
 
 export function MarketplaceDetail({
@@ -128,7 +128,7 @@ export function MarketplaceDetail({
       }
       await callIpc('plugin.installFromMarketplace', params);
       setInstallStates((s) => ({ ...s, [plugin.name]: 'done' }));
-      setToast({ variant: 'success', message: `${plugin.name} installed` });
+      setToast({ variant: 'success', message: `${plugin.name} instalado` });
     } catch (err) {
       const message = err instanceof IpcCallError ? err.message : String(err);
       setInstallStates((s) => ({ ...s, [plugin.name]: 'idle' }));
@@ -259,7 +259,7 @@ export function MarketplaceDetail({
 
       {!marketplace.manifest && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Marketplace manifest could not be loaded. Try refreshing the marketplace.
+          O manifesto do marketplace não pôde ser carregado. Tente atualizar o marketplace.
         </Alert>
       )}
 
@@ -267,7 +267,7 @@ export function MarketplaceDetail({
         entity={entity}
         data={plugins}
         cardSlots={cardSlots}
-        searchPlaceholder="Search plugins"
+        searchPlaceholder="Buscar plugins"
         emptyState={
           <Box
             sx={{
@@ -281,7 +281,7 @@ export function MarketplaceDetail({
             }}
           >
             <Typography variant="body2">
-              No plugins listed in this marketplace.
+              Nenhum plugin listado neste marketplace.
             </Typography>
           </Box>
         }

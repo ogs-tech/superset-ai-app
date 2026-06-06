@@ -168,7 +168,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
         isCreate={editor.isCreate}
         onSaved={async (saved) => {
           setEditor(null);
-          setToast({ variant: 'success', message: `${saved.frontmatter.name} saved` });
+          setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
           await queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         }}
         onCancel={() => setEditor(null)}
@@ -190,7 +190,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
         actions={
           loaded && existing ? (
             <Chip
-              label="Configured"
+              label="Configurado"
               color="success"
               size="small"
               icon={<Icon glyph={Globe} size={16} />}
@@ -332,7 +332,7 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
             Usar template OGS
           </Button>
           <Button variant="text" onClick={onBlank} data-testid="gi-start-blank">
-            Start from scratch
+            Começar do zero
           </Button>
         </Stack>
       </Box>
@@ -361,7 +361,7 @@ function renderConfigured(
       >
         <Box>
           <Typography variant="h6" component="h2" sx={{ mb: 0.5 }}>
-            Your profile
+            Seu perfil
           </Typography>
           {description && (
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 520 }}>
@@ -376,7 +376,7 @@ function renderConfigured(
           data-testid="gi-edit"
           sx={{ flexShrink: 0 }}
         >
-          Edit
+          Editar
         </Button>
       </Stack>
 

@@ -50,7 +50,7 @@ function ArtifactList({
   if (items.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
-        No artifacts
+        Nenhum artefato
       </Typography>
     );
   }
@@ -91,17 +91,17 @@ export function PluginDetail({
     <Stack spacing={3} data-testid="plugin-detail">
       {detail.drift && (
         <Alert severity="warning">
-          {detail.drift.details ?? `Drift detected: ${detail.drift.kind}`}
+          {detail.drift.details ?? `Desvio detectado: ${detail.drift.kind}`}
         </Alert>
       )}
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Box sx={{ mb: 1 }}><Kicker>Basic Information</Kicker></Box>
+        <Box sx={{ mb: 1 }}><Kicker>Informações básicas</Kicker></Box>
         <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
           <Typography variant="body2" sx={{ fontWeight: 500 }}>ID:</Typography>
           <Typography variant="body2">{detail.id}</Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Origin:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>Origem:</Typography>
           <Box>
             <Chip
               label={detail.origin}
@@ -110,13 +110,13 @@ export function PluginDetail({
             />
           </Box>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Scope:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>Escopo:</Typography>
           <Typography variant="body2">{detail.scope}</Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Enabled:</Typography>
-          <Typography variant="body2">{detail.enabled ? 'Yes' : 'No'}</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>Habilitado:</Typography>
+          <Typography variant="body2">{detail.enabled ? 'Sim' : 'Não'}</Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>Installed at:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>Instalado em:</Typography>
           <Typography variant="body2">{detail.installedAt}</Typography>
         </Box>
       </Paper>
@@ -125,12 +125,12 @@ export function PluginDetail({
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Box sx={{ mb: 1 }}><Kicker>Manifest</Kicker></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Version:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>Versão:</Typography>
             <Typography variant="body2">{detail.manifest.version}</Typography>
 
             {detail.manifest.description && (
               <>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>Description:</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>Descrição:</Typography>
                 <Typography variant="body2">{detail.manifest.description}</Typography>
               </>
             )}
@@ -140,7 +140,7 @@ export function PluginDetail({
 
       {detail.origin === 'imported' && detail.source && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Box sx={{ mb: 1 }}><Kicker>Source</Kicker></Box>
+          <Box sx={{ mb: 1 }}><Kicker>Fonte</Kicker></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>URL:</Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
@@ -150,7 +150,7 @@ export function PluginDetail({
             <Typography variant="body2" sx={{ fontWeight: 500 }}>Ref:</Typography>
             <Typography variant="body2">{refDisplay(detail.source.ref)}</Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Installed ref:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>Ref instalada:</Typography>
             <Typography variant="body2">{refDisplay(detail.installedRef)}</Typography>
           </Box>
         </Paper>
@@ -158,20 +158,20 @@ export function PluginDetail({
 
       {detail.origin === 'owned' && detail.publishInfo && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Box sx={{ mb: 1 }}><Kicker>Publish Information</Kicker></Box>
+          <Box sx={{ mb: 1 }}><Kicker>Informações de publicação</Kicker></Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Remote URL:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>URL remota:</Typography>
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
               {detail.publishInfo.remoteUrl}
             </Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Visibility:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>Visibilidade:</Typography>
             <Typography variant="body2">{detail.publishInfo.visibility}</Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Last published:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>Última publicação:</Typography>
             <Typography variant="body2">{detail.publishInfo.lastPublishedAt}</Typography>
 
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>Version:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>Versão:</Typography>
             <Typography variant="body2">{detail.publishInfo.lastPublishedVersion}</Typography>
           </Box>
         </Paper>
@@ -179,7 +179,7 @@ export function PluginDetail({
 
       {detail.manifest && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Box sx={{ mb: 1 }}><Kicker>Artifacts</Kicker></Box>
+          <Box sx={{ mb: 1 }}><Kicker>Artefatos</Kicker></Box>
           <ArtifactList artifacts={detail.manifest.artifacts} />
         </Paper>
       )}

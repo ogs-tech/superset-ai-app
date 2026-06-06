@@ -142,7 +142,7 @@ export function EntityDataGrid<T>({
           <TextField
             select
             size="small"
-            label="Per page"
+            label="Por página"
             value={currentPageSize}
             onChange={(e) => handlePageSizeChange(Number(e.target.value))}
             slotProps={{
@@ -189,7 +189,7 @@ interface EmptyBlockProps {
 
 function EmptyBlock({
   isFiltered,
-  entityPlural,
+  entityPlural: _entityPlural,
   fallback,
 }: EmptyBlockProps): React.ReactElement {
   if (isFiltered) {
@@ -206,7 +206,7 @@ function EmptyBlock({
         }}
       >
         <Typography variant="body2">
-          No {entityPlural} match your search.
+          Nenhum resultado para a busca.
         </Typography>
       </Box>
     );
@@ -224,7 +224,7 @@ function EmptyBlock({
         color: 'text.secondary',
       }}
     >
-      <Typography variant="body2">No {entityPlural} yet.</Typography>
+      <Typography variant="body2">Nada por aqui ainda.</Typography>
     </Box>
   );
 }

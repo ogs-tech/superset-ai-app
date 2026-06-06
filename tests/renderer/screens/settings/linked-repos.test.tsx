@@ -43,10 +43,10 @@ describe('<Settings> — linked repos section', () => {
     });
     render(<SettingsScreen />);
 
-    await user.click(await screen.findByRole('button', { name: /add repo/i }));
+    await user.click(await screen.findByRole('button', { name: /adicionar repo/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(/not a git/i),
+      expect(screen.getByRole('alert')).toHaveTextContent(/não é um repositório git/i),
     );
     expect(
       call.mock.calls.find((c) => c[0] === 'repo.link'),
@@ -68,7 +68,7 @@ describe('<Settings> — linked repos section', () => {
     });
     render(<SettingsScreen />);
 
-    await user.click(await screen.findByRole('button', { name: /add repo/i }));
+    await user.click(await screen.findByRole('button', { name: /adicionar repo/i }));
 
     await screen.findByRole('dialog');
     await user.click(screen.getByRole('button', { name: /cancel/i }));
@@ -78,7 +78,7 @@ describe('<Settings> — linked repos section', () => {
       call.mock.calls.find((c) => c[0] === 'repo.link'),
     ).toBeUndefined();
 
-    await user.click(screen.getByRole('button', { name: /add repo/i }));
+    await user.click(screen.getByRole('button', { name: /adicionar repo/i }));
     await screen.findByRole('dialog');
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
@@ -115,7 +115,7 @@ describe('<Settings> — linked repos section', () => {
     render(<SettingsScreen />);
 
     for (let i = 0; i < 2; i += 1) {
-      await user.click(await screen.findByRole('button', { name: /add repo/i }));
+      await user.click(await screen.findByRole('button', { name: /adicionar repo/i }));
       await screen.findByRole('dialog');
       await user.click(screen.getByRole('button', { name: /confirm/i }));
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -133,7 +133,7 @@ describe('<Settings> — linked repos section', () => {
     });
     render(<SettingsScreen />);
 
-    await user.click(await screen.findByRole('button', { name: /add repo/i }));
+    await user.click(await screen.findByRole('button', { name: /adicionar repo/i }));
 
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent(/symlink/i);

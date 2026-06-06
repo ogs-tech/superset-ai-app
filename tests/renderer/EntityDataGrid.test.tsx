@@ -76,7 +76,7 @@ describe('<EntityDataGrid>', () => {
     const user = userEvent.setup();
     renderWithTheme(<EntityDataGrid<Item> entity={entity} data={items} />);
     await user.type(screen.getByTestId('entity-grid-search-thing'), 'zzz');
-    expect(screen.getByText(/No things match your search/)).toBeInTheDocument();
+    expect(screen.getByText(/Nenhum resultado para a busca/)).toBeInTheDocument();
   });
 
   it('paginates when items exceed pageSize', () => {

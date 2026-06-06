@@ -52,7 +52,7 @@ export function HookList(): React.ReactElement {
       await callIpc('hook.delete', { id: hook.id, scope: 'personal' });
     },
     onSuccess: async () => {
-      setToast({ variant: 'success', message: 'Hook removed' });
+      setToast({ variant: 'success', message: 'Hook removido' });
       await qc.invalidateQueries({ queryKey: HOOKS_QUERY_KEY });
     },
     onError: (err) => {
@@ -102,7 +102,7 @@ export function HookList(): React.ReactElement {
 
   const actions: RowAction<Hook>[] = [
     {
-      label: 'Delete',
+      label: 'Excluir',
       icon: <Icon glyph={Trash2} size={16} />,
       variant: 'destructive',
       hidden: (item) => item.source.kind !== 'workspace',
@@ -116,8 +116,8 @@ export function HookList(): React.ReactElement {
         Hooks
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Hooks fire on Claude Code lifecycle events. Workspace hooks live in
-        <code> ~/.claude/settings.json</code>; plugin hooks come bundled with installed plugins.
+        Hooks disparam em eventos do ciclo de vida do Claude Code. Hooks de workspace ficam em
+        <code> ~/.claude/settings.json</code>; hooks de plugin vêm empacotados com os plugins instalados.
       </Typography>
 
       <EntityDataGrid<Hook>
@@ -126,7 +126,7 @@ export function HookList(): React.ReactElement {
         isLoading={isLoading}
         error={error}
         actions={actions}
-        searchPlaceholder="Search hooks…"
+        searchPlaceholder="Buscar hooks…"
       />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />

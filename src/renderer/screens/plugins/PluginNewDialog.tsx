@@ -33,11 +33,11 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
 
   const validateId = (value: string): boolean => {
     if (!value) {
-      setIdError('Plugin ID is required');
+      setIdError('O Plugin ID é obrigatório');
       return false;
     }
     if (!idRegex.test(value)) {
-      setIdError('Must start with a letter, contain only lowercase letters, digits, and hyphens (max 64 characters)');
+      setIdError('Deve começar com uma letra e conter apenas letras minúsculas, dígitos e hífens (máx. 64 caracteres)');
       return false;
     }
     setIdError(null);
@@ -46,11 +46,11 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
 
   const validateVersion = (value: string): boolean => {
     if (!value) {
-      setVersionError('Version is required');
+      setVersionError('A versão é obrigatória');
       return false;
     }
     if (!versionRegex.test(value)) {
-      setVersionError('Version must be in format X.Y.Z (e.g., 0.1.0)');
+      setVersionError('A versão deve seguir o formato X.Y.Z (ex.: 0.1.0)');
       return false;
     }
     setVersionError(null);
@@ -85,7 +85,7 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
     } catch (err) {
       if (err instanceof IpcCallError) {
         if (err.kind === 'validation' && err.message.includes('collision')) {
-          setGlobalError('A plugin with this ID already exists');
+          setGlobalError('Já existe um plugin com este ID');
         } else {
           setGlobalError(err.message);
         }
@@ -126,7 +126,7 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
       maxWidth="sm"
       fullWidth
     >
-      <DialogTitle id="plugin-new-dialog-title">New Plugin</DialogTitle>
+      <DialogTitle id="plugin-new-dialog-title">Novo Plugin</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         {globalError && (
           <Alert severity="error" role="alert" sx={{ mb: 2 }}>
@@ -170,7 +170,7 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
             }}
           />
           <TextField
-            label="Description (optional)"
+            label="Descrição (opcional)"
             fullWidth
             multiline
             rows={2}
@@ -188,7 +188,7 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>
-          Cancel
+          Cancelar
         </Button>
         <Button
           onClick={handleSubmit}
@@ -196,7 +196,7 @@ export function PluginNewDialog({ open, scope, onClose, onSuccess }: PluginNewDi
           disabled={loading}
           data-testid="plugin-create-btn"
         >
-          {loading ? 'Creating...' : 'Create'}
+          {loading ? 'Criando…' : 'Criar'}
         </Button>
       </DialogActions>
     </Dialog>

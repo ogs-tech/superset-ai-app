@@ -32,10 +32,10 @@ export function ConfirmDisableModal({
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle id="confirm-disable-title">Disable {adapterName}</DialogTitle>
+      <DialogTitle id="confirm-disable-title">Desabilitar {adapterName}</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          There are <strong>{count}</strong> symlinks managed by this adapter.
+          Existem <strong>{count}</strong> symlinks gerenciados por este adapter.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
@@ -44,14 +44,14 @@ export function ConfirmDisableModal({
             data-testid="confirm-cancel-btn"
             onClick={onCancel}
           >
-            Cancel
+            Cancelar
           </Button>
           <Button
             data-testid="confirm-no-remove-btn"
             onClick={onConfirmNoRemove}
             variant="outlined"
           >
-            No, just disable
+            Não, apenas desabilitar
           </Button>
           <Button
             data-testid="confirm-remove-btn"
@@ -59,7 +59,7 @@ export function ConfirmDisableModal({
             variant="contained"
             color="error"
           >
-            Yes, remove {count} symlinks
+            Sim, remover {count} symlinks
           </Button>
         </Stack>
       </DialogActions>

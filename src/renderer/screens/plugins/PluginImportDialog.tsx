@@ -45,7 +45,7 @@ export function PluginImportDialog({
 
   const handleSubmit = async () => {
     if (!urlInput.trim()) {
-      setError('Repository URL is required');
+      setError('A URL do repositório é obrigatória');
       return;
     }
 
@@ -60,9 +60,9 @@ export function PluginImportDialog({
 
       if (detected.kind === 'marketplace') {
         setMarketplaceWarning(
-          `This URL points to a marketplace${
+          `Esta URL aponta para um marketplace${
             detected.manifest.name ? ` ("${detected.manifest.name}")` : ''
-          }. Import it from the Marketplaces screen.`,
+          }. Importe-o pela tela de Marketplaces.`,
         );
         return;
       }
@@ -91,7 +91,7 @@ export function PluginImportDialog({
       maxWidth="sm"
       fullWidth
     >
-      <DialogTitle id="plugin-import-title">Import Plugin</DialogTitle>
+      <DialogTitle id="plugin-import-title">Importar Plugin</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {error && (
@@ -111,8 +111,8 @@ export function PluginImportDialog({
           )}
 
           <TextField
-            label="Repository URL or owner/repo"
-            placeholder="e.g., https://github.com/user/plugin or user/plugin"
+            label="URL do repositório ou owner/repo"
+            placeholder="ex.: https://github.com/user/plugin ou user/plugin"
             fullWidth
             required
             value={urlInput}
@@ -125,8 +125,8 @@ export function PluginImportDialog({
           />
 
           <TextField
-            label="Branch/Tag/SHA (optional)"
-            placeholder="e.g., main, v1.0.0, abc123... (leave empty for default)"
+            label="Branch/Tag/SHA (opcional)"
+            placeholder="ex.: main, v1.0.0, abc123… (deixe vazio para o padrão)"
             fullWidth
             value={refInput}
             onChange={(e) => setRefInput(e.target.value)}
@@ -135,15 +135,15 @@ export function PluginImportDialog({
           />
 
           <Typography variant="caption" color="text.secondary">
-            Enter a GitHub repository URL (https://github.com/user/repo) or shorthand (user/repo).
-            Optionally specify a branch, tag, or commit SHA to import from a specific version.
+            Informe uma URL de repositório GitHub (https://github.com/user/repo) ou a forma abreviada (user/repo).
+            Opcionalmente, especifique um branch, tag ou SHA de commit para importar uma versão específica.
           </Typography>
         </Stack>
       </DialogContent>
 
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>
-          Cancel
+          Cancelar
         </Button>
         <Button
           onClick={handleSubmit}
@@ -151,7 +151,7 @@ export function PluginImportDialog({
           disabled={loading}
           data-testid="plugin-import-btn"
         >
-          {loading ? 'Importing...' : 'Import'}
+          {loading ? 'Importando…' : 'Importar'}
         </Button>
       </DialogActions>
     </Dialog>

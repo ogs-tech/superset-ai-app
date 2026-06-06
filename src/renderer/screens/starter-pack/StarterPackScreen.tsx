@@ -240,11 +240,11 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
         setToast({
           variant: 'error',
           message: lastError
-            ? `${plugin.name} failed to install — ${lastError}`
-            : `${plugin.name} failed to install`,
+            ? `${plugin.name} falhou ao instalar — ${lastError}`
+            : `${plugin.name} falhou ao instalar`,
         });
       } else {
-        setToast({ variant: 'success', message: `${plugin.name} installed` });
+        setToast({ variant: 'success', message: `${plugin.name} instalado` });
       }
     } finally {
       setPreviewPlugin(null);
@@ -268,11 +268,11 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       setToast({
         variant: 'error',
         message: lastError
-          ? `${failed} plugin(s) in ${group.label} failed to install — ${lastError}`
-          : `${failed} plugin(s) in ${group.label} failed to install`,
+          ? `${failed} plugin(s) em ${group.label} falharam ao instalar — ${lastError}`
+          : `${failed} plugin(s) em ${group.label} falharam ao instalar`,
       });
     } else {
-      setToast({ variant: 'success', message: `${group.label} installed` });
+      setToast({ variant: 'success', message: `${group.label} instalado` });
     }
   };
 
@@ -347,14 +347,14 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             Perfil OGS
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Global instructions tailored for software engineers
+            Instruções globais sob medida para engenheiros de software
           </Typography>
         </Box>
         {profileConfigured === null ? (
-          <Chip label="Checking…" size="small" />
+          <Chip label="Verificando…" size="small" />
         ) : profileConfigured ? (
           <Chip
-            label="Configured"
+            label="Configurado"
             color="success"
             size="small"
             icon={<Icon glyph={CheckCircle2} size={16} />}
@@ -366,7 +366,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             endIcon={<Icon glyph={ArrowRight} size={16} />}
             onClick={() => onNavigate({ area: 'biblioteca', sub: 'global-instructions' })}
           >
-            Configure
+            Configurar
           </Button>
         )}
       </Paper>
@@ -384,15 +384,15 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
           >
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Recommended plugins
+                Plugins recomendados
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Install one group at a time — {installedCount} of {totalCount} installed
+                Instale um grupo por vez — {installedCount} de {totalCount} instalados
               </Typography>
             </Box>
             <TextField
               size="small"
-              placeholder="Search plugins…"
+              placeholder="Buscar plugins…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               slotProps={{
@@ -426,13 +426,13 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             endIcon={<Icon glyph={ArrowRight} size={16} />}
             onClick={() => onNavigate({ area: 'plugins', sub: 'marketplaces' })}
           >
-            Browse marketplaces
+            Ver marketplaces
           </Button>
         </Paper>
       ) : grouped.length === 0 ? (
         <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            No plugins match “{search}”.
+            {`Nenhum plugin encontrado para "${search}".`}
           </Typography>
         </Paper>
       ) : (
@@ -524,7 +524,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                         size="small"
                         color="success"
                         icon={<Icon glyph={CheckCircle2} size={16} />}
-                        label="Installed"
+                        label="Instalado"
                       />
                     ) : (
                       <Button
@@ -536,12 +536,12 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                         data-testid={`starter-pack-install-group-${group.id}`}
                         sx={{ minWidth: 132 }}
                       >
-                        {groupInstalling ? 'Installing…' : `Install group (${groupPending})`}
+                        {groupInstalling ? 'Instalando…' : `Instalar grupo (${groupPending})`}
                       </Button>
                     )}
                     <IconButton
                       size="small"
-                      aria-label={isOpen ? 'Collapse group' : 'Expand group'}
+                      aria-label={isOpen ? 'Recolher grupo' : 'Expandir grupo'}
                       onClick={() => setCollapsed((c) => ({ ...c, [group.id]: isOpen }))}
                       disabled={Boolean(query)}
                       sx={{
@@ -624,7 +624,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                               data-testid={`starter-plugin-install-${p.name}`}
                               sx={{ minWidth: 92 }}
                             >
-                              {done ? 'Installed' : state === 'loading' ? 'Installing…' : 'Install'}
+                              {done ? 'Instalado' : state === 'loading' ? 'Instalando…' : 'Instalar'}
                             </Button>
                           </Box>
                         </Card>
@@ -642,7 +642,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
               endIcon={<Icon glyph={ArrowRight} size={16} />}
               onClick={() => onNavigate({ area: 'plugins', sub: 'marketplaces' })}
             >
-              Browse all marketplaces
+              Ver todos os marketplaces
             </Button>
           </Stack>
         </Stack>

@@ -77,7 +77,7 @@ describe('<CustomizationEditor>', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /save/i }));
+    await user.click(screen.getByRole('button', { name: /salvar/i }));
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ describe('<CustomizationEditor>', () => {
     );
 
     await user.click(screen.getByRole('checkbox', { name: /project/i }));
-    await user.click(screen.getByRole('button', { name: /save/i }));
+    await user.click(screen.getByRole('button', { name: /salvar/i }));
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
@@ -177,7 +177,7 @@ describe('<CustomizationEditor>', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /save/i }));
+    await user.click(screen.getByRole('button', { name: /salvar/i }));
 
     const toast = await screen.findByTestId('toast');
     expect(toast).toHaveAttribute('data-variant', 'error');

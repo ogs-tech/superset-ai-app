@@ -52,7 +52,7 @@ describe('<MarketplaceDetail>', () => {
 
     expect(
       screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
-    ).toHaveTextContent('Install');
+    ).toHaveTextContent('Instalar');
 
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
@@ -87,11 +87,11 @@ describe('<MarketplaceDetail>', () => {
     await waitFor(() => {
       expect(
         screen.getByTestId('marketplace-plugin-install-plugin-alpha'),
-      ).toHaveTextContent('Installed');
+      ).toHaveTextContent('Instalado');
     });
     expect(
       screen.getByTestId('marketplace-plugin-install-plugin-bravo'),
-    ).toHaveTextContent('Install');
+    ).toHaveTextContent('Instalar');
   });
 
   it('opens the install preview dialog when Install is clicked', async () => {
@@ -119,7 +119,7 @@ describe('<MarketplaceDetail>', () => {
     );
 
     expect(
-      await screen.findByText(/No plugins listed in this marketplace/i),
+      await screen.findByText(/Nenhum plugin listado neste marketplace/i),
     ).toBeInTheDocument();
   });
 
@@ -137,7 +137,7 @@ describe('<MarketplaceDetail>', () => {
       />,
     );
     expect(
-      screen.getByText(/Marketplace manifest could not be loaded/i),
+      screen.getByText(/O manifesto do marketplace não pôde ser carregado/i),
     ).toBeInTheDocument();
   });
 

@@ -102,7 +102,7 @@ export function MarketplaceList(): React.ReactElement {
       return id;
     },
     onSuccess: async (id) => {
-      setToast({ variant: 'success', message: `${id} refreshed` });
+      setToast({ variant: 'success', message: `${id} atualizado` });
       await qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
     },
     onError: (err) => {
@@ -117,7 +117,7 @@ export function MarketplaceList(): React.ReactElement {
       return m;
     },
     onSuccess: async (m) => {
-      setToast({ variant: 'success', message: `${m.id} removed` });
+      setToast({ variant: 'success', message: `${m.id} removido` });
       await qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
     },
     onError: (err) => {
@@ -214,7 +214,7 @@ export function MarketplaceList(): React.ReactElement {
       onClick: (item) => refreshMutation.mutate(item.id),
     },
     {
-      label: 'Remove',
+      label: 'Remover',
       icon: <Icon glyph={Trash2} size={16} />,
       variant: 'destructive',
       onClick: (item) => setConfirmRemove(item),
@@ -243,7 +243,7 @@ export function MarketplaceList(): React.ReactElement {
         isLoading={isLoading}
         error={error}
         actions={actions}
-        searchPlaceholder="Search marketplaces…"
+        searchPlaceholder="Buscar marketplaces…"
         onRowClick={(item) => setSelected(item)}
         toolbarActions={
           <Button
@@ -252,7 +252,7 @@ export function MarketplaceList(): React.ReactElement {
             onClick={() => setShowImport(true)}
             data-testid="import-marketplace-button"
           >
-            Import from URL
+            Importar via URL
           </Button>
         }
       />
@@ -262,7 +262,7 @@ export function MarketplaceList(): React.ReactElement {
         onClose={() => setShowImport(false)}
         onMarketplaceAdded={(id) => {
           setShowImport(false);
-          setToast({ variant: 'success', message: `Marketplace ${id} added` });
+          setToast({ variant: 'success', message: `Marketplace ${id} adicionado` });
           void qc.invalidateQueries({ queryKey: MARKETPLACES_QUERY_KEY });
         }}
       />
@@ -270,19 +270,19 @@ export function MarketplaceList(): React.ReactElement {
       <Dialog
         open={confirmRemove !== null}
         onClose={() => setConfirmRemove(null)}
-        aria-label="Confirm marketplace removal"
+        aria-label="Confirmar remoção do marketplace"
         data-testid="confirm-remove-marketplace-dialog"
       >
-        <DialogTitle>Remove marketplace</DialogTitle>
+        <DialogTitle>Remover marketplace</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Remove marketplace <strong>{confirmRemove?.id}</strong>? This will
-            not delete any installed plugins; only the marketplace registration
-            is removed.
+            Remover o marketplace <strong>{confirmRemove?.id}</strong>? Isso não
+            excluirá nenhum plugin instalado; apenas o registro do marketplace
+            será removido.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmRemove(null)}>Cancel</Button>
+          <Button onClick={() => setConfirmRemove(null)}>Cancelar</Button>
           <Button
             variant="contained"
             color="error"
@@ -291,7 +291,7 @@ export function MarketplaceList(): React.ReactElement {
               setConfirmRemove(null);
             }}
           >
-            Confirm
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>

@@ -94,7 +94,7 @@ test('language change in Settings is reflected in Global Instructions on return'
   expect(readFileSync(giPath, 'utf8')).toContain('pt-BR');
 
   // 4. Back to Global Instructions, well within the 30s staleTime.
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Voltar' }).click();
   await page.waitForSelector('[data-testid="main-screen"]');
   await page.click('[data-testid="nav-biblioteca"]');
   await page.waitForSelector('[data-testid="nav-global-instructions"]');

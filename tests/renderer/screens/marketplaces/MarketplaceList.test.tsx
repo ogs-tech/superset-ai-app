@@ -23,7 +23,7 @@ describe('<MarketplaceList>', () => {
     });
     renderWithQuery(<MarketplaceList />);
     expect(
-      await screen.findByText(/No marketplaces yet/i),
+      await screen.findByText(/Nada por aqui ainda/i),
     ).toBeInTheDocument();
     expect(
       screen.getByTestId('import-marketplace-button'),
@@ -68,7 +68,7 @@ describe('<MarketplaceList>', () => {
     });
     const user = userEvent.setup();
     renderWithQuery(<MarketplaceList />);
-    await screen.findByText(/No marketplaces yet/i);
+    await screen.findByText(/Nada por aqui ainda/i);
     await user.click(screen.getByTestId('import-marketplace-button'));
     expect(
       screen.getByTestId('marketplace-import-dialog'),

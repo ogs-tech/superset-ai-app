@@ -81,7 +81,7 @@ export function CustomizationListScreen({
     setEditor({ kind: 'closed' });
     setToast({
       variant: 'success',
-      message: `${saved.frontmatter.name} saved`,
+      message: `${saved.frontmatter.name} salvo`,
     });
     await invalidate(entityType);
   };
@@ -95,7 +95,7 @@ export function CustomizationListScreen({
       });
       setToast({
         variant: 'success',
-        message: `${confirmDelete.frontmatter.name} removed`,
+        message: `${confirmDelete.frontmatter.name} removido`,
       });
       await invalidate(entityType);
     } catch (err) {
@@ -238,7 +238,7 @@ export function CustomizationListScreen({
         <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Remove <strong>{confirmDelete?.frontmatter.name}</strong>?
+            Remover <strong>{confirmDelete?.frontmatter.name}</strong>?
           </DialogContentText>
         </DialogContent>
         <DialogActions>

@@ -146,7 +146,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         data={items}
         isLoading={isLoading}
         error={error}
-        searchPlaceholder="Search plugins…"
+        searchPlaceholder="Buscar plugins…"
         onRowClick={(item) => setSelected(item)}
         toolbarActions={
           <Button
@@ -154,7 +154,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
             startIcon={<Icon glyph={Download} size={16} />}
             onClick={() => setDialog({ kind: 'import' })}
           >
-            Import plugin
+            Importar plugin
           </Button>
         }
         cardSlots={{
@@ -208,7 +208,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
                 updateMutation.mutate(activeItem.id);
               }}
             >
-              Update
+              Atualizar
             </MenuItem>
           ),
           <MenuItem
@@ -218,11 +218,11 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
               removeMutation.mutate(activeItem.id);
             }}
           >
-            Remove
+            Remover
           </MenuItem>,
           activeItem.drift && (
             <MenuItem key="reconcile" onClick={closeRowMenu}>
-              Reconcile
+              Reconciliar
             </MenuItem>
           ),
         ]}
@@ -234,7 +234,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
               setDialog({ kind: 'publish', pluginId: activeItem.id });
             }}
           >
-            Publish
+            Publicar
           </MenuItem>,
           <MenuItem
             key="remove"
@@ -243,11 +243,11 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
               removeMutation.mutate(activeItem.id);
             }}
           >
-            Remove
+            Remover
           </MenuItem>,
           activeItem.drift && (
             <MenuItem key="reconcile" onClick={closeRowMenu}>
-              Reconcile
+              Reconciliar
             </MenuItem>
           ),
         ]}

@@ -154,7 +154,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     const current = await callIpc<SettingsModel | null>('settings.get', {});
     if (current !== null) setSettings(current);
     if (removeSymlinks) {
-      setDisableToast(`${result.removed} removed, ${result.skipped} skipped`);
+      setDisableToast(`${result.removed} removidos, ${result.skipped} ignorados`);
       setTimeout(() => setDisableToast(null), 4000);
     }
   };
@@ -173,14 +173,14 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
       const isGit = await callIpc<boolean>('repo.detectGit', { path });
       if (!isGit) {
-        setRepoError(`Not a git repository: ${path}`);
+        setRepoError(`Não é um repositório git: ${path}`);
         return;
       }
 
       const branch = await callIpc<string | null>('repo.getCurrentBranch', { path });
       setPending({ path, branch });
     } catch (err) {
-      setRepoError(err instanceof Error ? err.message : 'I/O error');
+      setRepoError(err instanceof Error ? err.message : 'Erro de I/O');
     }
   };
 
@@ -191,7 +191,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       setPending(null);
       await refreshRepos();
     } catch (err) {
-      setRepoError(err instanceof Error ? err.message : 'I/O error');
+      setRepoError(err instanceof Error ? err.message : 'Erro de I/O');
       setPending(null);
     }
   };
@@ -214,7 +214,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       setPatSuccess(true);
       setTimeout(() => setPatSuccess(false), 3000);
     } catch (err) {
-      setPatError(err instanceof Error ? err.message : 'Failed to save PAT');
+      setPatError(err instanceof Error ? err.message : 'Falha ao salvar o PAT');
     } finally {
       setPatLoading(false);
     }
@@ -227,7 +227,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       await callIpc('credentials.clearGithubToken', {});
       setPatHasToken(false);
     } catch (err) {
-      setPatError(err instanceof Error ? err.message : 'Failed to clear PAT');
+      setPatError(err instanceof Error ? err.message : 'Falha ao limpar o PAT');
     } finally {
       setPatLoading(false);
     }
@@ -254,7 +254,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.secondary' }}
       >
         <CircularProgress size={18} />
-        <Typography>Loading…</Typography>
+        <Typography>Carregando…</Typography>
       </Box>
     );
   }
@@ -267,7 +267,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         actions={
           onBack ? (
             <Button variant="text" startIcon={<Icon glyph={ArrowLeft} size={16} />} onClick={onBack}>
-              Back
+              Voltar
             </Button>
           ) : undefined
         }
@@ -276,7 +276,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Kicker component="h2">Adapters</Kicker>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 1.5 }}>
-          Enable assistants to keep your customizations in sync.
+          Habilite assistentes para manter suas customizações sincronizadas.
         </Typography>
         <FormGroup>
           {(['claude'] as const).map((key) => (
@@ -333,11 +333,11 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         >
           <Kicker component="h2">Linked repos</Kicker>
           <Button variant="contained" startIcon={<Icon glyph={Plus} size={16} />} onClick={() => void handleAddRepo()}>
-            Add repo
+            Adicionar repo
           </Button>
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Repositories where project-scoped customizations will be synced.
+          Repositórios onde as customizações com escopo de projeto serão sincronizadas.
         </Typography>
         {repoError !== null ? (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -356,7 +356,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
               color: 'text.secondary',
             }}
           >
-            <Typography variant="body2">No repositories linked yet.</Typography>
+            <Typography variant="body2">Nenhum repositório vinculado ainda.</Typography>
           </Box>
         ) : (
           <List dense disablePadding>
@@ -366,11 +366,11 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
                 data-testid="linked-repo-item"
                 divider
                 secondaryAction={
-                  <Tooltip title="Unlink">
+                  <Tooltip title="Desvincular">
                     <IconButton
                       edge="end"
                       onClick={() => void handleUnlink(repo.id)}
-                      aria-label="Unlink"
+                      aria-label="Desvincular"
                     >
                       <Icon glyph={Unlink} size={16} />
                     </IconButton>
@@ -387,7 +387,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
                       >
                         {repo.path}
                       </Box>
-                      {repo.branch !== null ? ` (${repo.branch})` : ' (no branch)'}
+                      {repo.branch !== null ? ` (${repo.branch})` : ' (sem branch)'}
                     </>
                   }
                 />
@@ -400,13 +400,13 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Kicker component="h2">GitHub</Kicker>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-          Personal Access Token for publishing plugins to GitHub. Status:{' '}
-          <strong>{patHasToken ? 'Configured' : 'Not configured'}</strong>
+          Personal Access Token para publicar plugins no GitHub. Status:{' '}
+          <strong>{patHasToken ? 'Configurado' : 'Não configurado'}</strong>
         </Typography>
 
         {safeStorageUnavailable && (
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Secure storage is not available on this system. GitHub PAT cannot be stored.
+            Armazenamento seguro não está disponível neste sistema. O GitHub PAT não pode ser salvo.
           </Alert>
         )}
 
@@ -418,7 +418,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
         {patSuccess && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            PAT saved successfully.
+            PAT salvo com sucesso.
           </Alert>
         )}
 
@@ -437,7 +437,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             onClick={() => void handleSavePat()}
             disabled={!patValue || safeStorageUnavailable || patLoading}
           >
-            Save
+            Salvar
           </Button>
           <Button
             variant="outlined"
@@ -445,7 +445,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             onClick={() => void handleClearPat()}
             disabled={!patHasToken || safeStorageUnavailable || patLoading}
           >
-            Clear
+            Limpar
           </Button>
         </Stack>
       </Paper>
@@ -457,19 +457,18 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle id="link-confirm-title">Confirm repo link</DialogTitle>
+        <DialogTitle id="link-confirm-title">Confirmar vínculo de repo</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Linking{' '}
+            Vincular{' '}
             <Box component="code" sx={{ fontFamily: 'monospace' }}>
               {pending?.path}
             </Box>{' '}
-            allows the app to create <strong>symlinks</strong> in{' '}
+            permite que o app crie <strong>symlinks</strong> em{' '}
             <Box component="code" sx={{ fontFamily: 'monospace' }}>
               .claude/
             </Box>{' '}
-            inside the repository. These changes may be <strong>committed</strong> unless you ignore
-            them via{' '}
+            dentro do repositório. Essas mudanças podem ser <strong>committed</strong> a menos que você as ignore via{' '}
             <Box component="code" sx={{ fontFamily: 'monospace' }}>
               .gitignore
             </Box>
@@ -477,9 +476,9 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelLink}>Cancel</Button>
+          <Button onClick={handleCancelLink}>Cancelar</Button>
           <Button variant="contained" onClick={() => void handleConfirmLink()}>
-            Confirm
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>
