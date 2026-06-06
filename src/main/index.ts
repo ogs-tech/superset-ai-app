@@ -157,6 +157,7 @@ async function wireIpc(): Promise<void> {
     settings: claudeSettingsFile,
     parser: manifestParser,
     marketplaceParser,
+    fs: nodeFsAdapter,
   });
 
   const pluginProvenance = new PluginProvenanceService({
@@ -192,6 +193,7 @@ async function wireIpc(): Promise<void> {
     parser: marketplaceParser,
     git: gitClient,
     cacheDirRoot: marketplacesCacheRoot,
+    fs: nodeFsAdapter,
   });
 
   await new MarketplaceSeeder({ marketplaceService }).seedDefaultsIfMissing('personal');

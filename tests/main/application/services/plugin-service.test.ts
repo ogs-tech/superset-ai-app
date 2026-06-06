@@ -11,6 +11,7 @@ import type { MarketplaceManifest } from '../../../../src/main/domain/marketplac
 import { FakeGitPort } from '../../../../src/main/application/services/__fixtures__/fake-git-port.js';
 import { FakePluginCachePort } from '../../../../src/main/application/services/__fixtures__/fake-plugin-cache-port.js';
 import { FakeClaudeSettingsPort } from '../../../../src/main/application/services/__fixtures__/fake-claude-settings-port.js';
+import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import {
   PluginCollisionError,
   OperationNotAllowedForOriginError,
@@ -213,6 +214,7 @@ describe('PluginService', () => {
       settings,
       parser,
       marketplaceParser,
+      fs: new InMemoryFileSystem(),
     });
   });
 

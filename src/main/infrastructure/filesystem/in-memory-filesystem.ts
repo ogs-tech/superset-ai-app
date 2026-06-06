@@ -20,6 +20,7 @@ interface FailOnRule {
 export class InMemoryFileSystem implements WritableFileSystemPort {
   private readonly entries = new Map<string, FileSystemEntryRecord>();
   private readonly failOn: FailOnRule[];
+  private tempCounter = 0;
 
   constructor(failOn: FailOnRule[] = []) {
     this.failOn = failOn;
@@ -214,5 +215,24 @@ export class InMemoryFileSystem implements WritableFileSystemPort {
     const entry = this.entries.get(normalized);
     if (!entry || entry.kind !== 'file') return null;
     return { mode: entry.mode };
+  }
+
+  async remove(path: string): Promise<void> {
+    const normalized = this.normalize(path);
+    for (const key of [...this.entries.keys()]) {
+      if (
+        key === normalized ||
+        key.startsWith(`${normalized}/`) ||
+        key.startsWith(`${normalized}\\`)
+      ) {
+        this.entries.delete(key);
+      }
+    }
+  }
+
+  async makeTempDir(prefix: string): Promise<string> {
+    const dir = this.normalize(`/tmp/${prefix}${this.tempCounter++}`);
+    this.ensureDirectory(dir);
+    return dir;
   }
 }

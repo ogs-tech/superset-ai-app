@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import type {
   MarketplaceRecord,
@@ -8,6 +6,7 @@ import type {
 } from '../ports/marketplace-repository.js';
 import type { Scope } from '../ports/scope.js';
 import type { GitPort } from '../ports/git-port.js';
+import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import { marketplaceId, tryMarketplaceId, type MarketplaceId } from '../../domain/marketplace-id.js';
 import type {
   MarketplaceManifest,
@@ -28,6 +27,7 @@ export interface MarketplaceServiceDeps {
   parser?: MarketplaceParserLike;
   git?: GitPort;
   cacheDirRoot?: (scope: Scope) => string;
+  fs?: WritableFileSystemPort;
 }
 
 export class MarketplaceService {
@@ -90,7 +90,7 @@ export class MarketplaceService {
     await this.deps.repository.remove(scope, id);
     // Best-effort cache cleanup for non-directory marketplaces
     if (record && record.source.kind !== 'directory' && record.source.cachePath) {
-      await fs.rm(record.source.cachePath, { recursive: true, force: true }).catch(() => {});
+      await this.deps.fs?.remove(record.source.cachePath).catch(() => {});
     }
   }
 
@@ -100,10 +100,10 @@ export class MarketplaceService {
 
     // For non-directory marketplaces, re-clone into the cache dir
     if (record.source.kind !== 'directory') {
-      const { git, cacheDirRoot } = this.deps;
-      if (git != null && cacheDirRoot != null) {
+      const { git, cacheDirRoot, fs } = this.deps;
+      if (git != null && cacheDirRoot != null && fs != null) {
         const cachePath = record.source.cachePath ?? path.join(cacheDirRoot(scope), id);
-        await fs.rm(cachePath, { recursive: true, force: true }).catch(() => {});
+        await fs.remove(cachePath).catch(() => {});
         const url = sourceCloneUrl(record.source);
         const ref = sourceRef(record.source);
         await git.clone(
@@ -130,34 +130,31 @@ export class MarketplaceService {
     scope: Scope,
     url: string,
   ): Promise<{ id: MarketplaceId; manifest: MarketplaceManifest }> {
-    const { git, parser, cacheDirRoot, repository } = this.deps;
-    if (git == null || parser == null || cacheDirRoot == null) {
+    const { git, parser, cacheDirRoot, repository, fs } = this.deps;
+    if (git == null || parser == null || cacheDirRoot == null || fs == null) {
       throw new Error(
-        'MarketplaceService.addFromUrl requires git, parser, and cacheDirRoot deps',
+        'MarketplaceService.addFromUrl requires git, parser, cacheDirRoot, and fs deps',
       );
     }
 
     const normalizedUrl = normalizeGitUrl(url);
 
     // Clone to a temp dir first to read the manifest
-    const tmpDir = path.join(
-      os.tmpdir(),
-      `marketplace-add-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    const tmpDir = await fs.makeTempDir('marketplace-add-');
 
     let manifest: MarketplaceManifest;
     try {
       await git.clone(normalizedUrl, undefined, tmpDir);
       manifest = await parser.parse(tmpDir);
     } catch (err) {
-      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      await fs.remove(tmpDir).catch(() => {});
       throw err;
     }
 
     // Derive marketplace id: prefer manifest.name, fall back to repo name
     const candidateId = sanitizeMarketplaceId(manifest.name) ?? deriveIdFromUrl(normalizedUrl);
     if (candidateId == null) {
-      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      await fs.remove(tmpDir).catch(() => {});
       throw new Error(`Cannot derive marketplace id from manifest or URL: ${url}`);
     }
 
@@ -180,7 +177,7 @@ export class MarketplaceService {
 
     // Move the clone to the persistent cache dir
     const cachePath = path.join(cacheDirRoot(scope), id);
-    await fs.rm(cachePath, { recursive: true, force: true }).catch(() => {});
+    await fs.remove(cachePath).catch(() => {});
     await fs.mkdir(path.dirname(cachePath), { recursive: true });
     await fs.rename(tmpDir, cachePath);
 
