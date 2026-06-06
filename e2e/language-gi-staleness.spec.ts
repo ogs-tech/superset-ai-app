@@ -71,7 +71,9 @@ test.afterAll(async () => {
 
 test('language change in Settings is reflected in Global Instructions on return', async () => {
   // 1. Visit Global Instructions — this populates the react-query cache.
-  await page.click('[data-testid="sidebar-global-instructions"]');
+  await page.click('[data-testid="nav-biblioteca"]');
+  await page.waitForSelector('[data-testid="nav-global-instructions"]');
+  await page.click('[data-testid="nav-global-instructions"]');
   await page.waitForSelector('[data-testid="global-instruction-configured"]');
   const before = await page.locator('[data-testid="global-instruction-configured"]').innerText();
   const linesBefore = linesOf(before);
@@ -79,7 +81,7 @@ test('language change in Settings is reflected in Global Instructions on return'
   expect(readFileSync(giPath, 'utf8'), 'no block on disk yet').not.toContain('<language>');
 
   // 2. Settings → set language to Português (pt-BR).
-  await page.click('[data-testid="sidebar-settings"]');
+  await page.click('[data-testid="nav-settings"]');
   await page.waitForSelector('[data-testid="settings-screen"]');
   await page.getByRole('combobox', { name: 'Language' }).click();
   await page.getByRole('option', { name: 'Português (pt-BR)' }).click();
@@ -94,7 +96,9 @@ test('language change in Settings is reflected in Global Instructions on return'
   // 4. Back to Global Instructions, well within the 30s staleTime.
   await page.getByRole('button', { name: 'Back' }).click();
   await page.waitForSelector('[data-testid="main-screen"]');
-  await page.click('[data-testid="sidebar-global-instructions"]');
+  await page.click('[data-testid="nav-biblioteca"]');
+  await page.waitForSelector('[data-testid="nav-global-instructions"]');
+  await page.click('[data-testid="nav-global-instructions"]');
   await page.waitForSelector('[data-testid="global-instruction-configured"]');
 
   // refetchOnMount:'always' refetches in the background (stale-while-revalidate):
