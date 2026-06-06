@@ -41,7 +41,8 @@ export function createAppTheme(mode: PaletteMode): Theme {
   return createTheme({
     palette: {
       mode,
-      // Ink is the neutral accent and the default filled button (DS "Novo projeto").
+      // Ink is the neutral accent. Azul (secondary) is the default Button colour
+      // — see MuiButton.defaultProps below.
       primary: {
         main: isDark ? ogs.creamInk : ogs.ink,
         contrastText: isDark ? ogs.ink : ogs.cream,
@@ -78,7 +79,10 @@ export function createAppTheme(mode: PaletteMode): Theme {
     },
     components: {
       MuiButton: {
-        defaultProps: { disableElevation: true },
+        // Azul (secondary) is the default Button color across the app — the
+        // brand action colour. Buttons that need another role set `color`
+        // explicitly (e.g. `inherit` in TopNav, `error` for destructive).
+        defaultProps: { disableElevation: true, color: 'secondary' },
         styleOverrides: { root: { borderRadius: radius.sm } },
       },
       MuiTextField: { defaultProps: { size: 'small' } },

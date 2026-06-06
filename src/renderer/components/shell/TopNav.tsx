@@ -1,8 +1,7 @@
-import { AppBar, Box, Button, IconButton, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from '@mui/material';
-import { Command, Moon, Sun, Settings as SettingsGlyph } from 'lucide-react';
+import { AppBar, Button, IconButton, Stack, Tab, Tabs, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Moon, Sun, Settings as SettingsGlyph } from 'lucide-react';
 import { Logo } from '../../assets/Logo.js';
 import { Icon } from '../ds/Icon.js';
-import { Kicker } from '../ds/Kicker.js';
 import { StatusPill, type StatusPillVariant } from '../ds/StatusPill.js';
 import { useThemeMode } from '../../lib/theme-mode-context.js';
 import { NAV_AREAS, type Area } from './nav.js';
@@ -48,23 +47,22 @@ export function TopNav({
       })}
     >
       <Toolbar sx={{ gap: 2 }}>
-        {/* Brand */}
+        {/* Brand — the "OGS · TECNOLOGIA BRASIL" line now lives in AppFooter. */}
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', color: 'text.primary' }}>
           <Logo />
-          <Box sx={{ lineHeight: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.1 }}>
-              Superset AI
-            </Typography>
-            <Kicker>OGS · TECNOLOGIA BRASIL</Kicker>
-          </Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1 }}>
+            Superset AI
+          </Typography>
         </Stack>
 
-        {/* Primary tabs */}
+        {/* Primary tabs. The active marker is a CSS underline on the selected
+            Tab — not MUI's measured floating indicator, which mis-measured on
+            font-load/reflow and could fail to slide back (e.g. to Início). */}
         <Tabs
           value={active}
           onChange={(_, v) => onSelectArea(v as Area)}
           textColor="inherit"
-          indicatorColor="secondary"
+          slotProps={{ indicator: { sx: { display: 'none' } } }}
           sx={{ ml: 2, flexGrow: 1, minHeight: 'auto' }}
         >
           {NAV_AREAS.map((a) => (
@@ -75,7 +73,15 @@ export function TopNav({
               data-testid={`nav-${a.area}`}
               icon={<Icon glyph={a.glyph} size={16} />}
               iconPosition="start"
-              sx={{ minHeight: 48 }}
+              sx={(theme) => ({
+                minHeight: 56,
+                opacity: 1,
+                color: 'text.secondary',
+                '&.Mui-selected': {
+                  color: 'text.primary',
+                  boxShadow: `inset 0 -2px 0 ${theme.palette.info.main}`,
+                },
+              })}
             />
           ))}
         </Tabs>
@@ -89,7 +95,6 @@ export function TopNav({
               color="inherit"
               variant="outlined"
               size="small"
-              startIcon={<Icon glyph={Command} size={14} />}
             >
               ⌘K
             </Button>

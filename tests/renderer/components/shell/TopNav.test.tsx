@@ -35,6 +35,15 @@ describe('TopNav', () => {
     expect(onOpenSettings).toHaveBeenCalledOnce();
     expect(onOpenCommandPalette).toHaveBeenCalledOnce();
   });
+  it('marks only the active area tab as selected (the CSS underline anchor)', () => {
+    renderWithShell(<TopNav active="plugins" onSelectArea={noop} onOpenSettings={noop} onOpenCommandPalette={noop} />);
+    expect(screen.getByTestId('nav-plugins')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('nav-inicio')).toHaveAttribute('aria-selected', 'false');
+  });
+  it('no longer renders the OGS brand line (moved to the footer)', () => {
+    renderWithShell(<TopNav active="inicio" onSelectArea={noop} onOpenSettings={noop} onOpenCommandPalette={noop} />);
+    expect(screen.queryByText(/TECNOLOGIA BRASIL/i)).not.toBeInTheDocument();
+  });
   it('shows the sync StatusPill carrying the health severity', () => {
     renderWithShell(<TopNav active="inicio" onSelectArea={noop} onOpenSettings={noop} onOpenCommandPalette={noop} healthSeverity="error" />);
     expect(screen.getByTestId('status-pill-sync')).toHaveAttribute('data-variant', 'error');

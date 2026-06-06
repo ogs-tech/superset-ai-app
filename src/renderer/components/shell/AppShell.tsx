@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Box } from '@mui/material';
 import { TopNav } from './TopNav.js';
 import { SubRail } from './SubRail.js';
+import { AppFooter } from './AppFooter.js';
 import { CommandPalette } from './CommandPalette.js';
 import { defaultSubFor, type Area, type LibrarySub, type Nav } from './nav.js';
 
@@ -54,6 +55,7 @@ export function AppShell({
           {children}
         </Box>
       </Box>
+      <AppFooter />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

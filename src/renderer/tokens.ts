@@ -2,7 +2,7 @@
 // OGS Design System v1.0 (2026) — raw brand tokens. Consumed by theme.ts.
 // "Cream is the paper, Ink is the stroke." One chromatic role at a time:
 // azul = action/link, verde = success/active, ambar = premium/attention,
-// erro = error. Ink is the neutral accent (and the default filled button).
+// erro = error. Ink is the neutral accent; azul is the default Button colour.
 
 export const ogs = {
   ink: '#142036',

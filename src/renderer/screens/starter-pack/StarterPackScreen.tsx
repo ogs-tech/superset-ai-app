@@ -411,6 +411,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
           <LinearProgress
             variant="determinate"
             value={progress}
+            color="secondary"
             sx={{ height: 8, borderRadius: 1 }}
           />
         </Paper>
