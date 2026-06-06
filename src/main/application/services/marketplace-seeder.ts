@@ -5,7 +5,7 @@ export const OFFICIAL_MARKETPLACE_REPO = 'anthropics/claude-plugins-official';
 export const OFFICIAL_MARKETPLACE_URL = `https://github.com/${OFFICIAL_MARKETPLACE_REPO}`;
 
 export interface MarketplaceSeederDeps {
-  marketplaceService: Pick<MarketplaceService, 'list' | 'addFromUrl'>;
+  marketplaceService: Pick<MarketplaceService, 'list' | 'addFromUrl' | 'refresh'>;
   log?: (level: 'info' | 'warn', message: string, error?: unknown) => void;
 }
 
@@ -24,8 +24,20 @@ export class MarketplaceSeeder {
       return;
     }
 
-    const alreadyPresent = existing.some((m) => isOfficialMarketplace(m.source));
-    if (alreadyPresent) {
+    const official = existing.find((m) => isOfficialMarketplace(m.source));
+    if (official) {
+      // Registered, but if its manifest didn't load the clone cache is gone or
+      // unreadable (e.g. a factory reset wiped the workspace yet left the
+      // settings registration). Re-clone so the starter pack can list plugins
+      // again instead of falling back to the empty state.
+      if (official.manifest == null) {
+        try {
+          await marketplaceService.refresh(scope, official.id);
+          log('info', `marketplace-seeder: repaired cache for ${OFFICIAL_MARKETPLACE_REPO}`);
+        } catch (err) {
+          log('warn', `marketplace-seeder: failed to repair ${OFFICIAL_MARKETPLACE_REPO}`, err);
+        }
+      }
       return;
     }
 

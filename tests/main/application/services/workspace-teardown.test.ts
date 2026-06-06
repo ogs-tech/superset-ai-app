@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { WorkspaceTeardownService } from '../../../../src/main/application/services/workspace-teardown.js';
+import type { ClaudeSettings } from '../../../../src/main/application/schemas/claude-settings.schema.js';
+import type { Scope } from '../../../../src/main/application/ports/scope.js';
 
 const WORKSPACE = '/home/user/.superset-ai-app';
 
@@ -12,12 +14,22 @@ const buildService = () => {
   const remove = vi.fn(async (path: string) => {
     order.push(`remove:${path}`);
   });
+  const mutate = vi.fn(
+    async (scope: Scope, mutator: (s: ClaudeSettings) => ClaudeSettings) => {
+      order.push(`mutate:${scope}`);
+      mutator({
+        extraKnownMarketplaces: { foo: { source: { source: 'github', repo: 'a/b' } } },
+        enabledPlugins: { bar: true },
+      });
+    },
+  );
   const service = new WorkspaceTeardownService(
     { removeAllAdapterSymlinks },
     { remove },
     WORKSPACE,
+    { mutate },
   );
-  return { service, removeAllAdapterSymlinks, remove, order };
+  return { service, removeAllAdapterSymlinks, remove, mutate, order };
 };
 
 describe('WorkspaceTeardownService.restore', () => {
@@ -47,6 +59,33 @@ describe('WorkspaceTeardownService.restore', () => {
     await service.restore();
 
     expect(removeAllAdapterSymlinks).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['symlinks', `remove:${WORKSPACE}`]);
+    expect(order).toEqual(['symlinks', `remove:${WORKSPACE}`, 'mutate:personal']);
+  });
+
+  it('clears the marketplace and plugin registry in personal settings so no dangling cache reference survives', async () => {
+    const { service, mutate } = buildService();
+
+    await service.restore();
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const [scope, mutator] = mutate.mock.calls[0]!;
+    expect(scope).toBe('personal');
+    const next = mutator({
+      extraKnownMarketplaces: { 'claude-plugins-official': { source: { source: 'github', repo: 'a/b' } } },
+      enabledPlugins: { 'some-plugin': true },
+      customField: 'keep-me',
+    } as ClaudeSettings);
+    expect(next.extraKnownMarketplaces).toEqual({});
+    expect(next.enabledPlugins).toEqual({});
+    // Unrelated settings keys are preserved (passthrough).
+    expect((next as Record<string, unknown>)['customField']).toBe('keep-me');
+  });
+
+  it('clears the registry only after the workspace cache has been deleted', async () => {
+    const { service, order } = buildService();
+
+    await service.restore();
+
+    expect(order.indexOf(`remove:${WORKSPACE}`)).toBeLessThan(order.indexOf('mutate:personal'));
   });
 });

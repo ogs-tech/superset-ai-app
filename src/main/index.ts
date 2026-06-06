@@ -217,6 +217,7 @@ async function wireIpc(): Promise<void> {
     adapterManager,
     nodeFsAdapter,
     workspacePath,
+    claudeSettingsFile,
   );
 
   const handlers = buildHandlers({
