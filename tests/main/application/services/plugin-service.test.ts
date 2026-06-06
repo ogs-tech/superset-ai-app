@@ -418,6 +418,14 @@ describe('PluginService', () => {
 
       await expect(service.get(IMPORTED_ID, SCOPE)).rejects.toThrow(/not found/);
     });
+
+    it('get() throws not_found DomainError for an unknown plugin', async () => {
+      cache.seedMeta(SCOPE, { version: 2, plugins: [] });
+
+      await expect(
+        service.get(pluginId('ghost') as never, SCOPE),
+      ).rejects.toMatchObject({ kind: 'not_found' });
+    });
   });
 
   // ── remove ──────────────────────────────────────────────────────────────────
@@ -530,6 +538,18 @@ describe('PluginService', () => {
       );
     });
 
+    it('non-branch update rejects with a validation DomainError', async () => {
+      const meta: MetaFile = {
+        version: 2,
+        plugins: [
+          makeImportedEntry(IMPORTED_ID, { installedRef: { kind: 'tag', value: 'v1.0.0' } }),
+        ],
+      };
+      cache.seedMeta(SCOPE, meta);
+
+      await expect(service.update(IMPORTED_ID, SCOPE)).rejects.toMatchObject({ kind: 'validation' });
+    });
+
     it('happy path: pulls, updates meta, returns updated PluginSummary', async () => {
       const meta: MetaFile = {
         version: 2,
@@ -557,6 +577,14 @@ describe('PluginService', () => {
       cache.seedMeta(SCOPE, { version: 2, plugins: [] });
 
       await expect(service.update(IMPORTED_ID, SCOPE)).rejects.toThrow(/not found/);
+    });
+
+    it('update() throws not_found DomainError for an unknown plugin', async () => {
+      cache.seedMeta(SCOPE, { version: 2, plugins: [] });
+
+      await expect(
+        service.update(pluginId('ghost') as never, SCOPE),
+      ).rejects.toMatchObject({ kind: 'not_found' });
     });
   });
 
