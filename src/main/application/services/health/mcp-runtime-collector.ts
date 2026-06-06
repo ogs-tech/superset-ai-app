@@ -21,6 +21,8 @@ export class McpRuntimeCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
+  // Global source: reads global MCP server config + runtime logs, which are not
+  // scope-partitioned, so `scope` is intentionally omitted — see HealthCollector docs.
   async collect(): Promise<HealthCheck[]> {
     const [servers, logs] = await Promise.all([
       this.runtime.readMcpServers(),

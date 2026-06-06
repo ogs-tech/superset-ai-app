@@ -23,6 +23,8 @@ export class ConfigDriftCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
+  // Scope-partitioned source: the only collector that consumes `scope` — it lists
+  // plugins for the requested scope. See HealthCollector docs.
   async collect(scope: Scope): Promise<HealthCheck[]> {
     const items = await this.plugins.list(scope);
     const observedAt = this.clock.now().toISOString();

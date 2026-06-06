@@ -11,6 +11,8 @@ export class McpAuthCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
+  // Global source: the MCP auth-needed cache is not scope-partitioned, so
+  // `scope` is intentionally omitted — see HealthCollector docs.
   async collect(): Promise<HealthCheck[]> {
     const alerts = await this.runtime.readMcpAuthAlerts();
     const observedAt = this.clock.now().toISOString();
