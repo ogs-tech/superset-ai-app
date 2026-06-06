@@ -283,6 +283,8 @@ interface PluginPublishInfo {
 | `health.getReport` | `{ scope?: 'personal' \| 'project' }` (default: `'personal'`) | `HealthReport` |
 | `health.notify` | `{ title: string; body: string }` | `void` |
 
+`scope` only affects the **config-drift** category (it lists plugins per scope). The `mcp-auth`, `mcp-runtime` and `symlink` categories read global Claude state and are identical across scopes — see the `HealthCollector` interface docs.
+
 **Types** (see [`src/shared/health.ts`](../../src/shared/health.ts)):
 
 ```ts

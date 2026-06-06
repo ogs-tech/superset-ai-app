@@ -53,6 +53,8 @@ export class SymlinkCollector implements HealthCollector {
     private readonly clock: ClockPort,
   ) {}
 
+  // Global source: validates every planned symlink destination across all scopes,
+  // so `scope` is intentionally omitted — see HealthCollector docs.
   async collect(): Promise<HealthCheck[]> {
     const entries = await this.planner.planDestinations();
     const observedAt = this.clock.now().toISOString();
