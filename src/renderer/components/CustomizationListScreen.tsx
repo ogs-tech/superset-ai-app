@@ -9,10 +9,11 @@ import {
   DialogContentText,
   DialogTitle,
   Stack,
-  Typography,
 } from '@mui/material';
-import { Plus, Pencil, Trash2, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, Sparkles } from 'lucide-react';
 import { Icon } from './ds/Icon.js';
+import { ScreenHeader } from './ds/ScreenHeader.js';
+import { EmptyState } from './ds/EmptyState.js';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { Toast, type ToastMessage } from './Toast.js';
 import { PluginOriginBadge } from './PluginOriginBadge.js';
@@ -185,24 +186,10 @@ export function CustomizationListScreen({
       maxWidth="lg"
       sx={{ py: 2.5 }}
     >
-      <Stack
-        direction="row"
-        sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}
-      >
-        <Typography variant="h5" component="h1">
-          {title}
-        </Typography>
-      </Stack>
-
-      <EntityDataGrid<CustomizationListItem>
-        entity={entity}
-        data={items}
-        isLoading={isLoading}
-        error={error}
-        actions={actions}
-        onRowClick={(item) => setViewing(item)}
-        searchPlaceholder={`Search ${singular}s…`}
-        toolbarActions={
+      <ScreenHeader
+        kicker="Biblioteca"
+        title={title}
+        actions={
           <Button
             variant="contained"
             startIcon={<Icon glyph={Plus} size={16} />}
@@ -212,29 +199,31 @@ export function CustomizationListScreen({
             New
           </Button>
         }
+      />
+
+      <EntityDataGrid<CustomizationListItem>
+        entity={entity}
+        data={items}
+        isLoading={isLoading}
+        error={error}
+        actions={actions}
+        onRowClick={(item) => setViewing(item)}
+        searchPlaceholder={`Search ${singular}s…`}
         emptyState={
-          <Box
-            sx={{
-              border: 1,
-              borderStyle: 'dashed',
-              borderColor: 'divider',
-              borderRadius: 1,
-              p: 4,
-              textAlign: 'center',
-              color: 'text.secondary',
-            }}
-          >
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              No {singular}s yet.
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<Icon glyph={Plus} size={16} />}
-              onClick={startCreate}
-            >
-              Create your first {singular}
-            </Button>
-          </Box>
+          <EmptyState
+            glyph={Sparkles}
+            title={`No ${singular}s yet.`}
+            cta={
+              <Button
+                variant="outlined"
+                startIcon={<Icon glyph={Plus} size={16} />}
+                onClick={startCreate}
+              >
+                Create your first {singular}
+              </Button>
+            }
+            testId={entityType}
+          />
         }
       />
 
