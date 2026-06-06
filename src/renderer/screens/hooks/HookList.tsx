@@ -71,14 +71,25 @@ export function HookList(): React.ReactElement {
         label: 'Handler',
         primary: true,
         searchable: true,
-        render: (item) => (
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Box component="span">{describeHandler(item.handler)}</Box>
-            {item.source.kind === 'plugin' && (
+        render: (item, view) =>
+          view === 'card' && item.source.kind === 'plugin' ? (
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Box component="span">{describeHandler(item.handler)}</Box>
               <PluginOriginBadge pluginId={item.source.pluginId} />
-            )}
-          </Stack>
-        ),
+            </Stack>
+          ) : (
+            describeHandler(item.handler)
+          ),
+      },
+      {
+        key: 'plugin',
+        label: 'Plugin',
+        hideInCard: true,
+        width: 160,
+        render: (item) =>
+          item.source.kind === 'plugin' ? (
+            <PluginOriginBadge pluginId={item.source.pluginId} />
+          ) : null,
       },
       {
         key: 'event',

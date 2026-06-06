@@ -13,7 +13,7 @@ export interface FieldDef<T> {
   hideInCard?: boolean;
   hideInTable?: boolean;
   searchable?: boolean;
-  render?: (item: T) => ReactNode;
+  render?: (item: T, view: ViewMode) => ReactNode;
 }
 
 export interface EntityDef<T> {

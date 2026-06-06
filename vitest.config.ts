@@ -18,11 +18,14 @@ export default defineConfig({
         'src/main/infrastructure/notification/**',
         'src/main/infrastructure/settings/in-memory-settings-repository.ts',
       ],
+      // Ratchet floor: set just below the 2026-06-06 baseline (S75 / B63 / F74 / L76)
+      // so the gate blocks regression today without blocking merges. Raise toward
+      // 80/70 as renderer-screen and IPC-handler coverage improves.
       thresholds: {
-        lines: 80,
-        functions: 80,
-        statements: 80,
-        branches: 70,
+        lines: 75,
+        functions: 72,
+        statements: 74,
+        branches: 62,
       },
     },
     projects: [

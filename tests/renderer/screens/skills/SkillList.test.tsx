@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { SkillList } from '../../../../src/renderer/screens/skills/SkillList.js';
 import {
   mockApi,
@@ -36,6 +37,7 @@ const cardId = (
 ): string => `entity-grid-card-skill-${source.kind}/${name}`;
 
 beforeEach(() => {
+  window.localStorage.clear();
   call = mockApi();
 });
 
@@ -73,6 +75,38 @@ describe('<SkillList>', () => {
     expect(
       await screen.findByTestId('plugin-origin-badge-superpowers'),
     ).toBeInTheDocument();
+  });
+
+  it('renders plugin origin as a dedicated column in table view', async () => {
+    const user = userEvent.setup();
+    call.mockImplementation((method: string) => {
+      if (method === 'skill.list')
+        return Promise.resolve(
+          ok([
+            skill('local', { kind: 'workspace' }),
+            skill('from-plugin', { kind: 'plugin', pluginId: 'superpowers' }),
+          ]),
+        );
+      return Promise.resolve(ok(undefined));
+    });
+    renderWithQuery(<SkillList />);
+
+    await user.click(await screen.findByTestId('entity-grid-view-table-skill'));
+    const table = await screen.findByTestId('entity-grid-table-skill');
+
+    // Dedicated "Plugin" column, with the badge living in that column.
+    expect(within(table).getByText('Plugin')).toBeInTheDocument();
+    expect(
+      await within(table).findByTestId('plugin-origin-badge-superpowers'),
+    ).toBeInTheDocument();
+
+    // Workspace rows show no plugin badge inline next to the name.
+    const localRow = within(table).getByTestId(
+      'entity-grid-row-skill-workspace/local',
+    );
+    expect(
+      within(localRow).queryByTestId('plugin-origin-badge-superpowers'),
+    ).not.toBeInTheDocument();
   });
 
   it('hides all row action buttons for plugin-sourced skills', async () => {

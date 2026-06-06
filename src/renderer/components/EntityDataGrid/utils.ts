@@ -1,4 +1,4 @@
-import type { FieldDef } from './types.js';
+import type { FieldDef, ViewMode } from './types.js';
 
 export function getFieldValue<T>(item: T, key: string): unknown {
   return key.split('.').reduce<unknown>((acc, part) => {
@@ -8,8 +8,12 @@ export function getFieldValue<T>(item: T, key: string): unknown {
   }, item);
 }
 
-export function renderFieldValue<T>(field: FieldDef<T>, item: T): unknown {
-  if (field.render) return field.render(item);
+export function renderFieldValue<T>(
+  field: FieldDef<T>,
+  item: T,
+  view: ViewMode,
+): unknown {
+  if (field.render) return field.render(item, view);
   return getFieldValue(item, field.key);
 }
 

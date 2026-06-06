@@ -147,7 +147,7 @@ export function TableView<T>({
 }
 
 function renderCell<T>(field: FieldDef<T>, item: T): React.ReactNode {
-  const value = renderFieldValue(field, item);
+  const value = renderFieldValue(field, item, 'table');
   if (value === null || value === undefined || value === '') return '—';
   if (field.badge) {
     return <Chip size="small" variant="outlined" label={value as React.ReactNode} />;

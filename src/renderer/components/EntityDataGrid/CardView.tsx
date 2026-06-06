@@ -79,11 +79,11 @@ export function CardView<T>({
                         wordBreak: 'break-word',
                       }}
                     >
-                      {renderFieldValue(primary, item) as React.ReactNode}
+                      {renderFieldValue(primary, item, 'card') as React.ReactNode}
                     </Typography>
                   )}
                   {badges.map((field) => {
-                    const value = renderFieldValue(field, item);
+                    const value = renderFieldValue(field, item, 'card');
                     if (value === null || value === undefined || value === '')
                       return null;
                     return (
@@ -109,7 +109,7 @@ export function CardView<T>({
                       mt: 0.25,
                     }}
                   >
-                    {renderFieldValue(secondary, item) as React.ReactNode}
+                    {renderFieldValue(secondary, item, 'card') as React.ReactNode}
                   </Typography>
                 )}
                 {others.length > 0 && (
@@ -119,7 +119,7 @@ export function CardView<T>({
                     sx={{ mt: 0.25, flexWrap: 'wrap' }}
                   >
                     {others.map((field) => {
-                      const value = renderFieldValue(field, item);
+                      const value = renderFieldValue(field, item, 'card');
                       if (value === null || value === undefined || value === '')
                         return null;
                       return (

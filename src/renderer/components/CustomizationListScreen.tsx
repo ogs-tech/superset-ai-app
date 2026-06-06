@@ -130,14 +130,25 @@ export function CustomizationListScreen({
         label: 'Name',
         primary: true,
         searchable: true,
-        render: (item) => (
-          <Stack direction="row" sx={{ alignItems: 'center' }}>
-            <Box component="span">{item.frontmatter.name}</Box>
-            {item.source.kind === 'plugin' && (
+        render: (item, view) =>
+          view === 'card' && item.source.kind === 'plugin' ? (
+            <Stack direction="row" sx={{ alignItems: 'center' }}>
+              <Box component="span">{item.frontmatter.name}</Box>
               <PluginOriginBadge pluginId={item.source.pluginId} />
-            )}
-          </Stack>
-        ),
+            </Stack>
+          ) : (
+            item.frontmatter.name
+          ),
+      },
+      {
+        key: 'plugin',
+        label: 'Plugin',
+        hideInCard: true,
+        width: 160,
+        render: (item) =>
+          item.source.kind === 'plugin' ? (
+            <PluginOriginBadge pluginId={item.source.pluginId} />
+          ) : null,
       },
       {
         key: 'frontmatter.description',

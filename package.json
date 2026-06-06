@@ -8,7 +8,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
     "lint": "eslint .",
