@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -15,227 +14,40 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Rocket, CheckCircle2, ArrowRight, ChevronDown, Search, SquareTerminal, SlidersHorizontal, Puzzle, Sparkles, Braces, Network } from 'lucide-react';
+import { Rocket, CheckCircle2, ArrowRight, ChevronDown, Search } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
 import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
-import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { Nav } from '../../components/shell/nav.js';
 import { PluginInstallPreviewDialog } from '../marketplaces/PluginInstallPreviewDialog.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
-
-interface MarketplacePlugin {
-  name: string;
-  description: string;
-  author?: { name: string };
-  category?: string;
-  source: unknown;
-}
-
-type InstallState = 'idle' | 'loading' | 'done';
-
-const OFFICIAL_REPO = 'anthropics/claude-plugins-official';
-
-/**
- * The starter pack is organized into curated groups so the user installs only
- * the slices they want — never everything in one click. Ordering within a group
- * follows the `plugins` array order. Long/optional groups default to collapsed.
- */
-interface StarterGroup {
-  id: string;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-  accent: string;
-  plugins: string[];
-  defaultCollapsed?: boolean;
-}
-
-export const STARTER_PACK_GROUPS: StarterGroup[] = [
-  {
-    id: 'core-dev',
-    label: 'Core dev workflow',
-    description: 'The everyday loop — build, review, refactor, ship.',
-    icon: <Icon glyph={SquareTerminal} size={20} />,
-    accent: '#2b5cff',
-    plugins: [
-      'feature-dev',
-      'superpowers',
-      'code-review',
-      'pr-review-toolkit',
-      'code-simplifier',
-      'code-modernization',
-      'frontend-design',
-      'commit-commands',
-    ],
-  },
-  {
-    id: 'claude-setup',
-    label: 'Claude Code setup',
-    description: 'Tune Claude Code itself — config, memory, and guardrails.',
-    icon: <Icon glyph={SlidersHorizontal} size={20} />,
-    accent: '#6f42c1',
-    plugins: ['claude-code-setup', 'claude-md-management', 'hookify'],
-  },
-  {
-    id: 'build-for-claude',
-    label: 'Build for Claude',
-    description: 'Author your own plugins, agents, and MCP servers.',
-    icon: <Icon glyph={Puzzle} size={20} />,
-    accent: '#0a7d6b',
-    plugins: [
-      'agent-sdk-dev',
-      'mcp-server-dev',
-      'plugin-dev',
-      'example-plugin',
-      'ralph-loop',
-      'playground',
-    ],
-  },
-  {
-    id: 'output-styles',
-    label: 'Output styles',
-    description: 'Change how Claude explains and teaches as it works.',
-    icon: <Icon glyph={Sparkles} size={20} />,
-    accent: '#c9760a',
-    plugins: ['explanatory-output-style', 'learning-output-style'],
-  },
-  {
-    id: 'language-servers',
-    label: 'Language servers',
-    description: 'Per-language LSPs — add only the ones you code in.',
-    icon: <Icon glyph={Braces} size={20} />,
-    accent: '#2e7d32',
-    defaultCollapsed: true,
-    plugins: [
-      'pyright-lsp',
-      'gopls-lsp',
-      'clangd-lsp',
-      'csharp-lsp',
-      'jdtls-lsp',
-      'kotlin-lsp',
-      'php-lsp',
-      'lua-lsp',
-    ],
-  },
-  {
-    id: 'integrations',
-    label: 'Integrations',
-    description: 'Connect external tools and services via MCP.',
-    icon: <Icon glyph={Network} size={20} />,
-    accent: '#c2255c',
-    defaultCollapsed: true,
-    plugins: [
-      'github',
-      'gitlab',
-      'linear',
-      'atlassian',
-      'figma',
-      'playwright',
-      'context7',
-      'greptile',
-      'serena',
-    ],
-  },
-];
-
-export const RECOMMENDED_PLUGIN_NAMES = new Set(STARTER_PACK_GROUPS.flatMap((g) => g.plugins));
+import { useStarterPack } from '../../hooks/use-starter-pack.js';
+import {
+  STARTER_PACK_GROUPS,
+  type MarketplacePlugin,
+  type StarterGroup,
+} from './groups.js';
 
 interface StarterPackScreenProps {
   onNavigate: (nav: Nav) => void;
 }
 
-interface StarterData {
-  profileConfigured: boolean | null;
-  plugins: MarketplacePlugin[];
-  marketplaceId: string | null;
-  installedIds: Set<string>;
-}
-
-const STARTER_QUERY_KEY = ['starter-pack'] as const;
-
 export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React.ReactElement {
-  const [installStates, setInstallStates] = useState<Record<string, InstallState>>({});
+  const { isLoading, profileConfigured, plugins, stateFor, install } = useStarterPack();
+
+  // UI-only state — intentionally local. Resetting these on navigation is
+  // expected; the install state that must persist lives in the query cache.
   const [previewPlugin, setPreviewPlugin] = useState<MarketplacePlugin | null>(null);
-  const [installingGroups, setInstallingGroups] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(STARTER_PACK_GROUPS.map((g) => [g.id, Boolean(g.defaultCollapsed)])),
   );
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const { data, isLoading } = useQuery<StarterData>({
-    queryKey: STARTER_QUERY_KEY,
-    queryFn: async () => {
-      const [marketplaceList, installedPlugins, gi] = await Promise.all([
-        callIpc<
-          Array<{
-            id: string;
-            source: { kind: string; repo?: string };
-            manifest?: { plugins: MarketplacePlugin[] };
-          }>
-        >('marketplace.list', { scope: 'personal' }),
-        callIpc<Array<{ id: string }>>('plugin.list', { scope: 'personal' }),
-        callIpc('global-instruction.get', { id: 'default' }).then(
-          () => true,
-          (err: unknown) => {
-            if (err instanceof IpcCallError && err.kind === 'not_found') return false;
-            return null;
-          },
-        ),
-      ]);
-
-      const official = marketplaceList.find(
-        (m) => m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO,
-      );
-      const installedIds = new Set(installedPlugins.map((p) => p.id));
-      const recommended =
-        official?.manifest?.plugins.filter((p) => RECOMMENDED_PLUGIN_NAMES.has(p.name)) ?? [];
-
-      const initial: Record<string, InstallState> = {};
-      for (const p of recommended) {
-        if (installedIds.has(p.name)) initial[p.name] = 'done';
-      }
-      setInstallStates((prev) => ({ ...initial, ...prev }));
-
-      return {
-        profileConfigured: gi as boolean | null,
-        plugins: recommended,
-        marketplaceId: official?.id ?? null,
-        installedIds,
-      };
-    },
-  });
-
-  const plugins = data?.plugins ?? [];
-  const marketplaceId = data?.marketplaceId ?? null;
-  const profileConfigured = data?.profileConfigured ?? null;
-
-  const installPlugins = async (
-    list: MarketplacePlugin[],
-  ): Promise<{ failed: number; lastError?: string }> => {
-    let failed = 0;
-    let lastError: string | undefined;
-    for (const plugin of list) {
-      setInstallStates((s) => ({ ...s, [plugin.name]: 'loading' }));
-      try {
-        const params: Record<string, unknown> = { plugin, scope: 'personal' };
-        if (marketplaceId) params['marketplaceId'] = marketplaceId;
-        await callIpc('plugin.installFromMarketplace', params);
-        setInstallStates((s) => ({ ...s, [plugin.name]: 'done' }));
-      } catch (err) {
-        setInstallStates((s) => ({ ...s, [plugin.name]: 'idle' }));
-        failed++;
-        lastError = err instanceof Error ? err.message : String(err);
-      }
-    }
-    return lastError != null ? { failed, lastError } : { failed };
-  };
-
   const handleConfirmInstall = async (): Promise<void> => {
     if (!previewPlugin) return;
     const plugin = previewPlugin;
     try {
-      const { failed, lastError } = await installPlugins([plugin]);
+      const { failed, lastError } = await install([plugin]);
       if (failed > 0) {
         setToast({
           variant: 'error',
@@ -255,15 +67,9 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
     group: StarterGroup,
     groupPlugins: MarketplacePlugin[],
   ): Promise<void> => {
-    const pending = groupPlugins.filter((p) => (installStates[p.name] ?? 'idle') === 'idle');
+    const pending = groupPlugins.filter((p) => stateFor(p.name) === 'idle');
     if (pending.length === 0) return;
-    setInstallingGroups((s) => new Set(s).add(group.id));
-    const { failed, lastError } = await installPlugins(pending);
-    setInstallingGroups((s) => {
-      const next = new Set(s);
-      next.delete(group.id);
-      return next;
-    });
+    const { failed, lastError } = await install(pending);
     if (failed > 0) {
       setToast({
         variant: 'error',
@@ -276,7 +82,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
     }
   };
 
-  const installedCount = plugins.filter((p) => installStates[p.name] === 'done').length;
+  const installedCount = plugins.filter((p) => stateFor(p.name) === 'done').length;
   const totalCount = plugins.length;
   const progress = totalCount > 0 ? (installedCount / totalCount) * 100 : 0;
 
@@ -311,7 +117,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       <ScreenHeader
         kicker="Plugins"
         title="Superset AI · Starter Pack"
-        subtitle="Deixe seu ambiente OGS pronto em minutos"
+        subtitle="Deixe seu ambiente AI pronto em minutos"
         actions={
           <Box
             sx={{
@@ -344,7 +150,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       >
         <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-            Perfil OGS
+            Perfil AI
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Instruções globais sob medida para engenheiros de software
@@ -439,11 +245,9 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       ) : (
         <Stack spacing={2}>
           {grouped.map(({ group, items }, index) => {
-            const groupDone = items.filter((p) => installStates[p.name] === 'done').length;
-            const groupPending = items.filter(
-              (p) => (installStates[p.name] ?? 'idle') === 'idle',
-            ).length;
-            const groupInstalling = installingGroups.has(group.id);
+            const groupDone = items.filter((p) => stateFor(p.name) === 'done').length;
+            const groupPending = items.filter((p) => stateFor(p.name) === 'idle').length;
+            const groupInstalling = items.some((p) => stateFor(p.name) === 'loading');
             const allDone = groupDone === items.length;
             const isOpen = query ? true : !collapsed[group.id];
 
@@ -567,7 +371,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                     }}
                   >
                     {items.map((p) => {
-                      const state = installStates[p.name] ?? 'idle';
+                      const state = stateFor(p.name);
                       const done = state === 'done';
                       return (
                         <Card
@@ -652,7 +456,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       <PluginInstallPreviewDialog
         open={previewPlugin !== null}
         plugin={previewPlugin}
-        installing={previewPlugin !== null && installStates[previewPlugin.name] === 'loading'}
+        installing={previewPlugin !== null && stateFor(previewPlugin.name) === 'loading'}
         onCancel={() => setPreviewPlugin(null)}
         onConfirm={() => void handleConfirmInstall()}
       />
