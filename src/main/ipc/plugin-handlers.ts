@@ -1,11 +1,10 @@
 import type { IpcHandlers } from './dispatcher.js';
 import type { PluginService } from '../application/services/plugin-service.js';
-import type { MarketplacePlugin } from '../domain/marketplace-manifest.js';
 import { pluginId } from '../domain/plugin-id.js';
 import { semVer } from '../domain/semver.js';
 import { parsePluginRef } from '../domain/plugin-ref.js';
 import type { Scope } from '../application/ports/scope.js';
-import { asBoolean, asObject, asScope, asString, optParams } from './_validators.js';
+import { asBoolean, asMarketplacePlugin, asObject, asScope, asString, optParams } from './_validators.js';
 
 export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
   return {
@@ -82,7 +81,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
 
     'plugin.installFromMarketplace': async (params) => {
       const raw = asObject(params, 'plugin.installFromMarketplace');
-      const plugin = raw['plugin'] as MarketplacePlugin;
+      const plugin = asMarketplacePlugin(raw['plugin'], 'plugin');
       const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       const marketplaceId =
         typeof raw['marketplaceId'] === 'string' && raw['marketplaceId'].length > 0
@@ -93,7 +92,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
 
     'plugin.previewFromMarketplace': async (params) => {
       const raw = asObject(params, 'plugin.previewFromMarketplace');
-      const plugin = raw['plugin'] as MarketplacePlugin;
+      const plugin = asMarketplacePlugin(raw['plugin'], 'plugin');
       return pluginService.previewFromMarketplace(plugin);
     },
 

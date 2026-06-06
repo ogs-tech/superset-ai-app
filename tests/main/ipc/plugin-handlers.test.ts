@@ -16,6 +16,8 @@ class FakePluginService {
   createOwned = vi.fn().mockResolvedValue({ id: 'test-plugin', origin: 'owned' });
   deleteOwned = vi.fn().mockResolvedValue(undefined);
   publish = vi.fn().mockResolvedValue({ remoteUrl: 'https://github.com/x/y' });
+  importFromMarketplace = vi.fn().mockResolvedValue({ id: 'test-plugin', origin: 'marketplace' });
+  previewFromMarketplace = vi.fn().mockResolvedValue({ id: 'test-plugin', preview: true });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -404,5 +406,54 @@ describe('validation error shape', () => {
   it('params=null on plugin.toggle throws DomainError with kind=validation', async () => {
     const { handlers } = setup();
     await expect(handlers['plugin.toggle']?.(null)).rejects.toBeInstanceOf(DomainError);
+  });
+});
+
+// ── plugin.installFromMarketplace / plugin.previewFromMarketplace ─────────────
+
+describe('plugin.installFromMarketplace and plugin.previewFromMarketplace — source validation', () => {
+  it('rejects installFromMarketplace when git-subdir source lacks url', async () => {
+    const { handlers } = setup();
+    await expect(
+      handlers['plugin.installFromMarketplace']?.({
+        plugin: {
+          name: 'p',
+          description: 'd',
+          source: { source: 'git-subdir', path: 'pkg' },
+        },
+        scope: 'personal',
+      }),
+    ).rejects.toMatchObject({ kind: 'validation' });
+  });
+
+  it('rejects installFromMarketplace when github source lacks repo', async () => {
+    const { handlers } = setup();
+    await expect(
+      handlers['plugin.installFromMarketplace']?.({
+        plugin: { name: 'p', description: 'd', source: { source: 'github' } },
+        scope: 'personal',
+      }),
+    ).rejects.toMatchObject({ kind: 'validation' });
+  });
+
+  it('rejects previewFromMarketplace when source object lacks discriminant', async () => {
+    const { handlers } = setup();
+    await expect(
+      handlers['plugin.previewFromMarketplace']?.({
+        plugin: { name: 'p', description: 'd', source: {} },
+      }),
+    ).rejects.toMatchObject({ kind: 'validation' });
+  });
+
+  it('accepts a well-formed url source', async () => {
+    const { handlers } = setup();
+    const result = await handlers['plugin.previewFromMarketplace']?.({
+      plugin: {
+        name: 'p',
+        description: 'd',
+        source: { source: 'url', url: 'https://example.com/p.tar.gz' },
+      },
+    });
+    expect(result).toBeDefined(); // delegated to the fake service, no throw
   });
 });

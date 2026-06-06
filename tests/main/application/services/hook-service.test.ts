@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
 import { HookService } from '../../../../src/main/application/services/hook-service.js';
 import { FakeClaudeSettingsPort } from '../../../../src/main/application/services/__fixtures__/fake-claude-settings-port.js';
@@ -140,6 +141,15 @@ describe('HookService', () => {
       expect(persisted.hooks?.['SessionStart']).toBeUndefined();
       const listed = await service.list('personal');
       expect(listed).toHaveLength(0);
+    });
+  });
+
+  describe('get', () => {
+    it('get() throws a not_found DomainError for a missing hook', async () => {
+      const service = new HookService(new FakeClaudeSettingsPort());
+      await expect(
+        service.get({ id: hookId(randomUUID()) }),
+      ).rejects.toMatchObject({ kind: 'not_found' });
     });
   });
 

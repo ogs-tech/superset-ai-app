@@ -54,7 +54,6 @@ Cross-cutting:
 - `adapter-manager` — orchestrates the Claude adapter.
 - `symlink-manager` — creates and reconciles symlinks.
 - `repo-service` — operations on linked repositories.
-- `search-service` — text search across customizations.
 - `settings-service` — load/merge/persist settings.
 - `schema-validator` — Zod-based validation.
 - `workspace-bootstrap` — creates the `~/.superset-ai-app/` directory tree on first run (called at startup, not via IPC).
@@ -75,27 +74,30 @@ It implements the `Adapter` port at `src/main/application/ports/adapter.ts`.
 
 ```
 src/renderer/
-├── App.tsx
+├── App.tsx                 # View union: loading | main | settings | io-error
 ├── main.tsx
-├── index.html
-├── screens/
-│   ├── Onboarding.tsx       # first-launch workspace picker
-│   ├── Main.tsx             # customization list
+├── screens/                # Main.tsx routes by Nav; per-entity dirs:
+│   ├── skills/ agents/ commands/ hooks/ global-instructions/
+│   ├── plugins/ marketplaces/ health/ starter-pack/ settings/
+│   ├── Main.tsx            # root screen — maps Nav state to a screen component
 │   ├── Settings.tsx
-│   ├── IoError.tsx          # generic retry screen for I/O failures
-│   ├── customizations/      # editor, list, sub-screens
-│   └── settings/
-├── components/              # reusable UI
-└── lib/                     # renderer-side helpers (incl. ipc.ts)
+│   └── IoError.tsx         # generic retry screen for I/O failures
+├── components/             # ds/ (design system), shell/ (TopNav, SubRail, CommandPalette), EntityDataGrid/
+├── hooks/                  # react-query data hooks
+└── lib/                    # ipc.ts, query-client.ts, theme-mode-context.tsx
 ```
+
+Navigation is state-driven via a `Nav` discriminated union in `components/shell/nav.ts` (areas: `inicio`, `biblioteca`, `plugins`, `diagnostico`); `Main.tsx` maps `Nav` to a screen. No `react-router`.
 
 ## Data flow (typical user action)
 
-1. The user triggers an action in a renderer screen — e.g. *create customization*.
-2. The renderer calls `callIpc('customization.create', payload)` exposed by **preload**.
-3. The handler in `src/main/ipc/` invokes the matching application service.
+1. The user triggers an action in a renderer screen — e.g. *save a skill*.
+2. The renderer calls `callIpc('skill.save', payload)` exposed by **preload**.
+3. `skill-handlers.ts` in `src/main/ipc/` invokes `SkillService`.
 4. The service calls a **port**; **infrastructure** does the I/O (file write, symlink, dialog).
 5. The result returns up the stack; the renderer re-renders.
+
+Note: the `customization.*` IPC namespace has been removed. All entity operations now use typed namespaces (`skill.*`, `agent.*`, `command.*`, `hook.*`, etc.).
 
 I/O failures bubble up to the `IoError` screen, which retries the failing step.
 
@@ -117,15 +119,15 @@ The plugin system extends the SDE customizations framework with package manageme
 - **Owned** — plugins authored locally and not tied to an external registry. Stored in the workspace plugin folder with `_meta.json` v2 schema (includes author, visibility, publish history).
 - **Publish** — owned plugins pushed to a GitHub repository as a release. Registry entries published to a central manifest (`.tar.gz` + metadata).
 
-**Core adapters** — located at `src/main/infrastructure/adapters/plugins/`:
+**Core adapters** — located across `src/main/infrastructure/{git,github,plugins,settings,credentials}/`:
 
-- `SimpleGitClient` (GitPort) — wraps nodegit for branch tracking, tag creation, remote operations.
+- `SimpleGitClient` (GitPort) — wraps **simple-git** for branch tracking, tag creation, remote operations.
 - `PluginCacheFile` (PluginCachePort) — reads/writes `.json` plugin metadata cache.
 - `ClaudeSettingsFile` (ClaudeSettingsPort) — manages `~/.claude/settings.json` to expose plugin modules.
 - `OctokitClient` (GitHubApiPort) — wraps Octokit for GitHub API calls (repos, releases, token auth).
 - `SafeStorageCredentials` (CredentialStorePort) — encrypts/decrypts GitHub PAT using Electron's safeStorage.
 
-**Core services** — located at `src/main/application/services/plugins/`:
+**Core services** — located at `src/main/application/services/` (flat, not nested):
 
 - `PluginInstaller` — fetch, validate, extract, and cache imported plugins.
 - `PluginAuthorService` — CRUD for owned plugins; manages `_meta.json` v2 authorship.

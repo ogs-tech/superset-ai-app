@@ -6,6 +6,7 @@ import type { PluginPublishInfo } from '../../domain/plugin-publish-info.js';
 import type { PluginRef } from '../../domain/plugin-ref.js';
 import type { SemVer } from '../../domain/semver.js';
 import { PluginCollisionError, OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
+import { DomainError } from '../../domain/errors.js';
 import { normalizeGitUrl } from '../../domain/plugin-source.js';
 import type { MarketplaceManifest, MarketplacePlugin } from '../../domain/marketplace-manifest.js';
 import type { GitPort } from '../ports/git-port.js';
@@ -318,7 +319,10 @@ export class PluginService {
     const item = listItems.find((p) => p.id === id);
 
     if (item == null) {
-      throw new Error(`Plugin '${id}' not found in ${scope} scope`);
+      throw new DomainError('not_found', `Plugin '${id}' not found in ${scope} scope`, {
+        id,
+        scope,
+      });
     }
 
     const detail: PluginDetail = { ...item };
@@ -386,7 +390,10 @@ export class PluginService {
     const entry = meta.plugins.find((p) => p.id === id);
 
     if (entry == null) {
-      throw new Error(`Plugin '${id}' not found in ${scope} scope`);
+      throw new DomainError('not_found', `Plugin '${id}' not found in ${scope} scope`, {
+        id,
+        scope,
+      });
     }
 
     // 2. Only imported plugins can be updated
@@ -399,8 +406,11 @@ export class PluginService {
 
     // 3. Must be pinned to a branch
     if (entry.installedRef == null || entry.installedRef.kind !== 'branch') {
-      throw new Error(
-        `Can only update plugins pinned to a branch (plugin '${id}' is pinned to ${entry.installedRef?.kind ?? 'nothing'})`,
+      const pinnedTo = entry.installedRef?.kind ?? 'nothing';
+      throw new DomainError(
+        'validation',
+        `Can only update plugins pinned to a branch (plugin '${id}' is pinned to ${pinnedTo})`,
+        { id, pinnedTo },
       );
     }
 

@@ -11,6 +11,7 @@ import { hookId } from '../../domain/hook-id.js';
 import type { PluginId } from '../../domain/plugin-id.js';
 import { WORKSPACE_SOURCE, pluginSource } from '../../domain/customization-source.js';
 import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
+import { DomainError } from '../../domain/errors.js';
 
 export interface SaveHookResult {
   hook: Hook;
@@ -39,7 +40,12 @@ export class HookService {
     const scope = input.scope ?? 'personal';
     const all = await this.list(scope);
     const found = all.find((h) => h.id === input.id);
-    if (!found) throw new Error(`Hook not found: ${input.id}`);
+    if (!found) {
+      throw new DomainError('not_found', `Hook not found: ${input.id}`, {
+        id: input.id,
+        scope,
+      });
+    }
     return found;
   }
 
