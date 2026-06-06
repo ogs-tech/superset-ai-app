@@ -1,53 +1,43 @@
-export class SkillIdInvalidError extends Error {
+import { DomainError } from './errors.js';
+
+export class SkillIdInvalidError extends DomainError {
   override readonly name = 'SkillIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class AgentIdInvalidError extends Error {
+export class AgentIdInvalidError extends DomainError {
   override readonly name = 'AgentIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class CommandIdInvalidError extends Error {
+export class CommandIdInvalidError extends DomainError {
   override readonly name = 'CommandIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class HookIdInvalidError extends Error {
+export class HookIdInvalidError extends DomainError {
   override readonly name = 'HookIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class GlobalInstructionIdInvalidError extends Error {
+export class GlobalInstructionIdInvalidError extends DomainError {
   override readonly name = 'GlobalInstructionIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
 
-export class MarketplaceIdInvalidError extends Error {
+export class MarketplaceIdInvalidError extends DomainError {
   override readonly name = 'MarketplaceIdInvalidError';
-  readonly details: { raw?: string } | undefined;
   constructor(message: string, details?: { raw?: string }) {
-    super(message);
-    this.details = details;
+    super('validation', message, details);
   }
 }
