@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { render, type RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { IpcErrorKind, IpcResult } from '../../src/shared/ipc-contract.js';
+import { ThemeModeProvider } from '../../src/renderer/lib/theme-mode-context.js';
 
 export type CallSpy = ReturnType<typeof vi.fn>;
 
@@ -43,6 +44,26 @@ export function renderWithQuery(
       ...rest,
       wrapper: ({ children }) => (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    }),
+  };
+}
+
+/** Renders inside ThemeModeProvider + QueryClientProvider — for shell/screen tests. */
+export function renderWithShell(
+  ui: ReactElement,
+  options?: RenderOptions & { client?: QueryClient },
+) {
+  const { client: providedClient, ...rest } = options ?? {};
+  const client = providedClient ?? makeTestQueryClient();
+  return {
+    client,
+    ...render(ui, {
+      ...rest,
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={client}>
+          <ThemeModeProvider>{children}</ThemeModeProvider>
+        </QueryClientProvider>
       ),
     }),
   };
