@@ -2,8 +2,10 @@ import { vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { render, type RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@mui/material';
 import type { IpcErrorKind, IpcResult } from '../../src/shared/ipc-contract.js';
 import { ThemeModeProvider } from '../../src/renderer/lib/theme-mode-context.js';
+import { createAppTheme } from '../../src/renderer/theme.js';
 
 export type CallSpy = ReturnType<typeof vi.fn>;
 
@@ -43,10 +45,30 @@ export function renderWithQuery(
     ...render(ui, {
       ...rest,
       wrapper: ({ children }) => (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        <QueryClientProvider client={client}>
+          <ThemeProvider theme={createAppTheme('light')}>{children}</ThemeProvider>
+        </QueryClientProvider>
       ),
     }),
   };
+}
+
+/** Renders inside the static OGS ThemeProvider + QueryClientProvider — for component tests that need theme.ogs but also make IPC calls. */
+export function renderWithQueryAndTheme(
+  ui: ReactElement,
+  options?: RenderOptions & { client?: QueryClient },
+) {
+  return renderWithQuery(ui, options);
+}
+
+/** Renders inside the static OGS ThemeProvider only — for pure component tests that access theme.ogs but need no QueryClient. */
+export function renderWithTheme(ui: ReactElement, options?: RenderOptions) {
+  return render(ui, {
+    ...options,
+    wrapper: ({ children }) => (
+      <ThemeProvider theme={createAppTheme('light')}>{children}</ThemeProvider>
+    ),
+  });
 }
 
 /** Renders inside ThemeModeProvider + QueryClientProvider — for shell/screen tests. */

@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EntityDataGrid } from '../../src/renderer/components/EntityDataGrid/index.js';
 import type {
   EntityDef,
   RowAction,
 } from '../../src/renderer/components/EntityDataGrid/index.js';
+import { renderWithTheme } from './test-utils.js';
 
 interface Item {
   id: string;
@@ -47,14 +48,14 @@ beforeEach(() => {
 
 describe('<EntityDataGrid>', () => {
   it('renders cards by default with all items', () => {
-    render(<EntityDataGrid<Item> entity={entity} data={items} />);
+    renderWithTheme(<EntityDataGrid<Item> entity={entity} data={items} />);
     const grid = screen.getByTestId('entity-grid-cards-thing');
     expect(within(grid).getAllByText(/Alpha|Bravo|Charlie/)).toHaveLength(3);
   });
 
   it('switches between card and table views', async () => {
     const user = userEvent.setup();
-    render(<EntityDataGrid<Item> entity={entity} data={items} />);
+    renderWithTheme(<EntityDataGrid<Item> entity={entity} data={items} />);
     await user.click(screen.getByTestId('entity-grid-view-table-thing'));
     expect(screen.getByTestId('entity-grid-table-thing')).toBeInTheDocument();
     await user.click(screen.getByTestId('entity-grid-view-card-thing'));
@@ -63,7 +64,7 @@ describe('<EntityDataGrid>', () => {
 
   it('filters items by searchable fields', async () => {
     const user = userEvent.setup();
-    render(<EntityDataGrid<Item> entity={entity} data={items} />);
+    renderWithTheme(<EntityDataGrid<Item> entity={entity} data={items} />);
     await user.type(screen.getByTestId('entity-grid-search-thing'), 'second');
     const grid = screen.getByTestId('entity-grid-cards-thing');
     expect(within(grid).queryByText('Alpha')).not.toBeInTheDocument();
@@ -73,7 +74,7 @@ describe('<EntityDataGrid>', () => {
 
   it('shows "no matches" empty state when search returns nothing', async () => {
     const user = userEvent.setup();
-    render(<EntityDataGrid<Item> entity={entity} data={items} />);
+    renderWithTheme(<EntityDataGrid<Item> entity={entity} data={items} />);
     await user.type(screen.getByTestId('entity-grid-search-thing'), 'zzz');
     expect(screen.getByText(/No things match your search/)).toBeInTheDocument();
   });
@@ -85,7 +86,7 @@ describe('<EntityDataGrid>', () => {
       description: `desc ${i}`,
       category: 'X',
     }));
-    render(
+    renderWithTheme(
       <EntityDataGrid<Item> entity={entity} data={many} pageSize={2} />,
     );
     const grid = screen.getByTestId('entity-grid-cards-thing');
@@ -105,7 +106,7 @@ describe('<EntityDataGrid>', () => {
         onClick: (item) => clicked.push(item),
       },
     ];
-    render(
+    renderWithTheme(
       <EntityDataGrid<Item>
         entity={entity}
         data={items}
@@ -119,7 +120,7 @@ describe('<EntityDataGrid>', () => {
   });
 
   it('renders the empty state fallback when data is empty and no search', () => {
-    render(
+    renderWithTheme(
       <EntityDataGrid<Item>
         entity={entity}
         data={[]}

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MarketplaceDetail } from '../../../../src/renderer/screens/marketplaces/MarketplaceDetail.js';
-import { mockApi, ok, type CallSpy } from '../../test-utils.js';
+import { mockApi, ok, renderWithQuery, type CallSpy } from '../../test-utils.js';
 
 let call: CallSpy;
 
@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe('<MarketplaceDetail>', () => {
   it('renders plugins via the entity grid with install buttons', async () => {
-    render(<MarketplaceDetail marketplace={marketplace} />);
+    renderWithQuery(<MarketplaceDetail marketplace={marketplace} />);
 
     expect(
       await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha'),
@@ -59,7 +59,7 @@ describe('<MarketplaceDetail>', () => {
 
   it('filters plugins through the grid search input', async () => {
     const user = userEvent.setup();
-    render(<MarketplaceDetail marketplace={marketplace} />);
+    renderWithQuery(<MarketplaceDetail marketplace={marketplace} />);
 
     await screen.findByTestId('entity-grid-card-marketplace-plugin-plugin-alpha');
     await user.type(
@@ -82,7 +82,7 @@ describe('<MarketplaceDetail>', () => {
       return Promise.resolve(ok(undefined));
     });
 
-    render(<MarketplaceDetail marketplace={marketplace} />);
+    renderWithQuery(<MarketplaceDetail marketplace={marketplace} />);
 
     await waitFor(() => {
       expect(
@@ -96,7 +96,7 @@ describe('<MarketplaceDetail>', () => {
 
   it('opens the install preview dialog when Install is clicked', async () => {
     const user = userEvent.setup();
-    render(<MarketplaceDetail marketplace={marketplace} />);
+    renderWithQuery(<MarketplaceDetail marketplace={marketplace} />);
 
     const button = await screen.findByTestId(
       'marketplace-plugin-install-plugin-alpha',
@@ -109,7 +109,7 @@ describe('<MarketplaceDetail>', () => {
   });
 
   it('shows an empty state when the marketplace has no plugins', async () => {
-    render(
+    renderWithQuery(
       <MarketplaceDetail
         marketplace={{
           ...marketplace,
@@ -124,14 +124,14 @@ describe('<MarketplaceDetail>', () => {
   });
 
   it('renders the official badge for the official marketplace', async () => {
-    render(<MarketplaceDetail marketplace={marketplace} />);
+    renderWithQuery(<MarketplaceDetail marketplace={marketplace} />);
     expect(
       await screen.findByTestId('marketplace-official-badge'),
     ).toBeInTheDocument();
   });
 
   it('shows a manifest warning when the manifest is missing', () => {
-    render(
+    renderWithQuery(
       <MarketplaceDetail
         marketplace={{ id: 'broken', source: marketplace.source }}
       />,
@@ -169,7 +169,7 @@ describe('<MarketplaceDetail>', () => {
       return Promise.resolve(ok(undefined));
     });
 
-    render(<MarketplaceDetail marketplace={marketplace} />);
+    renderWithQuery(<MarketplaceDetail marketplace={marketplace} />);
 
     await user.click(
       await screen.findByTestId('marketplace-plugin-install-plugin-alpha'),
