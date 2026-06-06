@@ -41,11 +41,25 @@ describe('plugin.list', () => {
     expect(fakeService.list).toHaveBeenCalledWith('personal');
   });
 
-  it('throws validation error for missing scope', async () => {
+  it('throws validation error for invalid scope', async () => {
     const { dispatch } = setup();
     const result = await dispatch('plugin.list', { scope: 'bad-scope' });
     expect(result.ok).toBe(false);
     expect(result).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  });
+
+  it('defaults to personal when scope is omitted', async () => {
+    const { fakeService, dispatch } = setup();
+    const result = await dispatch('plugin.list', {});
+    expect(result.ok).toBe(true);
+    expect(fakeService.list).toHaveBeenCalledWith('personal');
+  });
+
+  it('defaults to personal when params are absent', async () => {
+    const { fakeService, dispatch } = setup();
+    const result = await dispatch('plugin.list', undefined);
+    expect(result.ok).toBe(true);
+    expect(fakeService.list).toHaveBeenCalledWith('personal');
   });
 });
 
@@ -57,6 +71,13 @@ describe('plugin.get', () => {
 
     const result = await dispatch('plugin.get', { id: 'my-plugin', scope: 'personal' });
 
+    expect(result.ok).toBe(true);
+    expect(fakeService.get).toHaveBeenCalledWith('my-plugin', 'personal');
+  });
+
+  it('defaults to personal when scope is omitted', async () => {
+    const { fakeService, dispatch } = setup();
+    const result = await dispatch('plugin.get', { id: 'my-plugin' });
     expect(result.ok).toBe(true);
     expect(fakeService.get).toHaveBeenCalledWith('my-plugin', 'personal');
   });
@@ -147,11 +168,11 @@ describe('plugin.remove', () => {
     expect(fakeService.remove).toHaveBeenCalledWith('my-plugin', 'personal');
   });
 
-  it('throws validation error for missing scope', async () => {
-    const { dispatch } = setup();
+  it('defaults to personal when scope is omitted', async () => {
+    const { fakeService, dispatch } = setup();
     const result = await dispatch('plugin.remove', { id: 'my-plugin' });
-    expect(result.ok).toBe(false);
-    expect(result).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    expect(result.ok).toBe(true);
+    expect(fakeService.remove).toHaveBeenCalledWith('my-plugin', 'personal');
   });
 });
 

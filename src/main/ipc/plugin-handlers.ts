@@ -1,87 +1,53 @@
 import type { IpcHandlers } from './dispatcher.js';
 import type { PluginService } from '../application/services/plugin-service.js';
 import type { MarketplacePlugin } from '../domain/marketplace-manifest.js';
-import { DomainError } from '../domain/errors.js';
 import { pluginId } from '../domain/plugin-id.js';
 import { semVer } from '../domain/semver.js';
 import { parsePluginRef } from '../domain/plugin-ref.js';
 import type { Scope } from '../application/ports/scope.js';
-
-const SCOPES: readonly Scope[] = ['personal', 'project'];
-
-const asString = (value: unknown, field: string): string => {
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new DomainError('validation', `Missing or invalid '${field}'`);
-  }
-  return value;
-};
-
-const asObject = (value: unknown, label: string): Record<string, unknown> => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new DomainError('validation', `Invalid '${label}' payload`);
-  }
-  return value as Record<string, unknown>;
-};
-
-const asBoolean = (value: unknown, field: string): boolean => {
-  if (typeof value !== 'boolean') {
-    throw new DomainError('validation', `Missing or invalid '${field}'`);
-  }
-  return value;
-};
-
-const asScope = (value: unknown): Scope => {
-  if (typeof value !== 'string' || !(SCOPES as readonly string[]).includes(value)) {
-    throw new DomainError(
-      'validation',
-      `Missing or invalid 'scope' (must be ${SCOPES.join(' | ')})`,
-    );
-  }
-  return value as Scope;
-};
+import { asBoolean, asObject, asScope, asString, optParams } from './_validators.js';
 
 export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
   return {
     'plugin.import': async (params) => {
       const raw = asObject(params, 'plugin.import');
       const url = asString(raw['url'], 'url');
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       const ref = raw['ref'] != null ? parsePluginRef(raw['ref']) : undefined;
       return pluginService.import({ url, scope, ...(ref != null ? { ref } : {}) });
     },
 
     'plugin.list': async (params) => {
-      const raw =
-        params !== null && params !== undefined ? asObject(params, 'plugin.list') : {};
-      const scope = asScope(raw['scope']);
+      const raw = optParams(params, 'plugin.list');
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       return pluginService.list(scope);
     },
 
     'plugin.get': async (params) => {
       const raw = asObject(params, 'plugin.get');
       const id = pluginId(asString(raw['id'], 'id'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       return pluginService.get(id, scope);
     },
 
     'plugin.update': async (params) => {
       const raw = asObject(params, 'plugin.update');
       const id = pluginId(asString(raw['id'], 'id'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       return pluginService.update(id, scope);
     },
 
     'plugin.remove': async (params) => {
       const raw = asObject(params, 'plugin.remove');
       const id = pluginId(asString(raw['id'], 'id'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       await pluginService.remove(id, scope);
     },
 
     'plugin.toggle': async (params) => {
       const raw = asObject(params, 'plugin.toggle');
       const id = pluginId(asString(raw['id'], 'id'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       const enabled = asBoolean(raw['enabled'], 'enabled');
       await pluginService.toggle(id, scope, enabled);
     },
@@ -90,7 +56,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
       const raw = asObject(params, 'plugin.createOwned');
       const id = pluginId(asString(raw['id'], 'id'));
       const version = semVer(asString(raw['version'], 'version'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       const description =
         typeof raw['description'] === 'string' ? raw['description'] : undefined;
       return pluginService.createOwned({
@@ -104,7 +70,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
     'plugin.deleteOwned': async (params) => {
       const raw = asObject(params, 'plugin.deleteOwned');
       const id = pluginId(asString(raw['id'], 'id'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       await pluginService.deleteOwned(id, scope);
     },
 
@@ -117,7 +83,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
     'plugin.installFromMarketplace': async (params) => {
       const raw = asObject(params, 'plugin.installFromMarketplace');
       const plugin = raw['plugin'] as MarketplacePlugin;
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       const marketplaceId =
         typeof raw['marketplaceId'] === 'string' && raw['marketplaceId'].length > 0
           ? raw['marketplaceId']
@@ -134,7 +100,7 @@ export function buildPluginHandlers(pluginService: PluginService): IpcHandlers {
     'plugin.publish': async (params) => {
       const raw = asObject(params, 'plugin.publish');
       const id = pluginId(asString(raw['id'], 'id'));
-      const scope = asScope(raw['scope']);
+      const scope: Scope = raw['scope'] !== undefined ? asScope(raw['scope']) : 'personal';
       const version = semVer(asString(raw['version'], 'version'));
       const repoName =
         typeof raw['repoName'] === 'string' ? raw['repoName'] : undefined;
