@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Main } from '../../../src/renderer/screens/Main.js';
 import type { HealthReport } from '../../../src/shared/health.js';
-import { mockApi, ok, fail, renderWithQuery, type CallSpy } from '../test-utils.js';
+import { mockApi, ok, fail, renderWithShell, type CallSpy } from '../test-utils.js';
 
 let call: CallSpy;
 
@@ -40,21 +40,21 @@ beforeEach(() => {
   call = mockApi();
 });
 
-describe('<Main> — health badge + diagnostics', () => {
-  it('paints the nav badge with the report worst severity', async () => {
+describe('<Main> — sync status + diagnostics', () => {
+  it('paints the TopNav sync pill with the report worst severity', async () => {
     setupRoute('error');
-    renderWithQuery(<Main onOpenSettings={() => undefined} />);
+    renderWithShell(<Main onOpenSettings={() => undefined} />);
 
-    const badge = await screen.findByTestId('sidebar-health-badge');
-    expect(badge).toHaveAttribute('data-severity', 'error');
+    const pill = await screen.findByTestId('status-pill-sync');
+    expect(pill).toHaveAttribute('data-variant', 'error');
   });
 
-  it('navigates to the Diagnostics screen from the sidebar', async () => {
+  it('navigates to Diagnóstico from the TopNav', async () => {
     setupRoute('ok');
-    renderWithQuery(<Main onOpenSettings={() => undefined} />);
+    renderWithShell(<Main onOpenSettings={() => undefined} />);
 
     await screen.findByTestId('starter-pack-screen');
-    await userEvent.click(screen.getByTestId('sidebar-diagnostics'));
+    await userEvent.click(screen.getByTestId('nav-diagnostico'));
 
     expect(await screen.findByTestId('health-screen')).toBeInTheDocument();
   });

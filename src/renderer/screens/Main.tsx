@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Box } from '@mui/material';
-import { Sidebar, SIDEBAR_WIDTH, type SidebarTab } from '../components/Sidebar.js';
+import { AppShell } from '../components/shell/AppShell.js';
+import { defaultNav, type Nav } from '../components/shell/nav.js';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
 import { CommandList } from './commands/CommandList.js';
@@ -17,40 +17,43 @@ interface MainProps {
   onOpenSettings: () => void;
 }
 
+function screenFor(nav: Nav, navigate: (n: Nav) => void): React.ReactElement {
+  switch (nav.area) {
+    case 'inicio':
+      return <StarterPackScreen onNavigate={navigate} />;
+    case 'diagnostico':
+      return <HealthScreen />;
+    case 'plugins':
+      return nav.sub === 'plugins' ? <PluginList scope="personal" /> : <MarketplaceList />;
+    case 'biblioteca':
+      switch (nav.sub) {
+        case 'skills':
+          return <SkillList />;
+        case 'agents':
+          return <AgentList />;
+        case 'commands':
+          return <CommandList />;
+        case 'hooks':
+          return <HookList />;
+        case 'global-instructions':
+          return <GlobalInstructionScreen />;
+      }
+  }
+}
+
 export function Main({ onOpenSettings }: MainProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<SidebarTab>('starter-pack');
+  const [nav, setNav] = useState<Nav>(defaultNav);
   const { data: healthReport } = useHealthReport('personal');
   useHealthNotifications(healthReport);
 
   return (
-    <Box
-      data-testid="main-screen"
-      sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}
+    <AppShell
+      nav={nav}
+      onNavigate={setNav}
+      onOpenSettings={onOpenSettings}
+      {...(healthReport ? { healthSeverity: healthReport.worst } : {})}
     >
-      <Sidebar
-        active={activeTab}
-        onNavigate={setActiveTab}
-        onOpenSettings={onOpenSettings}
-        {...(healthReport ? { healthSeverity: healthReport.worst } : {})}
-      />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minHeight: '100vh',
-          width: { sm: `calc(100% - ${SIDEBAR_WIDTH}px)` },
-        }}
-      >
-        {activeTab === 'starter-pack' && <StarterPackScreen onNavigate={setActiveTab} />}
-        {activeTab === 'skills' && <SkillList />}
-        {activeTab === 'agents' && <AgentList />}
-        {activeTab === 'commands' && <CommandList />}
-        {activeTab === 'hooks' && <HookList />}
-        {activeTab === 'global-instructions' && <GlobalInstructionScreen />}
-        {activeTab === 'plugins' && <PluginList scope="personal" />}
-        {activeTab === 'marketplaces' && <MarketplaceList />}
-        {activeTab === 'diagnostics' && <HealthScreen />}
-      </Box>
-    </Box>
+      {screenFor(nav, setNav)}
+    </AppShell>
   );
 }

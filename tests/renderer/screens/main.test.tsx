@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Main } from '../../../src/renderer/screens/Main.js';
 import {
   mockApi,
   ok,
   fail,
-  renderWithQuery,
+  renderWithShell,
   type CallSpy,
 } from '../test-utils.js';
 
-const render = renderWithQuery;
+const render = renderWithShell;
 
 let call: CallSpy;
 
@@ -35,39 +35,25 @@ const setupRoute = (overrides: Record<string, unknown> = {}) => {
   });
 };
 
-describe('<Main> — landing view', () => {
-  it('renders the starter pack as the landing screen and sidebar by default', async () => {
+describe('<Main> — shell navigation', () => {
+  it('renders the starter pack as the landing screen inside the shell', async () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
     expect(await screen.findByTestId('starter-pack-screen')).toBeInTheDocument();
-    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
-    expect(screen.getByTestId('sidebar-settings')).toBeInTheDocument();
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-settings')).toBeInTheDocument();
   });
 
-  it('navigates to the skills list when the sidebar Skills item is clicked', async () => {
+  it('navigates to the skills list via the Biblioteca sub-rail', async () => {
     setupRoute();
     render(<Main onOpenSettings={() => undefined} />);
 
     await screen.findByTestId('starter-pack-screen');
-    await userEvent.click(screen.getByTestId('sidebar-skills'));
+    await userEvent.click(screen.getByTestId('nav-biblioteca'));
+    await userEvent.click(screen.getByTestId('nav-skills'));
 
     expect(await screen.findByTestId('entity-list-skill')).toBeInTheDocument();
-  });
-
-  it('groups entity screens under an expandable Customizations section', async () => {
-    setupRoute();
-    render(<Main onOpenSettings={() => undefined} />);
-
-    await screen.findByTestId('starter-pack-screen');
-    // Groups are expanded by default, so children are reachable immediately.
-    const group = screen.getByTestId('sidebar-group-customizations');
-    expect(group).toHaveAttribute('aria-expanded', 'true');
-
-    // Collapsing the group hides its children.
-    await userEvent.click(group);
-    expect(group).toHaveAttribute('aria-expanded', 'false');
-    await waitFor(() => expect(screen.queryByTestId('sidebar-agents')).toBeNull());
   });
 
   it('does not render linked repos UI in the landing view', async () => {
@@ -76,6 +62,5 @@ describe('<Main> — landing view', () => {
 
     await screen.findByTestId('starter-pack-screen');
     expect(screen.queryByRole('button', { name: /add repo/i })).toBeNull();
-    expect(screen.queryByText(/linked repos/i)).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { App } from '../../src/renderer/App.js';
+import { ThemeModeProvider } from '../../src/renderer/lib/theme-mode-context.js';
 import { mockApi, ok, type CallSpy } from './test-utils.js';
 import type { Settings } from '../../src/shared/settings.js';
 
@@ -33,7 +34,11 @@ describe('<App> bootstrap router', () => {
       'repo.list': ok([]),
       'customization.list': ok([]),
     });
-    render(<App />);
+    render(
+      <ThemeModeProvider>
+        <App />
+      </ThemeModeProvider>,
+    );
     await waitFor(() =>
       expect(screen.getByTestId('main-screen')).toBeInTheDocument(),
     );
@@ -46,7 +51,11 @@ describe('<App> bootstrap router', () => {
       'repo.list': ok([]),
       'customization.list': ok([]),
     });
-    render(<App />);
+    render(
+      <ThemeModeProvider>
+        <App />
+      </ThemeModeProvider>,
+    );
     await waitFor(() =>
       expect(screen.getByTestId('main-screen')).toBeInTheDocument(),
     );

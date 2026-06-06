@@ -18,7 +18,7 @@ import {
 import { Rocket, CheckCircle2, ArrowRight, ChevronDown, Search, SquareTerminal, SlidersHorizontal, Puzzle, Sparkles, Braces, Network } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
-import type { SidebarTab } from '../../components/Sidebar.js';
+import type { Nav } from '../../components/shell/nav.js';
 import { PluginInstallPreviewDialog } from '../marketplaces/PluginInstallPreviewDialog.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 
@@ -140,7 +140,7 @@ export const STARTER_PACK_GROUPS: StarterGroup[] = [
 export const RECOMMENDED_PLUGIN_NAMES = new Set(STARTER_PACK_GROUPS.flatMap((g) => g.plugins));
 
 interface StarterPackScreenProps {
-  onNavigate: (tab: SidebarTab) => void;
+  onNavigate: (nav: Nav) => void;
 }
 
 interface StarterData {
@@ -366,7 +366,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             variant="outlined"
             size="small"
             endIcon={<Icon glyph={ArrowRight} size={16} />}
-            onClick={() => onNavigate('global-instructions')}
+            onClick={() => onNavigate({ area: 'biblioteca', sub: 'global-instructions' })}
           >
             Configure
           </Button>
@@ -426,7 +426,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
           <Button
             size="small"
             endIcon={<Icon glyph={ArrowRight} size={16} />}
-            onClick={() => onNavigate('marketplaces')}
+            onClick={() => onNavigate({ area: 'plugins', sub: 'marketplaces' })}
           >
             Browse marketplaces
           </Button>
@@ -642,7 +642,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             <Button
               size="small"
               endIcon={<Icon glyph={ArrowRight} size={16} />}
-              onClick={() => onNavigate('marketplaces')}
+              onClick={() => onNavigate({ area: 'plugins', sub: 'marketplaces' })}
             >
               Browse all marketplaces
             </Button>

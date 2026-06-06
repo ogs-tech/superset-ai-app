@@ -45,7 +45,6 @@
     "@emotion/styled": "^11.14.1",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
-    "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
     "@octokit/rest": "^22.0.1",
     "@tanstack/react-query": "^5.100.9",
