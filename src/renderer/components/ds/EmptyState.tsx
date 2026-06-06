@@ -15,10 +15,10 @@ export function EmptyState({ glyph, title, description, cta, testId }: EmptyStat
   return (
     <Stack
       {...(testId ? { 'data-testid': `empty-state-${testId}` } : {})}
-      alignItems="center"
-      justifyContent="center"
-      gap={1.5}
+      spacing={1.5}
       sx={(theme) => ({
+        alignItems: 'center',
+        justifyContent: 'center',
         textAlign: 'center',
         py: 8,
         px: 3,

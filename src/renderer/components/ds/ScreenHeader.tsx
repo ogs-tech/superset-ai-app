@@ -13,10 +13,12 @@ export function ScreenHeader({ title, kicker, subtitle, actions }: ScreenHeaderP
   return (
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
-      justifyContent="space-between"
-      alignItems={{ xs: 'flex-start', sm: 'flex-end' }}
-      gap={2}
-      sx={{ mb: 3 }}
+      spacing={2}
+      sx={{
+        justifyContent: 'space-between',
+        alignItems: { xs: 'flex-start', sm: 'flex-end' },
+        mb: 3,
+      }}
     >
       <Box sx={{ minWidth: 0 }}>
         {kicker !== undefined && <Kicker>{kicker}</Kicker>}
@@ -30,7 +32,7 @@ export function ScreenHeader({ title, kicker, subtitle, actions }: ScreenHeaderP
         )}
       </Box>
       {actions !== undefined && (
-        <Stack direction="row" gap={1} alignItems="center" sx={{ flexShrink: 0 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexShrink: 0 }}>
           {actions}
         </Stack>
       )}
