@@ -10,7 +10,7 @@ import type { Scope } from '../ports/scope.js';
 import { agentId } from '../../domain/agent-id.js';
 import { WORKSPACE_SOURCE, pluginSource } from '../../domain/customization-source.js';
 import { formatCustomizationId } from '../../domain/customization-id.js';
-import { parseMarkdown } from '../../infrastructure/markdown/frontmatter.js';
+import { parseMarkdown } from '../markdown/frontmatter.js';
 import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
 import { provenanceKey } from './plugin-provenance.js';
 

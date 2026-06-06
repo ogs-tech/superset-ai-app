@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { FsCustomizationRepository } from '../../../../src/main/infrastructure/customization/fs-customization-repository.js';
-import { parseMarkdown } from '../../../../src/main/infrastructure/markdown/frontmatter.js';
+import { parseMarkdown } from '../../../../src/main/application/markdown/frontmatter.js';
 import { DomainError } from '../../../../src/main/domain/errors.js';
 import type { Customization, CustomizationFrontmatter } from '../../../../src/shared/customization.js';
 

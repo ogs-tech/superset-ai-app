@@ -12,7 +12,7 @@ import type {
 } from '../../application/ports/customization-repository.js';
 import { DomainError } from '../../domain/errors.js';
 import { formatCustomizationId, parseCustomizationId } from '../../domain/customization-id.js';
-import { parseMarkdown, serializeMarkdown } from '../markdown/frontmatter.js';
+import { parseMarkdown, serializeMarkdown } from '../../application/markdown/frontmatter.js';
 import { normalizeCustomizationFrontmatter } from './normalize-frontmatter.js';
 
 const ARTIFACT_TYPES: CustomizationType[] = [
