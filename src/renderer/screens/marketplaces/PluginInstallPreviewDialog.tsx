@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Sparkles, Bot, SquareTerminal, Network, Languages, Power } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
+import { Kicker } from '../../components/ds/Kicker.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 
 interface MarketplacePlugin {
@@ -142,9 +143,9 @@ export function PluginInstallPreviewDialog({
             )}
 
             <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                This plugin will add
-              </Typography>
+              <Box sx={{ mb: 0.5 }}>
+                <Kicker>This plugin will add</Kicker>
+              </Box>
 
               <ArtifactGroup
                 icon={<Icon glyph={Sparkles} size={16} />}

@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IoError } from '../../../src/renderer/screens/IoError.js';
+import { renderWithTheme } from '../test-utils.js';
+
+const render = (ui: React.ReactElement) => renderWithTheme(ui);
 
 describe('<IoError>', () => {
   it('shows "Retry" and "Cancel" buttons', () => {

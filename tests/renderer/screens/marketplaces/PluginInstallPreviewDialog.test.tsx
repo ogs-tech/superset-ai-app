@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { PluginInstallPreviewDialog } from '../../../../src/renderer/screens/marketplaces/PluginInstallPreviewDialog.js';
-import { mockApi, ok, fail, type CallSpy } from '../../test-utils.js';
+import { mockApi, ok, fail, renderWithTheme, type CallSpy } from '../../test-utils.js';
 
 let call: CallSpy;
 
@@ -16,7 +16,7 @@ const manifest = {
 const renderDialog = (
   props: Partial<React.ComponentProps<typeof PluginInstallPreviewDialog>> = {},
 ) =>
-  render(
+  renderWithTheme(
     <PluginInstallPreviewDialog
       open
       plugin={plugin}

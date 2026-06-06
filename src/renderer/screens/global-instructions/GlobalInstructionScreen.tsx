@@ -10,8 +10,12 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Globe, WandSparkles, Pencil, CheckCircle2, MessagesSquare, Zap, Handshake, Shield, FileText } from 'lucide-react';
+import { Globe, WandSparkles, Pencil, MessagesSquare, Zap, Handshake, Shield, FileText } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
+import { ErrorState } from '../../components/ds/ErrorState.js';
+import { Kicker } from '../../components/ds/Kicker.js';
+import { LoadingState } from '../../components/ds/LoadingState.js';
+import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { CustomizationEditor } from '../../components/CustomizationEditor.js';
@@ -179,47 +183,26 @@ export function GlobalInstructionScreen(): React.ReactElement {
       maxWidth="md"
       sx={{ py: 2.5, ...fadeIn }}
     >
-      {/* Hero */}
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: ACCENT,
-            backgroundColor: `${ACCENT}1a`,
-          }}
-        >
-          <Icon glyph={Globe} size={20} />
-        </Box>
-        <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-            Global Instructions
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            One profile, distributed to every enabled assistant
-          </Typography>
-        </Box>
-        {loaded && existing && (
-          <Chip
-            label="Configured"
-            color="success"
-            size="small"
-            icon={<Icon glyph={CheckCircle2} size={16} />}
-            sx={{ ml: 'auto' }}
-          />
-        )}
-      </Stack>
+      <ScreenHeader
+        kicker="Biblioteca"
+        title="Global Instructions"
+        subtitle="One profile, distributed to every enabled assistant"
+        actions={
+          loaded && existing ? (
+            <Chip
+              label="Configured"
+              color="success"
+              size="small"
+              icon={<Icon glyph={Globe} size={16} />}
+            />
+          ) : undefined
+        }
+      />
+
+      {isLoading && <LoadingState kind="card" />}
 
       {loadError ? (
-        <Paper variant="outlined" sx={{ p: 3, borderColor: 'error.main' }}>
-          <Typography variant="body2" color="error">
-            Couldn't load global instructions — {loadError}
-          </Typography>
-        </Paper>
+        <ErrorState message={`Couldn't load global instructions — ${loadError}`} />
       ) : (
         loaded &&
         (existing ? renderConfigured(existing, openEdit) : renderEmpty(openTemplate, openBlank))
@@ -227,9 +210,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
 
       {/* Sync destinations — always shown, the constant truth of this screen */}
       <Paper variant="outlined" sx={{ p: 2.5, mt: 3, bgcolor: 'background.default' }}>
-        <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: '0.08em' }}>
-          Synced to
-        </Typography>
+        <Kicker>Synced to</Kicker>
         <Stack divider={<Divider flexItem />} sx={{ mt: 1 }}>
           {DESTINATIONS.map((d) => (
             <Stack

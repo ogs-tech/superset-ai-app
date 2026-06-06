@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Chip,
   CircularProgress,
   Container,
   Divider,
@@ -10,6 +9,9 @@ import {
 } from '@mui/material';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
+import { Kicker } from '../../components/ds/Kicker.js';
+import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
+import { StatusPill } from '../../components/ds/StatusPill.js';
 import { useHealthReport } from '../../hooks/use-health-report.js';
 import type { HealthCategory, HealthCheck, Severity } from '../../../shared/health.js';
 
@@ -20,8 +22,8 @@ const CATEGORY_LABEL: Record<HealthCategory, string> = {
   symlink: 'Symlinks',
 };
 
-const SEVERITY_COLOR: Record<Severity, 'success' | 'warning' | 'error'> = {
-  ok: 'success',
+const SEVERITY_PILL: Record<Severity, 'ok' | 'warning' | 'error'> = {
+  ok: 'ok',
   warning: 'warning',
   error: 'error',
 };
@@ -51,29 +53,27 @@ export function HealthScreen(): React.ReactElement {
 
   return (
     <Container component="main" data-testid="health-screen" maxWidth="lg" sx={{ py: 2.5 }}>
-      <Stack direction="row" sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h5" component="h1">
-            Diagnostics
-          </Typography>
-          {data && (
-            <Typography variant="body2" color="text.secondary">
-              {data.counts.error} error(s), {data.counts.warning} warning(s),{' '}
-              {data.counts.ok} ok
-            </Typography>
-          )}
-        </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<Icon glyph={RefreshCw} size={16} />}
-          data-testid="health-refresh"
-          disabled={isFetching}
-          onClick={() => void refetch()}
-        >
-          Refresh
-        </Button>
-      </Stack>
+      <ScreenHeader
+        kicker="Diagnóstico"
+        title="Diagnostics"
+        subtitle={
+          data
+            ? `${data.counts.error} error(s), ${data.counts.warning} warning(s), ${data.counts.ok} ok`
+            : undefined
+        }
+        actions={
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Icon glyph={RefreshCw} size={16} />}
+            data-testid="health-refresh"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            Refresh
+          </Button>
+        }
+      />
 
       {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -105,9 +105,9 @@ export function HealthScreen(): React.ReactElement {
         actionable.length > 0 &&
         [...groups.entries()].map(([category, items]) => (
           <Box key={category} data-testid={`health-category-${category}`} sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-              {CATEGORY_LABEL[category]}
-            </Typography>
+            <Box sx={{ mb: 1 }}>
+              <Kicker>{CATEGORY_LABEL[category]}</Kicker>
+            </Box>
             <Stack
               divider={<Divider />}
               sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}
@@ -118,12 +118,7 @@ export function HealthScreen(): React.ReactElement {
                   data-testid={`health-check-${check.id}`}
                   sx={{ p: 1.5, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}
                 >
-                  <Chip
-                    size="small"
-                    label={check.severity}
-                    color={SEVERITY_COLOR[check.severity]}
-                    variant="outlined"
-                  />
+                  <StatusPill variant={SEVERITY_PILL[check.severity]} />
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="body2">{check.title}</Typography>
                     {check.detail && (

@@ -29,6 +29,8 @@ import {
 } from '@mui/material';
 import { ArrowLeft, Unlink, Plus, Info } from 'lucide-react';
 import { Icon } from '../components/ds/Icon.js';
+import { Kicker } from '../components/ds/Kicker.js';
+import { ScreenHeader } from '../components/ds/ScreenHeader.js';
 import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
@@ -259,22 +261,21 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
   return (
     <Container component="main" data-testid="settings-screen" maxWidth="md" sx={{ py: 4 }}>
-      <Stack direction="row" sx={{ mb: 4, justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
-          Settings
-        </Typography>
-        {onBack && (
-          <Button variant="text" startIcon={<Icon glyph={ArrowLeft} size={16} />} onClick={onBack}>
-            Back
-          </Button>
-        )}
-      </Stack>
+      <ScreenHeader
+        kicker="Configurações"
+        title="Settings"
+        actions={
+          onBack ? (
+            <Button variant="text" startIcon={<Icon glyph={ArrowLeft} size={16} />} onClick={onBack}>
+              Back
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
-          Adapters
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Kicker component="h2">Adapters</Kicker>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 1.5 }}>
           Enable assistants to keep your customizations in sync.
         </Typography>
         <FormGroup>
@@ -295,10 +296,8 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
-          Language
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Kicker component="h2">Language</Kicker>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
           Controls the language prompt in your global instructions.
         </Typography>
         <FormControl size="small" sx={{ minWidth: 240 }}>
@@ -332,9 +331,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           direction="row"
           sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}
         >
-          <Typography variant="h6" component="h2">
-            Linked repos
-          </Typography>
+          <Kicker component="h2">Linked repos</Kicker>
           <Button variant="contained" startIcon={<Icon glyph={Plus} size={16} />} onClick={() => void handleAddRepo()}>
             Add repo
           </Button>
@@ -401,10 +398,8 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
-          GitHub
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Kicker component="h2">GitHub</Kicker>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
           Personal Access Token for publishing plugins to GitHub. Status:{' '}
           <strong>{patHasToken ? 'Configured' : 'Not configured'}</strong>
         </Typography>
@@ -509,9 +504,9 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           variant="outlined"
           sx={{ p: 3, mb: 3, borderColor: 'error.main' }}
         >
-          <Typography variant="h6" component="h2" color="error" gutterBottom>
-            Zona de perigo
-          </Typography>
+          <Box sx={{ mb: 0.5 }}>
+            <Kicker component="h2">Zona de perigo</Kicker>
+          </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Restaura o aplicativo para o estado inicial deletando <code>~/.superset-ai-app</code>,{' '}
             <code>~/.claude</code> e <code>.env.local</code>. O aplicativo será fechado em seguida.

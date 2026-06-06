@@ -1,6 +1,5 @@
-import { Alert, Box, Button, Container, Stack, Typography } from '@mui/material';
-import { CircleAlert } from 'lucide-react';
-import { Icon } from '../components/ds/Icon.js';
+import { Alert, Button, Container, Stack } from '@mui/material';
+import { ScreenHeader } from '../components/ds/ScreenHeader.js';
 
 interface IoErrorProps {
   message: string;
@@ -11,16 +10,14 @@ interface IoErrorProps {
 export function IoError({ message, onRetry, onCancel }: IoErrorProps): React.ReactElement {
   return (
     <Container component="main" data-testid="io-error-screen" maxWidth="sm" sx={{ py: 6 }}>
+      <ScreenHeader kicker="Sistema" title="I/O error" />
       <Stack spacing={3} sx={{ alignItems: 'flex-start' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box component="span" sx={{ color: 'error.main', display: 'inline-flex' }}>
-            <Icon glyph={CircleAlert} size={18} />
-          </Box>
-          <Typography variant="h4" component="h1">
-            I/O error
-          </Typography>
-        </Box>
-        <Alert severity="error" role="alert" sx={{ width: '100%' }}>
+        <Alert
+          severity="error"
+          variant="outlined"
+          role="alert"
+          sx={(theme) => ({ width: '100%', borderLeft: `4px solid ${theme.palette.error.main}` })}
+        >
           {message}
         </Alert>
         <Stack direction="row" spacing={1.5}>

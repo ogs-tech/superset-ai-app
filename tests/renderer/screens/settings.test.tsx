@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Settings as SettingsScreen } from '../../../src/renderer/screens/Settings.js';
-import { mockApi, ok, type CallSpy } from '../test-utils.js';
+import { mockApi, ok, renderWithTheme, type CallSpy } from '../test-utils.js';
 import type { LanguagePreference, Settings } from '../../../src/shared/settings.js';
+
+const render = (ui: React.ReactElement) => renderWithTheme(ui);
 
 const baseSettings: Settings = {
   adapters: {

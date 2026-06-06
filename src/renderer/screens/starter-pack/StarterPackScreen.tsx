@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { Rocket, CheckCircle2, ArrowRight, ChevronDown, Search, SquareTerminal, SlidersHorizontal, Puzzle, Sparkles, Braces, Network } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
+import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
 import { callIpc, IpcCallError } from '../../lib/ipc.js';
 import type { Nav } from '../../components/shell/nav.js';
 import { PluginInstallPreviewDialog } from '../marketplaces/PluginInstallPreviewDialog.js';
@@ -307,30 +308,27 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
         },
       }}
     >
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#2b5cff',
-            backgroundColor: '#2b5cff1a',
-          }}
-        >
-          <Icon glyph={Rocket} size={20} />
-        </Box>
-        <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-            SDE Starter Pack
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Get your SDE environment ready in minutes
-          </Typography>
-        </Box>
-      </Stack>
+      <ScreenHeader
+        kicker="Plugins"
+        title="SDE Starter Pack"
+        subtitle="Get your SDE environment ready in minutes"
+        actions={
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2b5cff',
+              backgroundColor: '#2b5cff1a',
+            }}
+          >
+            <Icon glyph={Rocket} size={20} />
+          </Box>
+        }
+      />
 
       <Paper
         variant="outlined"
