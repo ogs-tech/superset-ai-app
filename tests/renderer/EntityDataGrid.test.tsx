@@ -52,15 +52,13 @@ describe('<EntityDataGrid>', () => {
     expect(within(grid).getAllByText(/Alpha|Bravo|Charlie/)).toHaveLength(3);
   });
 
-  it('does not expose the view-mode toggle (table view hidden)', () => {
+  it('switches between card and table views', async () => {
+    const user = userEvent.setup();
     render(<EntityDataGrid<Item> entity={entity} data={items} />);
-    expect(
-      screen.queryByTestId('entity-grid-view-table-thing'),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId('entity-grid-view-card-thing'),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByTestId('entity-grid-table-thing')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('entity-grid-view-table-thing'));
+    expect(screen.getByTestId('entity-grid-table-thing')).toBeInTheDocument();
+    await user.click(screen.getByTestId('entity-grid-view-card-thing'));
+    expect(screen.getByTestId('entity-grid-cards-thing')).toBeInTheDocument();
   });
 
   it('filters items by searchable fields', async () => {

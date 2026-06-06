@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
-import { Box, InputAdornment, Stack, TextField } from '@mui/material';
-import { Search } from 'lucide-react';
+import {
+  Box,
+  InputAdornment,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+} from '@mui/material';
+import { LayoutGrid, Search, Table } from 'lucide-react';
 import { Icon } from '../ds/Icon.js';
 import type { ViewMode } from './types.js';
 
@@ -18,6 +25,8 @@ export function Toolbar({
   search,
   onSearchChange,
   searchPlaceholder,
+  view,
+  onViewChange,
   toolbarActions,
   entityName,
 }: ToolbarProps): React.ReactElement {
@@ -47,6 +56,30 @@ export function Toolbar({
         }}
         sx={{ flex: 1, minWidth: 220 }}
       />
+      <ToggleButtonGroup
+        size="small"
+        exclusive
+        value={view}
+        onChange={(_, v: ViewMode | null) => {
+          if (v) onViewChange(v);
+        }}
+        aria-label="View mode"
+      >
+        <ToggleButton
+          value="card"
+          data-testid={`entity-grid-view-card-${entityName}`}
+          aria-label="Card view"
+        >
+          <Icon glyph={LayoutGrid} size={16} />
+        </ToggleButton>
+        <ToggleButton
+          value="table"
+          data-testid={`entity-grid-view-table-${entityName}`}
+          aria-label="Table view"
+        >
+          <Icon glyph={Table} size={16} />
+        </ToggleButton>
+      </ToggleButtonGroup>
       {toolbarActions && <Box sx={{ flex: 0 }}>{toolbarActions}</Box>}
     </Stack>
   );

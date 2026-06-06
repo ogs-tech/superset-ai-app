@@ -45,11 +45,11 @@ export function CardView<T>({
           <Card
             key={entity.getKey(item)}
             variant="outlined"
-            sx={{
+            sx={(theme) => ({
               cursor: onRowClick ? 'pointer' : 'default',
               transition: 'box-shadow 120ms',
-              '&:hover': onRowClick ? { boxShadow: 2 } : undefined,
-            }}
+              '&:hover': { boxShadow: theme.ogs?.shadow.sm ?? 2 },
+            })}
             onClick={onRowClick ? () => onRowClick(item) : undefined}
             data-testid={`entity-grid-card-${entity.name}-${entity.getKey(item)}`}
           >

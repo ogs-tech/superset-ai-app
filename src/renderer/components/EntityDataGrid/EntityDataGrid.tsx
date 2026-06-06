@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert,
   Box,
-  CircularProgress,
   MenuItem,
   Pagination,
   Stack,
@@ -10,11 +8,20 @@ import {
   Typography,
 } from '@mui/material';
 import { CardView } from './CardView.js';
+import { TableView } from './TableView.js';
 import { Toolbar } from './Toolbar.js';
-import type { EntityDataGridProps } from './types.js';
-import { filterBySearch, paginate } from './utils.js';
+import type { EntityDataGridProps, ViewMode } from './types.js';
+import { filterBySearch, paginate, viewStorageKey } from './utils.js';
+import { LoadingState } from '../ds/LoadingState.js';
+import { ErrorState } from '../ds/ErrorState.js';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const;
+
+function resolveInitialView(entityName: string, defaultView: ViewMode): ViewMode {
+  const stored = localStorage.getItem(viewStorageKey(entityName));
+  if (stored === 'card' || stored === 'table') return stored;
+  return defaultView;
+}
 
 export function EntityDataGrid<T>({
   entity,
@@ -32,6 +39,9 @@ export function EntityDataGrid<T>({
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+  const [view, setView] = useState<ViewMode>(() =>
+    resolveInitialView(entity.name, entity.defaultView ?? 'card'),
+  );
 
   const handleSearchChange = (value: string): void => {
     setSearch(value);
@@ -41,6 +51,11 @@ export function EntityDataGrid<T>({
   const handlePageSizeChange = (value: number): void => {
     setCurrentPageSize(value);
     setPage(1);
+  };
+
+  const handleViewChange = (v: ViewMode): void => {
+    setView(v);
+    localStorage.setItem(viewStorageKey(entity.name), v);
   };
 
   const items = useMemo(() => data ?? [], [data]);
@@ -65,6 +80,13 @@ export function EntityDataGrid<T>({
   const showFooter =
     filtered.length > Math.min(currentPageSize, ...PAGE_SIZE_OPTIONS);
 
+  const errorMessage =
+    error !== undefined && error !== null
+      ? error instanceof Error
+        ? error.message
+        : String(error)
+      : null;
+
   return (
     <Box data-testid={`entity-grid-${entity.name}`}>
       <Toolbar
@@ -72,36 +94,29 @@ export function EntityDataGrid<T>({
         search={search}
         onSearchChange={handleSearchChange}
         searchPlaceholder={searchPlaceholder}
-        view="card"
-        onViewChange={() => {}}
+        view={view}
+        onViewChange={handleViewChange}
         toolbarActions={toolbarActions}
       />
 
-      {error !== undefined && error !== null && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error instanceof Error ? error.message : String(error)}
-        </Alert>
+      {errorMessage !== null && (
+        <ErrorState message={errorMessage} testId={entity.name} />
       )}
 
       {isLoading && items.length === 0 ? (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: 3,
-            gap: 1,
-            color: 'text.secondary',
-          }}
-        >
-          <CircularProgress size={20} />
-          <Typography variant="body2">Loading…</Typography>
-        </Box>
+        <LoadingState kind="list" testId={entity.name} />
       ) : filtered.length === 0 ? (
         <EmptyBlock
           isFiltered={search.length > 0}
           fallback={emptyState}
           entityPlural={entity.pluralName ?? `${entity.name}s`}
+        />
+      ) : view === 'table' ? (
+        <TableView
+          entity={entity}
+          items={paged}
+          actions={actions}
+          onRowClick={onRowClick}
         />
       ) : (
         <CardView
@@ -213,4 +228,3 @@ function EmptyBlock({
     </Box>
   );
 }
-
