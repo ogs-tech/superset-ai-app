@@ -10,7 +10,7 @@ import type { Customization } from '../../shared/customization.js';
  * that Safety wins over Engineering defaults wins over How-to-work-with-me.
  */
 export const DEFAULT_GI_DESCRIPTION =
-  'SDE-tailored personal global instructions distributed to every enabled assistant.';
+  'OGS-tailored personal global instructions distributed to every enabled assistant.';
 
 export const DEFAULT_GI_BODY = `# Global instructions
 
@@ -48,7 +48,7 @@ Personal preferences and conventions that apply across every workspace and every
 
 /**
  * Build the create-flow customization for the global-instruction slot,
- * pre-filled with the SDE template. The schema pins `name` to `default` and
+ * pre-filled with the OGS template. The schema pins `name` to `default` and
  * `scopes` to `['personal']`; timestamps are stamped server-side on save.
  */
 export function defaultGlobalInstruction(): Customization {

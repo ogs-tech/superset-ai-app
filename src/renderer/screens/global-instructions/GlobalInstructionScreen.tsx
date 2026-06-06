@@ -35,7 +35,7 @@ interface DisplaySection {
 }
 
 /**
- * The four H2 sections the SDE template ships with, ordered weakest → strongest
+ * The four H2 sections the OGS template ships with, ordered weakest → strongest
  * to mirror the precedence rule in the body. Used as the "what you'll get"
  * preview in the empty state, and as icon/accent metadata when summarizing a
  * saved profile whose headings match.
@@ -293,7 +293,7 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
         }}
       >
         <Typography variant="h6" component="h2" sx={{ mb: 0.5 }}>
-          Start with the SDE profile
+          Comece com o perfil OGS
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 560 }}>
           A curated, opinionated set of preferences and conventions — ready to use as-is or to
@@ -329,7 +329,7 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
             data-testid="gi-use-template"
             sx={{ bgcolor: ACCENT, '&:hover': { bgcolor: '#5a35a3' } }}
           >
-            Use the SDE template
+            Usar template OGS
           </Button>
           <Button variant="text" onClick={onBlank} data-testid="gi-start-blank">
             Start from scratch

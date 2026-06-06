@@ -310,8 +310,8 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
     >
       <ScreenHeader
         kicker="Plugins"
-        title="SDE Starter Pack"
-        subtitle="Get your SDE environment ready in minutes"
+        title="Superset AI · Starter Pack"
+        subtitle="Deixe seu ambiente OGS pronto em minutos"
         actions={
           <Box
             sx={{
@@ -344,7 +344,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       >
         <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-            SDE Profile
+            Perfil OGS
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Global instructions tailored for software engineers
@@ -419,7 +419,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       {!isLoading && plugins.length === 0 ? (
         <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Add the official marketplace to discover SDE plugins.
+            Adicione o marketplace oficial para descobrir plugins OGS.
           </Typography>
           <Button
             size="small"
