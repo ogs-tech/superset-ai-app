@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -274,8 +274,24 @@ function createWindow(): void {
   }
 }
 
+function reportFatalBootError(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error('[boot] fatal error during startup:', error);
+  dialog.showErrorBox(
+    'Superset AI failed to start',
+    `The app could not finish initializing and will now close.\n\n${message}`,
+  );
+  app.quit();
+}
+
 void app.whenReady().then(async () => {
-  await wireIpc();
+  try {
+    await wireIpc();
+  } catch (error) {
+    reportFatalBootError(error);
+    return;
+  }
+
   createWindow();
 
   app.on('activate', () => {
