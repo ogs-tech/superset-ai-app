@@ -1,6 +1,5 @@
-import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
+import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import type { PluginId } from '../../domain/plugin-id.js';
 import type { PluginManifest } from '../../domain/plugin-manifest.js';
 import type { PluginPublishInfo } from '../../domain/plugin-publish-info.js';
@@ -88,6 +87,7 @@ export class PluginService {
       settings: ClaudeSettingsPort;
       parser: PluginManifestParserLike;
       marketplaceParser: MarketplaceParserLike;
+      fs: WritableFileSystemPort;
     },
   ) {}
 
@@ -95,16 +95,13 @@ export class PluginService {
    * Import a third-party plugin from a git URL.
    */
   async import(input: { url: string; ref?: PluginRef; scope: Scope }): Promise<PluginSummary> {
-    const { git, cache, installer, parser } = this.deps;
+    const { git, cache, installer, parser, fs } = this.deps;
     const { url, ref, scope } = input;
 
     const normalizedUrl = normalizeGitUrl(url);
 
     // 1. Clone to a temp dir
-    const tmpDir = path.join(
-      os.tmpdir(),
-      `plugin-import-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    const tmpDir = await fs.makeTempDir('plugin-import-');
 
     const { sha } = await git.clone(normalizedUrl, ref, tmpDir);
 
@@ -150,13 +147,10 @@ export class PluginService {
   async detect(url: string): Promise<
     { kind: 'marketplace'; manifest: MarketplaceManifest } | { kind: 'plugin' }
   > {
-    const { git, marketplaceParser } = this.deps;
+    const { git, marketplaceParser, fs } = this.deps;
     const normalizedUrl = normalizeGitUrl(url);
 
-    const tmpDir = path.join(
-      os.tmpdir(),
-      `plugin-detect-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    const tmpDir = await fs.makeTempDir('plugin-detect-');
 
     try {
       await git.clone(normalizedUrl, undefined, tmpDir);
@@ -172,7 +166,7 @@ export class PluginService {
         return { kind: 'plugin' };
       }
     } finally {
-      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      await fs.remove(tmpDir).catch(() => {});
     }
   }
 
@@ -185,18 +179,15 @@ export class PluginService {
   async previewFromMarketplace(
     plugin: MarketplacePlugin,
   ): Promise<PluginManifest> {
-    const { git, parser } = this.deps;
+    const { git, parser, fs } = this.deps;
 
-    const tmpDir = path.join(
-      os.tmpdir(),
-      `plugin-preview-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    const tmpDir = await fs.makeTempDir('plugin-preview-');
 
     try {
       await cloneMarketplaceSource(git, plugin.source, tmpDir);
-      return await parsePluginManifest(parser, tmpDir, plugin);
+      return await parsePluginManifest(fs, parser, tmpDir, plugin);
     } finally {
-      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      await fs.remove(tmpDir).catch(() => {});
     }
   }
 
@@ -214,16 +205,13 @@ export class PluginService {
     scope: Scope,
     marketplaceId?: string,
   ): Promise<PluginSummary> {
-    const { git, cache, installer, parser } = this.deps;
+    const { git, cache, installer, parser, fs } = this.deps;
 
-    const tmpDir = path.join(
-      os.tmpdir(),
-      `plugin-marketplace-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    const tmpDir = await fs.makeTempDir('plugin-marketplace-');
 
     const cloneResult = await cloneMarketplaceSource(git, plugin.source, tmpDir);
 
-    const manifest = await parsePluginManifest(parser, tmpDir, plugin);
+    const manifest = await parsePluginManifest(fs, parser, tmpDir, plugin);
     const id = manifest.id;
 
     const meta = await cache.readMeta(scope);
@@ -521,12 +509,13 @@ function expandLocalSource(
  * manifest still surfaces its real schema error rather than being masked.
  */
 async function parsePluginManifest(
+  fs: WritableFileSystemPort,
   parser: PluginManifestParserLike,
   tmpDir: string,
   plugin: MarketplacePlugin,
 ): Promise<PluginManifest> {
-  if (isInlinePlugin(plugin) && !(await manifestExists(tmpDir))) {
-    await writeSynthesizedManifest(tmpDir, plugin);
+  if (isInlinePlugin(plugin) && !(await manifestExists(fs, tmpDir))) {
+    await writeSynthesizedManifest(fs, tmpDir, plugin);
   }
   return parser.parse(tmpDir);
 }
@@ -541,15 +530,16 @@ function isNonEmptyObject(value: unknown): boolean {
   return typeof value === 'object' && value !== null && Object.keys(value).length > 0;
 }
 
-async function manifestExists(dir: string): Promise<boolean> {
-  return fs
-    .access(path.join(dir, '.claude-plugin', 'plugin.json'))
-    .then(() => true)
-    .catch(() => false);
+async function manifestExists(fs: WritableFileSystemPort, dir: string): Promise<boolean> {
+  return fs.pathExists(path.join(dir, '.claude-plugin', 'plugin.json'));
 }
 
 /** Write a `.claude-plugin/plugin.json` derived from an inline marketplace entry. */
-async function writeSynthesizedManifest(dir: string, plugin: MarketplacePlugin): Promise<void> {
+async function writeSynthesizedManifest(
+  fs: WritableFileSystemPort,
+  dir: string,
+  plugin: MarketplacePlugin,
+): Promise<void> {
   const raw = plugin as Record<string, unknown>;
   const manifest: Record<string, unknown> = {
     name: plugin.name,
@@ -561,7 +551,7 @@ async function writeSynthesizedManifest(dir: string, plugin: MarketplacePlugin):
 
   const manifestDir = path.join(dir, '.claude-plugin');
   await fs.mkdir(manifestDir, { recursive: true });
-  await fs.writeFile(path.join(manifestDir, 'plugin.json'), JSON.stringify(manifest, null, 2), 'utf8');
+  await fs.writeFile(path.join(manifestDir, 'plugin.json'), JSON.stringify(manifest, null, 2));
 }
 
 async function cloneMarketplaceSource(

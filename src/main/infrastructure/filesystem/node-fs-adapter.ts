@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import type { FileSystemEntry } from '../../application/ports/filesystem-port.js';
 import type { FileStat, WritableFileSystemPort } from '../../application/ports/writable-filesystem-port.js';
 
@@ -91,5 +92,13 @@ export class NodeFsAdapter implements WritableFileSystemPort {
     } catch {
       return null;
     }
+  }
+
+  async remove(path: string): Promise<void> {
+    await fs.rm(path, { recursive: true, force: true });
+  }
+
+  async makeTempDir(prefix: string): Promise<string> {
+    return fs.mkdtemp(join(tmpdir(), prefix));
   }
 }

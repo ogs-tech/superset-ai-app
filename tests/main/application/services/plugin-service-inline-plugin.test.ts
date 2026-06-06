@@ -47,6 +47,7 @@ describe('PluginService inline-plugin synthesis', () => {
     return new PluginService({
       git,
       parser,
+      fs: new NodeFsAdapter(),
       installer: undefined,
       author: undefined,
       publisher: undefined,
