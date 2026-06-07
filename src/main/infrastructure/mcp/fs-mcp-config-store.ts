@@ -66,7 +66,11 @@ export class FsMcpConfigStore implements McpConfigPort {
       throw err;
     });
     if (raw === undefined) return {};
-    return JSON.parse(raw) as ClaudeJsonShape;
+    try {
+      return JSON.parse(raw) as ClaudeJsonShape;
+    } catch {
+      return {};
+    }
   }
 
   private async readMcpJson(file: string): Promise<Record<string, unknown>> {
@@ -75,8 +79,12 @@ export class FsMcpConfigStore implements McpConfigPort {
       throw err;
     });
     if (raw === undefined) return {};
-    const json = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
-    return json.mcpServers ?? {};
+    try {
+      const json = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
+      return json.mcpServers ?? {};
+    } catch {
+      return {};
+    }
   }
 }
 

@@ -41,4 +41,27 @@ describe('PluginMcpReader', () => {
     });
     expect(await reader.read('personal')).toEqual([]);
   });
+
+  it('skips a plugin with malformed .mcp.json but still reads valid plugins', async () => {
+    const validDir = path.join(tmp, 'valid-plugin');
+    const brokenDir = path.join(tmp, 'broken-plugin');
+    await mkdir(validDir, { recursive: true });
+    await mkdir(brokenDir, { recursive: true });
+    await writeFile(
+      path.join(validDir, '.mcp.json'),
+      JSON.stringify({ mcpServers: { context7: { command: 'context7-mcp' } } }),
+      'utf8',
+    );
+    await writeFile(path.join(brokenDir, '.mcp.json'), '{ broken', 'utf8');
+
+    const roots: PluginRoot[] = [
+      { pluginId: 'valid-plugin' as never, dir: validDir, provenance: 'claude-code' },
+      { pluginId: 'broken-plugin' as never, dir: brokenDir, provenance: 'claude-code' },
+    ];
+    const reader = new PluginMcpReader({ listRoots: async () => roots });
+    const servers = await reader.read('personal');
+
+    expect(servers).toHaveLength(1);
+    expect(servers[0]?.name).toBe('context7');
+  });
 });

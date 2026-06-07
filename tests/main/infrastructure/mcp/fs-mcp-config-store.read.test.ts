@@ -61,4 +61,27 @@ describe('FsMcpConfigStore.read', () => {
     const servers = await store.read({ repoPaths: [] });
     expect(servers.map((s) => s.name)).toEqual(['good']);
   });
+
+  it('returns [] when ~/.claude.json is malformed JSON', async () => {
+    await writeFile(claudeJsonPath, '{ broken', 'utf8');
+    const store = new FsMcpConfigStore({ claudeJsonPath });
+    await expect(store.read({ repoPaths: [] })).resolves.toEqual([]);
+  });
+
+  it('skips a repo whose .mcp.json is malformed JSON, still reads claude.json globals', async () => {
+    const repoPath = path.join(tmp, 'repo');
+    await mkdir(repoPath, { recursive: true });
+    await writeFile(
+      claudeJsonPath,
+      JSON.stringify({ mcpServers: { global: { command: 'global-mcp' } } }),
+      'utf8',
+    );
+    await writeFile(path.join(repoPath, '.mcp.json'), '{ broken', 'utf8');
+
+    const store = new FsMcpConfigStore({ claudeJsonPath });
+    const servers = await store.read({ repoPaths: [repoPath] });
+    expect(servers).toHaveLength(1);
+    expect(servers[0]?.name).toBe('global');
+    expect(servers[0]?.location).toEqual({ kind: 'global' });
+  });
 });

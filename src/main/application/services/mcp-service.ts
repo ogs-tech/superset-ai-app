@@ -77,6 +77,9 @@ export class McpService {
       this.deps.runtime.readMcpRuntimeLogs(),
       this.deps.runtime.readMcpAuthAlerts(),
     ]);
+    // Keyed by bare server name: runtime logs are name-only, so health is matched by name alone.
+    // Two servers with the same name in different scopes (e.g. global + project-local) will share
+    // the same health entry — an acceptable limitation given the runtime's flat namespace.
     const map = new Map<string, McpHealth>();
     for (const log of logs) {
       map.set(log.server, {
