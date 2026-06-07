@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Box, Button, CircularProgress, Container, Divider, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Container, Divider, IconButton, Stack, Switch, Tooltip, Typography } from '@mui/material';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
 import { Icon } from '../../components/ds/Icon.js';
 import { StatusPill } from '../../components/ds/StatusPill.js';
 import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
 import { useMcpList } from '../../hooks/use-mcp-list.js';
-import { useDeleteMcp } from '../../hooks/use-mcp-mutations.js';
+import { useDeleteMcp, useSetMcpEnabled } from '../../hooks/use-mcp-mutations.js';
 import { McpEditorDialog } from './McpEditorDialog.js';
 import type { McpHealthState, McpScope, McpServer } from '../../../shared/mcp.js';
 
@@ -33,6 +33,7 @@ export function McpList(): React.ReactElement {
   const { data, isLoading } = useMcpList();
   const servers = data ?? [];
   const del = useDeleteMcp();
+  const setEnabled = useSetMcpEnabled();
   const [editor, setEditor] = useState<{ mode: 'create' | 'edit'; server?: McpServer } | null>(null);
 
   return (
@@ -87,6 +88,11 @@ export function McpList(): React.ReactElement {
                 )}
                 {server.source.kind !== 'plugin' && (
                   <>
+                    <Switch
+                      size="small" data-testid={`mcp-toggle-${server.id}`}
+                      checked={server.enabled}
+                      onChange={(e) => setEnabled.mutate({ id: server.id, enabled: e.target.checked })}
+                    />
                     <Tooltip title="Edit">
                       <IconButton
                         size="small" data-testid={`mcp-edit-${server.id}`}

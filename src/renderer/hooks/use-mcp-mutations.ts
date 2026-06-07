@@ -18,3 +18,11 @@ export function useDeleteMcp(): UseMutationResult<{ ok: true }, Error, { id: str
     onSuccess: () => qc.invalidateQueries({ queryKey: mcpListQueryKey() }),
   });
 }
+
+export function useSetMcpEnabled(): UseMutationResult<{ ok: true }, Error, { id: string; enabled: boolean }> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars) => callIpc<{ ok: true }>('mcp.setEnabled', vars),
+    onSuccess: () => qc.invalidateQueries({ queryKey: mcpListQueryKey() }),
+  });
+}
