@@ -174,17 +174,14 @@ async function wireIpc(): Promise<void> {
   });
   const skillService = new SkillService(customizationService, {
     provenance: pluginProvenance,
-    cache: pluginCache,
     fs: nodeFsAdapter,
   });
   const agentService = new AgentService(customizationService, {
     provenance: pluginProvenance,
-    cache: pluginCache,
     fs: nodeFsAdapter,
   });
   const commandService = new CommandService(customizationService, {
     provenance: pluginProvenance,
-    cache: pluginCache,
     fs: nodeFsAdapter,
   });
   const hookService = new HookService(claudeSettingsFile, {

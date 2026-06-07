@@ -32,7 +32,7 @@ const makeSkillService = (fs: InMemoryFileSystem, claudeCodeRegistry: ClaudeCode
     fakeAdapterManager(),
   );
   const provenance = new PluginProvenanceService({ cache, fs, claudeCodeRegistry });
-  return new SkillService(base, { provenance, cache, fs });
+  return new SkillService(base, { provenance, fs });
 };
 
 describe('SkillService — Claude Code discovery', () => {

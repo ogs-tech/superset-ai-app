@@ -26,9 +26,6 @@ function makeDeps(
       forScope: async () => provenanceMap,
       scan: async () => refs,
     } as unknown as PluginEntityDeps['provenance'],
-    cache: {
-      pluginDir: (_scope: string, pid: string) => `/cache/${pid}`,
-    } as unknown as PluginEntityDeps['cache'],
     fs: {
       readFile: async (path: string) => {
         const content = files[path];

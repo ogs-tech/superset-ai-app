@@ -113,7 +113,7 @@ describe('SkillService — provenance merging', () => {
     const adapterManager = fakeAdapterManager();
     const base = new CustomizationService(repo, clock, adapterManager);
     const provenance = new PluginProvenanceService({ cache, fs });
-    const skills = new SkillService(base, { provenance, cache, fs });
+    const skills = new SkillService(base, { provenance, fs });
     return { repo, cache, fs, skills };
   };
 
@@ -260,7 +260,7 @@ describe('AgentService — provenance merging', () => {
     const adapterManager = fakeAdapterManager();
     const base = new CustomizationService(repo, clock, adapterManager);
     const provenance = new PluginProvenanceService({ cache, fs });
-    const agents = new AgentService(base, { provenance, cache, fs });
+    const agents = new AgentService(base, { provenance, fs });
 
     const pid = pluginId('superpowers');
     cache.seedMeta('personal', {
@@ -294,7 +294,7 @@ describe('AgentService — provenance merging', () => {
     const cache = new FakePluginCachePort();
     const fs = new InMemoryFileSystem();
     const provenance = new PluginProvenanceService({ cache, fs });
-    const agents = new AgentService(base, { provenance, cache, fs });
+    const agents = new AgentService(base, { provenance, fs });
 
     await expect(
       agents.save({

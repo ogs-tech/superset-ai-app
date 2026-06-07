@@ -1,6 +1,5 @@
 import { join } from 'node:path';
 import type { PluginProvenanceService } from './plugin-provenance.js';
-import type { PluginCachePort } from '../ports/plugin-cache-port.js';
 import type { FileSystemPort } from '../ports/filesystem-port.js';
 import type { Scope } from '../ports/scope.js';
 import type { PluginId } from '../../domain/plugin-id.js';
@@ -12,7 +11,6 @@ import { provenanceKey } from './plugin-provenance.js';
 
 export interface PluginEntityDeps {
   provenance: PluginProvenanceService;
-  cache: PluginCachePort;
   fs: FileSystemPort;
 }
 
