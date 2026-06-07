@@ -9,6 +9,7 @@ function configPort(servers: RawMcpServer[]): McpConfigPort {
     read: async () => servers,
     upsert: async () => {},
     remove: async () => {},
+    setDisabledShared: async () => {},
   };
 }
 

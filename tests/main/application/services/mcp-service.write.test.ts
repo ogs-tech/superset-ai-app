@@ -20,7 +20,7 @@ function makeService(config: McpConfigPort) {
 describe('McpService write', () => {
   it('save upserts a valid global stdio server', async () => {
     const upsert = vi.fn(async () => {});
-    const svc = makeService({ read: async () => [], upsert, remove: async () => {} });
+    const svc = makeService({ read: async () => [], upsert, remove: async () => {}, setDisabledShared: async () => {} });
     await svc.save({
       server: { name: 'pencil', scope: 'global', def: { command: 'x' } },
       isCreate: true,
@@ -29,21 +29,21 @@ describe('McpService write', () => {
   });
 
   it('save rejects an invalid def', async () => {
-    const svc = makeService({ read: async () => [], upsert: async () => {}, remove: async () => {} });
+    const svc = makeService({ read: async () => [], upsert: async () => {}, remove: async () => {}, setDisabledShared: async () => {} });
     await expect(
       svc.save({ server: { name: 'bad', scope: 'global', def: { nope: true } } }),
     ).rejects.toThrow();
   });
 
   it('save of a project-shared server requires repoPath', async () => {
-    const svc = makeService({ read: async () => [], upsert: async () => {}, remove: async () => {} });
+    const svc = makeService({ read: async () => [], upsert: async () => {}, remove: async () => {}, setDisabledShared: async () => {} });
     await expect(
       svc.save({ server: { name: 'figma', scope: 'project-shared', def: { type: 'sse', url: 'https://f.dev' } } }),
     ).rejects.toThrow(/repoPath/);
   });
 
   it('delete refuses a plugin-sourced id', async () => {
-    const svc = makeService({ read: async () => [], upsert: async () => {}, remove: async () => {} });
+    const svc = makeService({ read: async () => [], upsert: async () => {}, remove: async () => {}, setDisabledShared: async () => {} });
     const pluginId = mcpServerId({
       location: { kind: 'plugin', pluginId: 'serena', pluginDir: '/d' },
       name: 'serena',
@@ -53,7 +53,7 @@ describe('McpService write', () => {
 
   it('save rejects an empty name', async () => {
     const upsert = vi.fn(async () => {});
-    const svc = makeService({ read: async () => [], upsert, remove: async () => {} });
+    const svc = makeService({ read: async () => [], upsert, remove: async () => {}, setDisabledShared: async () => {} });
     await expect(
       svc.save({ server: { name: '   ', scope: 'global', def: { command: 'x' } } }),
     ).rejects.toThrow(/name/);
@@ -62,7 +62,7 @@ describe('McpService write', () => {
 
   it('delete removes a workspace server by id', async () => {
     const remove = vi.fn(async () => {});
-    const svc = makeService({ read: async () => [], upsert: async () => {}, remove });
+    const svc = makeService({ read: async () => [], upsert: async () => {}, remove, setDisabledShared: async () => {} });
     const id = mcpServerId({ location: { kind: 'global' }, name: 'pencil' });
     await svc.delete({ id });
     expect(remove).toHaveBeenCalledWith({ kind: 'global' }, 'pencil');

@@ -11,7 +11,7 @@ export interface FsMcpConfigStorePaths {
 
 interface ClaudeJsonShape {
   mcpServers?: Record<string, unknown>;
-  projects?: Record<string, { mcpServers?: Record<string, unknown> } | undefined>;
+  projects?: Record<string, { mcpServers?: Record<string, unknown>; disabledMcpjsonServers?: string[] } | undefined>;
 }
 
 function parseDef(raw: unknown): McpServerDef | undefined {
@@ -49,11 +49,12 @@ export class FsMcpConfigStore implements McpConfigPort {
     }
 
     for (const repoPath of options.repoPaths) {
+      const disabled = new Set((root.projects?.[repoPath]?.disabledMcpjsonServers) ?? []);
       const shared = await this.readMcpJson(path.join(repoPath, '.mcp.json'));
       for (const [name, raw] of Object.entries(shared)) {
         const def = parseDef(raw);
         if (def) {
-          out.push({ location: { kind: 'project-shared', repoPath }, name, def, enabled: true });
+          out.push({ location: { kind: 'project-shared', repoPath }, name, def, enabled: !disabled.has(name) });
         }
       }
     }
@@ -71,6 +72,19 @@ export class FsMcpConfigStore implements McpConfigPort {
     }
     await this.mutateClaudeJson((root) => {
       setServer(root, location, name, def);
+    });
+  }
+
+  async setDisabledShared(repoPath: string, name: string, disabled: boolean): Promise<void> {
+    await this.mutateClaudeJson((root) => {
+      const projects = (root.projects as Record<string, Record<string, unknown>>) ?? {};
+      const block = projects[repoPath] ?? {};
+      const list = new Set((block.disabledMcpjsonServers as string[] | undefined) ?? []);
+      if (disabled) list.add(name);
+      else list.delete(name);
+      block.disabledMcpjsonServers = [...list];
+      projects[repoPath] = block;
+      root.projects = projects;
     });
   }
 

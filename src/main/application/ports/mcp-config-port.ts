@@ -24,4 +24,6 @@ export interface McpConfigPort {
   read(options: McpReadOptions): Promise<RawMcpServer[]>;
   upsert(location: McpLocation, name: string, def: McpServerDef): Promise<void>;
   remove(location: McpLocation, name: string): Promise<void>;
+  /** Marks a project-shared server as disabled/enabled via the native disabled list in ~/.claude.json. */
+  setDisabledShared(repoPath: string, name: string, disabled: boolean): Promise<void>;
 }
