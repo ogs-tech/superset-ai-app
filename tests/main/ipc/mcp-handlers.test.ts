@@ -49,4 +49,12 @@ describe('mcp handlers', () => {
     const handlers = buildMcpHandlers(fakeService());
     await expect(handlers['mcp.delete']!({})).rejects.toThrow();
   });
+
+  it('mcp.setEnabled validates id and enabled', async () => {
+    const setEnabled = vi.fn(async () => ({ ok: true as const }));
+    const handlers = buildMcpHandlers(fakeService({ setEnabled } as never));
+    await handlers['mcp.setEnabled']!({ id: 'id1', enabled: false });
+    expect(setEnabled).toHaveBeenCalledWith({ id: 'id1', enabled: false });
+    await expect(handlers['mcp.setEnabled']!({ id: 'id1' })).rejects.toThrow();
+  });
 });

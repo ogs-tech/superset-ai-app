@@ -46,6 +46,7 @@ import { FsClaudeRuntimeReader } from './infrastructure/claude-runtime/fs-claude
 import { FsMcpConfigStore } from './infrastructure/mcp/fs-mcp-config-store.js';
 import { PluginMcpReader } from './infrastructure/mcp/plugin-mcp-reader.js';
 import { McpService } from './application/services/mcp-service.js';
+import { McpDisabledStash } from './infrastructure/mcp/mcp-disabled-stash.js';
 import { ElectronNotificationAdapter } from './infrastructure/notification/electron-notification-adapter.js';
 import { HealthService } from './application/services/health/health-service.js';
 import { McpAuthCollector } from './application/services/health/mcp-auth-collector.js';
@@ -218,6 +219,9 @@ async function wireIpc(): Promise<void> {
   const pluginMcpReader = new PluginMcpReader({
     listRoots: (scope) => pluginProvenance.roots(scope),
   });
+  const mcpDisabledStash = new McpDisabledStash({
+    stashPath: join(workspacePath, 'mcp-disabled.json'),
+  });
   const mcpService = new McpService({
     config: mcpConfigStore,
     plugins: pluginMcpReader,
@@ -226,6 +230,7 @@ async function wireIpc(): Promise<void> {
       const settings = await settingsService.load();
       return (settings?.linkedRepos ?? []).map((r) => r.path);
     },
+    disabledStash: mcpDisabledStash,
   });
 
   const healthCollectors: HealthCollector[] = [
