@@ -276,6 +276,15 @@ interface PluginPublishInfo {
 - `clearGithubToken` — erases the stored credential.
 - `hasGithubToken` — returns only a boolean; never returns the token itself.
 
+### `mcp`
+
+| Method | Params | Result |
+|---|---|---|
+| `mcp.list` | `{}` | `McpServer[]` (global + project-local + project-shared + plugin, with health) |
+| `mcp.get` | `{ id: string }` | `McpServer \| undefined` |
+
+`McpServer` is read-only when `source.kind === 'plugin'`. Write methods are added in later phases.
+
 ### `health`
 
 | Method | Params | Result |
