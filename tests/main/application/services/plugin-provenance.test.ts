@@ -187,7 +187,7 @@ describe('SkillService — provenance merging', () => {
         skill: {
           id: skillId('foo'),
           frontmatter: fm('skill', 'foo') as unknown as SkillFrontmatter,
-          source: { kind: 'plugin', pluginId: pluginId('p') },
+          source: { kind: 'plugin', pluginId: pluginId('p'), provenance: 'workspace-managed' },
           body: 'x',
         },
       }),
@@ -301,7 +301,7 @@ describe('AgentService — provenance merging', () => {
         agent: {
           id: agentId('reviewer'),
           frontmatter: fm('agent', 'reviewer') as never,
-          source: { kind: 'plugin', pluginId: pluginId('p') },
+          source: { kind: 'plugin', pluginId: pluginId('p'), provenance: 'workspace-managed' },
           body: 'a',
         },
       }),
