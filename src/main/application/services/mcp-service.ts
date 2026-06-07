@@ -40,6 +40,9 @@ export class McpService {
 
   async save(input: { server: McpServerInput; isCreate?: boolean }): Promise<{ ok: true }> {
     const { server } = input;
+    if (server.name.trim().length === 0) {
+      throw new DomainError('validation', 'MCP server name must not be empty');
+    }
     const def = mcpServerDefSchema.parse(server.def); // throws validation on bad def
     const location = this.inputLocation(server);
     await this.deps.config.upsert(location, server.name, def);

@@ -17,7 +17,7 @@ interface Props {
 
 // Preserves passthrough fields (args/env/headers/timeout/…) from the existing
 // def, swapping only the transport-primary key. Prevents data loss on edit.
-function buildDef(
+export function buildDef(
   base: Record<string, unknown>,
   transport: McpTransport,
   command: string,
@@ -110,7 +110,7 @@ export function McpEditorDialog({ open, mode, initial, onClose }: Props): React.
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" data-testid="mcp-save" onClick={submit} disabled={save.isPending}>
+        <Button variant="contained" data-testid="mcp-save" onClick={submit} disabled={save.isPending || name.trim().length === 0}>
           Save
         </Button>
       </DialogActions>

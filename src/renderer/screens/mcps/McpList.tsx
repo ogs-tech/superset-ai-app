@@ -113,6 +113,7 @@ export function McpList(): React.ReactElement {
 
       {editor !== null && (
         <McpEditorDialog
+          key={editor.server?.id ?? 'create'}
           open mode={editor.mode}
           {...(editor.server !== undefined ? { initial: editor.server } : {})}
           onClose={() => setEditor(null)}

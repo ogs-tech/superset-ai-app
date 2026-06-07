@@ -51,6 +51,15 @@ describe('McpService write', () => {
     await expect(svc.delete({ id: pluginId })).rejects.toThrow(OperationNotAllowedForOriginError);
   });
 
+  it('save rejects an empty name', async () => {
+    const upsert = vi.fn(async () => {});
+    const svc = makeService({ read: async () => [], upsert, remove: async () => {} });
+    await expect(
+      svc.save({ server: { name: '   ', scope: 'global', def: { command: 'x' } } }),
+    ).rejects.toThrow(/name/);
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it('delete removes a workspace server by id', async () => {
     const remove = vi.fn(async () => {});
     const svc = makeService({ read: async () => [], upsert: async () => {}, remove });

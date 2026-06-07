@@ -71,4 +71,12 @@ describe('FsMcpConfigStore write', () => {
     await expect(store.upsert({ kind: 'global' }, 'x', { command: 'x' })).rejects.toThrow();
     expect(await readFile(claudeJsonPath, 'utf8')).toBe('{ broken');
   });
+
+  it('aborts upsert when mcpServers is present but not an object, leaving the file untouched', async () => {
+    const original = JSON.stringify({ mcpServers: 'oops', numStartups: 5 });
+    await writeFile(claudeJsonPath, original, 'utf8');
+    const store = new FsMcpConfigStore({ claudeJsonPath });
+    await expect(store.upsert({ kind: 'global' }, 'x', { command: 'x' })).rejects.toThrow();
+    expect(await readFile(claudeJsonPath, 'utf8')).toBe(original);
+  });
 });
