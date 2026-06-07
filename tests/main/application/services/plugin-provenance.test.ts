@@ -378,6 +378,29 @@ describe('PluginProvenanceService.scan — roots', () => {
     expect(refs.find((r) => r.type === 'command')?.provenance).toBe('claude-code');
   });
 
+  it('excludes claude-code roots when scope is not personal', async () => {
+    const cache = new FakePluginCachePort();
+    const fs = new InMemoryFileSystem();
+    fs.createFile('/cc/feature-dev/agents/x.md', agentFile('x'));
+
+    const claudeCodeRegistry: ClaudeCodePluginRegistryPort = {
+      list: async () => [
+        {
+          pluginId: pluginId('feature-dev'),
+          marketplace: 'claude-plugins-official',
+          installPath: '/cc/feature-dev',
+          version: 'unknown',
+          scope: 'user',
+        },
+      ],
+    };
+
+    const svc = new PluginProvenanceService({ cache, fs, claudeCodeRegistry });
+    const refs = await svc.scan('project');
+
+    expect(refs.some((r) => r.provenance === 'claude-code')).toBe(false);
+  });
+
   it('shadows a claude-code ref when a workspace-managed plugin provides the same type/name', async () => {
     const cache = new FakePluginCachePort();
     const fs = new InMemoryFileSystem();

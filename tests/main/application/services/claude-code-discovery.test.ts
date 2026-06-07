@@ -7,6 +7,8 @@ import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesyst
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { FakePluginCachePort } from '../../../../src/main/application/services/__fixtures__/fake-plugin-cache-port.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
+import { skillId } from '../../../../src/main/domain/skill-id.js';
+import { OperationNotAllowedForOriginError } from '../../../../src/main/domain/plugin-errors.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import type { ClaudeCodePluginRegistryPort } from '../../../../src/main/application/ports/claude-code-plugin-registry-port.js';
 
@@ -48,5 +50,31 @@ describe('SkillService — Claude Code discovery', () => {
       pluginId: 'feature-dev',
       provenance: 'claude-code',
     });
+  });
+
+  it('save throws OperationNotAllowedForOriginError for a claude-code-sourced skill', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile('/cc/feature-dev/skills/research/SKILL.md', skillFile('research'));
+    const skills = makeSkillService(fs, registry('/cc/feature-dev'));
+
+    const listed = await skills.list('personal');
+    const research = listed.find((s) => s.id === 'research')!;
+
+    await expect(
+      skills.save({
+        skill: research,
+        scope: 'personal',
+      }),
+    ).rejects.toBeInstanceOf(OperationNotAllowedForOriginError);
+  });
+
+  it('delete throws OperationNotAllowedForOriginError for a claude-code-sourced skill name', async () => {
+    const fs = new InMemoryFileSystem();
+    fs.createFile('/cc/feature-dev/skills/research/SKILL.md', skillFile('research'));
+    const skills = makeSkillService(fs, registry('/cc/feature-dev'));
+
+    await expect(
+      skills.delete({ id: skillId('research'), removeSymlinks: false, scope: 'personal' }),
+    ).rejects.toBeInstanceOf(OperationNotAllowedForOriginError);
   });
 });
