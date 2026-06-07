@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { HealthScreen } from '../../../../src/renderer/screens/health/HealthScreen.js';
 import type { HealthReport } from '../../../../src/shared/health.js';
 import type { SyncResult } from '../../../../src/shared/customization.js';
-import { mockApi, ok, renderWithQuery, type CallSpy } from '../../test-utils.js';
+import { mockApi, ok, fail, renderWithQuery, type CallSpy } from '../../test-utils.js';
 
 let call: CallSpy;
 
@@ -67,21 +67,6 @@ describe('<HealthScreen>', () => {
     expect(screen.getByText('MCP "Gmail" needs authentication')).toBeInTheDocument();
     expect(screen.getByText('Run /mcp in Claude Code to authenticate.')).toBeInTheDocument();
   });
-
-  it('refetches when Refresh is clicked', async () => {
-    call.mockImplementation((method: string) => {
-      if (method === 'adapter.syncAll') return Promise.resolve(ok([]));
-      return Promise.resolve(ok(reportWith([])));
-    });
-    renderWithQuery(<HealthScreen />);
-    await screen.findByTestId('health-screen');
-
-    call.mockClear();
-    await userEvent.click(screen.getByTestId('health-refresh'));
-
-    await waitFor(() => expect(call).toHaveBeenCalledWith('adapter.syncAll', {}));
-    expect(call).toHaveBeenCalledWith('health.getReport', { scope: 'personal' });
-  });
 });
 
 describe('<HealthScreen> sync-on-refresh', () => {
@@ -107,6 +92,26 @@ describe('<HealthScreen> sync-on-refresh', () => {
 
     await waitFor(() => expect(call).toHaveBeenCalledWith('adapter.syncAll', {}));
     expect(call).toHaveBeenCalledWith('health.getReport', { scope: 'personal' });
+  });
+
+  it('still refetches the report when the sync fails', async () => {
+    // Locks the onSettled (not onSuccess) contract: the report must reflect
+    // reality even when the symlink sync errors out.
+    call.mockImplementation((method: string) => {
+      if (method === 'adapter.syncAll') return Promise.resolve(fail('internal', 'boom'));
+      return Promise.resolve(ok(reportWith([])));
+    });
+
+    renderWithQuery(<HealthScreen />);
+    await screen.findByTestId('health-screen');
+
+    call.mockClear();
+    await userEvent.click(screen.getByTestId('health-refresh'));
+
+    await waitFor(() => expect(call).toHaveBeenCalledWith('adapter.syncAll', {}));
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('health.getReport', { scope: 'personal' }),
+    );
   });
 
   it('renders a summary of the SyncResult[] after sync', async () => {
