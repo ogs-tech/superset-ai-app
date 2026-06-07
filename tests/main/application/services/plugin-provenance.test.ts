@@ -3,6 +3,7 @@ import {
   PluginProvenanceService,
   provenanceKey,
 } from '../../../../src/main/application/services/plugin-provenance.js';
+import type { ClaudeCodePluginRegistryPort } from '../../../../src/main/application/ports/claude-code-plugin-registry-port.js';
 import { SkillService } from '../../../../src/main/application/services/skill-service.js';
 import { AgentService } from '../../../../src/main/application/services/agent-service.js';
 import { CustomizationService } from '../../../../src/main/application/services/customization-service.js';
@@ -342,5 +343,63 @@ describe('PluginProvenanceService — commands scan', () => {
     const svc = new PluginProvenanceService({ cache, fs });
     const map = await svc.forScope('personal');
     expect(map.get(provenanceKey({ type: 'command', name: 'feature-dev' }))).toBe(pid);
+  });
+});
+
+describe('PluginProvenanceService.scan — roots', () => {
+  it('enumerates a Claude Code installPath and tags claude-code provenance', async () => {
+    const cache = new FakePluginCachePort();
+    const fs = new InMemoryFileSystem();
+    fs.createFile('/cc/feature-dev/agents/code-reviewer.md', agentFile('code-reviewer'));
+    fs.createFile('/cc/feature-dev/commands/feature-dev.md', skillFile('feature-dev'));
+
+    const claudeCodeRegistry: ClaudeCodePluginRegistryPort = {
+      list: async () => [
+        {
+          pluginId: pluginId('feature-dev'),
+          marketplace: 'claude-plugins-official',
+          installPath: '/cc/feature-dev',
+          version: 'unknown',
+          scope: 'user',
+        },
+      ],
+    };
+
+    const svc = new PluginProvenanceService({ cache, fs, claudeCodeRegistry });
+    const refs = await svc.scan('personal');
+
+    expect(refs).toContainEqual({
+      type: 'agent',
+      name: 'code-reviewer',
+      pluginId: 'feature-dev',
+      dir: '/cc/feature-dev',
+      provenance: 'claude-code',
+    });
+    expect(refs.find((r) => r.type === 'command')?.provenance).toBe('claude-code');
+  });
+
+  it('shadows a claude-code ref when a workspace-managed plugin provides the same type/name', async () => {
+    const cache = new FakePluginCachePort();
+    const fs = new InMemoryFileSystem();
+    cache.seedMeta('personal', {
+      version: 2,
+      plugins: [
+        { id: 'p', origin: 'imported', installedAt: FROZEN.toISOString(), scope: 'personal', enabled: true },
+      ],
+    });
+    // Workspace-managed dir is `${scope}/plugins/${id}` per FakePluginCachePort.
+    fs.createFile('personal/plugins/p/agents/dup.md', agentFile('dup'));
+    fs.createFile('/cc/q/agents/dup.md', agentFile('dup'));
+
+    const claudeCodeRegistry: ClaudeCodePluginRegistryPort = {
+      list: async () => [
+        { pluginId: pluginId('q'), marketplace: 'mp', installPath: '/cc/q', version: '1', scope: 'user' },
+      ],
+    };
+
+    const svc = new PluginProvenanceService({ cache, fs, claudeCodeRegistry });
+    const refs = (await svc.scan('personal')).filter((r) => r.name === 'dup');
+    expect(refs).toHaveLength(1);
+    expect(refs[0]?.provenance).toBe('workspace-managed');
   });
 });

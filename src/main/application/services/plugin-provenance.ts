@@ -3,6 +3,8 @@ import type { PluginId } from '../../domain/plugin-id.js';
 import type { PluginCachePort } from '../ports/plugin-cache-port.js';
 import type { FileSystemPort } from '../ports/filesystem-port.js';
 import type { Scope } from '../ports/scope.js';
+import type { ClaudeCodePluginRegistryPort } from '../ports/claude-code-plugin-registry-port.js';
+import type { PluginProvenance } from '../../domain/customization-source.js';
 
 export interface ProvenanceKey {
   type: 'skill' | 'agent' | 'command';
@@ -11,6 +13,22 @@ export interface ProvenanceKey {
 
 export type ProvenanceMap = Map<string, PluginId>;
 
+/** A single plugin-provided entity, resolved to the dir it must be read from. */
+export interface PluginEntityRef {
+  type: 'skill' | 'agent' | 'command';
+  name: string;
+  pluginId: PluginId;
+  /** Root install directory of the plugin (not the type-specific subdirectory). */
+  dir: string;
+  provenance: PluginProvenance;
+}
+
+interface PluginRoot {
+  pluginId: PluginId;
+  dir: string;
+  provenance: PluginProvenance;
+}
+
 export function provenanceKey(key: ProvenanceKey): string {
   return `${key.type}/${key.name}`;
 }
@@ -18,97 +36,115 @@ export function provenanceKey(key: ProvenanceKey): string {
 export interface PluginProvenanceDeps {
   cache: PluginCachePort;
   fs: FileSystemPort;
+  /** Optional: when present, Claude Code plugins are discovered for the personal scope. */
+  claudeCodeRegistry?: ClaudeCodePluginRegistryPort;
 }
 
 /**
- * Computes provenance — a map from {type/name} to PluginId — by reading the
- * plugin meta file and scanning each installed plugin's skills/, agents/, and
- * commands/ subdirectories. Customizations shipped by a plugin are read-only
- * from the app's perspective; the plugin lifecycle owns their files.
+ * Computes plugin provenance by scanning each installed plugin's skills/,
+ * agents/ and commands/ across two registries, in tier order:
+ *   1. workspace-managed (~/.superset-ai-app/plugins)
+ *   2. claude-code       (~/.claude/plugins, personal scope only)
+ * A {type/name} present in a higher tier shadows the same key in a lower tier.
+ * Plugin-provided customizations are read-only; their lifecycle owns the files.
  */
 export class PluginProvenanceService {
   constructor(private readonly deps?: PluginProvenanceDeps) {}
 
+  /** Backward-compatible {type/name} → PluginId map (first/higher tier wins). */
   async forScope(scope: Scope): Promise<ProvenanceMap> {
     const map: ProvenanceMap = new Map();
-    if (!this.deps) return map;
-    const { cache, fs } = this.deps;
-
-    let plugins: ReadonlyArray<{ id: string }> = [];
-    try {
-      const meta = await cache.readMeta(scope);
-      plugins = meta.plugins;
-    } catch {
-      return map;
+    for (const ref of await this.scan(scope)) {
+      map.set(provenanceKey({ type: ref.type, name: ref.name }), ref.pluginId);
     }
-
-    for (const entry of plugins) {
-      const pid = entry.id as PluginId;
-      const dir = cache.pluginDir(scope, pid);
-      await this.scanSkills(map, fs, dir, pid);
-      await this.scanAgents(map, fs, dir, pid);
-      await this.scanCommands(map, fs, dir, pid);
-    }
-
     return map;
   }
 
-  private async scanSkills(
-    map: ProvenanceMap,
-    fs: FileSystemPort,
-    pluginDir: string,
-    pid: PluginId,
-  ): Promise<void> {
-    const skillsDir = join(pluginDir, 'skills');
-    try {
-      if (!(await fs.pathExists(skillsDir))) return;
-      const names = await fs.readdir(skillsDir);
-      for (const name of names) {
-        if (name.startsWith('.')) continue;
-        map.set(provenanceKey({ type: 'skill', name }), pid);
+  /** Every plugin-provided entity, deduped by {type/name} keeping the higher tier. */
+  async scan(scope: Scope): Promise<PluginEntityRef[]> {
+    if (!this.deps) return [];
+    const out: PluginEntityRef[] = [];
+    const seen = new Set<string>();
+    for (const root of await this.listRoots(scope)) {
+      for (const ref of await this.scanRoot(root)) {
+        const k = provenanceKey({ type: ref.type, name: ref.name });
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(ref);
       }
-    } catch {
-      // swallow — plugin dir may have been removed since meta was written
     }
+    return out;
   }
 
-  private async scanAgents(
-    map: ProvenanceMap,
-    fs: FileSystemPort,
-    pluginDir: string,
-    pid: PluginId,
-  ): Promise<void> {
-    const agentsDir = join(pluginDir, 'agents');
+  private async listRoots(scope: Scope): Promise<PluginRoot[]> {
+    const { cache, claudeCodeRegistry } = this.deps!;
+    const roots: PluginRoot[] = [];
+
+    // Tier 1 — workspace-managed plugins.
     try {
-      if (!(await fs.pathExists(agentsDir))) return;
-      const entries = await fs.readdir(agentsDir);
-      for (const entry of entries) {
-        if (entry.startsWith('.') || !entry.endsWith('.md')) continue;
-        const name = entry.replace(/\.md$/, '');
-        map.set(provenanceKey({ type: 'agent', name }), pid);
+      const meta = await cache.readMeta(scope);
+      for (const entry of meta.plugins) {
+        const pid = entry.id as PluginId;
+        roots.push({
+          pluginId: pid,
+          dir: cache.pluginDir(scope, pid),
+          provenance: 'workspace-managed',
+        });
       }
     } catch {
-      // swallow
+      // No workspace meta — skip this tier.
     }
+
+    // Tier 2 — Claude Code plugins (registry scope "user" → app personal).
+    if (scope === 'personal' && claudeCodeRegistry) {
+      try {
+        for (const d of await claudeCodeRegistry.list()) {
+          roots.push({ pluginId: d.pluginId, dir: d.installPath, provenance: 'claude-code' });
+        }
+      } catch {
+        // Registry unavailable — skip this tier.
+      }
+    }
+
+    return roots;
   }
 
-  private async scanCommands(
-    map: ProvenanceMap,
-    fs: FileSystemPort,
-    pluginDir: string,
-    pid: PluginId,
-  ): Promise<void> {
-    const commandsDir = join(pluginDir, 'commands');
-    try {
-      if (!(await fs.pathExists(commandsDir))) return;
-      const entries = await fs.readdir(commandsDir);
-      for (const entry of entries) {
-        if (entry.startsWith('.') || !entry.endsWith('.md')) continue;
-        const name = entry.replace(/\.md$/, '');
-        map.set(provenanceKey({ type: 'command', name }), pid);
-      }
-    } catch {
-      // swallow
-    }
+  private async scanRoot(root: PluginRoot): Promise<PluginEntityRef[]> {
+    const { fs } = this.deps!;
+    const refs: PluginEntityRef[] = [];
+    const push = (type: PluginEntityRef['type'], name: string): void => {
+      refs.push({ type, name, pluginId: root.pluginId, dir: root.dir, provenance: root.provenance });
+    };
+
+    // skills/<name>/ — each entry is a directory holding SKILL.md.
+    await scanDir(fs, join(root.dir, 'skills'), (entry) => {
+      if (entry.startsWith('.')) return;
+      push('skill', entry);
+    });
+    // agents/<name>.md
+    await scanDir(fs, join(root.dir, 'agents'), (entry) => {
+      if (entry.startsWith('.') || !entry.endsWith('.md')) return;
+      push('agent', entry.replace(/\.md$/, ''));
+    });
+    // commands/<name>.md
+    await scanDir(fs, join(root.dir, 'commands'), (entry) => {
+      if (entry.startsWith('.') || !entry.endsWith('.md')) return;
+      push('command', entry.replace(/\.md$/, ''));
+    });
+
+    return refs;
+  }
+}
+
+async function scanDir(
+  fs: FileSystemPort,
+  dir: string,
+  onEntry: (entry: string) => void,
+): Promise<void> {
+  try {
+    if (!(await fs.pathExists(dir))) return;
+    for (const entry of await fs.readdir(dir)) onEntry(entry);
+  } catch {
+    // Dir removed since meta was written, or unreadable — skip.
   }
 }
