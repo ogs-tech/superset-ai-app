@@ -57,4 +57,12 @@ describe('mcp handlers', () => {
     expect(setEnabled).toHaveBeenCalledWith({ id: 'id1', enabled: false });
     await expect(handlers['mcp.setEnabled']!({ id: 'id1' })).rejects.toThrow();
   });
+
+  it('mcp.authenticate validates id and delegates', async () => {
+    const authenticate = vi.fn(async () => ({ ok: true as const }));
+    const handlers = buildMcpHandlers(fakeService({ authenticate } as never));
+    await handlers['mcp.authenticate']!({ id: 'id1' });
+    expect(authenticate).toHaveBeenCalledWith({ id: 'id1' });
+    await expect(handlers['mcp.authenticate']!({})).rejects.toThrow();
+  });
 });

@@ -6,7 +6,7 @@ export interface McpServerRef {
   name: string;
 }
 
-const KINDS = new Set(['global', 'project-local', 'project-shared', 'plugin']);
+const KINDS = new Set(['global', 'project-local', 'project-shared', 'plugin', 'detected']);
 
 export function mcpServerId(ref: McpServerRef): string {
   return Buffer.from(JSON.stringify(ref), 'utf8').toString('base64url');

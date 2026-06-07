@@ -64,6 +64,7 @@ export class FsMcpConfigStore implements McpConfigPort {
 
   async upsert(location: McpLocation, name: string, def: McpServerDef): Promise<void> {
     if (location.kind === 'plugin') throw new Error('Cannot write a plugin MCP server');
+    if (location.kind === 'detected') throw new Error('Cannot write a detected MCP server');
     if (location.kind === 'project-shared') {
       await this.mutateMcpJson(path.join(location.repoPath, '.mcp.json'), (servers) => {
         servers[name] = def;
@@ -91,6 +92,7 @@ export class FsMcpConfigStore implements McpConfigPort {
 
   async remove(location: McpLocation, name: string): Promise<void> {
     if (location.kind === 'plugin') throw new Error('Cannot write a plugin MCP server');
+    if (location.kind === 'detected') throw new Error('Cannot write a detected MCP server');
     if (location.kind === 'project-shared') {
       await this.mutateMcpJson(path.join(location.repoPath, '.mcp.json'), (servers) => {
         delete servers[name];
