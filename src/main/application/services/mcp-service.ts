@@ -1,10 +1,13 @@
 import type { McpConfigPort, RawMcpServer } from '../ports/mcp-config-port.js';
 import type { ClaudeRuntimePort } from '../ports/claude-runtime-port.js';
 import type { PluginMcpReader, PluginMcpServer } from '../../infrastructure/mcp/plugin-mcp-reader.js';
-import type { McpServer, McpHealth, McpScope } from '../../../shared/mcp.js';
-import { transportOf } from '../schemas/mcp.js';
+import type { McpServer, McpHealth, McpScope, McpServerInput } from '../../../shared/mcp.js';
+import { transportOf, mcpServerDefSchema } from '../schemas/mcp.js';
 import { mcpServerId, parseMcpServerId, type McpServerRef } from '../../domain/mcp-server-id.js';
 import { locationRepoPath } from '../../domain/mcp-location.js';
+import type { McpLocation } from '../../domain/mcp-location.js';
+import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
+import { DomainError } from '../../domain/errors.js';
 
 export interface McpServiceDeps {
   config: McpConfigPort;
@@ -33,6 +36,34 @@ export class McpService {
   async get(id: string): Promise<McpServer | undefined> {
     const ref = parseMcpServerId(id);
     return (await this.list()).find((s) => s.id === mcpServerId(ref));
+  }
+
+  async save(input: { server: McpServerInput; isCreate?: boolean }): Promise<{ ok: true }> {
+    const { server } = input;
+    const def = mcpServerDefSchema.parse(server.def); // throws validation on bad def
+    const location = this.inputLocation(server);
+    await this.deps.config.upsert(location, server.name, def);
+    return { ok: true };
+  }
+
+  async delete(input: { id: string }): Promise<{ ok: true }> {
+    const ref = parseMcpServerId(input.id);
+    if (ref.location.kind === 'plugin') {
+      throw new OperationNotAllowedForOriginError(
+        `Cannot delete MCP server '${ref.name}' provided by plugin '${ref.location.pluginId}'`,
+        { origin: 'plugin', operation: 'delete' },
+      );
+    }
+    await this.deps.config.remove(ref.location, ref.name);
+    return { ok: true };
+  }
+
+  private inputLocation(server: McpServerInput): McpLocation {
+    if (server.scope === 'global') return { kind: 'global' };
+    if (server.repoPath === undefined || server.repoPath.length === 0) {
+      throw new DomainError('validation', `Missing 'repoPath' for scope '${server.scope}'`);
+    }
+    return { kind: server.scope, repoPath: server.repoPath };
   }
 
   private toDto(
