@@ -284,8 +284,11 @@ interface PluginPublishInfo {
 | `mcp.get` | `{ id: string }` | `McpServer \| undefined` |
 | `mcp.save` | `{ server: McpServerInput; isCreate?: boolean }` | `{ ok: true }` |
 | `mcp.delete` | `{ id: string }` | `{ ok: true }` |
+| `mcp.setEnabled` | `{ id: string; enabled: boolean }` | `{ ok: true }` |
 
 `McpServer` is read-only when `source.kind === 'plugin'`. `mcp.save`/`mcp.delete` throw `OperationNotAllowedForOriginError` (kind `validation`) for plugin-sourced servers. Writes to `~/.claude.json` are surgical (only `mcpServers` / `projects[path].mcpServers` are touched), atomic, and backed up to `<file>.bak`.
+
+Disable semantics: project-shared servers use `projects[repoPath].disabledMcpjsonServers` in `~/.claude.json`; inline (global / project-local) servers are parked in `~/.superset-ai-app/mcp-disabled.json` and restored on enable.
 
 ### `health`
 
