@@ -1,8 +1,13 @@
-import { Box, CircularProgress, Container, Divider, Stack, Typography } from '@mui/material';
+import { useState } from 'react';
+import { Box, Button, CircularProgress, Container, Divider, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
+import { Icon } from '../../components/ds/Icon.js';
 import { StatusPill } from '../../components/ds/StatusPill.js';
 import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
 import { useMcpList } from '../../hooks/use-mcp-list.js';
+import { useDeleteMcp } from '../../hooks/use-mcp-mutations.js';
+import { McpEditorDialog } from './McpEditorDialog.js';
 import type { McpHealthState, McpScope, McpServer } from '../../../shared/mcp.js';
 
 const SCOPE_LABEL: Record<McpScope, string> = {
@@ -27,6 +32,8 @@ function HealthBadge({ server }: { server: McpServer }): React.ReactElement | nu
 export function McpList(): React.ReactElement {
   const { data, isLoading } = useMcpList();
   const servers = data ?? [];
+  const del = useDeleteMcp();
+  const [editor, setEditor] = useState<{ mode: 'create' | 'edit'; server?: McpServer } | null>(null);
 
   return (
     <Container component="main" data-testid="mcp-screen" maxWidth="lg" sx={{ py: 2.5 }}>
@@ -34,6 +41,15 @@ export function McpList(): React.ReactElement {
         kicker="Biblioteca"
         title="MCP"
         {...(data !== undefined ? { subtitle: `${servers.length} server(s)` } : {})}
+        actions={
+          <Button
+            variant="outlined" size="small" data-testid="mcp-new"
+            startIcon={<Icon glyph={Plus} size={16} />}
+            onClick={() => setEditor({ mode: 'create' })}
+          >
+            New
+          </Button>
+        }
       />
 
       {isLoading && (
@@ -69,10 +85,38 @@ export function McpList(): React.ReactElement {
                     provenance={server.source.provenance}
                   />
                 )}
+                {server.source.kind !== 'plugin' && (
+                  <>
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small" data-testid={`mcp-edit-${server.id}`}
+                        onClick={() => setEditor({ mode: 'edit', server })}
+                      >
+                        <Icon glyph={Pencil} size={16} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small" data-testid={`mcp-delete-${server.id}`}
+                        onClick={() => del.mutate({ id: server.id })}
+                      >
+                        <Icon glyph={Trash2} size={16} />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
               </Stack>
             </Box>
           ))}
         </Stack>
+      )}
+
+      {editor !== null && (
+        <McpEditorDialog
+          open mode={editor.mode}
+          {...(editor.server !== undefined ? { initial: editor.server } : {})}
+          onClose={() => setEditor(null)}
+        />
       )}
     </Container>
   );
