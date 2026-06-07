@@ -34,3 +34,23 @@ describe('CustomizationSource', () => {
     expect(isWorkspaceSource(pluginSource(pluginId('foo')))).toBe(false);
   });
 });
+
+describe('pluginSource provenance', () => {
+  it('defaults provenance to workspace-managed', () => {
+    const src = pluginSource(pluginId('superpowers'));
+    expect(src).toEqual({
+      kind: 'plugin',
+      pluginId: 'superpowers',
+      provenance: 'workspace-managed',
+    });
+  });
+
+  it('carries an explicit claude-code provenance', () => {
+    const src = pluginSource(pluginId('feature-dev'), 'claude-code');
+    expect(src).toEqual({
+      kind: 'plugin',
+      pluginId: 'feature-dev',
+      provenance: 'claude-code',
+    });
+  });
+});
