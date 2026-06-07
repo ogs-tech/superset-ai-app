@@ -282,8 +282,10 @@ interface PluginPublishInfo {
 |---|---|---|
 | `mcp.list` | `{}` | `McpServer[]` (global + project-local + project-shared + plugin, with health) |
 | `mcp.get` | `{ id: string }` | `McpServer \| undefined` |
+| `mcp.save` | `{ server: McpServerInput; isCreate?: boolean }` | `{ ok: true }` |
+| `mcp.delete` | `{ id: string }` | `{ ok: true }` |
 
-`McpServer` is read-only when `source.kind === 'plugin'`. Write methods are added in later phases.
+`McpServer` is read-only when `source.kind === 'plugin'`. `mcp.save`/`mcp.delete` throw `OperationNotAllowedForOriginError` (kind `validation`) for plugin-sourced servers. Writes to `~/.claude.json` are surgical (only `mcpServers` / `projects[path].mcpServers` are touched), atomic, and backed up to `<file>.bak`.
 
 ### `health`
 
