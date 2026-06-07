@@ -77,9 +77,10 @@ export class FsMcpConfigStore implements McpConfigPort {
 
   async setDisabledShared(repoPath: string, name: string, disabled: boolean): Promise<void> {
     await this.mutateClaudeJson((root) => {
-      const projects = (root.projects as Record<string, Record<string, unknown>>) ?? {};
-      const block = projects[repoPath] ?? {};
-      const list = new Set((block.disabledMcpjsonServers as string[] | undefined) ?? []);
+      const projects = asMutableRecord(root.projects, 'projects');
+      const block = asMutableRecord(projects[repoPath], `projects.${repoPath}`);
+      const existing = block.disabledMcpjsonServers;
+      const list = new Set(Array.isArray(existing) ? (existing as string[]) : []);
       if (disabled) list.add(name);
       else list.delete(name);
       block.disabledMcpjsonServers = [...list];

@@ -76,6 +76,40 @@ describe('McpService.setEnabled', () => {
     await expect(svc.setEnabled({ id, enabled: false })).rejects.toThrow(OperationNotAllowedForOriginError);
   });
 
+  it('disabling a project-local server parks the def from the matching repo (not a same-named server in another repo)', async () => {
+    const park = vi.fn(async () => {});
+    const remove = vi.fn(async () => {});
+    const config = makePort({
+      read: async () => [
+        { location: { kind: 'project-local', repoPath: '/a' }, name: 'srv', def: { command: 'a' }, enabled: true },
+        { location: { kind: 'project-local', repoPath: '/b' }, name: 'srv', def: { command: 'b' }, enabled: true },
+      ],
+      remove,
+    });
+    const svc = new McpService({
+      config, plugins: noPlugins, runtime: noRuntime, linkedRepoPaths: async () => ['/a', '/b'],
+      disabledStash: makeStash({ park }),
+    });
+    const id = mcpServerId({ location: { kind: 'project-local', repoPath: '/b' }, name: 'srv' });
+    await svc.setEnabled({ id, enabled: false });
+    expect(park).toHaveBeenCalledWith(id, { command: 'b' });
+    expect(remove).toHaveBeenCalledWith({ kind: 'project-local', repoPath: '/b' }, 'srv');
+  });
+
+  it('re-parks the def when upsert fails during enable', async () => {
+    const park = vi.fn(async () => {});
+    const config = makePort({
+      upsert: async () => { throw new Error('disk full'); },
+    });
+    const svc = new McpService({
+      config, plugins: noPlugins, runtime: noRuntime, linkedRepoPaths: async () => [],
+      disabledStash: makeStash({ take: async () => ({ command: 'x' }), park }),
+    });
+    const id = mcpServerId({ location: { kind: 'global' }, name: 'pencil' });
+    await expect(svc.setEnabled({ id, enabled: true })).rejects.toThrow('disk full');
+    expect(park).toHaveBeenCalledWith(id, { command: 'x' });
+  });
+
   it('list includes parked inline servers as disabled', async () => {
     const id = mcpServerId({ location: { kind: 'global' }, name: 'parked' });
     const svc = new McpService({

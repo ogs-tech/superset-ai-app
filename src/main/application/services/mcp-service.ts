@@ -89,22 +89,39 @@ export class McpService {
       await this.deps.config.setDisabledShared(ref.location.repoPath, ref.name, !input.enabled);
       return { ok: true };
     }
-    // Inline (global / project-local): park ⇄ restore via the stash.
+    // Inline (global/project-local): the stash and config are separate stores; each direction compensates on failure to stay consistent.
     const stash = this.deps.disabledStash;
     if (stash === undefined) {
       throw new DomainError('internal', 'MCP disabled stash is not configured');
     }
     if (input.enabled) {
       const def = await stash.take(input.id);
-      if (def !== undefined) await this.deps.config.upsert(ref.location, ref.name, def);
+      if (def !== undefined) {
+        try {
+          await this.deps.config.upsert(ref.location, ref.name, def);
+        } catch (err) {
+          // Cross-store op is not atomic: restore the parked def so it isn't lost.
+          await stash.park(input.id, def);
+          throw err;
+        }
+      }
       return { ok: true };
     }
     const current = (await this.deps.config.read({ repoPaths: await this.deps.linkedRepoPaths() })).find(
-      (s) => s.name === ref.name && s.location.kind === ref.location.kind,
+      (s) =>
+        s.name === ref.name &&
+        s.location.kind === ref.location.kind &&
+        locationRepoPath(s.location) === locationRepoPath(ref.location),
     );
     if (current !== undefined) {
       await stash.park(input.id, current.def);
-      await this.deps.config.remove(ref.location, ref.name);
+      try {
+        await this.deps.config.remove(ref.location, ref.name);
+      } catch (err) {
+        // Cross-store op is not atomic: undo the park so the server isn't double-listed.
+        await stash.take(input.id);
+        throw err;
+      }
     }
     return { ok: true };
   }

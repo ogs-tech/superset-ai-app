@@ -42,7 +42,11 @@ export class McpDisabledStash {
       throw err;
     });
     if (raw === undefined) return {};
-    return JSON.parse(raw) as Record<string, McpServerDef>;
+    try {
+      return JSON.parse(raw) as Record<string, McpServerDef>;
+    } catch {
+      return {};
+    }
   }
 
   private async write(map: Record<string, McpServerDef>): Promise<void> {

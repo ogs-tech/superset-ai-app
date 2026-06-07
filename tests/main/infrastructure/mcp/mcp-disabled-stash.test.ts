@@ -1,4 +1,4 @@
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -32,5 +32,10 @@ describe('McpDisabledStash', () => {
 
   it('take() of an unknown id returns undefined', async () => {
     expect(await new McpDisabledStash({ stashPath }).take('nope')).toBeUndefined();
+  });
+
+  it('tolerates a malformed stash file (returns [])', async () => {
+    await writeFile(stashPath, '{ broken', 'utf8');
+    expect(await new McpDisabledStash({ stashPath }).list()).toEqual([]);
   });
 });

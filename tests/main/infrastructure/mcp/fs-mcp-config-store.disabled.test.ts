@@ -31,6 +31,15 @@ describe('FsMcpConfigStore disabled list (project-shared)', () => {
     expect(json2.projects[repoPath].disabledMcpjsonServers).toEqual([]);
   });
 
+  it('setDisabledShared aborts when projects is present but not an object, leaving the file untouched', async () => {
+    const original = JSON.stringify({ projects: 'oops' });
+    await writeFile(claudeJsonPath, original, 'utf8');
+    const store = new FsMcpConfigStore({ claudeJsonPath });
+    await expect(store.setDisabledShared(repoPath, 'figma', true)).rejects.toThrow();
+    const after = await readFile(claudeJsonPath, 'utf8');
+    expect(after).toBe(original);
+  });
+
   it('read marks a project-shared server disabled when in the disabled list', async () => {
     await writeFile(claudeJsonPath, JSON.stringify({ projects: { [repoPath]: { disabledMcpjsonServers: ['figma'] } } }), 'utf8');
     const store = new FsMcpConfigStore({ claudeJsonPath });
