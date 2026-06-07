@@ -33,6 +33,7 @@ import { PluginAuthorService } from './application/services/plugin-author-servic
 import { PluginPublisher } from './application/services/plugin-publisher.js';
 import { PluginService } from './application/services/plugin-service.js';
 import { PluginProvenanceService } from './application/services/plugin-provenance.js';
+import { ClaudeCodePluginReader } from './infrastructure/plugins/claude-code-plugin-reader.js';
 import { SkillService } from './application/services/skill-service.js';
 import { AgentService } from './application/services/agent-service.js';
 import { CommandService } from './application/services/command-service.js';
@@ -161,9 +162,15 @@ async function wireIpc(): Promise<void> {
     fs: nodeFsAdapter,
   });
 
+  const claudeCodePluginReader = new ClaudeCodePluginReader({
+    registryPath: join(homedir(), '.claude', 'plugins', 'installed_plugins.json'),
+    fs: nodeFsAdapter,
+  });
+
   const pluginProvenance = new PluginProvenanceService({
     cache: pluginCache,
     fs: nodeFsAdapter,
+    claudeCodeRegistry: claudeCodePluginReader,
   });
   const skillService = new SkillService(customizationService, {
     provenance: pluginProvenance,
