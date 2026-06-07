@@ -25,6 +25,8 @@ import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
 import { buildHealthHandlers } from './health-handlers.js';
 import type { HealthService } from '../application/services/health/health-service.js';
+import { buildMcpHandlers } from './mcp-handlers.js';
+import type { McpService } from '../application/services/mcp-service.js';
 import type { NotificationPort } from '../application/ports/notification-port.js';
 import type { WorkspaceTeardownService } from '../application/services/workspace-teardown.js';
 import { updateLanguageSection } from '../application/services/language-section.js';
@@ -45,6 +47,7 @@ export interface IpcDeps {
   globalInstructionService: GlobalInstructionService;
   marketplaceService: MarketplaceService;
   healthService: HealthService;
+  mcpService: McpService;
   notificationPort: NotificationPort;
   workspaceTeardownService: WorkspaceTeardownService;
   appQuit: () => void;
@@ -92,6 +95,7 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     globalInstructionService,
     marketplaceService,
     healthService,
+    mcpService,
     notificationPort,
     workspaceTeardownService,
     appQuit,
@@ -253,5 +257,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     ...buildGlobalInstructionHandlers(globalInstructionService),
     ...buildMarketplaceHandlers(marketplaceService),
     ...buildHealthHandlers(healthService, notificationPort),
+    ...buildMcpHandlers(mcpService),
   };
 }

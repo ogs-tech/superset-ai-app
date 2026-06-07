@@ -6,6 +6,7 @@ import { AgentList } from './agents/AgentList.js';
 import { CommandList } from './commands/CommandList.js';
 import { HookList } from './hooks/HookList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
+import { McpList } from './mcps/McpList.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
 import { StarterPackScreen } from './starter-pack/StarterPackScreen.js';
@@ -37,6 +38,8 @@ function screenFor(nav: Nav, navigate: (n: Nav) => void): React.ReactElement {
           return <HookList />;
         case 'global-instructions':
           return <GlobalInstructionScreen />;
+        case 'mcps':
+          return <McpList />;
       }
   }
 }

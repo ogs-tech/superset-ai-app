@@ -23,7 +23,7 @@ export interface PluginEntityRef {
   provenance: PluginProvenance;
 }
 
-interface PluginRoot {
+export interface PluginRoot {
   pluginId: PluginId;
   dir: string;
   provenance: PluginProvenance;
@@ -74,6 +74,12 @@ export class PluginProvenanceService {
       }
     }
     return out;
+  }
+
+  /** Every installed plugin's root dir for a scope (workspace-managed + claude-code). */
+  async roots(scope: Scope): Promise<PluginRoot[]> {
+    if (!this.deps) return [];
+    return this.listRoots(scope);
   }
 
   private async listRoots(scope: Scope): Promise<PluginRoot[]> {

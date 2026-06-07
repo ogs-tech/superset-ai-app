@@ -59,6 +59,12 @@ Cross-cutting:
 - `schema-validator` — Zod-based validation.
 - `workspace-bootstrap` — creates the `~/.superset-ai-app/` directory tree on first run (called at startup, not via IPC).
 - `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink) into a `HealthReport`; exposed via the `health.*` IPC namespace.
+- **MCP (live-config broker):** `mcp-service` is NOT a customization facade. It reads/writes MCP
+  servers directly in the real Claude files (`~/.claude.json` `mcpServers` and
+  `projects[path].mcpServers`, `<repo>/.mcp.json`) via `FsMcpConfigStore`, reads plugin
+  `.mcp.json` files read-only via `PluginMcpReader`, parks disabled inline servers in
+  `McpDisabledStash`, and joins health from the read-only `ClaudeRuntimePort`. Writes are
+  surgical, atomic, and backed up.
 
 Legacy (deprecated, internal):
 - `customization-service` — umbrella service backing the per-entity facades. The `customization.*` IPC namespace has been removed; the `CustomizationListScreen` now calls the typed namespaces. Future PRs should split this into a `customization-core` helper and let the facades own the lifecycle.

@@ -1,0 +1,53 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import type { Scope } from '../../application/ports/scope.js';
+import type { PluginRoot } from '../../application/services/plugin-provenance.js';
+import type { PluginProvenance } from '../../domain/customization-source.js';
+import { mcpServerDefSchema, type McpServerDef } from '../../application/schemas/mcp.js';
+
+export interface PluginMcpServer {
+  location: { kind: 'plugin'; pluginId: string; pluginDir: string };
+  name: string;
+  def: McpServerDef;
+  pluginId: string;
+  provenance: PluginProvenance;
+}
+
+export interface PluginMcpReaderDeps {
+  listRoots: (scope: Scope) => Promise<PluginRoot[]>;
+}
+
+export class PluginMcpReader {
+  constructor(private readonly deps: PluginMcpReaderDeps) {}
+
+  async read(scope: Scope): Promise<PluginMcpServer[]> {
+    const out: PluginMcpServer[] = [];
+    for (const root of await this.deps.listRoots(scope)) {
+      const file = path.join(root.dir, '.mcp.json');
+      let raw: string;
+      try {
+        raw = await fs.readFile(file, 'utf8');
+      } catch {
+        continue; // no .mcp.json for this plugin
+      }
+      let servers: Record<string, unknown>;
+      try {
+        servers = (JSON.parse(raw) as { mcpServers?: Record<string, unknown> }).mcpServers ?? {};
+      } catch {
+        continue; // malformed plugin file — skip whole plugin
+      }
+      for (const [name, def] of Object.entries(servers)) {
+        const parsed = mcpServerDefSchema.safeParse(def);
+        if (!parsed.success) continue;
+        out.push({
+          location: { kind: 'plugin', pluginId: String(root.pluginId), pluginDir: root.dir },
+          name,
+          def: parsed.data,
+          pluginId: String(root.pluginId),
+          provenance: root.provenance,
+        });
+      }
+    }
+    return out;
+  }
+}

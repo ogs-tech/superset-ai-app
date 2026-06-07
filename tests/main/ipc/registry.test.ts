@@ -20,6 +20,7 @@ import type { CredentialStorePort } from '../../../src/main/application/ports/cr
 import type { HealthService } from '../../../src/main/application/services/health/health-service.js';
 import type { NotificationPort } from '../../../src/main/application/ports/notification-port.js';
 import type { WorkspaceTeardownService } from '../../../src/main/application/services/workspace-teardown.js';
+import type { McpService } from '../../../src/main/application/services/mcp-service.js';
 import { DomainError } from '../../../src/main/domain/errors.js';
 import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 
@@ -48,6 +49,7 @@ interface Deps {
   marketplaceService: MarketplaceService;
   hookService: HookService;
   healthService: HealthService;
+  mcpService: McpService;
   notificationPort: NotificationPort;
   workspaceTeardownService: WorkspaceTeardownService;
   appQuit: () => void;
@@ -112,6 +114,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const marketplaceService = null as unknown as MarketplaceService;
   const hookService = null as unknown as HookService;
   const healthService = null as unknown as HealthService;
+  const mcpService = null as unknown as McpService;
   const notificationPort = null as unknown as NotificationPort;
   const workspaceTeardownService = {
     restore: vi.fn().mockResolvedValue(undefined),
@@ -138,6 +141,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     marketplaceService,
     hookService,
     healthService,
+    mcpService,
     notificationPort,
     workspaceTeardownService,
     appQuit: () => undefined,
