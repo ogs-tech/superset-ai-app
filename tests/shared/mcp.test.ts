@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPluginMcp, type McpServer } from '../../src/shared/mcp.js';
+import { isPluginMcp, needsAuth, type McpServer } from '../../src/shared/mcp.js';
 
 const base: McpServer = {
   id: 'abc',
@@ -21,5 +21,11 @@ describe('shared/mcp', () => {
         source: { kind: 'plugin', pluginId: 'serena', provenance: 'claude-code' },
       }),
     ).toBe(true);
+  });
+
+  it('needsAuth is true only when health state is needs-auth', () => {
+    expect(needsAuth(base)).toBe(false);
+    expect(needsAuth({ ...base, health: { state: 'error' } })).toBe(false);
+    expect(needsAuth({ ...base, health: { state: 'needs-auth' } })).toBe(true);
   });
 });

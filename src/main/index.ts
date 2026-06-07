@@ -47,6 +47,7 @@ import { FsMcpConfigStore } from './infrastructure/mcp/fs-mcp-config-store.js';
 import { PluginMcpReader } from './infrastructure/mcp/plugin-mcp-reader.js';
 import { McpService } from './application/services/mcp-service.js';
 import { McpDisabledStash } from './infrastructure/mcp/mcp-disabled-stash.js';
+import { ElectronShell } from './infrastructure/shell/electron-shell.js';
 import { ElectronNotificationAdapter } from './infrastructure/notification/electron-notification-adapter.js';
 import { HealthService } from './application/services/health/health-service.js';
 import { McpAuthCollector } from './application/services/health/mcp-auth-collector.js';
@@ -231,6 +232,7 @@ async function wireIpc(): Promise<void> {
       return (settings?.linkedRepos ?? []).map((r) => r.path);
     },
     disabledStash: mcpDisabledStash,
+    shell: new ElectronShell(),
   });
 
   const healthCollectors: HealthCollector[] = [

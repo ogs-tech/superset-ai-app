@@ -12,6 +12,7 @@ describe('McpServerId', () => {
         location: { kind: 'plugin' as const, pluginId: 'serena', pluginDir: '/d' },
         name: 'plugin-serena-serena',
       },
+      { location: { kind: 'detected' as const }, name: 'claude.ai Gmail' },
     ];
     for (const ref of refs) {
       expect(parseMcpServerId(mcpServerId(ref))).toEqual(ref);

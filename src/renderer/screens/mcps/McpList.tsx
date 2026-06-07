@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { Box, Button, CircularProgress, Container, Divider, IconButton, Stack, Switch, Tooltip, Typography } from '@mui/material';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, KeyRound } from 'lucide-react';
 import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
 import { Icon } from '../../components/ds/Icon.js';
 import { StatusPill } from '../../components/ds/StatusPill.js';
 import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
 import { useMcpList } from '../../hooks/use-mcp-list.js';
-import { useDeleteMcp, useSetMcpEnabled } from '../../hooks/use-mcp-mutations.js';
+import { useDeleteMcp, useSetMcpEnabled, useAuthenticateMcp } from '../../hooks/use-mcp-mutations.js';
 import { McpEditorDialog } from './McpEditorDialog.js';
-import type { McpHealthState, McpScope, McpServer } from '../../../shared/mcp.js';
+import { needsAuth, type McpHealthState, type McpScope, type McpServer } from '../../../shared/mcp.js';
 
 const SCOPE_LABEL: Record<McpScope, string> = {
   global: 'Personal',
   'project-local': 'Project (local)',
   'project-shared': 'Project (shared)',
   plugin: 'Plugin',
+  detected: 'Detected',
 };
 
 const HEALTH_PILL: Record<McpHealthState, 'ok' | 'warning' | 'error'> = {
@@ -34,6 +35,7 @@ export function McpList(): React.ReactElement {
   const servers = data ?? [];
   const del = useDeleteMcp();
   const setEnabled = useSetMcpEnabled();
+  const authenticate = useAuthenticateMcp();
   const [editor, setEditor] = useState<{ mode: 'create' | 'edit'; server?: McpServer } | null>(null);
 
   return (
@@ -70,7 +72,7 @@ export function McpList(): React.ReactElement {
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="body2">{server.name}</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  {server.transport} · {SCOPE_LABEL[server.scope]}
+                  {[server.transport, SCOPE_LABEL[server.scope]].filter(Boolean).join(' · ')}
                 </Typography>
                 {server.health?.detail !== undefined && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
@@ -80,13 +82,23 @@ export function McpList(): React.ReactElement {
               </Box>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <HealthBadge server={server} />
+                {needsAuth(server) && (
+                  <Button
+                    variant="outlined" size="small" data-testid={`mcp-authenticate-${server.id}`}
+                    startIcon={<Icon glyph={KeyRound} size={14} />}
+                    disabled={authenticate.isPending}
+                    onClick={() => authenticate.mutate({ id: server.id })}
+                  >
+                    Authenticate
+                  </Button>
+                )}
                 {server.source.kind === 'plugin' && (
                   <PluginOriginBadge
                     pluginId={server.source.pluginId}
                     provenance={server.source.provenance}
                   />
                 )}
-                {server.source.kind !== 'plugin' && (
+                {server.source.kind === 'workspace' && (
                   <>
                     <Switch
                       size="small" data-testid={`mcp-toggle-${server.id}`}

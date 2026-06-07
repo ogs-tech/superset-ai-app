@@ -26,3 +26,11 @@ export function useSetMcpEnabled(): UseMutationResult<{ ok: true }, Error, { id:
     onSuccess: () => qc.invalidateQueries({ queryKey: mcpListQueryKey() }),
   });
 }
+
+// Opens the external claude.ai connectors page; the actual OAuth happens there.
+// No cache invalidation — health only refreshes once Claude Code re-checks.
+export function useAuthenticateMcp(): UseMutationResult<{ ok: true }, Error, { id: string }> {
+  return useMutation({
+    mutationFn: (vars) => callIpc<{ ok: true }>('mcp.authenticate', vars),
+  });
+}

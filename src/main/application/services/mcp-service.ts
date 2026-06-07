@@ -9,6 +9,7 @@ import type { McpLocation } from '../../domain/mcp-location.js';
 import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
 import { DomainError } from '../../domain/errors.js';
 import type { McpDisabledStash } from '../../infrastructure/mcp/mcp-disabled-stash.js';
+import type { ShellPort } from '../ports/shell-port.js';
 
 export interface McpServiceDeps {
   config: McpConfigPort;
@@ -18,7 +19,12 @@ export interface McpServiceDeps {
   linkedRepoPaths: () => Promise<string[]>;
   /** Optional stash for parking/restoring disabled inline (global/project-local) servers. */
   disabledStash?: McpDisabledStash;
+  /** Optional shell, used to open the external claude.ai auth flow. */
+  shell?: ShellPort;
 }
+
+/** Where needs-auth claude.ai connectors are (re-)authenticated. */
+const CLAUDE_AI_CONNECTORS_URL = 'https://claude.ai/settings/connectors';
 
 export class McpService {
   constructor(private readonly deps: McpServiceDeps) {}
@@ -34,10 +40,20 @@ export class McpService {
     const own = config.map((s) => this.toDto(s, { kind: 'workspace' }, health));
     const fromPlugins = plugins.map((s) => this.pluginToDto(s, health));
 
+    // Names already represented by a config/plugin/parked row, so the health
+    // join doesn't double-list them as detected orphans below.
+    const claimed = new Set<string>();
+    for (const s of config) claimed.add(s.name);
+    for (const s of plugins) {
+      claimed.add(`plugin-${s.pluginId}-${s.name}`);
+      claimed.add(s.name);
+    }
+
     const stash = this.deps.disabledStash;
     const parked = stash
       ? (await stash.list()).map((entry) => {
           const ref = parseMcpServerId(entry.id);
+          claimed.add(ref.name);
           return this.toDto(
             { location: ref.location, name: ref.name, def: entry.def, enabled: false },
             { kind: 'workspace' },
@@ -46,7 +62,24 @@ export class McpService {
         })
       : [];
 
-    return [...own, ...fromPlugins, ...parked];
+    const detected = this.detectedOrphans(health, claimed);
+
+    return [...own, ...fromPlugins, ...parked, ...detected];
+  }
+
+  /**
+   * Re-authenticates a needs-auth server by opening the external claude.ai
+   * connectors page. The app cannot complete the OAuth flow itself (it has no
+   * def/URL for runtime-managed connectors), so it acts as a trampoline.
+   */
+  async authenticate(input: { id: string }): Promise<{ ok: true }> {
+    parseMcpServerId(input.id); // validate the id round-trips; throws on garbage
+    const shell = this.deps.shell;
+    if (shell === undefined) {
+      throw new DomainError('internal', 'MCP shell port is not configured');
+    }
+    await shell.openExternal(CLAUDE_AI_CONNECTORS_URL);
+    return { ok: true };
   }
 
   async get(id: string): Promise<McpServer | undefined> {
@@ -73,6 +106,12 @@ export class McpService {
         { origin: 'plugin', operation: 'delete' },
       );
     }
+    if (ref.location.kind === 'detected') {
+      throw new OperationNotAllowedForOriginError(
+        `Cannot delete detected MCP server '${ref.name}': it has no broker config`,
+        { origin: 'detected', operation: 'delete' },
+      );
+    }
     await this.deps.config.remove(ref.location, ref.name);
     return { ok: true };
   }
@@ -83,6 +122,12 @@ export class McpService {
       throw new OperationNotAllowedForOriginError(
         `Cannot toggle MCP server '${ref.name}' provided by plugin '${ref.location.pluginId}'`,
         { origin: 'plugin', operation: 'save' },
+      );
+    }
+    if (ref.location.kind === 'detected') {
+      throw new OperationNotAllowedForOriginError(
+        `Cannot toggle detected MCP server '${ref.name}': it has no broker config`,
+        { origin: 'detected', operation: 'save' },
       );
     }
     if (ref.location.kind === 'project-shared') {
@@ -172,6 +217,35 @@ export class McpService {
       source: { kind: 'plugin', pluginId: s.pluginId, provenance: s.provenance },
       enabled: true,
       ...(found !== undefined ? { health: found } : {}),
+    };
+  }
+
+  /**
+   * Servers the Claude Code runtime knows about (via logs / needs-auth cache)
+   * that have a health problem AND no broker-readable config. Surfaced read-only
+   * so failures — notably needs-auth claude.ai connectors — are visible and the
+   * user can act on them; healthy orphans are intentionally omitted to avoid noise.
+   */
+  private detectedOrphans(health: Map<string, McpHealth>, claimed: Set<string>): McpServer[] {
+    const out: McpServer[] = [];
+    for (const [name, h] of health) {
+      if (h.state !== 'error' && h.state !== 'needs-auth') continue;
+      if (claimed.has(name)) continue;
+      out.push(this.detectedDto(name, h));
+    }
+    return out;
+  }
+
+  private detectedDto(name: string, health: McpHealth): McpServer {
+    const ref: McpServerRef = { location: { kind: 'detected' }, name };
+    return {
+      id: mcpServerId(ref),
+      name,
+      def: {},
+      scope: 'detected',
+      source: { kind: 'detected' },
+      enabled: false,
+      health,
     };
   }
 

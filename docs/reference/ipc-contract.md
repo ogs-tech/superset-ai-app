@@ -280,13 +280,16 @@ interface PluginPublishInfo {
 
 | Method | Params | Result |
 |---|---|---|
-| `mcp.list` | `{}` | `McpServer[]` (global + project-local + project-shared + plugin, with health) |
+| `mcp.list` | `{}` | `McpServer[]` (global + project-local + project-shared + plugin + detected, with health) |
 | `mcp.get` | `{ id: string }` | `McpServer \| undefined` |
 | `mcp.save` | `{ server: McpServerInput; isCreate?: boolean }` | `{ ok: true }` |
 | `mcp.delete` | `{ id: string }` | `{ ok: true }` |
 | `mcp.setEnabled` | `{ id: string; enabled: boolean }` | `{ ok: true }` |
+| `mcp.authenticate` | `{ id: string }` | `{ ok: true }` |
 
-`McpServer` is read-only when `source.kind === 'plugin'`. `mcp.delete` and `mcp.setEnabled` throw `OperationNotAllowedForOriginError` (kind `validation`) for plugin-sourced ids. `mcp.save` cannot target a plugin server by construction (its `scope` excludes `plugin`). Writes to `~/.claude.json` are surgical (only `mcpServers` / `projects[path].mcpServers` are touched), atomic, and backed up to `<file>.bak`.
+`McpServer` is read-only when `source.kind === 'plugin'` **or** `source.kind === 'detected'`. `mcp.delete` and `mcp.setEnabled` throw `OperationNotAllowedForOriginError` (kind `validation`) for plugin- and detected-sourced ids. `mcp.save` cannot target a plugin/detected server by construction (its `scope` excludes both). Writes to `~/.claude.json` are surgical (only `mcpServers` / `projects[path].mcpServers` are touched), atomic, and backed up to `<file>.bak`.
+
+**Detected servers** (`source.kind === 'detected'`, `scope === 'detected'`, `transport` absent, `def === {}`) are servers the Claude Code runtime knows about (via logs / `mcp-needs-auth-cache.json`) that have a health problem (`error` or `needs-auth`) **and** no broker-readable config. They are surfaced read-only so failures are visible; healthy orphans are intentionally omitted to avoid noise. `mcp.authenticate` opens the external claude.ai connectors page (`https://claude.ai/settings/connectors`) — the app cannot complete the OAuth flow itself (it has no def/URL for runtime-managed connectors), so it acts as a trampoline. The `id` is validated but the v1 target URL is fixed regardless of which server. Throws `internal` if no shell port is configured.
 
 Disable semantics: project-shared servers use `projects[repoPath].disabledMcpjsonServers` in `~/.claude.json`; inline (global / project-local) servers are parked in `~/.superset-ai-app/mcp-disabled.json` and restored on enable.
 

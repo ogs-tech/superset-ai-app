@@ -31,5 +31,10 @@ export function buildMcpHandlers(service: McpService): IpcHandlers {
         enabled: asBoolean(raw['enabled'], 'enabled'),
       });
     },
+
+    'mcp.authenticate': async (params) => {
+      const raw = asObject(params, 'mcp.authenticate');
+      return service.authenticate({ id: asString(raw['id'], 'id') });
+    },
   };
 }

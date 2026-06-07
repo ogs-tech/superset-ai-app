@@ -3,7 +3,10 @@ export type McpLocation =
   | { kind: 'global' }
   | { kind: 'project-local'; repoPath: string }
   | { kind: 'project-shared'; repoPath: string }
-  | { kind: 'plugin'; pluginId: string; pluginDir: string };
+  | { kind: 'plugin'; pluginId: string; pluginDir: string }
+  // Known to the Claude Code runtime (logs / needs-auth cache) but with no
+  // broker-readable config. Read-only: surfaced so failures are visible.
+  | { kind: 'detected' };
 
 export type McpScope = McpLocation['kind'];
 
