@@ -127,6 +127,10 @@ export class McpService {
   }
 
   private inputLocation(server: McpServerInput): McpLocation {
+    const ALLOWED = new Set(['global', 'project-local', 'project-shared']);
+    if (!ALLOWED.has(server.scope)) {
+      throw new DomainError('validation', `Invalid MCP scope '${String(server.scope)}'`);
+    }
     if (server.scope === 'global') return { kind: 'global' };
     if (server.repoPath === undefined || server.repoPath.length === 0) {
       throw new DomainError('validation', `Missing 'repoPath' for scope '${server.scope}'`);

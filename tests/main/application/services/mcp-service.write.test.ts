@@ -60,6 +60,15 @@ describe('McpService write', () => {
     expect(upsert).not.toHaveBeenCalled();
   });
 
+  it('save rejects an invalid scope', async () => {
+    const upsert = vi.fn(async () => {});
+    const svc = makeService({ read: async () => [], upsert, remove: async () => {}, setDisabledShared: async () => {} });
+    await expect(
+      svc.save({ server: { name: 'x', scope: 'evil' as never, def: { command: 'x' } } }),
+    ).rejects.toThrow(/scope/);
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it('delete removes a workspace server by id', async () => {
     const remove = vi.fn(async () => {});
     const svc = makeService({ read: async () => [], upsert: async () => {}, remove, setDisabledShared: async () => {} });
