@@ -52,10 +52,10 @@ export class SkillService {
       {
         keyPrefix: 'skill/',
         relPath: (name) => `skills/${name}/SKILL.md`,
-        build: ({ name, frontmatter, body, pluginId }) => ({
+        build: ({ name, frontmatter, body, pluginId, provenance }) => ({
           id: skillId(name),
           frontmatter: frontmatter as SkillFrontmatter,
-          source: pluginSource(pluginId),
+          source: pluginSource(pluginId, provenance),
           body,
         }),
       },

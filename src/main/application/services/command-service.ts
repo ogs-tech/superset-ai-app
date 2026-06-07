@@ -52,14 +52,14 @@ export class CommandService {
       {
         keyPrefix: 'command/',
         relPath: (name) => `commands/${name}.md`,
-        build: ({ name, frontmatter, body, pluginId }) => ({
+        build: ({ name, frontmatter, body, pluginId, provenance }) => ({
           id: commandId(name),
           frontmatter: {
             ...(frontmatter as Partial<CommandFrontmatter>),
             name,
             type: 'command',
           } as CommandFrontmatter,
-          source: pluginSource(pluginId),
+          source: pluginSource(pluginId, provenance),
           body,
         }),
       },

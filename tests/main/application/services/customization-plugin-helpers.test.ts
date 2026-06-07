@@ -4,6 +4,7 @@ import {
   assertNotPluginSourced,
   type PluginEntityDeps,
 } from '../../../../src/main/application/services/customization-plugin-helpers.js';
+import type { PluginEntityRef } from '../../../../src/main/application/services/plugin-provenance.js';
 import { pluginId } from '../../../../src/main/domain/plugin-id.js';
 import { OperationNotAllowedForOriginError } from '../../../../src/main/domain/plugin-errors.js';
 
@@ -11,9 +12,19 @@ function makeDeps(
   provenanceMap: Map<string, ReturnType<typeof pluginId>>,
   files: Record<string, string>,
 ): PluginEntityDeps {
+  // Derive PluginEntityRef[] from the map for scan(), keeping forScope() for assertNotPluginSourced.
+  const refs: PluginEntityRef[] = [];
+  for (const [key, pid] of provenanceMap.entries()) {
+    const slashIdx = key.indexOf('/');
+    const type = key.slice(0, slashIdx) as PluginEntityRef['type'];
+    const name = key.slice(slashIdx + 1);
+    refs.push({ type, name, pluginId: pid, dir: `/cache/${pid}`, provenance: 'workspace-managed' });
+  }
+
   return {
     provenance: {
       forScope: async () => provenanceMap,
+      scan: async () => refs,
     } as unknown as PluginEntityDeps['provenance'],
     cache: {
       pluginDir: (_scope: string, pid: string) => `/cache/${pid}`,
