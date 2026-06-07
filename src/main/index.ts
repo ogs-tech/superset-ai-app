@@ -43,6 +43,9 @@ import { MarketplaceService } from './application/services/marketplace-service.j
 import { MarketplaceSeeder } from './application/services/marketplace-seeder.js';
 import { SettingsMarketplaceRepository } from './infrastructure/marketplace/settings-marketplace-repository.js';
 import { FsClaudeRuntimeReader } from './infrastructure/claude-runtime/fs-claude-runtime-reader.js';
+import { FsMcpConfigStore } from './infrastructure/mcp/fs-mcp-config-store.js';
+import { PluginMcpReader } from './infrastructure/mcp/plugin-mcp-reader.js';
+import { McpService } from './application/services/mcp-service.js';
 import { ElectronNotificationAdapter } from './infrastructure/notification/electron-notification-adapter.js';
 import { HealthService } from './application/services/health/health-service.js';
 import { McpAuthCollector } from './application/services/health/mcp-auth-collector.js';
@@ -209,6 +212,22 @@ async function wireIpc(): Promise<void> {
     mcpLogsBaseDir: join(homedir(), 'Library', 'Caches', 'claude-cli-nodejs'),
   });
 
+  const mcpConfigStore = new FsMcpConfigStore({
+    claudeJsonPath: join(homedir(), '.claude.json'),
+  });
+  const pluginMcpReader = new PluginMcpReader({
+    listRoots: (scope) => pluginProvenance.roots(scope),
+  });
+  const mcpService = new McpService({
+    config: mcpConfigStore,
+    plugins: pluginMcpReader,
+    runtime: claudeRuntimeReader,
+    linkedRepoPaths: async () => {
+      const settings = await settingsService.load();
+      return (settings?.linkedRepos ?? []).map((r) => r.path);
+    },
+  });
+
   const healthCollectors: HealthCollector[] = [
     new McpAuthCollector(claudeRuntimeReader, clock),
     new McpRuntimeCollector(claudeRuntimeReader, clock),
@@ -238,6 +257,7 @@ async function wireIpc(): Promise<void> {
     globalInstructionService,
     marketplaceService,
     healthService,
+    mcpService,
     notificationPort,
     workspaceTeardownService,
     appQuit: () => app.quit(),
