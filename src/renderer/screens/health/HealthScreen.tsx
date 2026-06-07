@@ -5,6 +5,7 @@ import {
   Container,
   Divider,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
@@ -13,7 +14,9 @@ import { Kicker } from '../../components/ds/Kicker.js';
 import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
 import { StatusPill } from '../../components/ds/StatusPill.js';
 import { useHealthReport } from '../../hooks/use-health-report.js';
+import { useSyncThenRefresh } from '../../hooks/use-sync-then-refresh.js';
 import type { HealthCategory, HealthCheck, Severity } from '../../../shared/health.js';
+import type { SyncResult } from '../../../shared/customization.js';
 
 const CATEGORY_LABEL: Record<HealthCategory, string> = {
   'mcp-auth': 'MCP Authentication',
@@ -45,7 +48,8 @@ function groupByCategory(checks: HealthCheck[]): Map<HealthCategory, HealthCheck
 }
 
 export function HealthScreen(): React.ReactElement {
-  const { data, isLoading, refetch, isFetching } = useHealthReport('personal');
+  const { data, isLoading, isFetching } = useHealthReport('personal');
+  const sync = useSyncThenRefresh('personal');
 
   const checks = data?.checks ?? [];
   const actionable = checks.filter((c) => c.severity !== 'ok');
@@ -67,13 +71,15 @@ export function HealthScreen(): React.ReactElement {
             size="small"
             startIcon={<Icon glyph={RefreshCw} size={16} />}
             data-testid="health-refresh"
-            disabled={isFetching}
-            onClick={() => void refetch()}
+            disabled={isFetching || sync.isPending}
+            onClick={() => sync.mutate()}
           >
             Atualizar
           </Button>
         }
       />
+
+      {sync.data && <SyncSummary results={sync.data} />}
 
       {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -142,5 +148,64 @@ export function HealthScreen(): React.ReactElement {
           </Box>
         ))}
     </Container>
+  );
+}
+
+function SyncSummary({ results }: { results: SyncResult[] }): React.ReactElement {
+  const okCount = results.filter((r) => r.status === 'ok').length;
+  const conflicts = results.filter((r) => r.status === 'conflict').length;
+  const errors = results.filter((r) => r.status === 'error').length;
+  const clean = conflicts === 0 && errors === 0;
+  return (
+    <Box
+      data-testid="health-sync-summary"
+      sx={{
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
+        p: 1.5,
+        mb: 3,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+      }}
+    >
+      <Box
+        component="span"
+        sx={{ color: clean ? 'success.main' : 'text.secondary', display: 'inline-flex' }}
+      >
+        <Icon glyph={clean ? CheckCircle2 : RefreshCw} size={16} />
+      </Box>
+      <Typography
+        component="span"
+        sx={(theme) => ({
+          fontFamily: theme.ogs.fonts.mono,
+          fontSize: '0.6875rem',
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'text.secondary',
+          whiteSpace: 'nowrap',
+        })}
+      >
+        Sincronização
+      </Typography>
+      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+        <StatusPill variant="ok" label={`${okCount} ok`} />
+        {conflicts > 0 && (
+          <Tooltip title="Conflitos resolvidos com backup do alvo anterior">
+            <span>
+              <StatusPill
+                variant="warning"
+                label={`${conflicts} conflict${conflicts === 1 ? '' : 's'}`}
+              />
+            </span>
+          </Tooltip>
+        )}
+        {errors > 0 && (
+          <StatusPill variant="error" label={`${errors} error${errors === 1 ? '' : 's'}`} />
+        )}
+      </Stack>
+    </Box>
   );
 }
