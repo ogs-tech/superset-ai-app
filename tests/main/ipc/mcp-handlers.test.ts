@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildMcpHandlers } from '../../../src/main/ipc/mcp-handlers.js';
 import type { McpService } from '../../../src/main/application/services/mcp-service.js';
 import type { McpServer } from '../../../src/shared/mcp.js';
@@ -35,5 +35,18 @@ describe('mcp handlers', () => {
   it('mcp.get rejects a missing id', async () => {
     const handlers = buildMcpHandlers(fakeService());
     await expect(handlers['mcp.get']!({})).rejects.toThrow();
+  });
+
+  it('mcp.save passes the server input through', async () => {
+    const save = vi.fn(async () => ({ ok: true as const }));
+    const handlers = buildMcpHandlers(fakeService({ save } as never));
+    const input = { name: 'pencil', scope: 'global', def: { command: 'x' } };
+    await handlers['mcp.save']!({ server: input, isCreate: true });
+    expect(save).toHaveBeenCalledWith({ server: input, isCreate: true });
+  });
+
+  it('mcp.delete validates id', async () => {
+    const handlers = buildMcpHandlers(fakeService());
+    await expect(handlers['mcp.delete']!({})).rejects.toThrow();
   });
 });
