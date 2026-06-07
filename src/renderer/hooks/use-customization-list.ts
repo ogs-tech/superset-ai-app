@@ -6,7 +6,13 @@ export interface CustomizationListItem {
   id: string;
   frontmatter: { name: string; description?: string } & Record<string, unknown>;
   body: string;
-  source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string };
+  source:
+    | { kind: 'workspace' }
+    | {
+        kind: 'plugin';
+        pluginId: string;
+        provenance?: 'workspace-managed' | 'claude-code';
+      };
 }
 
 export type CustomizationScope = 'personal' | 'project';

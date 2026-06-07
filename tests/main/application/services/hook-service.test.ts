@@ -190,7 +190,11 @@ describe('HookService', () => {
       expect(listed).toHaveLength(1);
       expect(listed[0]?.event).toBe('SessionStart');
       expect(listed[0]?.matcher).toBe('startup|clear|compact');
-      expect(listed[0]?.source).toEqual({ kind: 'plugin', pluginId: pid });
+      expect(listed[0]?.source).toEqual({
+        kind: 'plugin',
+        pluginId: pid,
+        provenance: 'workspace-managed',
+      });
       expect(listed[0]?.id.startsWith('superpowers:SessionStart:')).toBe(true);
     });
 

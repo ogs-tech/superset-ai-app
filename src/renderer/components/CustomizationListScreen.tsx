@@ -134,7 +134,10 @@ export function CustomizationListScreen({
           view === 'card' && item.source.kind === 'plugin' ? (
             <Stack direction="row" sx={{ alignItems: 'center' }}>
               <Box component="span">{item.frontmatter.name}</Box>
-              <PluginOriginBadge pluginId={item.source.pluginId} />
+              <PluginOriginBadge
+                pluginId={item.source.pluginId}
+                {...(item.source.provenance ? { provenance: item.source.provenance } : {})}
+              />
             </Stack>
           ) : (
             item.frontmatter.name
@@ -147,7 +150,10 @@ export function CustomizationListScreen({
         width: 160,
         render: (item) =>
           item.source.kind === 'plugin' ? (
-            <PluginOriginBadge pluginId={item.source.pluginId} />
+            <PluginOriginBadge
+              pluginId={item.source.pluginId}
+              {...(item.source.provenance ? { provenance: item.source.provenance } : {})}
+            />
           ) : null,
       },
       {

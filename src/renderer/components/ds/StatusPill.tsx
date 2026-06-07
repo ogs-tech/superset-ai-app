@@ -4,6 +4,7 @@ export type StatusPillVariant =
   | 'synced'
   | 'unsynced'
   | 'plugin'
+  | 'claude-code'
   | 'error'
   | 'ok'
   | 'warning';
@@ -24,6 +25,12 @@ function color(theme: Theme, variant: StatusPillVariant): string {
       return theme.palette.warning.main;
     case 'plugin':
       return theme.palette.info.main;
+    case 'claude-code':
+      // Neutral slate: a Claude Code badge marks origin/provenance, not a
+      // status — so it deliberately avoids the chromatic status roles (blue
+      // 'plugin', amber 'warning', green 'ok', red 'error') and uses the
+      // design system's neutral accent instead.
+      return theme.ogs.slate;
     case 'error':
       return theme.palette.error.main;
   }

@@ -52,10 +52,10 @@ export class AgentService {
       {
         keyPrefix: 'agent/',
         relPath: (name) => `agents/${name}.md`,
-        build: ({ name, frontmatter, body, pluginId }) => ({
+        build: ({ name, frontmatter, body, pluginId, provenance }) => ({
           id: agentId(name),
           frontmatter: frontmatter as AgentFrontmatter,
-          source: pluginSource(pluginId),
+          source: pluginSource(pluginId, provenance),
           body,
         }),
       },
