@@ -8,6 +8,7 @@ import { locationRepoPath } from '../../domain/mcp-location.js';
 import type { McpLocation } from '../../domain/mcp-location.js';
 import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
 import { DomainError } from '../../domain/errors.js';
+import type { McpDisabledStash } from '../../infrastructure/mcp/mcp-disabled-stash.js';
 
 export interface McpServiceDeps {
   config: McpConfigPort;
@@ -15,6 +16,8 @@ export interface McpServiceDeps {
   runtime: ClaudeRuntimePort;
   /** Linked repo paths whose .mcp.json should be read. */
   linkedRepoPaths: () => Promise<string[]>;
+  /** Optional stash for parking/restoring disabled inline (global/project-local) servers. */
+  disabledStash?: McpDisabledStash;
 }
 
 export class McpService {
@@ -30,7 +33,20 @@ export class McpService {
 
     const own = config.map((s) => this.toDto(s, { kind: 'workspace' }, health));
     const fromPlugins = plugins.map((s) => this.pluginToDto(s, health));
-    return [...own, ...fromPlugins];
+
+    const stash = this.deps.disabledStash;
+    const parked = stash
+      ? (await stash.list()).map((entry) => {
+          const ref = parseMcpServerId(entry.id);
+          return this.toDto(
+            { location: ref.location, name: ref.name, def: entry.def, enabled: false },
+            { kind: 'workspace' },
+            health,
+          );
+        })
+      : [];
+
+    return [...own, ...fromPlugins, ...parked];
   }
 
   async get(id: string): Promise<McpServer | undefined> {
@@ -58,6 +74,38 @@ export class McpService {
       );
     }
     await this.deps.config.remove(ref.location, ref.name);
+    return { ok: true };
+  }
+
+  async setEnabled(input: { id: string; enabled: boolean }): Promise<{ ok: true }> {
+    const ref = parseMcpServerId(input.id);
+    if (ref.location.kind === 'plugin') {
+      throw new OperationNotAllowedForOriginError(
+        `Cannot toggle MCP server '${ref.name}' provided by plugin '${ref.location.pluginId}'`,
+        { origin: 'plugin', operation: 'save' },
+      );
+    }
+    if (ref.location.kind === 'project-shared') {
+      await this.deps.config.setDisabledShared(ref.location.repoPath, ref.name, !input.enabled);
+      return { ok: true };
+    }
+    // Inline (global / project-local): park ⇄ restore via the stash.
+    const stash = this.deps.disabledStash;
+    if (stash === undefined) {
+      throw new DomainError('internal', 'MCP disabled stash is not configured');
+    }
+    if (input.enabled) {
+      const def = await stash.take(input.id);
+      if (def !== undefined) await this.deps.config.upsert(ref.location, ref.name, def);
+      return { ok: true };
+    }
+    const current = (await this.deps.config.read({ repoPaths: await this.deps.linkedRepoPaths() })).find(
+      (s) => s.name === ref.name && s.location.kind === ref.location.kind,
+    );
+    if (current !== undefined) {
+      await stash.park(input.id, current.def);
+      await this.deps.config.remove(ref.location, ref.name);
+    }
     return { ok: true };
   }
 
