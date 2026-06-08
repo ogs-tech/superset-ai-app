@@ -221,7 +221,7 @@ describe('McpService.authenticate', () => {
 
     const id = mcpServerId({ location: { kind: 'detected' }, name: 'claude.ai Gmail' });
     await expect(svc.authenticate({ id })).resolves.toEqual({ ok: true });
-    expect(opened).toEqual(['https://claude.ai/settings/connectors']);
+    expect(opened).toEqual(['https://claude.ai/customize/connectors']);
   });
 
   it('throws on a malformed id without opening anything', async () => {
