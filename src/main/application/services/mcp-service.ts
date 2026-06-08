@@ -24,7 +24,7 @@ export interface McpServiceDeps {
 }
 
 /** Where needs-auth claude.ai connectors are (re-)authenticated. */
-const CLAUDE_AI_CONNECTORS_URL = 'https://claude.ai/settings/connectors';
+const CLAUDE_AI_CONNECTORS_URL = 'https://claude.ai/customize/connectors';
 
 export class McpService {
   constructor(private readonly deps: McpServiceDeps) {}
