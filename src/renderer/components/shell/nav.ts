@@ -1,6 +1,6 @@
 import {
   House, SlidersHorizontal, Puzzle, Activity, Sparkles, Bot,
-  SquareTerminal, Webhook, NotebookPen, Store, Plug, type LucideIcon,
+  MessageSquareText, Webhook, NotebookPen, Store, Plug, type LucideIcon,
 } from 'lucide-react';
 
 export type Area = 'inicio' | 'biblioteca' | 'plugins' | 'diagnostico';
@@ -26,7 +26,7 @@ export const NAV_AREAS: ReadonlyArray<AreaDef> = [
 export const LIBRARY_SUBS: ReadonlyArray<SubDef<LibrarySub>> = [
   { sub: 'skills', label: 'Skills', glyph: Sparkles },
   { sub: 'agents', label: 'Agents', glyph: Bot },
-  { sub: 'commands', label: 'Commands', glyph: SquareTerminal },
+  { sub: 'commands', label: 'Prompts', glyph: MessageSquareText },
   { sub: 'hooks', label: 'Hooks', glyph: Webhook },
   { sub: 'global-instructions', label: 'Global Instructions', glyph: NotebookPen },
   { sub: 'mcps', label: 'MCP', glyph: Plug },

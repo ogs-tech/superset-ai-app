@@ -39,6 +39,10 @@ interface CustomizationListScreenProps {
   gender: 'f' | 'm';
   listMethod: string;
   deleteMethod: string;
+  /** Optional one-line context shown under the screen title. */
+  subtitle?: React.ReactNode;
+  /** Optional teaching copy shown in the empty state, under its title. */
+  emptyDescription?: React.ReactNode;
 }
 
 type Editor =
@@ -53,6 +57,8 @@ export function CustomizationListScreen({
   gender,
   listMethod,
   deleteMethod,
+  subtitle,
+  emptyDescription,
 }: CustomizationListScreenProps): React.ReactElement {
   const { data, isLoading, error } = useCustomizationList(
     entityType,
@@ -208,6 +214,7 @@ export function CustomizationListScreen({
       <ScreenHeader
         kicker="Biblioteca"
         title={title}
+        subtitle={subtitle}
         actions={
           <Button
             variant="contained"
@@ -232,6 +239,7 @@ export function CustomizationListScreen({
           <EmptyState
             glyph={Sparkles}
             title={`Nenhum${gender === 'f' ? 'a' : ''} ${singular} ainda`}
+            description={emptyDescription}
             cta={
               <Button
                 variant="outlined"
