@@ -22,7 +22,7 @@ interface Command {
 const CREATABLE: ReadonlyArray<{ sub: LibrarySub; label: string }> = [
   { sub: 'skills', label: 'Nova skill' },
   { sub: 'agents', label: 'Novo agent' },
-  { sub: 'commands', label: 'Novo command' },
+  { sub: 'commands', label: 'Novo prompt' },
   { sub: 'hooks', label: 'Novo hook' },
 ];
 
