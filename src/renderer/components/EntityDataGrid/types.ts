@@ -51,4 +51,6 @@ export interface EntityDataGridProps<T> {
   searchPlaceholder?: string;
   emptyState?: ReactNode;
   onRowClick?: (item: T) => void;
+  /** Visually de-emphasizes a row/card (reduced opacity) — e.g. disabled items. */
+  isDimmed?: (item: T) => boolean;
 }

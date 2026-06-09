@@ -6,13 +6,16 @@ import {
   type MarketplacePlugin,
 } from '../screens/starter-pack/groups.js';
 
-export type InstallState = 'idle' | 'loading' | 'done';
+export type InstallState = 'idle' | 'loading' | 'done' | 'disabled';
 
 export interface StarterData {
   profileConfigured: boolean | null;
   plugins: MarketplacePlugin[];
   marketplaceId: string | null;
+  /** Installed AND enabled — these read as "done". */
   installedIds: ReadonlySet<string>;
+  /** Installed but disabled — these read as "disabled" and offer a re-enable action. */
+  disabledIds: ReadonlySet<string>;
 }
 
 export interface InstallResult {
@@ -26,6 +29,7 @@ export interface UseStarterPack {
   plugins: MarketplacePlugin[];
   stateFor: (pluginName: string) => InstallState;
   install: (plugins: MarketplacePlugin[]) => Promise<InstallResult>;
+  reenable: (pluginName: string) => Promise<void>;
 }
 
 export const STARTER_QUERY_KEY = ['starter-pack'] as const;
@@ -42,7 +46,7 @@ interface MarketplaceListItem {
 async function fetchStarterData(): Promise<StarterData> {
   const [marketplaceList, installedPlugins, gi] = await Promise.all([
     callIpc<MarketplaceListItem[]>('marketplace.list', { scope: 'personal' }),
-    callIpc<Array<{ id: string }>>('plugin.list', { scope: 'personal' }),
+    callIpc<Array<{ id: string; enabled: boolean }>>('plugin.list', { scope: 'personal' }),
     callIpc('global-instruction.get', { id: 'default' }).then(
       () => true,
       (err: unknown) => {
@@ -55,7 +59,10 @@ async function fetchStarterData(): Promise<StarterData> {
   const official = marketplaceList.find(
     (m) => m.source.kind === 'github' && m.source.repo === OFFICIAL_REPO,
   );
-  const installedIds = new Set(installedPlugins.map((p) => p.id));
+  // Only enabled plugins read as "installed"; a disabled one becomes actionable
+  // again (re-enable) instead of staying marked done.
+  const installedIds = new Set(installedPlugins.filter((p) => p.enabled).map((p) => p.id));
+  const disabledIds = new Set(installedPlugins.filter((p) => !p.enabled).map((p) => p.id));
   const plugins =
     official?.manifest?.plugins.filter((p) => RECOMMENDED_PLUGIN_NAMES.has(p.name)) ?? [];
 
@@ -64,6 +71,7 @@ async function fetchStarterData(): Promise<StarterData> {
     plugins,
     marketplaceId: official?.id ?? null,
     installedIds,
+    disabledIds,
   };
 }
 
@@ -140,16 +148,24 @@ export function useStarterPack(): UseStarterPack {
   });
 
   const installedIds = query.data?.installedIds ?? EMPTY_SET;
+  const disabledIds = query.data?.disabledIds ?? EMPTY_SET;
 
   const stateFor = (pluginName: string): InstallState =>
     installing.has(pluginName)
       ? 'loading'
       : installedIds.has(pluginName)
         ? 'done'
-        : 'idle';
+        : disabledIds.has(pluginName)
+          ? 'disabled'
+          : 'idle';
 
   const install = (plugins: MarketplacePlugin[]): Promise<InstallResult> =>
     runInstall(qc, query.data?.marketplaceId ?? null, plugins);
+
+  const reenable = async (pluginName: string): Promise<void> => {
+    await callIpc('plugin.toggle', { id: pluginName, scope: 'personal', enabled: true });
+    await qc.invalidateQueries({ queryKey: STARTER_QUERY_KEY });
+  };
 
   return {
     isLoading: query.isLoading,
@@ -157,5 +173,6 @@ export function useStarterPack(): UseStarterPack {
     plugins: query.data?.plugins ?? [],
     stateFor,
     install,
+    reenable,
   };
 }

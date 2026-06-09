@@ -141,14 +141,31 @@ export class McpService {
     }
     if (input.enabled) {
       const def = await stash.take(input.id);
-      if (def !== undefined) {
-        try {
-          await this.deps.config.upsert(ref.location, ref.name, def);
-        } catch (err) {
-          // Cross-store op is not atomic: restore the parked def so it isn't lost.
-          await stash.park(input.id, def);
-          throw err;
-        }
+      if (def === undefined) {
+        // Nothing parked under this id. Either the server is already enabled
+        // (idempotent re-enable) or its saved def was lost — surface the latter
+        // instead of a phantom success that leaves the row vanished from both
+        // the config and the stash.
+        const alreadyEnabled = (
+          await this.deps.config.read({ repoPaths: await this.deps.linkedRepoPaths() })
+        ).some(
+          (s) =>
+            s.name === ref.name &&
+            s.location.kind === ref.location.kind &&
+            locationRepoPath(s.location) === locationRepoPath(ref.location),
+        );
+        if (alreadyEnabled) return { ok: true };
+        throw new DomainError(
+          'not_found',
+          `Could not re-enable MCP server '${ref.name}': its saved configuration is missing.`,
+        );
+      }
+      try {
+        await this.deps.config.upsert(ref.location, ref.name, def);
+      } catch (err) {
+        // Cross-store op is not atomic: restore the parked def so it isn't lost.
+        await stash.park(input.id, def);
+        throw err;
       }
       return { ok: true };
     }

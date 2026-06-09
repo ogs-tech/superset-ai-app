@@ -30,16 +30,19 @@ function deferred<T>() {
 
 /**
  * Stateful fake of the IPC backend: `plugin.list` reflects whatever has been
- * installed so far, exactly like the real main process. `gate` lets a test hold
- * an install open to simulate navigating away mid-install.
+ * installed so far (with its enabled flag), exactly like the real main process.
+ * `gate` lets a test hold an install open to simulate navigating away
+ * mid-install. `disabled` seeds plugins that are installed but turned off.
  */
 function setupApi(
   call: CallSpy,
   plugins: Plugin[],
-  gate?: Promise<void>,
-): { installed: Set<string> } {
-  const installed = new Set<string>();
-  call.mockImplementation((method: string, params?: { plugin?: Plugin }) => {
+  options: { gate?: Promise<void>; disabled?: string[] } = {},
+): { enabledOf: Map<string, boolean> } {
+  const { gate, disabled = [] } = options;
+  // id -> enabled. Seeded disabled plugins are installed but off.
+  const enabledOf = new Map<string, boolean>(disabled.map((id) => [id, false]));
+  call.mockImplementation((method: string, params?: { plugin?: Plugin; id?: string; enabled?: boolean }) => {
     switch (method) {
       case 'marketplace.list':
         return Promise.resolve(
@@ -52,22 +55,26 @@ function setupApi(
           ]),
         );
       case 'plugin.list':
-        return Promise.resolve(ok([...installed].map((id) => ({ id }))));
+        return Promise.resolve(ok([...enabledOf].map(([id, enabled]) => ({ id, enabled }))));
       case 'global-instruction.get':
         return Promise.resolve(ok({ id: 'default' }));
       case 'plugin.installFromMarketplace': {
         const name = params?.plugin?.name;
         const finish = () => {
-          if (name) installed.add(name);
+          if (name) enabledOf.set(name, true);
           return ok(undefined);
         };
         return gate ? gate.then(finish) : Promise.resolve(finish());
+      }
+      case 'plugin.toggle': {
+        if (params?.id) enabledOf.set(params.id, params.enabled ?? true);
+        return Promise.resolve(ok(undefined));
       }
       default:
         return Promise.resolve(ok(undefined));
     }
   });
-  return { installed };
+  return { enabledOf };
 }
 
 /** Prod-like client: a warm, non-zero staleTime is what hides the seeding side
@@ -139,7 +146,7 @@ describe('useStarterPack', () => {
 
   it('finishes an install that was in flight when the screen unmounted', async () => {
     const gate = deferred<void>();
-    setupApi(call, [FEATURE_DEV], gate.promise);
+    setupApi(call, [FEATURE_DEV], { gate: gate.promise });
     const client = warmClient();
     const wrapper = wrapperFor(client);
 
@@ -173,7 +180,7 @@ describe('useStarterPack', () => {
 
   it('shows loading state for an in-flight install across remount', async () => {
     const gate = deferred<void>();
-    setupApi(call, [FEATURE_DEV], gate.promise);
+    setupApi(call, [FEATURE_DEV], { gate: gate.promise });
     const client = warmClient();
     const wrapper = wrapperFor(client);
 
@@ -203,6 +210,36 @@ describe('useStarterPack', () => {
     });
     await waitFor(() =>
       expect(second.result.current.stateFor('feature-dev')).toBe('done'),
+    );
+  });
+
+  it('reports an installed-but-disabled plugin as disabled, not done', async () => {
+    setupApi(call, [FEATURE_DEV], { disabled: ['feature-dev'] });
+    const client = warmClient();
+    const { result } = renderHook(() => useStarterPack(), {
+      wrapper: wrapperFor(client),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.stateFor('feature-dev')).toBe('disabled');
+  });
+
+  it('re-enables a disabled plugin and flips it to done', async () => {
+    setupApi(call, [FEATURE_DEV], { disabled: ['feature-dev'] });
+    const client = warmClient();
+    const { result } = renderHook(() => useStarterPack(), {
+      wrapper: wrapperFor(client),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.stateFor('feature-dev')).toBe('disabled');
+
+    await act(async () => {
+      await result.current.reenable('feature-dev');
+    });
+
+    await waitFor(() =>
+      expect(result.current.stateFor('feature-dev')).toBe('done'),
     );
   });
 });

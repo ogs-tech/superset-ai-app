@@ -19,6 +19,7 @@ interface TableViewProps<T> {
   items: T[];
   actions?: RowAction<T>[] | undefined;
   onRowClick?: ((item: T) => void) | undefined;
+  isDimmed?: ((item: T) => boolean) | undefined;
 }
 
 export function TableView<T>({
@@ -26,6 +27,7 @@ export function TableView<T>({
   items,
   actions,
   onRowClick,
+  isDimmed,
 }: TableViewProps<T>): React.ReactElement {
   const columns = entity.fields.filter((f) => !f.hideInTable);
   const hasActions = !!actions && actions.length > 0;
@@ -82,7 +84,10 @@ export function TableView<T>({
             <TableRow
               key={entity.getKey(item)}
               hover
-              sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+              sx={{
+                cursor: onRowClick ? 'pointer' : 'default',
+                opacity: isDimmed?.(item) ? 0.55 : 1,
+              }}
               onClick={onRowClick ? () => onRowClick(item) : undefined}
               data-testid={`entity-grid-row-${entity.name}-${entity.getKey(item)}`}
             >

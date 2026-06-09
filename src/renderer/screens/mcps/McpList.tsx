@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Box, Button, CircularProgress, Container, Divider, IconButton, Stack, Switch, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Container, Divider, IconButton, Stack, Switch, Tooltip, Typography } from '@mui/material';
 import { Plus, Pencil, Trash2, KeyRound } from 'lucide-react';
 import { ScreenHeader } from '../../components/ds/ScreenHeader.js';
 import { Icon } from '../../components/ds/Icon.js';
 import { StatusPill } from '../../components/ds/StatusPill.js';
 import { PluginOriginBadge } from '../../components/PluginOriginBadge.js';
+import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { useMcpList } from '../../hooks/use-mcp-list.js';
 import { useDeleteMcp, useSetMcpEnabled, useAuthenticateMcp } from '../../hooks/use-mcp-mutations.js';
+import { IpcCallError } from '../../lib/ipc.js';
 import { McpEditorDialog } from './McpEditorDialog.js';
 import { needsAuth, type McpHealthState, type McpScope, type McpServer } from '../../../shared/mcp.js';
 
@@ -30,6 +32,10 @@ function HealthBadge({ server }: { server: McpServer }): React.ReactElement | nu
   return <StatusPill variant={HEALTH_PILL[server.health.state]} label={server.health.state} />;
 }
 
+function errorMessage(err: unknown): string {
+  return err instanceof IpcCallError ? err.message : String(err);
+}
+
 export function McpList(): React.ReactElement {
   const { data, isLoading } = useMcpList();
   const servers = data ?? [];
@@ -37,6 +43,7 @@ export function McpList(): React.ReactElement {
   const setEnabled = useSetMcpEnabled();
   const authenticate = useAuthenticateMcp();
   const [editor, setEditor] = useState<{ mode: 'create' | 'edit'; server?: McpServer } | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   return (
     <Container component="main" data-testid="mcp-screen" maxWidth="lg" sx={{ py: 2.5 }}>
@@ -63,14 +70,27 @@ export function McpList(): React.ReactElement {
 
       {!isLoading && (
         <Stack divider={<Divider />} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          {servers.map((server) => (
+          {servers.map((server) => {
+            const isDisabled = server.source.kind === 'workspace' && !server.enabled;
+            return (
             <Box
               key={server.id}
               data-testid={`mcp-row-${server.id}`}
               sx={{ p: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', justifyContent: 'space-between' }}
             >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2">{server.name}</Typography>
+              <Box sx={{ minWidth: 0, opacity: isDisabled ? 0.55 : 1 }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Typography variant="body2">{server.name}</Typography>
+                  {isDisabled && (
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label="Desabilitado"
+                      data-testid={`mcp-disabled-badge-${server.id}`}
+                      sx={{ height: 20, fontSize: 11 }}
+                    />
+                  )}
+                </Stack>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                   {[server.transport, SCOPE_LABEL[server.scope]].filter(Boolean).join(' · ')}
                 </Typography>
@@ -103,7 +123,12 @@ export function McpList(): React.ReactElement {
                     <Switch
                       size="small" data-testid={`mcp-toggle-${server.id}`}
                       checked={server.enabled}
-                      onChange={(e) => setEnabled.mutate({ id: server.id, enabled: e.target.checked })}
+                      onChange={(e) =>
+                        setEnabled.mutate(
+                          { id: server.id, enabled: e.target.checked },
+                          { onError: (err) => setToast({ variant: 'error', message: errorMessage(err) }) },
+                        )
+                      }
                     />
                     <Tooltip title="Edit">
                       <IconButton
@@ -116,7 +141,12 @@ export function McpList(): React.ReactElement {
                     <Tooltip title="Delete">
                       <IconButton
                         size="small" data-testid={`mcp-delete-${server.id}`}
-                        onClick={() => del.mutate({ id: server.id })}
+                        onClick={() =>
+                          del.mutate(
+                            { id: server.id },
+                            { onError: (err) => setToast({ variant: 'error', message: errorMessage(err) }) },
+                          )
+                        }
                       >
                         <Icon glyph={Trash2} size={16} />
                       </IconButton>
@@ -125,7 +155,8 @@ export function McpList(): React.ReactElement {
                 )}
               </Stack>
             </Box>
-          ))}
+            );
+          })}
         </Stack>
       )}
 
@@ -137,6 +168,8 @@ export function McpList(): React.ReactElement {
           onClose={() => setEditor(null)}
         />
       )}
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </Container>
   );
 }

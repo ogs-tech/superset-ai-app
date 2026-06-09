@@ -13,7 +13,8 @@ import {
 } from '@mui/material';
 import { MoreVertical, Download } from 'lucide-react';
 import { Icon } from '../../components/ds/Icon.js';
-import { callIpc } from '../../lib/ipc.js';
+import { callIpc, IpcCallError } from '../../lib/ipc.js';
+import { Toast, type ToastMessage } from '../../components/Toast.js';
 import type { PluginListItemIpc } from '../../../shared/plugin-ipc-types.js';
 import { PluginImportDialog } from './PluginImportDialog.js';
 import { PublishPluginDialog } from './PublishPluginDialog.js';
@@ -44,6 +45,10 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
   const [dialog, setDialog] = useState<DialogState>({ kind: 'closed' });
   const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
   const [selected, setSelected] = useState<PluginListItemIpc | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const showError = (err: unknown): void =>
+    setToast({ variant: 'error', message: err instanceof IpcCallError ? err.message : String(err) });
 
   const { data, isLoading, error } = useQuery<PluginListItemIpc[]>({
     queryKey,
@@ -69,6 +74,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         enabled,
       });
     },
+    onError: showError,
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
 
@@ -76,6 +82,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
     mutationFn: async (pluginId: string) => {
       await callIpc('plugin.update', { id: pluginId, scope });
     },
+    onError: showError,
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
 
@@ -83,6 +90,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
     mutationFn: async (pluginId: string) => {
       await callIpc('plugin.remove', { id: pluginId, scope });
     },
+    onError: showError,
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
 
@@ -122,6 +130,12 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         badge: true,
         searchable: true,
       },
+      {
+        key: 'status',
+        label: 'Status',
+        badge: true,
+        render: (item) => (item.enabled ? null : 'Desabilitado'),
+      },
     ],
   };
 
@@ -148,6 +162,7 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
         error={error}
         searchPlaceholder="Buscar plugins…"
         onRowClick={(item) => setSelected(item)}
+        isDimmed={(item) => !item.enabled}
         toolbarActions={
           <Button
             variant="outlined"
@@ -295,6 +310,8 @@ export function PluginList({ scope }: PluginListProps): React.ReactElement {
           <PluginDetail pluginId={selected.id} scope={selected.scope} />
         )}
       </DetailDrawer>
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </Container>
   );
 }

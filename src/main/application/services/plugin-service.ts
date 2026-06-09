@@ -364,18 +364,28 @@ export class PluginService {
     const entry = meta.plugins.find((p) => p.id === id);
     const marketplaceId = entry?.marketplaceId;
 
-    // Update settings
+    // Update settings (Claude Code's source of truth) first.
     await settings.mutate(scope, (s) =>
       enabled ? enablePlugin(s, id, marketplaceId) : disablePlugin(s, id, marketplaceId),
     );
 
-    // Update meta
-    await cache.writeMeta(scope, {
-      ...meta,
-      plugins: meta.plugins.map((p) =>
-        p.id === id ? { ...p, enabled } : p,
-      ),
-    });
+    // Update meta (the app's registry). settings.json and _meta.json are
+    // separate stores with no shared transaction; if this write fails, roll the
+    // settings mutation back so the two can't diverge — a plugin the UI reads as
+    // enabled while Claude Code has it disabled, or vice versa.
+    try {
+      await cache.writeMeta(scope, {
+        ...meta,
+        plugins: meta.plugins.map((p) =>
+          p.id === id ? { ...p, enabled } : p,
+        ),
+      });
+    } catch (err) {
+      await settings.mutate(scope, (s) =>
+        enabled ? disablePlugin(s, id, marketplaceId) : enablePlugin(s, id, marketplaceId),
+      );
+      throw err;
+    }
   }
 
   /**

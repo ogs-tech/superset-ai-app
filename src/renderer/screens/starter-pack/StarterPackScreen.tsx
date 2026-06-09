@@ -32,7 +32,7 @@ interface StarterPackScreenProps {
 }
 
 export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React.ReactElement {
-  const { isLoading, profileConfigured, plugins, stateFor, install } = useStarterPack();
+  const { isLoading, profileConfigured, plugins, stateFor, install, reenable } = useStarterPack();
 
   // UI-only state — intentionally local. Resetting these on navigation is
   // expected; the install state that must persist lives in the query cache.
@@ -60,6 +60,16 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
       }
     } finally {
       setPreviewPlugin(null);
+    }
+  };
+
+  const handleReenable = async (name: string): Promise<void> => {
+    try {
+      await reenable(name);
+      setToast({ variant: 'success', message: `${name} reabilitado` });
+    } catch (err) {
+      const detail = err instanceof Error ? ` — ${err.message}` : '';
+      setToast({ variant: 'error', message: `${name} falhou ao reabilitar${detail}` });
     }
   };
 
@@ -331,7 +341,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                         icon={<Icon glyph={CheckCircle2} size={16} />}
                         label="Instalado"
                       />
-                    ) : (
+                    ) : groupPending > 0 || groupInstalling ? (
                       <Button
                         size="small"
                         variant="contained"
@@ -343,7 +353,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                       >
                         {groupInstalling ? 'Instalando…' : `Instalar grupo (${groupPending})`}
                       </Button>
-                    )}
+                    ) : null}
                     <IconButton
                       size="small"
                       aria-label={isOpen ? 'Recolher grupo' : 'Expandir grupo'}
@@ -373,6 +383,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                     {items.map((p) => {
                       const state = stateFor(p.name);
                       const done = state === 'done';
+                      const disabled = state === 'disabled';
                       return (
                         <Card
                           key={p.name}
@@ -405,6 +416,15 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                                 <Icon glyph={CheckCircle2} size={16} />
                               </Box>
                             )}
+                            {disabled && (
+                              <Chip
+                                size="small"
+                                variant="outlined"
+                                label="Desabilitado"
+                                data-testid={`starter-plugin-disabled-${p.name}`}
+                                sx={{ height: 20, fontSize: 11 }}
+                              />
+                            )}
                           </Stack>
                           <Typography
                             variant="caption"
@@ -420,17 +440,30 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
                             {p.description}
                           </Typography>
                           <Box sx={{ mt: 0.5 }}>
-                            <Button
-                              size="small"
-                              variant={done ? 'outlined' : 'contained'}
-                              disableElevation
-                              disabled={state !== 'idle'}
-                              onClick={() => setPreviewPlugin(p)}
-                              data-testid={`starter-plugin-install-${p.name}`}
-                              sx={{ minWidth: 92 }}
-                            >
-                              {done ? 'Instalado' : state === 'loading' ? 'Instalando…' : 'Instalar'}
-                            </Button>
+                            {disabled ? (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                disableElevation
+                                onClick={() => void handleReenable(p.name)}
+                                data-testid={`starter-plugin-reenable-${p.name}`}
+                                sx={{ minWidth: 92 }}
+                              >
+                                Reabilitar
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant={done ? 'outlined' : 'contained'}
+                                disableElevation
+                                disabled={state !== 'idle'}
+                                onClick={() => setPreviewPlugin(p)}
+                                data-testid={`starter-plugin-install-${p.name}`}
+                                sx={{ minWidth: 92 }}
+                              >
+                                {done ? 'Instalado' : state === 'loading' ? 'Instalando…' : 'Instalar'}
+                              </Button>
+                            )}
                           </Box>
                         </Card>
                       );

@@ -16,6 +16,7 @@ interface CardViewProps<T> {
   actions?: RowAction<T>[] | undefined;
   cardSlots?: CardSlots<T> | undefined;
   onRowClick?: ((item: T) => void) | undefined;
+  isDimmed?: ((item: T) => boolean) | undefined;
 }
 
 export function CardView<T>({
@@ -24,6 +25,7 @@ export function CardView<T>({
   actions,
   cardSlots,
   onRowClick,
+  isDimmed,
 }: CardViewProps<T>): React.ReactElement {
   const visibleFields = entity.fields.filter((f) => !f.hideInCard);
   const primary = visibleFields.find((f) => f.primary);
@@ -41,6 +43,7 @@ export function CardView<T>({
       {items.map((item) => {
         const banner = cardSlots?.topBanner?.(item);
         const footer = cardSlots?.footer?.(item);
+        const dimmed = isDimmed?.(item) ?? false;
         return (
           <Card
             key={entity.getKey(item)}
@@ -63,7 +66,7 @@ export function CardView<T>({
                 alignItems: { sm: 'center' },
               }}
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ flex: 1, minWidth: 0, opacity: dimmed ? 0.55 : 1 }}>
                 {cardSlots?.header?.(item)}
                 <Stack
                   direction="row"

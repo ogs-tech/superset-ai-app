@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   PluginService,
   type PluginInstallerLike,
@@ -492,6 +492,18 @@ describe('PluginService', () => {
       const updatedMeta = cache.getMeta(SCOPE);
       const entry = updatedMeta?.plugins.find((p) => p.id === IMPORTED_ID);
       expect(entry?.enabled).toBe(false);
+    });
+
+    it('rolls the settings mutation back when the meta write fails', async () => {
+      // settings.json and _meta.json are separate stores; a failed meta write
+      // must not leave settings flipped on, or the two diverge permanently.
+      const boom = new Error('disk full');
+      vi.spyOn(cache, 'writeMeta').mockRejectedValueOnce(boom);
+
+      await expect(service.toggle(IMPORTED_ID, SCOPE, true)).rejects.toThrow(boom);
+
+      const updatedSettings = settings.getSettings(SCOPE);
+      expect(updatedSettings.enabledPlugins[`${IMPORTED_ID}@local`]).not.toBe(true);
     });
   });
 

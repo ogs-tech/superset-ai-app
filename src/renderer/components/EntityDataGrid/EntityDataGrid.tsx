@@ -35,6 +35,7 @@ export function EntityDataGrid<T>({
   searchPlaceholder,
   emptyState,
   onRowClick,
+  isDimmed,
 }: EntityDataGridProps<T>): React.ReactElement {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -117,6 +118,7 @@ export function EntityDataGrid<T>({
           items={paged}
           actions={actions}
           onRowClick={onRowClick}
+          isDimmed={isDimmed}
         />
       ) : (
         <CardView
@@ -125,6 +127,7 @@ export function EntityDataGrid<T>({
           actions={actions}
           cardSlots={cardSlots}
           onRowClick={onRowClick}
+          isDimmed={isDimmed}
         />
       )}
 

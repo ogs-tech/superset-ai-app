@@ -275,3 +275,67 @@ describe('McpService — detected guards', () => {
     await expect(svc().setEnabled({ id, enabled: false })).rejects.toThrow(/detected/i);
   });
 });
+
+describe('McpService.setEnabled — re-enable round-trip', () => {
+  function fakeStash(initial: Record<string, RawMcpServer['def']> = {}) {
+    const map = new Map(Object.entries(initial));
+    return {
+      list: vi.fn(async () => [...map].map(([id, def]) => ({ id, def }))),
+      park: vi.fn(async (id: string, def: RawMcpServer['def']) => {
+        map.set(id, def);
+      }),
+      take: vi.fn(async (id: string) => {
+        const def = map.get(id);
+        if (def === undefined) return undefined;
+        map.delete(id);
+        return def;
+      }),
+    };
+  }
+
+  function svc(opts: { config?: RawMcpServer[]; stash: ReturnType<typeof fakeStash>; upsert?: McpConfigPort['upsert'] }): McpService {
+    return new McpService({
+      config: {
+        read: async () => opts.config ?? [],
+        upsert: opts.upsert ?? vi.fn(async () => {}),
+        remove: vi.fn(async () => {}),
+        setDisabledShared: vi.fn(async () => {}),
+      },
+      plugins: noPlugins,
+      runtime: noRuntime,
+      linkedRepoPaths: async () => [],
+      disabledStash: opts.stash as never,
+    });
+  }
+
+  it('restores a parked def into the config when re-enabled', async () => {
+    const id = mcpServerId({ location: { kind: 'global' }, name: 'pencil' });
+    const stash = fakeStash({ [id]: { command: 'x' } });
+    const upsert = vi.fn(async () => {});
+    await svc({ stash, upsert }).setEnabled({ id, enabled: true });
+    expect(stash.take).toHaveBeenCalledWith(id);
+    expect(upsert).toHaveBeenCalledWith({ kind: 'global' }, 'pencil', { command: 'x' });
+  });
+
+  it('is idempotent when the server is already enabled in config (nothing parked)', async () => {
+    const id = mcpServerId({ location: { kind: 'global' }, name: 'pencil' });
+    const stash = fakeStash();
+    const upsert = vi.fn(async () => {});
+    await expect(
+      svc({
+        config: [{ location: { kind: 'global' }, name: 'pencil', def: { command: 'x' }, enabled: true }],
+        stash,
+        upsert,
+      }).setEnabled({ id, enabled: true }),
+    ).resolves.toEqual({ ok: true });
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('throws not_found instead of a phantom success when the saved def is missing', async () => {
+    const id = mcpServerId({ location: { kind: 'global' }, name: 'pencil' });
+    const stash = fakeStash(); // empty: def was lost
+    await expect(
+      svc({ config: [], stash }).setEnabled({ id, enabled: true }),
+    ).rejects.toThrow(/missing/i);
+  });
+});
