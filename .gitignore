@@ -10,3 +10,6 @@ test-results/
 playwright-report/
 .playwright/
 .superpowers/
+
+# Claude Code session worktrees (never commit embedded repos)
+.claude/worktrees/
