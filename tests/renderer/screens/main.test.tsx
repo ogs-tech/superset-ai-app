@@ -21,7 +21,7 @@ beforeEach(() => {
 const setupRoute = (overrides: Record<string, unknown> = {}) => {
   call.mockImplementation((method: string) => {
     if (method in overrides) return Promise.resolve(overrides[method]);
-    if (method === 'global-instruction.get') {
+    if (method === 'instruction.get') {
       return Promise.resolve(fail('not_found', 'no global instruction'));
     }
     if (method === 'customization.list') return Promise.resolve(ok([]));
