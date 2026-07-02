@@ -39,7 +39,6 @@ import { PluginProvenanceService } from './application/services/plugin-provenanc
 import { ClaudeCodePluginReader } from './infrastructure/plugins/claude-code-plugin-reader.js';
 import { SkillService } from './application/services/skill-service.js';
 import { AgentService } from './application/services/agent-service.js';
-import { CommandService } from './application/services/command-service.js';
 import { HookService } from './application/services/hook-service.js';
 import { InstructionService } from './application/services/instruction-service.js';
 import { MarketplaceService } from './application/services/marketplace-service.js';
@@ -106,7 +105,8 @@ async function wireIpc(): Promise<void> {
     ]),
   });
   const schemaValidator = new SchemaValidator();
-  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
+  // Retained (unused past Task 12) until Task 15 deletes CustomizationService/SchemaValidator entirely.
+  const _customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
 
   const entityValidator = new EntityValidator();
   const entityRepository = new FsEntityRepository(workspacePath);
@@ -192,10 +192,6 @@ async function wireIpc(): Promise<void> {
     provenance: pluginProvenance,
     fs: nodeFsAdapter,
   });
-  const commandService = new CommandService(customizationService, {
-    provenance: pluginProvenance,
-    fs: nodeFsAdapter,
-  });
   const hookService = new HookService(claudeSettingsFile, {
     cache: pluginCache,
     fs: nodeFsAdapter,
@@ -266,7 +262,6 @@ async function wireIpc(): Promise<void> {
     credentialStore,
     skillService,
     agentService,
-    commandService,
     hookService,
     instructionService,
     marketplaceService,

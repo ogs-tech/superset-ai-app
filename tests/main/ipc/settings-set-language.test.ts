@@ -38,7 +38,6 @@ const baseDeps = (): IpcDeps => {
     credentialStore: {} as IpcDeps['credentialStore'],
     skillService: {} as IpcDeps['skillService'],
     agentService: {} as IpcDeps['agentService'],
-    commandService: {} as IpcDeps['commandService'],
     hookService: {} as IpcDeps['hookService'],
     marketplaceService: {} as IpcDeps['marketplaceService'],
     healthService: {} as IpcDeps['healthService'],

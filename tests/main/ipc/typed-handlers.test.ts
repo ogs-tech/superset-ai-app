@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { buildSkillHandlers } from '../../../src/main/ipc/skill-handlers.js';
 import { buildAgentHandlers } from '../../../src/main/ipc/agent-handlers.js';
-import { buildCommandHandlers } from '../../../src/main/ipc/command-handlers.js';
 import { buildInstructionHandlers } from '../../../src/main/ipc/instruction-handlers.js';
 import { buildMarketplaceHandlers } from '../../../src/main/ipc/marketplace-handlers.js';
 import { SkillService } from '../../../src/main/application/services/skill-service.js';
@@ -11,7 +10,6 @@ import { EntityService } from '../../../src/main/application/services/entity-ser
 import { InMemoryEntityRepository } from '../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
-import type { CommandService } from '../../../src/main/application/services/command-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
 import { WORKSPACE_SOURCE, type Skill, type Agent, type Instruction } from '../../../src/shared/entity.js';
 
@@ -153,61 +151,6 @@ describe('agent-handlers', () => {
     const h = buildAgentHandlers(svc);
     await h['agent.save']!({ agent: agent('reviewer'), isCreate: true });
     expect(spy).toHaveBeenCalled();
-  });
-});
-
-describe('command-handlers', () => {
-  const fakeCommandService = () =>
-    ({
-      list: vi.fn().mockResolvedValue([]),
-      get: vi.fn().mockResolvedValue({ id: 'feature-dev', body: 'b', frontmatter: {}, source: { kind: 'workspace' } }),
-      save: vi.fn().mockResolvedValue({ command: { id: 'feature-dev' }, syncReport: [] }),
-      delete: vi.fn().mockResolvedValue({ ok: true }),
-    }) as unknown as CommandService;
-
-  it('command.list calls service.list with default personal scope', async () => {
-    const svc = fakeCommandService();
-    const h = buildCommandHandlers(svc);
-    await h['command.list']!({});
-    expect(svc.list).toHaveBeenCalledWith('personal');
-  });
-
-  it('command.list passes explicit scope', async () => {
-    const svc = fakeCommandService();
-    const h = buildCommandHandlers(svc);
-    await h['command.list']!({ scope: 'project' });
-    expect(svc.list).toHaveBeenCalledWith('project');
-  });
-
-  it('command.get brands the id', async () => {
-    const svc = fakeCommandService();
-    const h = buildCommandHandlers(svc);
-    await h['command.get']!({ id: 'feature-dev' });
-    expect(svc.get).toHaveBeenCalledWith('feature-dev');
-  });
-
-  it('command.get rejects empty id', async () => {
-    const h = buildCommandHandlers(fakeCommandService());
-    await expect(h['command.get']!({ id: '' })).rejects.toMatchObject({ kind: 'validation' });
-  });
-
-  it('command.save passes through command payload', async () => {
-    const svc = fakeCommandService();
-    const h = buildCommandHandlers(svc);
-    await h['command.save']!({ command: { id: 'feature-dev' }, isCreate: true });
-    expect(svc.save).toHaveBeenCalled();
-  });
-
-  it('command.delete passes branded id and removeSymlinks', async () => {
-    const svc = fakeCommandService();
-    const h = buildCommandHandlers(svc);
-    await h['command.delete']!({ id: 'feature-dev', removeSymlinks: true });
-    expect(svc.delete).toHaveBeenCalledWith({ id: 'feature-dev', removeSymlinks: true });
-  });
-
-  it('command.delete rejects missing removeSymlinks', async () => {
-    const h = buildCommandHandlers(fakeCommandService());
-    await expect(h['command.delete']!({ id: 'feature-dev' })).rejects.toMatchObject({ kind: 'validation' });
   });
 });
 
