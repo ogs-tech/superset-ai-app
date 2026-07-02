@@ -56,6 +56,15 @@ describe('EntityService.save', () => {
     await expect(repo.get('urn:skill:old')).rejects.toMatchObject({ kind: 'not_found' });
     expect((await repo.get('urn:skill:new')).name).toBe('new');
   });
+
+  it('rejects a rename onto an already-existing urn', async () => {
+    const { service } = setup();
+    const a = (await service.save({ entity: skill('a'), isCreate: true })).entity as Skill;
+    await service.save({ entity: skill('b'), isCreate: true });
+    // Rename `a` -> `b`: incoming urn still points at the old record, name is the taken one.
+    const renamedOntoExisting: Skill = { ...a, name: 'b' };
+    await expect(service.save({ entity: renamedOntoExisting })).rejects.toMatchObject({ kind: 'validation' });
+  });
 });
 
 describe('EntityService.delete', () => {
@@ -65,5 +74,24 @@ describe('EntityService.delete', () => {
     const result = await service.delete({ urn: 'urn:skill:demo', removeSymlinks: true });
     expect(result.ok).toBe(true);
     expect(adapterManager.removeEntity).toHaveBeenCalled();
+  });
+
+  it('does not call removeEntity when removeSymlinks is false', async () => {
+    const { service, adapterManager } = setup();
+    await service.save({ entity: skill(), isCreate: true });
+    const result = await service.delete({ urn: 'urn:skill:demo', removeSymlinks: false });
+    expect(result.ok).toBe(true);
+    expect(result.syncReport).toBeUndefined();
+    expect(adapterManager.removeEntity).not.toHaveBeenCalled();
+  });
+});
+
+describe('EntityService.get / list', () => {
+  it('returns saved entities via get and list', async () => {
+    const { service } = setup();
+    await service.save({ entity: skill(), isCreate: true });
+    expect((await service.get('urn:skill:demo')).name).toBe('demo');
+    const listed = await service.list('skill');
+    expect(listed.map((e) => e.urn)).toContain('urn:skill:demo');
   });
 });
