@@ -5,15 +5,15 @@ import { buildCommandHandlers } from '../../../src/main/ipc/command-handlers.js'
 import { buildGlobalInstructionHandlers } from '../../../src/main/ipc/global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from '../../../src/main/ipc/marketplace-handlers.js';
 import { SkillService } from '../../../src/main/application/services/skill-service.js';
+import { AgentService } from '../../../src/main/application/services/agent-service.js';
 import { EntityService } from '../../../src/main/application/services/entity-service.js';
 import { InMemoryEntityRepository } from '../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
-import type { AgentService } from '../../../src/main/application/services/agent-service.js';
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
 import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
-import { WORKSPACE_SOURCE, type Skill } from '../../../src/shared/entity.js';
+import { WORKSPACE_SOURCE, type Skill, type Agent } from '../../../src/shared/entity.js';
 
 const skill = (name = 'foo'): Skill => ({
   urn: `urn:skill:${name}`,
@@ -34,6 +34,27 @@ const setupSkillService = () => {
   } as unknown as AdapterManager;
   const base = new EntityService(repo, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), adapterManager);
   return new SkillService(base);
+};
+
+const agent = (name = 'reviewer'): Agent => ({
+  urn: `urn:agent:${name}`,
+  kind: 'agent',
+  name,
+  description: 'd',
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  systemPrompt: 'You review.',
+});
+
+const setupAgentService = () => {
+  const repo = new InMemoryEntityRepository();
+  const adapterManager = {
+    syncEntity: vi.fn().mockResolvedValue([]),
+    removeEntity: vi.fn().mockResolvedValue([]),
+  } as unknown as AdapterManager;
+  const base = new EntityService(repo, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), adapterManager);
+  return new AgentService(base);
 };
 
 describe('skill-handlers', () => {
@@ -79,21 +100,37 @@ describe('skill-handlers', () => {
 
 describe('agent-handlers', () => {
   it('agent.list calls service.list', async () => {
-    const svc = {
-      list: vi.fn().mockResolvedValue([]),
-    } as unknown as AgentService;
+    const svc = setupAgentService();
+    const spy = vi.spyOn(svc, 'list');
     const h = buildAgentHandlers(svc);
     await h['agent.list']!({});
-    expect(svc.list).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('agent.get brands the id', async () => {
+    const svc = setupAgentService();
+    await svc.save({ agent: agent('reviewer'), isCreate: true });
+    const spy = vi.spyOn(svc, 'get');
+    const h = buildAgentHandlers(svc);
+    await h['agent.get']!({ id: 'reviewer' });
+    expect(spy).toHaveBeenCalledWith('reviewer');
   });
 
   it('agent.delete brands the id', async () => {
-    const svc = {
-      delete: vi.fn().mockResolvedValue({ ok: true }),
-    } as unknown as AgentService;
+    const svc = setupAgentService();
+    await svc.save({ agent: agent('reviewer'), isCreate: true });
+    const spy = vi.spyOn(svc, 'delete');
     const h = buildAgentHandlers(svc);
     await h['agent.delete']!({ id: 'reviewer', removeSymlinks: false });
-    expect(svc.delete).toHaveBeenCalledWith({ id: 'reviewer', removeSymlinks: false });
+    expect(spy).toHaveBeenCalledWith({ id: 'reviewer', removeSymlinks: false });
+  });
+
+  it('agent.save passes through agent payload', async () => {
+    const svc = setupAgentService();
+    const spy = vi.spyOn(svc, 'save');
+    const h = buildAgentHandlers(svc);
+    await h['agent.save']!({ agent: agent('reviewer'), isCreate: true });
+    expect(spy).toHaveBeenCalled();
   });
 });
 

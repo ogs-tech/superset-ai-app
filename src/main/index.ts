@@ -188,7 +188,7 @@ async function wireIpc(): Promise<void> {
     provenance: pluginProvenance,
     fs: nodeFsAdapter,
   });
-  const agentService = new AgentService(customizationService, {
+  const agentService = new AgentService(entityService, {
     provenance: pluginProvenance,
     fs: nodeFsAdapter,
   });
