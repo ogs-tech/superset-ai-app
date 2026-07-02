@@ -1,4 +1,3 @@
-// src/main/application/services/instruction-service.ts
 import type { EntityService } from './entity-service.js';
 import type { Instruction } from '../../../shared/entity.js';
 import { entityUrn, WORKSPACE_SOURCE } from '../../../shared/entity.js';

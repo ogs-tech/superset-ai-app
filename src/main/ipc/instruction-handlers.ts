@@ -1,4 +1,3 @@
-// src/main/ipc/instruction-handlers.ts
 import type { IpcHandlers } from './dispatcher.js';
 import type { InstructionService } from '../application/services/instruction-service.js';
 import type { Instruction } from '../../shared/entity.js';
