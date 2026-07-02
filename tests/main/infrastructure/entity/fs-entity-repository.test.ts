@@ -47,6 +47,13 @@ describe('FsEntityRepository — instruction', () => {
     const ins = (await repo.get('urn:instruction:default')) as Instruction;
     expect(ins.content.trim()).toBe('# Legacy body');
   });
+
+  it('exists() returns true when only the legacy global-instructions file exists', async () => {
+    await mkdir(join(ws, 'global-instructions'), { recursive: true });
+    await writeFile(join(ws, 'global-instructions', 'default.md'), '# Legacy body\n', 'utf8');
+    const repo = new FsEntityRepository(ws);
+    expect(await repo.exists('urn:instruction:default')).toBe(true);
+  });
 });
 
 describe('FsEntityRepository — list & delete', () => {
@@ -57,5 +64,10 @@ describe('FsEntityRepository — list & delete', () => {
     expect((await repo.list({ kind: 'skill' })).map((e) => e.name)).toEqual(['a']);
     await repo.delete('urn:skill:a');
     await expect(repo.get('urn:skill:a')).rejects.toMatchObject({ kind: 'not_found' });
+  });
+
+  it('rejects delete of a missing skill with not_found', async () => {
+    const repo = new FsEntityRepository(ws);
+    await expect(repo.delete('urn:skill:missing')).rejects.toMatchObject({ kind: 'not_found' });
   });
 });

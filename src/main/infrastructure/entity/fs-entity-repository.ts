@@ -114,12 +114,19 @@ export class FsEntityRepository implements EntityRepository {
   async delete(urn: string): Promise<void> {
     const { kind, name } = parseUrn(urn);
     const root = await this.root();
-    try {
-      if (kind === 'skill') {
-        await rm(join(root, FOLDER.skill, name), { recursive: true, force: true });
-      } else {
-        await unlink(await this.fileFor(kind, name));
+    if (kind === 'skill') {
+      const dir = join(root, FOLDER.skill, name);
+      try {
+        await access(dir);
+      } catch (err) {
+        if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
+        throw err;
       }
+      await rm(dir, { recursive: true, force: true });
+      return;
+    }
+    try {
+      await unlink(await this.fileFor(kind, name));
     } catch (err) {
       if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
       throw err;
@@ -131,12 +138,14 @@ export class FsEntityRepository implements EntityRepository {
     try {
       await access(await this.fileFor(kind, name));
       return true;
-    } catch {
+    } catch (err) {
+      if (!isEnoent(err)) throw err;
       if (kind === 'instruction') {
         try {
           await access(await this.legacyInstructionFile(name));
           return true;
-        } catch {
+        } catch (legacyErr) {
+          if (!isEnoent(legacyErr)) throw legacyErr;
           return false;
         }
       }

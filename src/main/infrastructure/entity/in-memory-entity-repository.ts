@@ -24,6 +24,9 @@ export class InMemoryEntityRepository implements EntityRepository {
   }
 
   delete(urn: string): Promise<void> {
+    if (!this.store.has(urn)) {
+      return Promise.reject(new DomainError('not_found', `Entity not found: ${urn}`));
+    }
     this.store.delete(urn);
     return Promise.resolve();
   }

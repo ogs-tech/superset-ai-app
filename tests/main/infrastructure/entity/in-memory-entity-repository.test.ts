@@ -27,6 +27,11 @@ describe('InMemoryEntityRepository', () => {
     await expect(repo.get('urn:skill:nope')).rejects.toMatchObject({ kind: 'not_found' });
   });
 
+  it('rejects delete on a missing urn with not_found', async () => {
+    const repo = new InMemoryEntityRepository();
+    await expect(repo.delete('urn:skill:nope')).rejects.toMatchObject({ kind: 'not_found' });
+  });
+
   it('deep-clones on read so callers cannot mutate the store', async () => {
     const repo = new InMemoryEntityRepository();
     await repo.save(skill('a'));
