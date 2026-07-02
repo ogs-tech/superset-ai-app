@@ -2,18 +2,18 @@ import { describe, it, expect, vi } from 'vitest';
 import { buildSkillHandlers } from '../../../src/main/ipc/skill-handlers.js';
 import { buildAgentHandlers } from '../../../src/main/ipc/agent-handlers.js';
 import { buildCommandHandlers } from '../../../src/main/ipc/command-handlers.js';
-import { buildGlobalInstructionHandlers } from '../../../src/main/ipc/global-instruction-handlers.js';
+import { buildInstructionHandlers } from '../../../src/main/ipc/instruction-handlers.js';
 import { buildMarketplaceHandlers } from '../../../src/main/ipc/marketplace-handlers.js';
 import { SkillService } from '../../../src/main/application/services/skill-service.js';
 import { AgentService } from '../../../src/main/application/services/agent-service.js';
+import { InstructionService } from '../../../src/main/application/services/instruction-service.js';
 import { EntityService } from '../../../src/main/application/services/entity-service.js';
 import { InMemoryEntityRepository } from '../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
-import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
-import { WORKSPACE_SOURCE, type Skill, type Agent } from '../../../src/shared/entity.js';
+import { WORKSPACE_SOURCE, type Skill, type Agent, type Instruction } from '../../../src/shared/entity.js';
 
 const skill = (name = 'foo'): Skill => ({
   urn: `urn:skill:${name}`,
@@ -55,6 +55,28 @@ const setupAgentService = () => {
   } as unknown as AdapterManager;
   const base = new EntityService(repo, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), adapterManager);
   return new AgentService(base);
+};
+
+const instruction = (): Instruction => ({
+  urn: 'urn:instruction:default',
+  kind: 'instruction',
+  name: 'default',
+  description: '',
+  scopes: ['personal'],
+  metadata: { version: '0.0.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  content: '# Instructions\n',
+  activation: 'always',
+});
+
+const setupInstructionService = () => {
+  const repo = new InMemoryEntityRepository();
+  const adapterManager = {
+    syncEntity: vi.fn().mockResolvedValue([]),
+    removeEntity: vi.fn().mockResolvedValue([]),
+  } as unknown as AdapterManager;
+  const base = new EntityService(repo, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), adapterManager);
+  return new InstructionService(base);
 };
 
 describe('skill-handlers', () => {
@@ -189,24 +211,31 @@ describe('command-handlers', () => {
   });
 });
 
-describe('global-instruction-handlers', () => {
-  it('global-instruction.get rejects non-default slug', async () => {
-    const svc = {
-      get: vi.fn(),
-    } as unknown as GlobalInstructionService;
-    const h = buildGlobalInstructionHandlers(svc);
-    await expect(h['global-instruction.get']!({ id: 'other' })).rejects.toThrow(
+describe('instruction-handlers', () => {
+  it('instruction.get rejects non-default slug', async () => {
+    const svc = setupInstructionService();
+    const h = buildInstructionHandlers(svc);
+    await expect(h['instruction.get']!({ id: 'other' })).rejects.toThrow(
       /must be one of/,
     );
   });
 
-  it('global-instruction.get accepts default', async () => {
-    const svc = {
-      get: vi.fn().mockResolvedValue({ id: 'default' }),
-    } as unknown as GlobalInstructionService;
-    const h = buildGlobalInstructionHandlers(svc);
-    await h['global-instruction.get']!({ id: 'default' });
-    expect(svc.get).toHaveBeenCalledWith('default');
+  it('instruction.get returns the saved default instruction', async () => {
+    const svc = setupInstructionService();
+    await svc.save({ instruction: instruction(), isCreate: true });
+    const spy = vi.spyOn(svc, 'get');
+    const h = buildInstructionHandlers(svc);
+    const result = await h['instruction.get']!({ id: 'default' });
+    expect(spy).toHaveBeenCalledWith('default');
+    expect(result).toMatchObject({ urn: 'urn:instruction:default', content: expect.stringContaining('# Instructions') });
+  });
+
+  it('instruction.save passes through instruction payload', async () => {
+    const svc = setupInstructionService();
+    const spy = vi.spyOn(svc, 'save');
+    const h = buildInstructionHandlers(svc);
+    await h['instruction.save']!({ instruction: instruction(), isCreate: true });
+    expect(spy).toHaveBeenCalled();
   });
 });
 

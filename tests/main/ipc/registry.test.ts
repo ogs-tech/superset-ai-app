@@ -13,7 +13,7 @@ import type { PluginService } from '../../../src/main/application/services/plugi
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
-import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
+import type { InstructionService } from '../../../src/main/application/services/instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
 import type { HookService } from '../../../src/main/application/services/hook-service.js';
 import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
@@ -45,7 +45,7 @@ interface Deps {
   skillService: SkillService;
   agentService: AgentService;
   commandService: CommandService;
-  globalInstructionService: GlobalInstructionService;
+  instructionService: InstructionService;
   marketplaceService: MarketplaceService;
   hookService: HookService;
   healthService: HealthService;
@@ -110,7 +110,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   const skillService = null as unknown as SkillService;
   const agentService = null as unknown as AgentService;
   const commandService = null as unknown as CommandService;
-  const globalInstructionService = null as unknown as GlobalInstructionService;
+  const instructionService = null as unknown as InstructionService;
   const marketplaceService = null as unknown as MarketplaceService;
   const hookService = null as unknown as HookService;
   const healthService = null as unknown as HealthService;
@@ -137,7 +137,7 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     skillService,
     agentService,
     commandService,
-    globalInstructionService,
+    instructionService,
     marketplaceService,
     hookService,
     healthService,

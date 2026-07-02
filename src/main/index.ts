@@ -41,7 +41,7 @@ import { SkillService } from './application/services/skill-service.js';
 import { AgentService } from './application/services/agent-service.js';
 import { CommandService } from './application/services/command-service.js';
 import { HookService } from './application/services/hook-service.js';
-import { GlobalInstructionService } from './application/services/global-instruction-service.js';
+import { InstructionService } from './application/services/instruction-service.js';
 import { MarketplaceService } from './application/services/marketplace-service.js';
 import { MarketplaceSeeder } from './application/services/marketplace-seeder.js';
 import { SettingsMarketplaceRepository } from './infrastructure/marketplace/settings-marketplace-repository.js';
@@ -200,7 +200,7 @@ async function wireIpc(): Promise<void> {
     cache: pluginCache,
     fs: nodeFsAdapter,
   });
-  const globalInstructionService = new GlobalInstructionService(customizationService);
+  const instructionService = new InstructionService(entityService);
   const marketplacesCacheRoot = (scope: 'personal' | 'project'): string =>
     scope === 'personal'
       ? join(workspacePath, 'marketplaces-cache')
@@ -268,7 +268,7 @@ async function wireIpc(): Promise<void> {
     agentService,
     commandService,
     hookService,
-    globalInstructionService,
+    instructionService,
     marketplaceService,
     healthService,
     mcpService,
