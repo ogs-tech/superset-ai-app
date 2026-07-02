@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
 import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Agent, type Scope, type Skill } from '../../../../../src/shared/entity.js';
+
+const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
 
 const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}): Customization => ({
   id: `${overrides.type ?? 'skill'}/${overrides.name ?? 'foo'}`,
@@ -18,14 +21,34 @@ const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}
   body: '# foo',
 });
 
+const skillEntity = (name: string, scopes: Scope[] = ['personal']): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: 'desc',
+  scopes,
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: `# ${name}`,
+});
+
+const agentEntity = (name: string, scopes: Scope[] = ['personal']): Agent => ({
+  urn: `urn:agent:${name}`,
+  kind: 'agent',
+  name,
+  description: 'desc',
+  scopes,
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  systemPrompt: `# ${name}`,
+});
+
 describe('AdapterManager.syncAll', () => {
   it('aggregates results across all customizations and enabled adapters', async () => {
     const adapters = [new FakeAdapter('claude', '/personal/claude/{slug}')];
-    const { manager, registerCustomization, fs } = await setupAdapterManager(adapters);
-    const skill = baseCustomization({ name: 'alpha', type: 'skill' });
-    const agent = baseCustomization({ name: 'beta', type: 'agent' });
-    await registerCustomization(skill);
-    await registerCustomization(agent);
+    const { manager, registerEntity, fs } = await setupAdapterManager(adapters);
+    await registerEntity(skillEntity('alpha'));
+    await registerEntity(agentEntity('beta'));
     fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
     fs.createFile('/workspace/agents/beta.md', '# beta');
 
@@ -38,9 +61,8 @@ describe('AdapterManager.syncAll', () => {
 
   it('filters by adapterId when provided', async () => {
     const adapters = [new FakeAdapter('claude', '/personal/claude')];
-    const { manager, registerCustomization, fs } = await setupAdapterManager(adapters);
-    const skill = baseCustomization({ name: 'alpha', type: 'skill' });
-    await registerCustomization(skill);
+    const { manager, registerEntity, fs } = await setupAdapterManager(adapters);
+    await registerEntity(skillEntity('alpha'));
     fs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
 
     const results = await manager.syncAll({ adapterId: 'claude' });
@@ -52,9 +74,8 @@ describe('AdapterManager.syncAll', () => {
   it('returns skipped result for project customizations when no linkedRepos', async () => {
     const adapter = new FakeAdapter('claude', '/personal/claude');
     const settings = { ...defaultSettings, linkedRepos: [] };
-    const { manager, registerCustomization } = await setupAdapterManager([adapter], settings);
-    const projectAgent = baseCustomization({ name: 'gamma', type: 'agent', scopes: ['project'] });
-    await registerCustomization(projectAgent);
+    const { manager, registerEntity } = await setupAdapterManager([adapter], settings);
+    await registerEntity(agentEntity('gamma', ['project']));
 
     const results = await manager.syncAll({});
 

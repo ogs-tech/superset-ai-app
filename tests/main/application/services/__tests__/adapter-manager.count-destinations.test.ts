@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -8,7 +9,7 @@ import { SymlinkManager } from '../../../../../src/main/application/services/sym
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../../../src/shared/entity.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -21,18 +22,17 @@ const baseSettings: Settings = {
   language: 'off',
 };
 
-const makeCustomization = (name: string): Customization => ({
-  id: `skill/${name}`,
-  frontmatter: {
-    name,
-    type: 'skill',
-    description: 'desc',
-    scopes: ['personal'],
-    version: '1.0.0',
-    createdAt: '',
-    updatedAt: '',
-  },
-  body: '# test',
+const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
+
+const makeSkillEntity = (name: string): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: '# test',
 });
 
 describe('AdapterManager.countDestinations (AC#17)', () => {
@@ -41,8 +41,9 @@ describe('AdapterManager.countDestinations (AC#17)', () => {
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
     const customizationRepo = new InMemoryCustomizationRepository();
-    await customizationRepo.save({ customization: makeCustomization('art1') });
-    await customizationRepo.save({ customization: makeCustomization('art2') });
+    const entityRepository = new InMemoryEntityRepository();
+    await entityRepository.save(makeSkillEntity('art1'));
+    await entityRepository.save(makeSkillEntity('art2'));
 
     const fs = new InMemoryFileSystem();
     const dest1 = join(HOMEDIR, '.claude/skills/art1');
@@ -55,6 +56,7 @@ describe('AdapterManager.countDestinations (AC#17)', () => {
     const manager = new AdapterManager({
       settingsService,
       customizationRepository: customizationRepo,
+      entityRepository,
       symlinkManager: sm,
       workspacePath: WORKSPACE,
       adapters: new Map([['claude', claudeAdapter]]),

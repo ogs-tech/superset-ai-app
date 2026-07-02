@@ -95,9 +95,11 @@ async function wireIpc(): Promise<void> {
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
+  const entityRepository = new FsEntityRepository(workspacePath);
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
+    entityRepository,
     symlinkManager,
     workspacePath,
     adapters: new Map<string, Adapter>([
@@ -109,7 +111,6 @@ async function wireIpc(): Promise<void> {
   const _customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
 
   const entityValidator = new EntityValidator();
-  const entityRepository = new FsEntityRepository(workspacePath);
   const entityService = new EntityService(entityRepository, clock, adapterManager, entityValidator);
 
   const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));

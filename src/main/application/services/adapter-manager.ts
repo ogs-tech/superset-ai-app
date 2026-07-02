@@ -3,6 +3,7 @@ import type { Customization, SyncResult, SyncResultDetails } from '../../../shar
 import type { Entity } from '../../../shared/entity.js';
 import type { SettingsService } from './settings-service.js';
 import type { CustomizationRepository } from '../ports/customization-repository.js';
+import type { EntityRepository } from '../ports/entity-repository.js';
 import type { Adapter } from '../ports/adapter.js';
 import type { SymlinkManager } from './symlink-manager.js';
 import { DomainError } from '../../domain/errors.js';
@@ -22,6 +23,7 @@ export interface RemoveAdapterResult {
 export interface AdapterManagerDeps {
   settingsService: SettingsService;
   customizationRepository: CustomizationRepository;
+  entityRepository: EntityRepository;
   symlinkManager: SymlinkManager;
   adapters: Map<string, Adapter>;
   workspacePath: string;
@@ -99,19 +101,19 @@ export class AdapterManager {
       command.adapterId ? adapter.adapterId === command.adapterId : true,
     );
 
-    const customizations = await this.deps.customizationRepository.list();
+    const entities = await this.deps.entityRepository.list();
     const results: SyncResult[] = [];
-    for (const customization of customizations) {
-      const includesProject = customization.frontmatter.scopes.includes('project');
+    for (const entity of entities) {
+      const includesProject = entity.scopes.includes('project');
       for (const adapter of enabledAdapters) {
-        const destinations = await adapter.resolveDestinations({
-          customization,
+        const destinations = await adapter.resolveEntityDestinations({
+          entity,
           linkedRepos: settings.linkedRepos,
         });
 
         for (const destination of destinations) {
           results.push(
-            await this.syncDestination(adapter.adapterId, this.customizationSourcePath(customization, this.deps.workspacePath), destination.destination),
+            await this.syncDestination(adapter.adapterId, this.entitySourcePath(entity, this.deps.workspacePath), destination.destination),
           );
         }
 
@@ -191,12 +193,12 @@ export class AdapterManager {
     if (!adapter) return [];
 
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
-    const customizations = await this.deps.customizationRepository.list();
+    const entities = await this.deps.entityRepository.list();
     const results: SyncResult[] = [];
 
-    for (const customization of customizations) {
-      const destinations = await adapter.resolveDestinations({
-        customization,
+    for (const entity of entities) {
+      const destinations = await adapter.resolveEntityDestinations({
+        entity,
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
@@ -212,14 +214,14 @@ export class AdapterManager {
 
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const workspacePath = this.deps.workspacePath;
-    const customizations = await this.deps.customizationRepository.list();
+    const entities = await this.deps.entityRepository.list();
     let removed = 0;
     let skipped = 0;
     const errors: SymlinkError[] = [];
 
-    for (const customization of customizations) {
-      const destinations = await adapter.resolveDestinations({
-        customization,
+    for (const entity of entities) {
+      const destinations = await adapter.resolveEntityDestinations({
+        entity,
         linkedRepos: settings.linkedRepos,
       });
       for (const dest of destinations) {
@@ -265,12 +267,12 @@ export class AdapterManager {
 
     const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const workspacePath = this.deps.workspacePath;
-    const customizations = await this.deps.customizationRepository.list();
+    const entities = await this.deps.entityRepository.list();
     let count = 0;
 
-    for (const customization of customizations) {
-      const destinations = await adapter.resolveDestinations({
-        customization,
+    for (const entity of entities) {
+      const destinations = await adapter.resolveEntityDestinations({
+        entity,
         linkedRepos: settings.linkedRepos,
       });
       for (const dest of destinations) {
@@ -294,14 +296,14 @@ export class AdapterManager {
     const settings =
       (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const enabledAdapters = this.enabledAdapters(settings);
-    const customizations = await this.deps.customizationRepository.list();
+    const entities = await this.deps.entityRepository.list();
 
     const entries: SymlinkPlanEntry[] = [];
-    for (const customization of customizations) {
-      const source = this.customizationSourcePath(customization, this.deps.workspacePath);
+    for (const entity of entities) {
+      const source = this.entitySourcePath(entity, this.deps.workspacePath);
       for (const adapter of enabledAdapters) {
-        const destinations = await adapter.resolveDestinations({
-          customization,
+        const destinations = await adapter.resolveEntityDestinations({
+          entity,
           linkedRepos: settings.linkedRepos,
         });
         for (const dest of destinations) {

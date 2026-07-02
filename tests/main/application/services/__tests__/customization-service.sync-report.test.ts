@@ -5,6 +5,7 @@ import { AdapterManager } from '../../../../../src/main/application/services/ada
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -55,6 +56,7 @@ const setup = async () => {
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
+    entityRepository: new InMemoryEntityRepository(),
     symlinkManager,
     workspacePath: WORKSPACE,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),

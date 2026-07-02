@@ -1,30 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
-import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../../../src/shared/entity.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const skillPersonal: Customization = {
-  id: 'skill/review',
-  frontmatter: {
-    name: 'review',
-    type: 'skill',
-    description: 'desc',
-    scopes: ['personal'],
-    version: '1.0.0',
-    createdAt: '',
-    updatedAt: '',
-  },
-  body: '# review',
+const skillPersonal: Skill = {
+  urn: 'urn:skill:review',
+  kind: 'skill',
+  name: 'review',
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  content: '# review',
 };
 
 const buildSettings = (claudeEnabled: boolean): Settings => ({
@@ -41,6 +39,7 @@ const setup = async (settings: Settings) => {
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
   const customizationRepo = new InMemoryCustomizationRepository();
+  const entityRepository = new InMemoryEntityRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile('/workspace/skills/review/SKILL.md', '# review');
   const symlinkManager = new SymlinkManager(
@@ -52,11 +51,12 @@ const setup = async (settings: Settings) => {
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
+    entityRepository,
     symlinkManager,
     workspacePath: WORKSPACE,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
-  await customizationRepo.save({ customization: skillPersonal });
+  await entityRepository.save(skillPersonal);
   return { manager, fs };
 };
 

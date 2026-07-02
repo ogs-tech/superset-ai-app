@@ -4,27 +4,23 @@ import type { SettingsService } from '../../../../../src/main/application/servic
 import type { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { getDefaults, type Settings } from '../../../../../src/shared/settings.js';
-import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../../../src/shared/entity.js';
 
 const FROZEN = '2026-06-05T10:00:00.000Z';
 
-// Double-cast through `unknown`: AdapterManager only reads name/type/scopes at
-// runtime, so we avoid coupling the test to every required frontmatter field.
-const skill = (name: string): Customization =>
-  ({
-    id: `skill/${name}`,
-    frontmatter: {
-      name,
-      type: 'skill',
-      description: `${name}`,
-      scopes: ['personal'],
-      createdAt: FROZEN,
-      updatedAt: FROZEN,
-    },
-    body: 'body',
-  }) as unknown as Customization;
+const skill = (name: string): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: name,
+  scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: FROZEN, updatedAt: FROZEN },
+  source: WORKSPACE_SOURCE,
+  content: 'body',
+});
 
 const settingsWith = (over: Partial<Settings> = {}): Settings => ({
   ...getDefaults(),
@@ -34,7 +30,8 @@ const settingsWith = (over: Partial<Settings> = {}): Settings => ({
 
 const setup = async () => {
   const repo = new InMemoryCustomizationRepository();
-  await repo.save({ customization: skill('alpha') });
+  const entityRepository = new InMemoryEntityRepository();
+  await entityRepository.save(skill('alpha'));
 
   const settings = settingsWith();
   const settingsService = {
@@ -47,6 +44,7 @@ const setup = async () => {
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: repo,
+    entityRepository,
     symlinkManager: {} as SymlinkManager,
     adapters: new Map<string, Adapter>([['claude', adapter]]),
     workspacePath: '/ws',

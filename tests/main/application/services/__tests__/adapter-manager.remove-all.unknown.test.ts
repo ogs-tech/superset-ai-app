@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -20,16 +21,18 @@ const setup = async () => {
   await repo.save(baseSettings);
   const settingsService = new SettingsService(repo);
   const customizationRepo = new InMemoryCustomizationRepository();
+  const entityRepository = new InMemoryEntityRepository();
   const fs = new InMemoryFileSystem();
   const sm = new SymlinkManager(fs, new FixedClock(new Date()), '/workspace');
   const manager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
+    entityRepository,
     symlinkManager: sm,
     workspacePath: '/workspace',
     adapters: new Map(),
   });
-  const listSpy = vi.spyOn(customizationRepo, 'list');
+  const listSpy = vi.spyOn(entityRepository, 'list');
   return { manager, listSpy };
 };
 

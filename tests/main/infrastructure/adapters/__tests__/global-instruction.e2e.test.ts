@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isAbsolute } from 'node:path';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -54,6 +55,7 @@ const setup = async () => {
   const adapterManager = new AdapterManager({
     settingsService,
     customizationRepository: customizationRepo,
+    entityRepository: new InMemoryEntityRepository(),
     symlinkManager,
     workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([
