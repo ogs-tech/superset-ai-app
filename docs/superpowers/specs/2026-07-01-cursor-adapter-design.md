@@ -1,7 +1,7 @@
 # Cursor Adapter — Design
 
 - **Date:** 2026-07-01
-- **Status:** Approved (design) — Cursor 2026 file surface verified against official docs; pending the ports/adapters refactor and an implementation plan.
+- **Status:** Approved (design) — Cursor 2026 file surface verified against official docs; pending the ports/adapters refactor and an implementation plan. **Model superseded by [`2026-07-01-canonical-entity-model-design.md`](./2026-07-01-canonical-entity-model-design.md)** — this adapter becomes a Phase-2 consumer of the `Entity` model; `Customization` references below map to `Entity`, and `command` is folded into `skill`.
 - **Author:** Odenir Gomes (with Claude)
 - **Scope:** Add a second sync target — **Cursor** — alongside the existing Claude adapter, so the
   same customizations (skills, agents, commands, global instruction) reach Cursor via its native
