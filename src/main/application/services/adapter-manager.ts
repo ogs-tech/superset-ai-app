@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import type { Customization, SyncResult, SyncResultDetails } from '../../../shared/customization.js';
+import type { Entity } from '../../../shared/entity.js';
 import type { SettingsService } from './settings-service.js';
 import type { CustomizationRepository } from '../ports/customization-repository.js';
 import type { Adapter } from '../ports/adapter.js';
@@ -47,6 +48,14 @@ export interface RemoveAllCommand {
 
 export interface RemoveOneCommand {
   customization: Customization;
+}
+
+export interface SyncEntityCommand {
+  entity: Entity;
+}
+
+export interface RemoveEntityCommand {
+  entity: Entity;
 }
 
 export class AdapterManager {
@@ -126,6 +135,48 @@ export class AdapterManager {
     for (const adapter of this.deps.adapters.values()) {
       const destinations = await adapter.resolveDestinations({
         customization: command.customization,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const destination of destinations) {
+        results.push(await this.removeDestination(adapter.adapterId, destination.destination));
+      }
+    }
+    return results;
+  }
+
+  async syncEntity(command: SyncEntityCommand): Promise<SyncResult[]> {
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const enabledAdapters = this.enabledAdapters(settings);
+    const results: SyncResult[] = [];
+
+    const source = this.entitySourcePath(command.entity, this.deps.workspacePath);
+    const includesProject = command.entity.scopes.includes('project');
+    for (const adapter of enabledAdapters) {
+      const destinations = await adapter.resolveEntityDestinations({
+        entity: command.entity,
+        linkedRepos: settings.linkedRepos,
+      });
+      for (const destination of destinations) {
+        results.push(await this.syncDestination(adapter.adapterId, source, destination.destination));
+      }
+      if (includesProject && settings.linkedRepos.length === 0) {
+        results.push({
+          adapter: adapter.adapterId,
+          destination: null,
+          status: 'ok',
+          details: { skipped: 'no-linked-repos' },
+        });
+      }
+    }
+    return results;
+  }
+
+  async removeEntity(command: RemoveEntityCommand): Promise<SyncResult[]> {
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const results: SyncResult[] = [];
+    for (const adapter of this.deps.adapters.values()) {
+      const destinations = await adapter.resolveEntityDestinations({
+        entity: command.entity,
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
@@ -324,6 +375,13 @@ export class AdapterManager {
           ? 'commands'
           : 'global-instructions';
     return join(workspacePath, folder, `${name}.md`);
+  }
+
+  private entitySourcePath(entity: Entity, workspacePath: string): string {
+    if (entity.kind === 'skill') return join(workspacePath, 'skills', entity.name);
+    if (entity.kind === 'agent') return join(workspacePath, 'agents', `${entity.name}.md`);
+    if (entity.kind === 'instruction') return join(workspacePath, 'instructions', `${entity.name}.md`);
+    throw new DomainError('validation', `Unsupported entity kind for sync: ${entity.kind}`);
   }
 
   private async syncDestination(

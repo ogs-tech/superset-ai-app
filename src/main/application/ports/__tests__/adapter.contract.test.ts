@@ -4,16 +4,18 @@ import type { Adapter } from '../adapter.js';
 const fakeAdapter: Adapter = {
   adapterId: 'fake',
   resolveDestinations: () => [{ scope: 'personal', destination: '/tmp/dest' }],
+  resolveEntityDestinations: () => [],
 };
 
 describe('Adapter port contract', () => {
-  it('exports only adapterId and resolveDestinations', () => {
+  it('exports only adapterId, resolveDestinations, and resolveEntityDestinations', () => {
     const keys = Object.keys(fakeAdapter);
-    expect(keys).toEqual(['adapterId', 'resolveDestinations']);
+    expect(keys).toEqual(['adapterId', 'resolveDestinations', 'resolveEntityDestinations']);
   });
 
   it('satisfies Adapter interface shape', () => {
     expect(fakeAdapter.adapterId).toBe('fake');
     expect(typeof fakeAdapter.resolveDestinations).toBe('function');
+    expect(typeof fakeAdapter.resolveEntityDestinations).toBe('function');
   });
 });

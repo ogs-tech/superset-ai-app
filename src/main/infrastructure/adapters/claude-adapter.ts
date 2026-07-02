@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import type { Adapter, AdapterDestination } from '../../application/ports/adapter.js';
 import type { Customization } from '../../../shared/customization.js';
 import type { LinkedRepo } from '../../../shared/settings.js';
+import type { Entity } from '../../../shared/entity.js';
 import { DomainError } from '../../domain/errors.js';
 
 export interface ClaudeAdapterDeps {
@@ -70,6 +71,38 @@ export class ClaudeAdapter implements Adapter {
       }
     }
 
+    return out;
+  }
+
+  resolveEntityDestinations(args: {
+    entity: Entity;
+    linkedRepos: LinkedRepo[];
+  }): AdapterDestination[] {
+    const { kind, name, scopes } = args.entity;
+
+    if (kind === 'instruction') {
+      return [
+        { scope: 'personal', destination: join(this.homedir, '.claude/CLAUDE.md') },
+        { scope: 'personal', destination: join(this.homedir, 'AGENTS.md') },
+      ];
+    }
+
+    if (kind !== 'skill' && kind !== 'agent') {
+      return [];
+    }
+
+    const subfolder = kind === 'skill' ? '.claude/skills' : '.claude/agents';
+    const fileName = kind === 'skill' ? name : `${name}.md`;
+    const out: AdapterDestination[] = [];
+
+    if (scopes.includes('personal')) {
+      out.push({ scope: 'personal', destination: join(this.homedir, subfolder, fileName) });
+    }
+    if (scopes.includes('project')) {
+      for (const repo of args.linkedRepos) {
+        out.push({ scope: 'project', destination: join(repo.path, subfolder, fileName) });
+      }
+    }
     return out;
   }
 }
