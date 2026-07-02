@@ -19,6 +19,9 @@ import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-a
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
 import { SchemaValidator } from './application/services/schema-validator.js';
+import { EntityService } from './application/services/entity-service.js';
+import { EntityValidator } from './application/services/entity-validator.js';
+import { FsEntityRepository } from './infrastructure/entity/fs-entity-repository.js';
 import type { Adapter } from './application/ports/adapter.js';
 import type { CredentialStorePort } from './application/ports/credential-store-port.js';
 import { SafeStorageCredentials } from './infrastructure/credentials/safe-storage-credentials.js';
@@ -105,6 +108,10 @@ async function wireIpc(): Promise<void> {
   const schemaValidator = new SchemaValidator();
   const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
 
+  const entityValidator = new EntityValidator();
+  const entityRepository = new FsEntityRepository(workspacePath);
+  const entityService = new EntityService(entityRepository, clock, adapterManager, entityValidator);
+
   const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));
 
   // T10.1: wire full PluginService
@@ -177,7 +184,7 @@ async function wireIpc(): Promise<void> {
     fs: nodeFsAdapter,
     claudeCodeRegistry: claudeCodePluginReader,
   });
-  const skillService = new SkillService(customizationService, {
+  const skillService = new SkillService(entityService, {
     provenance: pluginProvenance,
     fs: nodeFsAdapter,
   });

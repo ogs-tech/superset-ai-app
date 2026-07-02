@@ -1,6 +1,6 @@
 import type { IpcHandlers } from './dispatcher.js';
 import type { SkillService } from '../application/services/skill-service.js';
-import type { Skill } from '../application/schemas/skill.js';
+import type { Skill } from '../../shared/entity.js';
 import type { Scope } from '../application/ports/scope.js';
 import { skillId } from '../domain/skill-id.js';
 import { asBoolean, asObject, asScope, asString, optParams } from './_validators.js';

@@ -4,51 +4,75 @@ import { buildAgentHandlers } from '../../../src/main/ipc/agent-handlers.js';
 import { buildCommandHandlers } from '../../../src/main/ipc/command-handlers.js';
 import { buildGlobalInstructionHandlers } from '../../../src/main/ipc/global-instruction-handlers.js';
 import { buildMarketplaceHandlers } from '../../../src/main/ipc/marketplace-handlers.js';
-import type { SkillService } from '../../../src/main/application/services/skill-service.js';
+import { SkillService } from '../../../src/main/application/services/skill-service.js';
+import { EntityService } from '../../../src/main/application/services/entity-service.js';
+import { InMemoryEntityRepository } from '../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
+import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
+import type { AdapterManager } from '../../../src/main/application/services/adapter-manager.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
 import type { CommandService } from '../../../src/main/application/services/command-service.js';
 import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../src/shared/entity.js';
 
-const fakeSkillService = () =>
-  ({
-    list: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue({ id: 'foo', body: 'b', frontmatter: {}, source: { kind: 'workspace' } }),
-    save: vi.fn().mockResolvedValue({ skill: { id: 'foo' }, syncReport: [] }),
-    delete: vi.fn().mockResolvedValue({ ok: true }),
-  }) as unknown as SkillService;
+const skill = (name = 'foo'): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: 'd',
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  content: 'b',
+});
+
+const setupSkillService = () => {
+  const repo = new InMemoryEntityRepository();
+  const adapterManager = {
+    syncEntity: vi.fn().mockResolvedValue([]),
+    removeEntity: vi.fn().mockResolvedValue([]),
+  } as unknown as AdapterManager;
+  const base = new EntityService(repo, new FixedClock(new Date('2026-04-26T10:00:00.000Z')), adapterManager);
+  return new SkillService(base);
+};
 
 describe('skill-handlers', () => {
   it('skill.list calls service.list', async () => {
-    const svc = fakeSkillService();
+    const svc = setupSkillService();
+    const spy = vi.spyOn(svc, 'list');
     const h = buildSkillHandlers(svc);
     await h['skill.list']!({});
-    expect(svc.list).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalled();
   });
 
   it('skill.get brands the id', async () => {
-    const svc = fakeSkillService();
+    const svc = setupSkillService();
+    await svc.save({ skill: skill('foo'), isCreate: true });
+    const spy = vi.spyOn(svc, 'get');
     const h = buildSkillHandlers(svc);
     await h['skill.get']!({ id: 'foo' });
-    expect(svc.get).toHaveBeenCalledWith('foo');
+    expect(spy).toHaveBeenCalledWith('foo');
   });
 
   it('skill.delete passes branded id and removeSymlinks', async () => {
-    const svc = fakeSkillService();
+    const svc = setupSkillService();
+    await svc.save({ skill: skill('foo'), isCreate: true });
+    const spy = vi.spyOn(svc, 'delete');
     const h = buildSkillHandlers(svc);
     await h['skill.delete']!({ id: 'foo', removeSymlinks: true });
-    expect(svc.delete).toHaveBeenCalledWith({ id: 'foo', removeSymlinks: true });
+    expect(spy).toHaveBeenCalledWith({ id: 'foo', removeSymlinks: true });
   });
 
   it('skill.save passes through skill payload', async () => {
-    const svc = fakeSkillService();
+    const svc = setupSkillService();
+    const spy = vi.spyOn(svc, 'save');
     const h = buildSkillHandlers(svc);
-    await h['skill.save']!({ skill: { id: 'foo' }, isCreate: true });
-    expect(svc.save).toHaveBeenCalled();
+    await h['skill.save']!({ skill: skill('foo'), isCreate: true });
+    expect(spy).toHaveBeenCalled();
   });
 
   it('skill.get rejects empty id', async () => {
-    const h = buildSkillHandlers(fakeSkillService());
+    const h = buildSkillHandlers(setupSkillService());
     await expect(h['skill.get']!({ id: '' })).rejects.toMatchObject({ kind: 'validation' });
   });
 });
