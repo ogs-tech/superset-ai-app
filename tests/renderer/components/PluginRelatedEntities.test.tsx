@@ -3,14 +3,19 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PluginRelatedEntities } from '../../../src/renderer/components/PluginRelatedEntities.js';
 import { mockApi, ok, renderWithQuery, type CallSpy } from '../test-utils.js';
+import type { Skill } from '../../../src/shared/entity.js';
 
-const skill = (id: string, pluginId: string | null) => ({
-  id,
-  frontmatter: { name: id, description: `${id} desc` },
-  body: `# ${id}`,
+const skill = (name: string, pluginId: string | null): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: `${name} desc`,
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
   source: pluginId
-    ? { kind: 'plugin' as const, pluginId }
-    : { kind: 'workspace' as const },
+    ? { kind: 'plugin', pluginId, provenance: 'workspace-managed' }
+    : { kind: 'workspace' },
+  content: `# ${name}`,
 });
 
 let call: CallSpy;
@@ -20,7 +25,7 @@ beforeEach(() => {
 });
 
 describe('<PluginRelatedEntities>', () => {
-  it('groups skills/agents/commands and shows only those matching pluginId', async () => {
+  it('groups skills/agents and shows only those matching pluginId', async () => {
     call.mockImplementation((method: string) => {
       if (method === 'skill.list')
         return Promise.resolve(
@@ -32,8 +37,6 @@ describe('<PluginRelatedEntities>', () => {
         );
       if (method === 'agent.list')
         return Promise.resolve(ok([skill('mine-agent', 'my-plugin')]));
-      if (method === 'command.list')
-        return Promise.resolve(ok([skill('mine-cmd', 'my-plugin')]));
       return Promise.resolve(ok(undefined));
     });
 
@@ -51,15 +54,13 @@ describe('<PluginRelatedEntities>', () => {
     const agentsGroup = screen.getByTestId('plugin-related-group-agents');
     expect(within(agentsGroup).getByText('mine-agent')).toBeInTheDocument();
 
-    const commandsGroup = screen.getByTestId('plugin-related-group-commands');
-    expect(within(commandsGroup).getByText('mine-cmd')).toBeInTheDocument();
+    expect(screen.queryByTestId('plugin-related-group-commands')).not.toBeInTheDocument();
   });
 
   it('shows empty state when plugin has no related entities', async () => {
     call.mockImplementation((method: string) => {
       if (method === 'skill.list') return Promise.resolve(ok([]));
       if (method === 'agent.list') return Promise.resolve(ok([]));
-      if (method === 'command.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(<PluginRelatedEntities pluginId="my-plugin" />);
@@ -72,7 +73,6 @@ describe('<PluginRelatedEntities>', () => {
     call.mockImplementation((method: string) => {
       if (method === 'skill.list') return Promise.resolve(ok([]));
       if (method === 'agent.list') return Promise.resolve(ok([]));
-      if (method === 'command.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(
@@ -88,7 +88,6 @@ describe('<PluginRelatedEntities>', () => {
       if (method === 'skill.list')
         return Promise.resolve(ok([skill('mine-skill', 'my-plugin')]));
       if (method === 'agent.list') return Promise.resolve(ok([]));
-      if (method === 'command.list') return Promise.resolve(ok([]));
       return Promise.resolve(ok(undefined));
     });
     const user = userEvent.setup();

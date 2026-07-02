@@ -56,7 +56,7 @@ function setupApi(
         );
       case 'plugin.list':
         return Promise.resolve(ok([...enabledOf].map(([id, enabled]) => ({ id, enabled }))));
-      case 'global-instruction.get':
+      case 'instruction.get':
         return Promise.resolve(ok({ id: 'default' }));
       case 'plugin.installFromMarketplace': {
         const name = params?.plugin?.name;

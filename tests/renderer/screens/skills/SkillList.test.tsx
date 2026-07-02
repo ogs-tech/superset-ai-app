@@ -8,33 +8,25 @@ import {
   renderWithQuery,
   type CallSpy,
 } from '../../test-utils.js';
+import { WORKSPACE_SOURCE, type EntitySource, type Skill } from '../../../../src/shared/entity.js';
 
 let call: CallSpy;
 
 const FROZEN = '2026-04-26T10:00:00.000Z';
 
-const skill = (
-  name: string,
-  source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string },
-) => ({
-  id: name,
-  frontmatter: {
-    name,
-    type: 'skill',
-    description: `${name} skill`,
-    scopes: ['personal'],
-    version: '1.0.0',
-    createdAt: FROZEN,
-    updatedAt: FROZEN,
-  },
-  body: 'body',
+const skill = (name: string, source = WORKSPACE_SOURCE): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: `${name} skill`,
+  scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: FROZEN, updatedAt: FROZEN },
   source,
+  content: 'body',
 });
 
-const cardId = (
-  name: string,
-  source: { kind: 'workspace' } | { kind: 'plugin'; pluginId: string },
-): string => `entity-grid-card-skill-${source.kind}/${name}`;
+const cardId = (name: string, source: EntitySource): string =>
+  `entity-grid-card-skill-${source.kind}/urn:skill:${name}`;
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -57,7 +49,7 @@ describe('<SkillList>', () => {
         return Promise.resolve(
           ok([
             skill('local', { kind: 'workspace' }),
-            skill('from-plugin', { kind: 'plugin', pluginId: 'superpowers' }),
+            skill('from-plugin', { kind: 'plugin', pluginId: 'superpowers', provenance: 'workspace-managed' }),
           ]),
         );
       return Promise.resolve(ok(undefined));
@@ -69,7 +61,7 @@ describe('<SkillList>', () => {
     ).toBeInTheDocument();
     expect(
       await screen.findByTestId(
-        cardId('from-plugin', { kind: 'plugin', pluginId: 'superpowers' }),
+        cardId('from-plugin', { kind: 'plugin', pluginId: 'superpowers', provenance: 'workspace-managed' }),
       ),
     ).toBeInTheDocument();
     expect(
@@ -84,7 +76,7 @@ describe('<SkillList>', () => {
         return Promise.resolve(
           ok([
             skill('local', { kind: 'workspace' }),
-            skill('from-plugin', { kind: 'plugin', pluginId: 'superpowers' }),
+            skill('from-plugin', { kind: 'plugin', pluginId: 'superpowers', provenance: 'workspace-managed' }),
           ]),
         );
       return Promise.resolve(ok(undefined));
@@ -102,7 +94,7 @@ describe('<SkillList>', () => {
 
     // Workspace rows show no plugin badge inline next to the name.
     const localRow = within(table).getByTestId(
-      'entity-grid-row-skill-workspace/local',
+      'entity-grid-row-skill-workspace/urn:skill:local',
     );
     expect(
       within(localRow).queryByTestId('plugin-origin-badge-superpowers'),
@@ -113,14 +105,14 @@ describe('<SkillList>', () => {
     call.mockImplementation((method: string) => {
       if (method === 'skill.list')
         return Promise.resolve(
-          ok([skill('from-plugin', { kind: 'plugin', pluginId: 'p' })]),
+          ok([skill('from-plugin', { kind: 'plugin', pluginId: 'p', provenance: 'workspace-managed' })]),
         );
       return Promise.resolve(ok(undefined));
     });
     renderWithQuery(<SkillList />);
 
     const card = await screen.findByTestId(
-      cardId('from-plugin', { kind: 'plugin', pluginId: 'p' }),
+      cardId('from-plugin', { kind: 'plugin', pluginId: 'p', provenance: 'workspace-managed' }),
     );
     expect(within(card).queryByRole('button', { name: 'View' })).toBeNull();
     expect(within(card).queryByRole('button', { name: 'Editar' })).toBeNull();

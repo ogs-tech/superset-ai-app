@@ -47,7 +47,7 @@ async function fetchStarterData(): Promise<StarterData> {
   const [marketplaceList, installedPlugins, gi] = await Promise.all([
     callIpc<MarketplaceListItem[]>('marketplace.list', { scope: 'personal' }),
     callIpc<Array<{ id: string; enabled: boolean }>>('plugin.list', { scope: 'personal' }),
-    callIpc('global-instruction.get', { id: 'default' }).then(
+    callIpc('instruction.get', { id: 'default' }).then(
       () => true,
       (err: unknown) => {
         if (err instanceof IpcCallError && err.kind === 'not_found') return false;

@@ -21,7 +21,7 @@ import { Toast, type ToastMessage } from '../../components/Toast.js';
 import { CustomizationEditor } from '../../components/CustomizationEditor.js';
 import { blankCustomization } from '../../lib/blank-customization.js';
 import { defaultGlobalInstruction } from '../../lib/default-global-instruction.js';
-import type { Customization } from '../../../shared/customization.js';
+import type { Instruction } from '../../../shared/entity.js';
 
 const SLUG = 'default';
 
@@ -110,6 +110,7 @@ function parseSections(body: string): DisplaySection[] {
  */
 const DESTINATIONS = [
   { assistant: 'Claude Code', path: '~/.claude/CLAUDE.md' },
+  { assistant: 'AGENTS.md (neutral)', path: '~/AGENTS.md' },
 ] as const;
 
 const fadeIn = {
@@ -119,21 +120,21 @@ const fadeIn = {
   },
 };
 
-const QUERY_KEY = ['global-instruction', SLUG] as const;
+const QUERY_KEY = ['instruction', SLUG] as const;
 
 export function GlobalInstructionScreen(): React.ReactElement {
   const queryClient = useQueryClient();
   const [editor, setEditor] = useState<{
-    customization: Customization;
+    customization: Instruction;
     isCreate: boolean;
   } | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const { data, isLoading, isError, error } = useQuery<Customization | null>({
+  const { data, isLoading, isError, error } = useQuery<Instruction | null>({
     queryKey: QUERY_KEY,
     queryFn: async () => {
       try {
-        return await callIpc<Customization>('global-instruction.get', { id: SLUG });
+        return await callIpc<Instruction>('instruction.get', { id: SLUG });
       } catch (err) {
         if (err instanceof IpcCallError && err.kind === 'not_found') return null;
         throw err;
@@ -159,7 +160,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
   };
   const openTemplate = (): void => setEditor({ customization: defaultGlobalInstruction(), isCreate: true });
   const openBlank = (): void =>
-    setEditor({ customization: blankCustomization('global-instruction'), isCreate: true });
+    setEditor({ customization: blankCustomization('instruction') as Instruction, isCreate: true });
 
   if (editor) {
     return (
@@ -168,7 +169,7 @@ export function GlobalInstructionScreen(): React.ReactElement {
         isCreate={editor.isCreate}
         onSaved={async (saved) => {
           setEditor(null);
-          setToast({ variant: 'success', message: `${saved.frontmatter.name} salvo` });
+          setToast({ variant: 'success', message: `${saved.name} salvo` });
           await queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         }}
         onCancel={() => setEditor(null)}
@@ -341,12 +342,12 @@ function renderEmpty(onTemplate: () => void, onBlank: () => void): React.ReactEl
 }
 
 function renderConfigured(
-  existing: Customization,
+  existing: Instruction,
   onEdit: () => void,
 ): React.ReactElement {
-  const description = existing.frontmatter.description?.trim();
-  const lineCount = existing.body.split('\n').filter((l) => l.trim()).length;
-  const sections = parseSections(existing.body);
+  const description = existing.description.trim();
+  const lineCount = existing.content.split('\n').filter((l) => l.trim()).length;
+  const sections = parseSections(existing.content);
 
   return (
     <Paper
@@ -392,7 +393,7 @@ function renderConfigured(
       )}
 
       <Stack direction="row" spacing={1} sx={{ mt: 2.5, flexWrap: 'wrap' }}>
-        <Chip size="small" variant="outlined" label={`v${existing.frontmatter.version}`} />
+        <Chip size="small" variant="outlined" label={`v${existing.metadata.version}`} />
         <Chip size="small" variant="outlined" label="personal" />
         <Chip size="small" variant="outlined" label={`${lineCount} lines`} />
       </Stack>

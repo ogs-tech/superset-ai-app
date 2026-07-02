@@ -1,4 +1,5 @@
-import type { Customization } from '../../shared/customization.js';
+import type { Instruction } from '../../shared/entity.js';
+import { WORKSPACE_SOURCE } from '../../shared/entity.js';
 
 /**
  * Seed content for the single `default` global-instruction slot. The screen
@@ -51,18 +52,16 @@ Personal preferences and conventions that apply across every workspace and every
  * pre-filled with the OGS template. The schema pins `name` to `default` and
  * `scopes` to `['personal']`; timestamps are stamped server-side on save.
  */
-export function defaultGlobalInstruction(): Customization {
+export function defaultGlobalInstruction(): Instruction {
   return {
-    id: '',
-    frontmatter: {
-      name: 'default',
-      type: 'global-instruction',
-      description: DEFAULT_GI_DESCRIPTION,
-      scopes: ['personal'],
-      version: '0.1.0',
-      createdAt: '',
-      updatedAt: '',
-    },
-    body: DEFAULT_GI_BODY,
+    urn: '',
+    kind: 'instruction',
+    name: 'default',
+    description: DEFAULT_GI_DESCRIPTION,
+    scopes: ['personal'],
+    metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+    source: WORKSPACE_SOURCE,
+    content: DEFAULT_GI_BODY,
+    activation: 'always',
   };
 }
