@@ -16,9 +16,9 @@ describe('CommandPalette', () => {
     const onClose = vi.fn();
     renderWithShell(<CommandPalette open onClose={onClose} onNavigate={onNavigate} onCreate={noop} />);
     const input = screen.getByTestId('command-palette-input');
-    await userEvent.type(input, 'global');
-    await userEvent.click(screen.getByText(/Global Instructions/i));
-    expect(onNavigate).toHaveBeenCalledWith({ area: 'biblioteca', sub: 'global-instructions' });
+    await userEvent.type(input, 'instructions');
+    await userEvent.click(screen.getByText(/Instructions/i));
+    expect(onNavigate).toHaveBeenCalledWith({ area: 'biblioteca', sub: 'instructions' });
     expect(onClose).toHaveBeenCalled();
   });
   it('offers create actions for editable entities', async () => {

@@ -1,10 +1,10 @@
 import {
   House, SlidersHorizontal, Puzzle, Activity, Sparkles, Bot,
-  MessageSquareText, Webhook, NotebookPen, Store, Plug, type LucideIcon,
+  Webhook, NotebookPen, Store, Plug, type LucideIcon,
 } from 'lucide-react';
 
 export type Area = 'inicio' | 'biblioteca' | 'plugins' | 'diagnostico';
-export type LibrarySub = 'skills' | 'agents' | 'commands' | 'hooks' | 'global-instructions' | 'mcps';
+export type LibrarySub = 'skills' | 'agents' | 'hooks' | 'instructions' | 'mcps';
 export type PluginsSub = 'plugins' | 'marketplaces';
 
 export type Nav =
@@ -26,9 +26,8 @@ export const NAV_AREAS: ReadonlyArray<AreaDef> = [
 export const LIBRARY_SUBS: ReadonlyArray<SubDef<LibrarySub>> = [
   { sub: 'skills', label: 'Skills', glyph: Sparkles },
   { sub: 'agents', label: 'Agents', glyph: Bot },
-  { sub: 'commands', label: 'Prompts', glyph: MessageSquareText },
   { sub: 'hooks', label: 'Hooks', glyph: Webhook },
-  { sub: 'global-instructions', label: 'Global Instructions', glyph: NotebookPen },
+  { sub: 'instructions', label: 'Instructions', glyph: NotebookPen },
   { sub: 'mcps', label: 'MCP', glyph: Plug },
 ];
 
