@@ -16,6 +16,7 @@ import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
+import { CursorAdapter } from './infrastructure/adapters/cursor-adapter.js';
 import { EntityService } from './application/services/entity-service.js';
 import { EntityValidator } from './application/services/entity-validator.js';
 import { FsEntityRepository } from './infrastructure/entity/fs-entity-repository.js';
@@ -91,6 +92,7 @@ async function wireIpc(): Promise<void> {
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
+  const cursorAdapter = new CursorAdapter({ homedir: homedir() });
   const entityRepository = new FsEntityRepository(workspacePath);
   const adapterManager = new AdapterManager({
     settingsService,
@@ -99,6 +101,7 @@ async function wireIpc(): Promise<void> {
     workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
+      [cursorAdapter.adapterId, cursorAdapter],
     ]),
   });
 
