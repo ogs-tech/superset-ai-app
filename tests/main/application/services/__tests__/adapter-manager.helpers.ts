@@ -14,6 +14,7 @@ export const DEFAULT_WORKSPACE_PATH = '/workspace';
 export const defaultSettings: Settings = {
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

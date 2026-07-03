@@ -7,6 +7,7 @@ import { getDefaults, type Settings } from '../../../../src/shared/settings.js';
 const baseSettings = (): Settings => ({
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos: [{ id: 'r1', name: 'repo', path: '/repos/r1' }],
   ui: { theme: 'system' },
@@ -190,5 +191,49 @@ describe('SettingsService.getDefaults', () => {
     const service = new SettingsService(stubRepo());
 
     expect(service.getDefaults()).toEqual(getDefaults());
+  });
+});
+
+describe('SettingsService — cursor adapter', () => {
+  it('save accepts settings with a cursor adapter', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const service = new SettingsService(stubRepo({ save }));
+    const withCursor: Settings = {
+      adapters: { claude: { enabled: true }, cursor: { enabled: true } },
+      linkedRepos: [],
+      ui: { theme: 'system' },
+      language: 'off',
+    };
+
+    await service.save(withCursor);
+
+    expect(save).toHaveBeenCalledWith(withCursor);
+  });
+
+  it('save rejects an unknown adapter key', async () => {
+    const service = new SettingsService(stubRepo());
+    const bad = {
+      adapters: { claude: { enabled: true }, copilot: { enabled: true } },
+      linkedRepos: [],
+      ui: { theme: 'system' },
+      language: 'off',
+    } as unknown as Settings;
+
+    await expect(service.save(bad)).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it('load backfills a disabled cursor for pre-cursor settings files', async () => {
+    const legacy = {
+      adapters: { claude: { enabled: true } },
+      linkedRepos: [],
+      ui: { theme: 'system' },
+      language: 'off',
+    } as unknown as Settings;
+    const service = new SettingsService(stubRepo({ load: () => Promise.resolve(legacy) }));
+
+    const loaded = await service.load();
+
+    expect(loaded?.adapters.cursor).toEqual({ enabled: false });
+    expect(loaded?.adapters.claude).toEqual({ enabled: true });
   });
 });

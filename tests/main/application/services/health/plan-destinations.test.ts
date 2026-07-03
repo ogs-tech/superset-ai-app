@@ -36,7 +36,7 @@ const instruction = (): Instruction => ({
 
 const settingsWith = (over: Partial<Settings> = {}): Settings => ({
   ...getDefaults(),
-  adapters: { claude: { enabled: true } },
+  adapters: { claude: { enabled: true }, cursor: { enabled: false } },
   ...over,
 });
 

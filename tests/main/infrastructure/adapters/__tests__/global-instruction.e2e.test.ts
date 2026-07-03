@@ -32,6 +32,7 @@ const baseSettings = (
 ): Settings => ({
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
     ...overrides,
   },
   linkedRepos: [],

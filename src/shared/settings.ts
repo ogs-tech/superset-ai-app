@@ -26,6 +26,7 @@ export interface UiSettings {
 export interface Settings {
   adapters: {
     claude: AdapterSettings;
+    cursor: AdapterSettings;
   };
   linkedRepos: LinkedRepo[];
   ui: UiSettings;
@@ -44,6 +45,7 @@ export function getDefaults(): Settings {
   return {
     adapters: {
       claude: { enabled: true },
+      cursor: { enabled: false },
     },
     linkedRepos: [],
     ui: { theme: 'system' },

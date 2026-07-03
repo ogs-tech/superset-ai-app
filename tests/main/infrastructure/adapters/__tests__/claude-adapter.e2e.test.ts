@@ -40,6 +40,7 @@ const agentProject: Agent = {
 const buildSettings = (linkedRepos: LinkedRepo[] = []): Settings => ({
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos,
   ui: { theme: 'system' },
