@@ -46,7 +46,7 @@ describe('<Settings> — linked repos section', () => {
     await user.click(await screen.findByRole('button', { name: /adicionar repo/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(/não é um repositório git/i),
+      expect(screen.getByText(/não é um repositório git/i)).toBeInTheDocument(),
     );
     expect(
       call.mock.calls.find((c) => c[0] === 'repo.link'),

@@ -293,6 +293,25 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             />
           ))}
         </FormGroup>
+        {settings.adapters.claude.enabled && repos.length === 0 ? (
+          <Alert
+            severity="info"
+            sx={{ mt: 1.5 }}
+            data-testid="cursor-no-repo-notice"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                data-testid="cursor-no-repo-link-button"
+                onClick={() => void handleAddRepo()}
+              >
+                Vincular repositório
+              </Button>
+            }
+          >
+            Nenhum repositório vinculado. Vincule um para sincronizar customizações com escopo de projeto.
+          </Alert>
+        ) : null}
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
