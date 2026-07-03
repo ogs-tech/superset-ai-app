@@ -11,6 +11,10 @@ const buildService = () => {
     order.push('symlinks');
     return { removed: 0, skipped: 0, errors: [] };
   });
+  const removeAllGeneratedFiles = vi.fn(async () => {
+    order.push('generated-files');
+    return { removed: 0, skipped: 0, errors: [] };
+  });
   const remove = vi.fn(async (path: string) => {
     order.push(`remove:${path}`);
   });
@@ -24,12 +28,12 @@ const buildService = () => {
     },
   );
   const service = new WorkspaceTeardownService(
-    { removeAllAdapterSymlinks },
+    { removeAllAdapterSymlinks, removeAllGeneratedFiles },
     { remove },
     WORKSPACE,
     { mutate },
   );
-  return { service, removeAllAdapterSymlinks, remove, mutate, order };
+  return { service, removeAllAdapterSymlinks, removeAllGeneratedFiles, remove, mutate, order };
 };
 
 describe('WorkspaceTeardownService.restore', () => {
@@ -59,7 +63,7 @@ describe('WorkspaceTeardownService.restore', () => {
     await service.restore();
 
     expect(removeAllAdapterSymlinks).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['symlinks', `remove:${WORKSPACE}`, 'mutate:personal']);
+    expect(order).toEqual(['symlinks', 'generated-files', `remove:${WORKSPACE}`, 'mutate:personal']);
   });
 
   it('clears the marketplace and plugin registry in personal settings so no dangling cache reference survives', async () => {

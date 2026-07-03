@@ -9,6 +9,7 @@ import { WorkspaceBootstrapService } from './application/services/workspace-boot
 import { WorkspaceTeardownService } from './application/services/workspace-teardown.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
+import { FileMaterializer } from './application/services/file-materializer.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
@@ -16,6 +17,7 @@ import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
+import { CursorAdapter } from './infrastructure/adapters/cursor-adapter.js';
 import { EntityService } from './application/services/entity-service.js';
 import { EntityValidator } from './application/services/entity-validator.js';
 import { FsEntityRepository } from './infrastructure/entity/fs-entity-repository.js';
@@ -53,6 +55,7 @@ import { McpAuthCollector } from './application/services/health/mcp-auth-collect
 import { McpRuntimeCollector } from './application/services/health/mcp-runtime-collector.js';
 import { ConfigDriftCollector } from './application/services/health/config-drift-collector.js';
 import { SymlinkCollector } from './application/services/health/symlink-collector.js';
+import { GeneratedFileCollector } from './application/services/health/generated-file-collector.js';
 import type { HealthCollector } from './application/services/health/health-collector.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
@@ -90,15 +93,19 @@ async function wireIpc(): Promise<void> {
 
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
+  const fileMaterializer = new FileMaterializer(nodeFsAdapter, clock, workspacePath);
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
+  const cursorAdapter = new CursorAdapter({ homedir: homedir() });
   const entityRepository = new FsEntityRepository(workspacePath);
   const adapterManager = new AdapterManager({
     settingsService,
     entityRepository,
     symlinkManager,
+    fileMaterializer,
     workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
+      [cursorAdapter.adapterId, cursorAdapter],
     ]),
   });
 
@@ -236,6 +243,7 @@ async function wireIpc(): Promise<void> {
     new McpRuntimeCollector(claudeRuntimeReader, clock),
     new ConfigDriftCollector(pluginService, clock),
     new SymlinkCollector(adapterManager, symlinkManager, clock),
+    new GeneratedFileCollector(adapterManager, fileMaterializer, settingsService, clock),
   ];
   const healthService = new HealthService(healthCollectors, clock);
   const notificationPort = new ElectronNotificationAdapter();

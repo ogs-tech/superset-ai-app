@@ -6,6 +6,7 @@ import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/files
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
+import { FileMaterializer } from '../../../../../src/main/application/services/file-materializer.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
@@ -32,6 +33,7 @@ const baseSettings = (
 ): Settings => ({
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
     ...overrides,
   },
   linkedRepos: [],
@@ -47,11 +49,13 @@ const setup = async () => {
   const fs = new InMemoryFileSystem();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
+  const fileMaterializer = new FileMaterializer(fs, clock, WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const adapterManager = new AdapterManager({
     settingsService,
     entityRepository,
     symlinkManager,
+    fileMaterializer,
     workspacePath: WORKSPACE,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],

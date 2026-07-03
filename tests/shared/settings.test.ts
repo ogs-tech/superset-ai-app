@@ -18,6 +18,7 @@ describe('getDefaults', () => {
     expect(defaults).toEqual({
       adapters: {
         claude: { enabled: true },
+        cursor: { enabled: false },
       },
       linkedRepos: [],
       ui: { theme: 'system' },

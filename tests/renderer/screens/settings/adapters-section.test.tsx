@@ -9,7 +9,7 @@ import type { Settings } from '../../../../src/shared/settings.js';
 import type { SyncResult } from '../../../../src/shared/sync-result.js';
 
 const baseSettings: Settings = {
-  adapters: { claude: { enabled: true } },
+  adapters: { claude: { enabled: true }, cursor: { enabled: false } },
   linkedRepos: [],
   ui: { theme: 'system' },
   language: 'off',
@@ -40,7 +40,7 @@ describe('<Settings> — adapters section toggle-on (AC#15)', () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
-      adapters: { claude: { enabled: false } },
+      adapters: { claude: { enabled: false }, cursor: { enabled: false } },
     };
     call.mockImplementation((method: string) => {
       if (method === 'settings.get') return Promise.resolve(ok(initial));
@@ -95,5 +95,52 @@ describe('<Settings> — adapters section toggle-off (AC#14)', () => {
         expect.objectContaining({ adapterId: 'claude', enabled: false, removeSymlinks: true }),
       ),
     );
+  });
+});
+
+describe('<Settings> — cursor adapter toggle', () => {
+  it('renders a Cursor checkbox reflecting settings.adapters.cursor.enabled', async () => {
+    setupRoute();
+    render(<SettingsScreen />);
+    const toggle = (await screen.findByLabelText('Cursor')) as HTMLInputElement;
+    expect(toggle.checked).toBe(false);
+  });
+
+  it('toggling cursor on calls adapter.setEnabled with adapterId:"cursor"', async () => {
+    const user = userEvent.setup();
+    setupRoute();
+    render(<SettingsScreen />);
+
+    const toggle = await screen.findByLabelText('Cursor');
+    await user.click(toggle);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'adapter.setEnabled',
+        expect.objectContaining({ adapterId: 'cursor', enabled: true }),
+      ),
+    );
+  });
+
+  it('toggling cursor off (when enabled) opens the disable modal for Cursor', async () => {
+    const user = userEvent.setup();
+    call.mockImplementation((method: string) => {
+      if (method === 'settings.get')
+        return Promise.resolve(
+          ok({ ...baseSettings, adapters: { claude: { enabled: true }, cursor: { enabled: true } } }),
+        );
+      if (method === 'repo.list') return Promise.resolve(ok([]));
+      if (method === 'adapter.countDestinations') return Promise.resolve(ok({ count: 3 }));
+      return Promise.resolve(ok(undefined));
+    });
+    render(<SettingsScreen />);
+
+    const toggle = await screen.findByLabelText('Cursor');
+    await user.click(toggle);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adapter.countDestinations', { adapterId: 'cursor' }),
+    );
+    expect(await screen.findByTestId('confirm-disable-modal')).toBeInTheDocument();
   });
 });

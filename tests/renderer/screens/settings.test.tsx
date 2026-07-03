@@ -10,6 +10,7 @@ const render = (ui: React.ReactElement) => renderWithTheme(ui);
 const baseSettings: Settings = {
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },
@@ -63,6 +64,7 @@ describe('<Settings> — toggles', () => {
       ...baseSettings,
       adapters: {
         claude: { enabled: false },
+        cursor: { enabled: false },
       },
     };
     setupRoute(initial);
@@ -91,7 +93,7 @@ describe('<Settings> — no per-adapter default scope', () => {
     const user = userEvent.setup();
     const initial: Settings = {
       ...baseSettings,
-      adapters: { claude: { enabled: false } },
+      adapters: { claude: { enabled: false }, cursor: { enabled: false } },
     };
     setupRoute(initial);
     render(<SettingsScreen />);

@@ -217,9 +217,16 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
       const runSyncAll = raw['runSyncAll'] !== false;
 
       if (!enabled) {
-        const removeResult = removeSymlinks
-          ? await adapterManager.removeAdapterSymlinks(adapterId)
-          : { removed: 0, skipped: 0, errors: [] };
+        let removeResult = { removed: 0, skipped: 0, errors: [] as { destination: string; kind: string; message: string }[] };
+        if (removeSymlinks) {
+          const links = await adapterManager.removeAdapterSymlinks(adapterId);
+          const generated = await adapterManager.removeAdapterGeneratedFiles(adapterId);
+          removeResult = {
+            removed: links.removed + generated.removed,
+            skipped: links.skipped + generated.skipped,
+            errors: [...links.errors, ...generated.errors],
+          };
+        }
         await settingsService.merge({ adapters: { [adapterId]: { enabled: false } } });
         return removeResult;
       } else {

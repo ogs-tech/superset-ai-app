@@ -8,8 +8,9 @@ const stubRemoveResult = { removed: 2, skipped: 1, errors: [] };
 
 const buildDeps = () => {
   const removeAdapterSymlinks = vi.fn().mockResolvedValue(stubRemoveResult);
+  const removeAdapterGeneratedFiles = vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] });
   const merge = vi.fn().mockResolvedValue({});
-  const adapterManager = { removeAdapterSymlinks } as unknown as AdapterManager;
+  const adapterManager = { removeAdapterSymlinks, removeAdapterGeneratedFiles } as unknown as AdapterManager;
   const settingsService = { merge, load: vi.fn().mockResolvedValue(null), getDefaults: vi.fn().mockReturnValue({}) } as unknown as SettingsService;
   return { adapterManager, settingsService, removeAdapterSymlinks, merge };
 };

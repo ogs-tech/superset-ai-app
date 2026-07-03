@@ -10,6 +10,7 @@ import type { LinkedRepoView, Settings } from '../../../../src/shared/settings.j
 const baseSettings: Settings = {
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

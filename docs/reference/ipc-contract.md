@@ -295,13 +295,13 @@ Disable semantics: project-shared servers use `projects[repoPath].disabledMcpjso
 | `health.getReport` | `{ scope?: 'personal' \| 'project' }` (default: `'personal'`) | `HealthReport` |
 | `health.notify` | `{ title: string; body: string }` | `void` |
 
-`scope` only affects the **config-drift** category (it lists plugins per scope). The `mcp-auth`, `mcp-runtime` and `symlink` categories read global Claude state and are identical across scopes — see the `HealthCollector` interface docs.
+`scope` only affects the **config-drift** category (it lists plugins per scope). The `mcp-auth`, `mcp-runtime`, `symlink` and `generated-file` categories read global state and are identical across scopes — see the `HealthCollector` interface docs.
 
 **Types** (see [`src/shared/health.ts`](../../src/shared/health.ts)):
 
 ```ts
 type Severity = 'ok' | 'warning' | 'error';
-type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink';
+type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink' | 'generated-file';
 
 interface HealthCheck {
   id: string;           // stable id used for notification diffing
