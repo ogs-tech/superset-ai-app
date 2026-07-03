@@ -55,6 +55,7 @@ import { McpAuthCollector } from './application/services/health/mcp-auth-collect
 import { McpRuntimeCollector } from './application/services/health/mcp-runtime-collector.js';
 import { ConfigDriftCollector } from './application/services/health/config-drift-collector.js';
 import { SymlinkCollector } from './application/services/health/symlink-collector.js';
+import { GeneratedFileCollector } from './application/services/health/generated-file-collector.js';
 import type { HealthCollector } from './application/services/health/health-collector.js';
 import { buildHandlers } from './ipc/registry.js';
 import { createDispatcher } from './ipc/dispatcher.js';
@@ -242,6 +243,7 @@ async function wireIpc(): Promise<void> {
     new McpRuntimeCollector(claudeRuntimeReader, clock),
     new ConfigDriftCollector(pluginService, clock),
     new SymlinkCollector(adapterManager, symlinkManager, clock),
+    new GeneratedFileCollector(adapterManager, fileMaterializer, settingsService, clock),
   ];
   const healthService = new HealthService(healthCollectors, clock);
   const notificationPort = new ElectronNotificationAdapter();

@@ -1,6 +1,6 @@
 export type Severity = 'ok' | 'warning' | 'error';
 
-export type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink';
+export type HealthCategory = 'mcp-auth' | 'mcp-runtime' | 'config-drift' | 'symlink' | 'generated-file';
 
 export interface HealthCheck {
   /** Stable id, e.g. "mcp-auth:claude.ai Gmail". Used for notification diffing. */
