@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Settings as SettingsScreen } from '../../../../src/renderer/screens/Settings.js';
 import { mockApi, ok, renderWithTheme, type CallSpy } from '../../test-utils.js';
 import type { Settings } from '../../../../src/shared/settings.js';
@@ -36,5 +37,32 @@ describe('<Settings> — cursor link-a-repo notice', () => {
     route(false, []);
     renderWithTheme(<SettingsScreen />);
     await waitFor(() => expect(screen.queryByTestId('cursor-no-repo-notice')).not.toBeInTheDocument());
+  });
+
+  it('clicking the link-repo action opens the folder picker', async () => {
+    const user = userEvent.setup();
+    route(true, []);
+    call.mockImplementation((method: string) => {
+      if (method === 'settings.get')
+        return Promise.resolve(
+          ok({
+            adapters: { claude: { enabled: true }, cursor: { enabled: true } },
+            linkedRepos: [],
+            ui: { theme: 'system' },
+            language: 'off',
+          }),
+        );
+      if (method === 'repo.list') return Promise.resolve(ok([]));
+      if (method === 'dialog.selectFolder') return Promise.resolve(ok({ canceled: true }));
+      return Promise.resolve(ok(undefined));
+    });
+    renderWithTheme(<SettingsScreen />);
+
+    const linkButton = await screen.findByTestId('cursor-no-repo-link-button');
+    await user.click(linkButton);
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('dialog.selectFolder', {}),
+    );
   });
 });
