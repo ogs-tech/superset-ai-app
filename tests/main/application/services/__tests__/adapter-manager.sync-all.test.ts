@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
+import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
 import type { Customization } from '../../../../../src/shared/customization.js';
-import { WORKSPACE_SOURCE, type Agent, type Scope, type Skill } from '../../../../../src/shared/entity.js';
+import { WORKSPACE_SOURCE, type Agent, type Instruction, type Scope, type Skill } from '../../../../../src/shared/entity.js';
 
 const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
 
@@ -41,6 +42,18 @@ const agentEntity = (name: string, scopes: Scope[] = ['personal']): Agent => ({
   metadata: meta,
   source: WORKSPACE_SOURCE,
   systemPrompt: `# ${name}`,
+});
+
+const instructionEntity = (): Instruction => ({
+  urn: 'urn:instruction:default',
+  kind: 'instruction',
+  name: 'default',
+  description: '',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: '# instructions',
+  activation: 'always',
 });
 
 describe('AdapterManager.syncAll', () => {
@@ -95,6 +108,25 @@ describe('AdapterManager.syncAll', () => {
     const results = await manager.syncAll({});
 
     expect(results).toEqual([]);
+  });
+
+  it('fans a single instruction out to BOTH CLAUDE.md and AGENTS.md', async () => {
+    const { manager, registerEntity, fs } = await setupAdapterManager([
+      new ClaudeAdapter({ homedir: '/home/u' }),
+    ]);
+    await registerEntity(instructionEntity());
+
+    const results = await manager.syncAll({});
+
+    // One instruction entity → the ClaudeAdapter fans it out to two destinations.
+    expect(results).toHaveLength(2);
+    expect(results.every((r) => r.status === 'ok')).toBe(true);
+    const destinations = results.map((r) => r.destination).sort();
+    expect(destinations).toEqual(['/home/u/.claude/CLAUDE.md', '/home/u/AGENTS.md']);
+
+    // Both symlinks resolve to the single instruction source in the workspace.
+    expect(await fs.readlink('/home/u/.claude/CLAUDE.md')).toBe('/workspace/instructions/default.md');
+    expect(await fs.readlink('/home/u/AGENTS.md')).toBe('/workspace/instructions/default.md');
   });
 });
 
