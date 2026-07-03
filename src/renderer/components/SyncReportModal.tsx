@@ -10,7 +10,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import type { SyncResult } from '../../shared/customization.js';
+import type { SyncResult } from '../../shared/sync-result.js';
 
 interface SyncReportModalProps {
   report: SyncResult[];

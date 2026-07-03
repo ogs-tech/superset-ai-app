@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SkillService } from '../../../../src/main/application/services/skill-service.js';
-import { CustomizationService } from '../../../../src/main/application/services/customization-service.js';
+import { EntityService } from '../../../../src/main/application/services/entity-service.js';
 import { PluginProvenanceService } from '../../../../src/main/application/services/plugin-provenance.js';
-import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { FakePluginCachePort } from '../../../../src/main/application/services/__fixtures__/fake-plugin-cache-port.js';
@@ -15,7 +15,10 @@ import type { ClaudeCodePluginRegistryPort } from '../../../../src/main/applicat
 const FROZEN = new Date('2026-06-07T10:00:00.000Z');
 
 const fakeAdapterManager = () =>
-  ({ syncOne: vi.fn().mockResolvedValue([]), syncAll: vi.fn().mockResolvedValue([]) }) as unknown as AdapterManager;
+  ({
+    syncEntity: vi.fn().mockResolvedValue([]),
+    removeEntity: vi.fn().mockResolvedValue([]),
+  }) as unknown as AdapterManager;
 
 const skillFile = (name: string) =>
   `---\nname: ${name}\ntype: skill\ndescription: cc skill\nscopes:\n  - personal\nversion: 1.0.0\ncreatedAt: ${FROZEN.toISOString()}\nupdatedAt: ${FROZEN.toISOString()}\n---\ncc skill body\n`;
@@ -28,8 +31,8 @@ const registry = (installPath: string): ClaudeCodePluginRegistryPort => ({
 
 const makeSkillService = (fs: InMemoryFileSystem, claudeCodeRegistry: ClaudeCodePluginRegistryPort) => {
   const cache = new FakePluginCachePort();
-  const base = new CustomizationService(
-    new InMemoryCustomizationRepository(),
+  const base = new EntityService(
+    new InMemoryEntityRepository(),
     new FixedClock(FROZEN),
     fakeAdapterManager(),
   );
@@ -44,7 +47,7 @@ describe('SkillService — Claude Code discovery', () => {
     const skills = makeSkillService(fs, registry('/cc/feature-dev'));
 
     const listed = await skills.list('personal');
-    const research = listed.find((s) => s.id === 'research');
+    const research = listed.find((s) => s.name === 'research');
     expect(research?.source).toEqual({
       kind: 'plugin',
       pluginId: 'feature-dev',
@@ -58,7 +61,7 @@ describe('SkillService — Claude Code discovery', () => {
     const skills = makeSkillService(fs, registry('/cc/feature-dev'));
 
     const listed = await skills.list('personal');
-    const research = listed.find((s) => s.id === 'research')!;
+    const research = listed.find((s) => s.name === 'research')!;
 
     await expect(
       skills.save({

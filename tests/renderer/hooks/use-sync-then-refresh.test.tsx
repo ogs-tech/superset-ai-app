@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { useSyncThenRefresh } from '../../../src/renderer/hooks/use-sync-then-refresh.js';
 import { healthQueryKey } from '../../../src/renderer/hooks/use-health-report.js';
 import { mockApi, ok, makeTestQueryClient, type CallSpy } from '../test-utils.js';
-import type { SyncResult } from '../../../src/shared/customization.js';
+import type { SyncResult } from '../../../src/shared/sync-result.js';
 
 let call: CallSpy;
 

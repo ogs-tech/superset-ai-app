@@ -1,30 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { setupAdapterManager } from './adapter-manager.helpers.js';
+import { WORKSPACE_SOURCE, type Agent, type Skill } from '../../../../../src/shared/entity.js';
 
-describe('AdapterManager sync granularity by customization type', () => {
-  it('creates a directory symlink for skill customizations and file symlinks for agent customizations', async () => {
+const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
+
+describe('AdapterManager sync granularity by entity kind', () => {
+  it('creates a directory symlink for skill entities and file symlinks for agent entities', async () => {
     const skillAdapter = new FakeAdapter('claude', '/workspace/personal/claude-skill');
-    const { manager: skillManager, fs: skillFs, registerCustomization: registerSkill } =
+    const { manager: skillManager, fs: skillFs, registerEntity: registerSkill } =
       await setupAdapterManager([skillAdapter]);
 
-    const skillCustomization = {
-      id: 'skill/alpha',
-      frontmatter: {
-        name: 'alpha',
-        type: 'skill' as const,
-        description: 'skill customization',
-        scopes: ['personal' as const],
-        version: '1.0.0',
-        createdAt: '',
-        updatedAt: '',
-      },
-      body: '# alpha',
+    const skillEntity: Skill = {
+      urn: 'urn:skill:alpha',
+      kind: 'skill',
+      name: 'alpha',
+      description: 'skill entity',
+      scopes: ['personal'],
+      metadata: meta,
+      source: WORKSPACE_SOURCE,
+      content: '# alpha',
     };
-    await registerSkill(skillCustomization);
+    await registerSkill(skillEntity);
     skillFs.createFile('/workspace/skills/alpha/SKILL.md', '# alpha');
 
-    const skillResult = await skillManager.syncOne({ customization: skillCustomization });
+    const skillResult = await skillManager.syncEntity({ entity: skillEntity });
     expect(skillResult).toHaveLength(1);
     expect(skillResult.every((entry) => entry.status === 'ok')).toBe(true);
     const skillTarget = await skillFs.readlink('/workspace/personal/claude-skill');
@@ -32,26 +32,23 @@ describe('AdapterManager sync granularity by customization type', () => {
     expect((await skillFs.lstat(skillTarget)).kind).toBe('directory');
 
     const agentAdapter = new FakeAdapter('claude', '/workspace/personal/claude-agent');
-    const { manager: agentManager, fs: agentFs, registerCustomization: registerAgent } =
+    const { manager: agentManager, fs: agentFs, registerEntity: registerAgent } =
       await setupAdapterManager([agentAdapter]);
 
-    const agentCustomization = {
-      id: 'agent/beta',
-      frontmatter: {
-        name: 'beta',
-        type: 'agent' as const,
-        description: 'agent customization',
-        scopes: ['personal' as const],
-        version: '1.0.0',
-        createdAt: '',
-        updatedAt: '',
-      },
-      body: '# beta',
+    const agentEntity: Agent = {
+      urn: 'urn:agent:beta',
+      kind: 'agent',
+      name: 'beta',
+      description: 'agent entity',
+      scopes: ['personal'],
+      metadata: meta,
+      source: WORKSPACE_SOURCE,
+      systemPrompt: '# beta',
     };
-    await registerAgent(agentCustomization);
+    await registerAgent(agentEntity);
     agentFs.createFile('/workspace/agents/beta.md', '# beta');
 
-    const agentResult = await agentManager.syncOne({ customization: agentCustomization });
+    const agentResult = await agentManager.syncEntity({ entity: agentEntity });
     expect(agentResult).toHaveLength(1);
     expect(agentResult.every((entry) => entry.status === 'ok')).toBe(true);
     const agentTarget = await agentFs.readlink('/workspace/personal/claude-agent');

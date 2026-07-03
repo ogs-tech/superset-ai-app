@@ -35,7 +35,7 @@ import { callIpc, IpcCallError } from '../lib/ipc.js';
 import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
 import { RestoreConfirmDialog } from './settings/RestoreConfirmDialog.js';
-import type { SyncResult } from '../../shared/customization.js';
+import type { SyncResult } from '../../shared/sync-result.js';
 import type { LanguagePreference, LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
 
 const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string }[] = [

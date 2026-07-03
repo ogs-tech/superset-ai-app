@@ -1,6 +1,6 @@
 import type { IpcHandlers } from './dispatcher.js';
 import type { AgentService } from '../application/services/agent-service.js';
-import type { Agent } from '../application/schemas/agent.js';
+import type { Agent } from '../../shared/entity.js';
 import type { Scope } from '../application/ports/scope.js';
 import { agentId } from '../domain/agent-id.js';
 import { asBoolean, asObject, asScope, asString, optParams } from './_validators.js';

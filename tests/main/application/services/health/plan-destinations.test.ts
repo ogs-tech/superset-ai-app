@@ -3,28 +3,36 @@ import { AdapterManager } from '../../../../../src/main/application/services/ada
 import type { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
-import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
+import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { getDefaults, type Settings } from '../../../../../src/shared/settings.js';
-import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Instruction, type Skill } from '../../../../../src/shared/entity.js';
 
 const FROZEN = '2026-06-05T10:00:00.000Z';
 
-// Double-cast through `unknown`: AdapterManager only reads name/type/scopes at
-// runtime, so we avoid coupling the test to every required frontmatter field.
-const skill = (name: string): Customization =>
-  ({
-    id: `skill/${name}`,
-    frontmatter: {
-      name,
-      type: 'skill',
-      description: `${name}`,
-      scopes: ['personal'],
-      createdAt: FROZEN,
-      updatedAt: FROZEN,
-    },
-    body: 'body',
-  }) as unknown as Customization;
+const skill = (name: string): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: name,
+  scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: FROZEN, updatedAt: FROZEN },
+  source: WORKSPACE_SOURCE,
+  content: 'body',
+});
+
+const instruction = (): Instruction => ({
+  urn: 'urn:instruction:default',
+  kind: 'instruction',
+  name: 'default',
+  description: '',
+  scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: FROZEN, updatedAt: FROZEN },
+  source: WORKSPACE_SOURCE,
+  content: 'body',
+  activation: 'always',
+});
 
 const settingsWith = (over: Partial<Settings> = {}): Settings => ({
   ...getDefaults(),
@@ -33,8 +41,8 @@ const settingsWith = (over: Partial<Settings> = {}): Settings => ({
 });
 
 const setup = async () => {
-  const repo = new InMemoryCustomizationRepository();
-  await repo.save({ customization: skill('alpha') });
+  const entityRepository = new InMemoryEntityRepository();
+  await entityRepository.save(skill('alpha'));
 
   const settings = settingsWith();
   const settingsService = {
@@ -46,7 +54,29 @@ const setup = async () => {
 
   const manager = new AdapterManager({
     settingsService,
-    customizationRepository: repo,
+    entityRepository,
+    symlinkManager: {} as SymlinkManager,
+    adapters: new Map<string, Adapter>([['claude', adapter]]),
+    workspacePath: '/ws',
+  });
+  return { manager };
+};
+
+const setupInstruction = async () => {
+  const entityRepository = new InMemoryEntityRepository();
+  await entityRepository.save(instruction());
+
+  const settings = settingsWith();
+  const settingsService = {
+    load: () => Promise.resolve(settings),
+    getDefaults: () => getDefaults(),
+  } as unknown as SettingsService;
+
+  const adapter: Adapter = new ClaudeAdapter({ homedir: '/home/u' });
+
+  const manager = new AdapterManager({
+    settingsService,
+    entityRepository,
     symlinkManager: {} as SymlinkManager,
     adapters: new Map<string, Adapter>([['claude', adapter]]),
     workspacePath: '/ws',
@@ -67,5 +97,17 @@ describe('AdapterManager.planDestinations', () => {
         scope: 'personal',
       },
     ]);
+  });
+
+  it('plans BOTH CLAUDE.md and AGENTS.md for a single instruction (2-destination fan-out)', async () => {
+    const { manager } = await setupInstruction();
+    const plan = await manager.planDestinations();
+
+    // The one instruction entity fans out to two planned symlinks, both sourced
+    // from the single instruction file in the workspace.
+    expect(plan).toHaveLength(2);
+    expect(plan.every((p) => p.source === '/ws/instructions/default.md')).toBe(true);
+    const destinations = plan.map((p) => p.destination).sort();
+    expect(destinations).toEqual(['/home/u/.claude/CLAUDE.md', '/home/u/AGENTS.md']);
   });
 });

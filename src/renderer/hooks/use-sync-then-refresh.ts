@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { callIpc } from '../lib/ipc.js';
 import { healthQueryKey, type HealthScope } from './use-health-report.js';
-import type { SyncResult } from '../../shared/customization.js';
+import type { SyncResult } from '../../shared/sync-result.js';
 
 /**
  * Runs the outbound symlink sync (`adapter.syncAll`) then invalidates the

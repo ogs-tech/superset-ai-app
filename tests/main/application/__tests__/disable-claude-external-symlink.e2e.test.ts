@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -8,7 +8,7 @@ import { SymlinkManager } from '../../../../src/main/application/services/symlin
 import { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 import { ClaudeAdapter } from '../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Customization } from '../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../../src/shared/entity.js';
 import type { Settings } from '../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -21,10 +21,15 @@ const baseSettings: Settings = {
   language: 'off',
 };
 
-const skillPersonal: Customization = {
-  id: 'skill/my-skill',
-  frontmatter: { name: 'my-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
-  body: '# skill',
+const skillPersonal: Skill = {
+  urn: 'urn:skill:my-skill',
+  kind: 'skill',
+  name: 'my-skill',
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  content: '# skill',
 };
 
 describe('disable-claude-external-symlink e2e (AC#13)', () => {
@@ -32,8 +37,8 @@ describe('disable-claude-external-symlink e2e (AC#13)', () => {
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const customizationRepo = new InMemoryCustomizationRepository();
-    await customizationRepo.save({ customization: skillPersonal });
+    const entityRepository = new InMemoryEntityRepository();
+    await entityRepository.save(skillPersonal);
 
     const fs = new InMemoryFileSystem();
     const dest = join(HOMEDIR, '.claude/skills/my-skill');
@@ -43,7 +48,7 @@ describe('disable-claude-external-symlink e2e (AC#13)', () => {
     const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const manager = new AdapterManager({
       settingsService,
-      customizationRepository: customizationRepo,
+      entityRepository,
       symlinkManager: sm,
       workspacePath: WORKSPACE,
       adapters: new Map([['claude', claudeAdapter]]),

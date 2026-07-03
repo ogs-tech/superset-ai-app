@@ -1,40 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { callIpc } from '../lib/ipc.js';
-import type { CustomizationType } from '../../shared/customization.js';
+import type { Entity, EntityKind, Scope } from '../../shared/entity.js';
 
-export interface CustomizationListItem {
-  id: string;
-  frontmatter: { name: string; description?: string } & Record<string, unknown>;
-  body: string;
-  source:
-    | { kind: 'workspace' }
-    | {
-        kind: 'plugin';
-        pluginId: string;
-        provenance?: 'workspace-managed' | 'claude-code';
-      };
+export function entityQueryKey(kind: EntityKind, scope: Scope = 'personal'): readonly unknown[] {
+  return ['entity', kind, scope] as const;
 }
 
-export type CustomizationScope = 'personal' | 'project';
-
-export function customizationQueryKey(
-  type: CustomizationType,
-  scope: CustomizationScope = 'personal',
-): readonly unknown[] {
-  return ['customization', type, scope] as const;
-}
-
-export function useCustomizationList(
-  type: CustomizationType,
-  listMethod: string,
-  scope: CustomizationScope = 'personal',
-) {
-  return useQuery<CustomizationListItem[]>({
-    queryKey: customizationQueryKey(type, scope),
+export function useCustomizationList(kind: EntityKind, listMethod: string, scope: Scope = 'personal') {
+  return useQuery<Entity[]>({
+    queryKey: entityQueryKey(kind, scope),
     queryFn: async () => {
-      const list = await callIpc<CustomizationListItem[]>(listMethod, {
-        scope,
-      });
+      const list = await callIpc<Entity[]>(listMethod, { scope });
       return Array.isArray(list) ? list : [];
     },
   });
@@ -42,9 +18,6 @@ export function useCustomizationList(
 
 export function useInvalidateCustomization() {
   const qc = useQueryClient();
-  return (
-    type: CustomizationType,
-    scope: CustomizationScope = 'personal',
-  ): Promise<void> =>
-    qc.invalidateQueries({ queryKey: customizationQueryKey(type, scope) });
+  return (kind: EntityKind, scope: Scope = 'personal'): Promise<void> =>
+    qc.invalidateQueries({ queryKey: entityQueryKey(kind, scope) });
 }

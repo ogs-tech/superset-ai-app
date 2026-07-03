@@ -3,6 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationListScreen } from '../../../src/renderer/components/CustomizationListScreen.js';
 import { mockApi, ok, renderWithQuery, type CallSpy } from '../test-utils.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../src/shared/entity.js';
 
 let call: CallSpy;
 
@@ -10,25 +11,23 @@ beforeEach(() => {
   call = mockApi();
 });
 
-const workspaceSkill = {
-  id: 'a',
-  frontmatter: {
-    name: 'Workspace Skill',
-    description: 'desc',
-    scopes: ['personal'],
-    version: '0.1.0',
-    createdAt: '',
-    updatedAt: '',
-  },
-  body: 'workspace body',
-  source: { kind: 'workspace' },
-};
+const skill = (name: string, source = WORKSPACE_SOURCE): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: `${name} description`,
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+  source,
+  content: `# ${name}\n`,
+});
 
-const pluginSkill = {
-  id: 'b',
-  frontmatter: { name: 'Plugin Skill', description: 'plugin desc' },
-  body: 'plugin body',
-  source: { kind: 'plugin', pluginId: 'my-plugin' },
+const workspaceSkill: Skill = { ...skill('a'), description: 'desc', content: 'workspace body' };
+
+const pluginSkill: Skill = {
+  ...skill('b', { kind: 'plugin', pluginId: 'my-plugin', provenance: 'workspace-managed' }),
+  description: 'plugin desc',
+  content: 'plugin body',
 };
 
 function renderScreen() {
@@ -53,7 +52,7 @@ describe('<CustomizationListScreen>', () => {
     const user = userEvent.setup();
     renderScreen();
 
-    const card = await screen.findByTestId('entity-grid-card-skill-workspace/a');
+    const card = await screen.findByTestId('entity-grid-card-skill-workspace/urn:skill:a');
     await user.click(card);
 
     expect(await screen.findByTestId('detail-drawer-customization')).toBeInTheDocument();
@@ -69,7 +68,7 @@ describe('<CustomizationListScreen>', () => {
     const user = userEvent.setup();
     renderScreen();
 
-    const card = await screen.findByTestId('entity-grid-card-skill-plugin/b');
+    const card = await screen.findByTestId('entity-grid-card-skill-plugin/urn:skill:b');
     await user.click(card);
 
     expect(await screen.findByTestId('detail-drawer-customization')).toBeInTheDocument();
@@ -82,7 +81,7 @@ describe('<CustomizationListScreen>', () => {
       return Promise.resolve(ok(undefined));
     });
     renderScreen();
-    await screen.findByTestId('entity-grid-card-skill-plugin/b');
+    await screen.findByTestId('entity-grid-card-skill-plugin/urn:skill:b');
     expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
   });
 
@@ -94,7 +93,7 @@ describe('<CustomizationListScreen>', () => {
     const user = userEvent.setup();
     renderScreen();
 
-    const card = await screen.findByTestId('entity-grid-card-skill-workspace/a');
+    const card = await screen.findByTestId('entity-grid-card-skill-workspace/urn:skill:a');
     await user.click(card);
     const drawer = await screen.findByTestId('detail-drawer-customization');
 

@@ -1,5 +1,5 @@
 import type { Adapter, AdapterDestination } from '../../ports/adapter.js';
-import type { Customization } from '../../../../shared/customization.js';
+import type { Entity } from '../../../../shared/entity.js';
 import type { LinkedRepo } from '../../../../shared/settings.js';
 
 export class FakeAdapter implements Adapter {
@@ -9,11 +9,11 @@ export class FakeAdapter implements Adapter {
     private readonly projectDestinationTemplate: (repoPath: string) => string = (repoPath) => `${repoPath}/.fake-adapter`,
   ) {}
 
-  resolveDestinations(args: {
-    customization: Customization;
+  resolveEntityDestinations(args: {
+    entity: Entity;
     linkedRepos: LinkedRepo[];
   }): AdapterDestination[] {
-    const { scopes } = args.customization.frontmatter;
+    const { scopes } = args.entity;
     const out: AdapterDestination[] = [];
 
     if (scopes.includes('personal')) {

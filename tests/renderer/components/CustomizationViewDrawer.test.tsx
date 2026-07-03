@@ -2,27 +2,26 @@ import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationViewDrawer } from '../../../src/renderer/components/CustomizationViewDrawer.js';
-import type { CustomizationListItem } from '../../../src/renderer/hooks/use-customization-list.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../src/shared/entity.js';
 import { renderWithTheme } from '../test-utils.js';
 
-const workspace: CustomizationListItem = {
-  id: 'skill-a',
-  frontmatter: {
-    name: 'Skill A',
-    description: 'a skill',
-  } as CustomizationListItem['frontmatter'],
-  body: '# Skill body',
-  source: { kind: 'workspace' },
-};
+const skill = (name: string, source = WORKSPACE_SOURCE): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: `${name} description`,
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+  source,
+  content: `# ${name}\n`,
+});
 
-const plugin: CustomizationListItem = {
-  id: 'skill-b',
-  frontmatter: {
-    name: 'Skill B',
-    description: 'plugin-provided',
-  } as CustomizationListItem['frontmatter'],
-  body: '# Plugin body',
-  source: { kind: 'plugin', pluginId: 'my-plugin' },
+const workspace: Skill = { ...skill('Skill A'), description: 'a skill', content: '# Skill body' };
+
+const plugin: Skill = {
+  ...skill('Skill B', { kind: 'plugin', pluginId: 'my-plugin', provenance: 'workspace-managed' }),
+  description: 'plugin-provided',
+  content: '# Plugin body',
 };
 
 describe('<CustomizationViewDrawer>', () => {

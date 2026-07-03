@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this app is
 
-**Superset AI** (`superset-ai-app`) — an Electron desktop app that centralizes AI customizations (skills, agent profiles, commands, global instructions) as Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`) via **symbolic links**. No backend, no API, no telemetry.
+**Superset AI** (`superset-ai-app`) — an Electron desktop app that centralizes AI customizations (skills, including slash-commands expressed as explicit-only skills; agent profiles; instructions) as canonical `Entity` objects backed by Markdown + YAML files, then syncs them to Claude Code (`~/.claude/`, `<repo>/.claude/`, plus `~/AGENTS.md` for instructions) via **symbolic links**. No backend, no API, no telemetry.
 
 Authoritative docs live in `docs/` (Diátaxis):
 - `docs/explanation/prd.md` — goals, scope, stop rules
 - `docs/reference/architecture.md` — hexagonal layout
 - `docs/reference/ipc-contract.md` — every IPC method
-- `docs/reference/customization-schema.md` — frontmatter rules
+- `docs/reference/customization-schema.md` — canonical `Entity` field rules (filename predates the Entity rename)
 
 **Read the relevant doc before editing the area it covers** — they are the source of truth for layout, IPC and schema. CLAUDE.md only carries gotchas and pointers.
 
@@ -44,10 +44,11 @@ Coverage targets `application/`, `ipc/`, `infrastructure/`, and `renderer/screen
 - **Composition root:** `src/main/index.ts` wires every adapter + service and passes the `handlers` map to `createDispatcher`.
 - **IPC** — single channel `ipc:call`, envelope `{ method, params }` → `IpcResult<T>`. Full shape, namespaces and per-method tables in `docs/reference/ipc-contract.md`. Renderer uses `callIpc<T>('ns.method', params)` from `src/renderer/lib/ipc.ts`. The dispatcher (`src/main/ipc/dispatcher.ts`) maps `DomainError(kind, …)` → `IpcError.kind` verbatim; plain `Error` → `kind: 'internal'`; unknown method → `kind: 'not_found'`.
 - **Adding a new IPC method:** types in `src/shared/`, handler in `src/main/ipc/registry.ts` (validate raw params with `_validators.ts` helpers), call site uses `callIpc<Result>(...)`.
-- **Per-entity facades vs deprecated umbrella:** `customization-service` is the legacy umbrella; new code uses `skill-service`, `agent-service`, `command-service`, `hook-service`, `global-instruction-service`. They wrap `customization-service` and add plugin-provenance merging. The `customization.*` IPC namespace has been removed — `CustomizationListScreen` and `useCustomizationList` now call the typed namespaces (e.g. `skill.list`) via a `listMethod` param.
-- **Adapters** — `claude-adapter.ts` under `src/main/infrastructure/adapters/`, implementing the `Adapter` port; `AdapterManager` orchestrates, `SymlinkManager` reconciles links and returns `SyncResult[]`. Targets and sync flow in `docs/reference/architecture.md`.
+- **Canonical `Entity` model:** the polymorphic `Customization`/`CustomizationFrontmatter` model and its `customization-service` umbrella are **gone** (Phase 0 refactor). `src/shared/entity.ts` defines `Entity` (flat fields — `name`, `description`, `content`/`systemPrompt`, `metadata`, `source`, `urn: urn:{kind}:{name}`) and three implemented kinds: `Skill`, `Agent`, `Instruction`. `EntityService` (`application/services/entity-service.ts`) + `EntityRepository`/`FsEntityRepository` are the shared save/delete/list use case; `skill-service`, `agent-service`, `instruction-service` are thin per-entity facades wrapping `EntityService`, adding plugin-provenance merging for skill/agent. `hook-service` and `mcp-service` are **not** Entity-backed yet (Phase 1).
+- **`command` removed, `global-instruction` renamed:** a slash-command is now a `Skill` with `explicitOnly: true` (↔ frontmatter `disable-model-invocation: true`) — no `command.*` IPC, no command screen. `global-instruction.*` IPC was renamed to `instruction.*`. `CustomizationListScreen`/`useCustomizationList` keep their (now generic) names but call the typed namespaces (e.g. `skill.list`) via a `listMethod` param.
+- **Adapters** — `claude-adapter.ts` under `src/main/infrastructure/adapters/`, implementing the `Adapter` port via `resolveEntityDestinations`; `AdapterManager` orchestrates, `SymlinkManager` reconciles links and returns `SyncResult[]`. Targets and sync flow in `docs/reference/architecture.md`.
 - **Plugin-provided entities** (`source.kind === 'plugin'`) are **read-only** — `save`/`delete` raise `OperationNotAllowedForOriginError`.
-- **Customization schema** — Markdown + YAML frontmatter; four types (`skill`, `agent`, `global-instruction`, `command`). Full rules and per-type constraints in `docs/reference/customization-schema.md`. One non-obvious point to remember up front: `global-instruction` requires `name === "default"` and `scopes === ["personal"]`.
+- **Entity schema** — `skill`/`agent` are Markdown + YAML frontmatter; `instruction` is stored **frontmatter-free** (whole file is the body). Full rules and per-kind constraints in `docs/reference/customization-schema.md`. One non-obvious point to remember up front: `instruction` requires `name === "default"` and `scopes === ["personal"]` (same singleton rule as the old `global-instruction`), and syncs to **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md`.
 
 ## Conventions and gotchas
 

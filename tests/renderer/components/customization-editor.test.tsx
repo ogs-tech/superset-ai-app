@@ -3,20 +3,17 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationEditor } from '../../../src/renderer/components/CustomizationEditor.js';
 import { mockApi, ok, fail, renderWithTheme, type CallSpy } from '../test-utils.js';
-import type { Customization } from '../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../src/shared/entity.js';
 
-const baseCustomization = (): Customization => ({
-  id: '',
-  frontmatter: {
-    name: 'foo',
-    type: 'skill',
-    description: 'sample',
-    scopes: ['personal'],
-    version: '0.1.0',
-    createdAt: '',
-    updatedAt: '',
-  },
-  body: '# Title\n\nSome **markdown** body.',
+const baseCustomization = (): Skill => ({
+  urn: 'urn:skill:foo',
+  kind: 'skill',
+  name: 'foo',
+  description: 'sample',
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  content: '# Title\n\nSome **markdown** body.',
 });
 
 let call: CallSpy;
@@ -58,12 +55,7 @@ describe('<CustomizationEditor>', () => {
     const initial = baseCustomization();
     call.mockResolvedValue(
       ok({
-        skill: {
-          id: 'foo',
-          frontmatter: { ...initial.frontmatter },
-          source: { kind: 'workspace' },
-          body: initial.body,
-        },
+        skill: { ...initial },
         syncReport: [],
       }),
     );
@@ -90,9 +82,9 @@ describe('<CustomizationEditor>', () => {
     expect(onSaved).toHaveBeenCalledTimes(1);
   });
 
-  it('renders two checkboxes (personal, project) reflecting frontmatter.scopes', () => {
+  it('renders two checkboxes (personal, project) reflecting scopes', () => {
     const initial = baseCustomization();
-    initial.frontmatter.scopes = ['personal', 'project'];
+    initial.scopes = ['personal', 'project'];
     renderWithTheme(
       <CustomizationEditor
         initial={initial}
@@ -107,17 +99,12 @@ describe('<CustomizationEditor>', () => {
     expect(project).toBeChecked();
   });
 
-  it('toggling a checkbox updates frontmatter.scopes sent on save', async () => {
+  it('toggling a checkbox updates scopes sent on save', async () => {
     const user = userEvent.setup();
     const initial = baseCustomization();
     call.mockResolvedValue(
       ok({
-        skill: {
-          id: 'foo',
-          frontmatter: { ...initial.frontmatter, scopes: ['personal', 'project'] },
-          source: { kind: 'workspace' },
-          body: initial.body,
-        },
+        skill: { ...initial, scopes: ['personal', 'project'] },
         syncReport: [],
       }),
     );
@@ -138,9 +125,36 @@ describe('<CustomizationEditor>', () => {
       expect(call).toHaveBeenCalledWith(
         'skill.save',
         expect.objectContaining({
-          skill: expect.objectContaining({
-            frontmatter: expect.objectContaining({ scopes: ['personal', 'project'] }),
-          }),
+          skill: expect.objectContaining({ scopes: ['personal', 'project'] }),
+        }),
+      ),
+    );
+  });
+
+  it('editing the name in edit mode still sends the original urn (so the service detects a rename)', async () => {
+    const user = userEvent.setup();
+    const initial = baseCustomization(); // urn 'urn:skill:foo', name 'foo'
+    call.mockResolvedValue(ok({ skill: { ...initial, name: 'bar' }, syncReport: [] }));
+
+    renderWithTheme(
+      <CustomizationEditor
+        initial={initial}
+        isCreate={false}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const nameField = screen.getByLabelText('Name');
+    await user.clear(nameField);
+    await user.type(nameField, 'bar');
+    await user.click(screen.getByRole('button', { name: /salvar/i }));
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'skill.save',
+        expect.objectContaining({
+          skill: expect.objectContaining({ urn: 'urn:skill:foo', name: 'bar' }),
         }),
       ),
     );

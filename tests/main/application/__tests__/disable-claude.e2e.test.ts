@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
+import { InMemoryEntityRepository } from '../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
@@ -8,7 +8,7 @@ import { SymlinkManager } from '../../../../src/main/application/services/symlin
 import { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 import { ClaudeAdapter } from '../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import type { Customization } from '../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Agent, type Skill } from '../../../../src/shared/entity.js';
 import type { Settings } from '../../../../src/shared/settings.js';
 
 const HOMEDIR = '/home/alice';
@@ -21,28 +21,50 @@ const baseSettings: Settings = {
   language: 'off',
 };
 
-const skillPersonal: Customization = {
-  id: 'skill/my-skill',
-  frontmatter: { name: 'my-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
-  body: '# skill',
+const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
+
+const skillPersonal: Skill = {
+  urn: 'urn:skill:my-skill',
+  kind: 'skill',
+  name: 'my-skill',
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: '# skill',
 };
 
-const agentPersonal: Customization = {
-  id: 'agent/my-agent',
-  frontmatter: { name: 'my-agent', type: 'agent', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
-  body: '# agent',
+const agentPersonal: Agent = {
+  urn: 'urn:agent:my-agent',
+  kind: 'agent',
+  name: 'my-agent',
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  systemPrompt: '# agent',
 };
 
-const skillProject: Customization = {
-  id: 'skill/proj-skill',
-  frontmatter: { name: 'proj-skill', type: 'skill', description: 'desc', scopes: ['project'], version: '1.0.0', createdAt: '', updatedAt: '' },
-  body: '# proj skill',
+const skillProject: Skill = {
+  urn: 'urn:skill:proj-skill',
+  kind: 'skill',
+  name: 'proj-skill',
+  description: 'desc',
+  scopes: ['project'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: '# proj skill',
 };
 
-const skillRealFile: Customization = {
-  id: 'skill/real-skill',
-  frontmatter: { name: 'real-skill', type: 'skill', description: 'desc', scopes: ['personal'], version: '1.0.0', createdAt: '', updatedAt: '' },
-  body: '# real skill',
+const skillRealFile: Skill = {
+  urn: 'urn:skill:real-skill',
+  kind: 'skill',
+  name: 'real-skill',
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: '# real skill',
 };
 
 describe('disable-claude e2e (AC#10)', () => {
@@ -50,11 +72,11 @@ describe('disable-claude e2e (AC#10)', () => {
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const customizationRepo = new InMemoryCustomizationRepository();
-    await customizationRepo.save({ customization: skillPersonal });
-    await customizationRepo.save({ customization: agentPersonal });
-    await customizationRepo.save({ customization: skillProject });
-    await customizationRepo.save({ customization: skillRealFile });
+    const entityRepository = new InMemoryEntityRepository();
+    await entityRepository.save(skillPersonal);
+    await entityRepository.save(agentPersonal);
+    await entityRepository.save(skillProject);
+    await entityRepository.save(skillRealFile);
 
     const fs = new InMemoryFileSystem();
     const symlinkPersonalSkill = join(HOMEDIR, '.claude/skills/my-skill');
@@ -71,7 +93,7 @@ describe('disable-claude e2e (AC#10)', () => {
     const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const manager = new AdapterManager({
       settingsService,
-      customizationRepository: customizationRepo,
+      entityRepository,
       symlinkManager: sm,
       workspacePath: WORKSPACE,
       adapters: new Map([['claude', claudeAdapter]]),

@@ -12,7 +12,7 @@ describe('SubRail', () => {
   it('renders the five Library subs and marks the active one', () => {
     renderWithShell(<SubRail nav={{ area: 'biblioteca', sub: 'agents' }} onSelect={() => undefined} />);
     expect(screen.getByTestId('nav-skills')).toBeInTheDocument();
-    expect(screen.getByTestId('nav-global-instructions')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-instructions')).toBeInTheDocument();
     expect(screen.getByTestId('nav-agents')).toHaveAttribute('aria-current', 'page');
   });
   it('selects a sub on click', async () => {

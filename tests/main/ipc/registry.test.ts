@@ -2,9 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
-import { CustomizationService } from '../../../src/main/application/services/customization-service.js';
-import { InMemoryCustomizationRepository } from '../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
-import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
@@ -12,8 +9,7 @@ import type { AdapterManager } from '../../../src/main/application/services/adap
 import type { PluginService } from '../../../src/main/application/services/plugin-service.js';
 import type { SkillService } from '../../../src/main/application/services/skill-service.js';
 import type { AgentService } from '../../../src/main/application/services/agent-service.js';
-import type { CommandService } from '../../../src/main/application/services/command-service.js';
-import type { GlobalInstructionService } from '../../../src/main/application/services/global-instruction-service.js';
+import type { InstructionService } from '../../../src/main/application/services/instruction-service.js';
 import type { MarketplaceService } from '../../../src/main/application/services/marketplace-service.js';
 import type { HookService } from '../../../src/main/application/services/hook-service.js';
 import type { CredentialStorePort } from '../../../src/main/application/ports/credential-store-port.js';
@@ -37,15 +33,13 @@ const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
 interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
-  customizationService: CustomizationService;
   adapterManager: AdapterManager;
   dialogPort: DialogPort;
   pluginService: PluginService;
   credentialStore: CredentialStorePort;
   skillService: SkillService;
   agentService: AgentService;
-  commandService: CommandService;
-  globalInstructionService: GlobalInstructionService;
+  instructionService: InstructionService;
   marketplaceService: MarketplaceService;
   hookService: HookService;
   healthService: HealthService;
@@ -64,8 +58,6 @@ interface Deps {
   dialogSpy: {
     selectFolder: ReturnType<typeof vi.fn>;
   };
-  customizationRepo: InMemoryCustomizationRepository;
-  clock: FixedClock;
 }
 
 const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
@@ -94,23 +86,17 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     selectFolder: dialogSpy.selectFolder,
   };
 
-  const customizationRepo = new InMemoryCustomizationRepository();
-  const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const adapterManager: AdapterManager = {
     syncAll: vi.fn().mockResolvedValue([]),
-    syncOne: vi.fn().mockResolvedValue([]),
-    removeOne: vi.fn().mockResolvedValue([]),
     removeAll: vi.fn().mockResolvedValue([]),
     removeAdapterSymlinks: vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] }),
     countDestinations: vi.fn().mockResolvedValue(0),
   } as unknown as AdapterManager;
-  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
 
   const pluginService = null as unknown as PluginService;
   const skillService = null as unknown as SkillService;
   const agentService = null as unknown as AgentService;
-  const commandService = null as unknown as CommandService;
-  const globalInstructionService = null as unknown as GlobalInstructionService;
+  const instructionService = null as unknown as InstructionService;
   const marketplaceService = null as unknown as MarketplaceService;
   const hookService = null as unknown as HookService;
   const healthService = null as unknown as HealthService;
@@ -129,15 +115,13 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
-    customizationService,
     adapterManager,
     dialogPort,
     pluginService,
     credentialStore,
     skillService,
     agentService,
-    commandService,
-    globalInstructionService,
+    instructionService,
     marketplaceService,
     hookService,
     healthService,
@@ -148,8 +132,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     settingsRepoSpy,
     repoReaderSpy,
     dialogSpy,
-    customizationRepo,
-    clock,
   };
 };
 

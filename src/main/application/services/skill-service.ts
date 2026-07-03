@@ -1,71 +1,41 @@
-import type { CustomizationService } from './customization-service.js';
-import type { Skill, SkillFrontmatter } from '../schemas/skill.js';
-import type { SkillId } from '../../domain/skill-id.js';
-import type { SyncResult } from '../../../shared/customization.js';
+import type { EntityService } from './entity-service.js';
+import type { Skill } from '../../../shared/entity.js';
+import { entityUrn, WORKSPACE_SOURCE } from '../../../shared/entity.js';
+import type { SyncResult } from '../../../shared/sync-result.js';
 import type { Scope } from '../ports/scope.js';
-import { skillId } from '../../domain/skill-id.js';
-import { WORKSPACE_SOURCE, pluginSource } from '../../domain/customization-source.js';
-import { formatCustomizationId } from '../../domain/customization-id.js';
+import type { SkillId } from '../../domain/skill-id.js';
 import { OperationNotAllowedForOriginError } from '../../domain/plugin-errors.js';
 import {
   collectPluginEntities,
-  assertNotPluginSourced,
-  type PluginEntityDeps,
-} from './customization-plugin-helpers.js';
+  assertEntityNotPluginSourced,
+  type EntityPluginDeps,
+} from './entity-plugin-helpers.js';
 
 export interface SaveSkillResult {
   skill: Skill;
   syncReport: SyncResult[];
 }
 
-function toSkill(c: { id: string; frontmatter: unknown; body: string }): Skill {
-  const fm = c.frontmatter as SkillFrontmatter;
-  return {
-    id: skillId(fm.name),
-    frontmatter: fm,
-    source: WORKSPACE_SOURCE,
-    body: c.body,
-  };
-}
-
-export type PluginProvenanceDepsForSkills = PluginEntityDeps;
-
 export class SkillService {
   constructor(
-    private readonly base: CustomizationService,
-    private readonly pluginDeps?: PluginProvenanceDepsForSkills,
+    private readonly base: EntityService,
+    private readonly pluginDeps?: EntityPluginDeps,
   ) {}
 
   async list(scope: Scope = 'personal'): Promise<Skill[]> {
-    const workspace = (await this.base.list({ type: 'skill' })).map(toSkill);
+    const workspace = (await this.base.list('skill')) as Skill[];
     if (!this.pluginDeps) return workspace;
-
-    const pluginSkills = await this.collectPluginSkills(scope);
-    const workspaceIds = new Set(workspace.map((s) => s.id));
-    return [...workspace, ...pluginSkills.filter((s) => !workspaceIds.has(s.id))];
-  }
-
-  private async collectPluginSkills(scope: Scope): Promise<Skill[]> {
-    if (!this.pluginDeps) return [];
-    return collectPluginEntities(
+    const plugin = (await collectPluginEntities(
       this.pluginDeps,
-      {
-        keyPrefix: 'skill/',
-        relPath: (name) => `skills/${name}/SKILL.md`,
-        build: ({ name, frontmatter, body, pluginId, provenance }) => ({
-          id: skillId(name),
-          frontmatter: frontmatter as SkillFrontmatter,
-          source: pluginSource(pluginId, provenance),
-          body,
-        }),
-      },
+      { kind: 'skill', relPath: (name) => `skills/${name}/SKILL.md` },
       scope,
-    );
+    )) as Skill[];
+    const urns = new Set(workspace.map((s) => s.urn));
+    return [...workspace, ...plugin.filter((s) => !urns.has(s.urn))];
   }
 
   async get(id: SkillId): Promise<Skill> {
-    const c = await this.base.get({ id: formatCustomizationId('skill', id) });
-    return toSkill(c);
+    return (await this.base.get(entityUrn('skill', id))) as Skill;
   }
 
   async save(input: { skill: Skill; isCreate?: boolean; scope?: Scope }): Promise<SaveSkillResult> {
@@ -75,39 +45,29 @@ export class SkillService {
         { origin: 'plugin', operation: 'save' },
       );
     }
-    await assertNotPluginSourced(this.pluginDeps, {
-      type: 'skill',
+    await assertEntityNotPluginSourced(this.pluginDeps, {
+      kind: 'skill',
       operation: 'save',
-      name: input.skill.id,
+      name: input.skill.name,
       scope: input.scope ?? 'personal',
     });
     const result = await this.base.save({
-      customization: {
-        id: formatCustomizationId('skill', input.skill.id),
-        frontmatter: input.skill.frontmatter as never,
-        body: input.skill.body,
-      },
+      entity: { ...input.skill, source: WORKSPACE_SOURCE },
       ...(input.isCreate !== undefined ? { isCreate: input.isCreate } : {}),
     });
-    return {
-      skill: toSkill(result.customization),
-      syncReport: result.syncReport,
-    };
+    return { skill: result.entity as Skill, syncReport: result.syncReport };
   }
 
   async delete(input: { id: SkillId; removeSymlinks: boolean; scope?: Scope }): Promise<{
     ok: true;
     syncReport?: SyncResult[];
   }> {
-    await assertNotPluginSourced(this.pluginDeps, {
-      type: 'skill',
+    await assertEntityNotPluginSourced(this.pluginDeps, {
+      kind: 'skill',
       operation: 'delete',
       name: input.id,
       scope: input.scope ?? 'personal',
     });
-    return this.base.delete({
-      id: formatCustomizationId('skill', input.id),
-      removeSymlinks: input.removeSymlinks,
-    });
+    return this.base.delete({ urn: entityUrn('skill', input.id), removeSymlinks: input.removeSymlinks });
   }
 }

@@ -7,8 +7,7 @@ import type { DialogPort, SelectFolderParams } from '../application/ports/dialog
 import type { PluginService } from '../application/services/plugin-service.js';
 import type { SkillService } from '../application/services/skill-service.js';
 import type { AgentService } from '../application/services/agent-service.js';
-import type { GlobalInstructionService } from '../application/services/global-instruction-service.js';
-import type { CommandService } from '../application/services/command-service.js';
+import type { InstructionService } from '../application/services/instruction-service.js';
 import type { HookService } from '../application/services/hook-service.js';
 import type { MarketplaceService } from '../application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
@@ -19,9 +18,8 @@ import { buildPluginHandlers } from './plugin-handlers.js';
 import { buildCredentialsHandlers } from './credentials-handlers.js';
 import { buildSkillHandlers } from './skill-handlers.js';
 import { buildAgentHandlers } from './agent-handlers.js';
-import { buildCommandHandlers } from './command-handlers.js';
 import { buildHookHandlers } from './hook-handlers.js';
-import { buildGlobalInstructionHandlers } from './global-instruction-handlers.js';
+import { buildInstructionHandlers } from './instruction-handlers.js';
 import { buildMarketplaceHandlers } from './marketplace-handlers.js';
 import { buildHealthHandlers } from './health-handlers.js';
 import type { HealthService } from '../application/services/health/health-service.js';
@@ -31,7 +29,6 @@ import type { NotificationPort } from '../application/ports/notification-port.js
 import type { WorkspaceTeardownService } from '../application/services/workspace-teardown.js';
 import { updateLanguageSection } from '../application/services/language-section.js';
 import { asLanguagePreference } from './_validators.js';
-import { globalInstructionId } from '../domain/global-instruction-id.js';
 
 export interface IpcDeps {
   settingsService: SettingsService;
@@ -42,9 +39,8 @@ export interface IpcDeps {
   credentialStore: CredentialStorePort;
   skillService: SkillService;
   agentService: AgentService;
-  commandService: CommandService;
   hookService: HookService;
-  globalInstructionService: GlobalInstructionService;
+  instructionService: InstructionService;
   marketplaceService: MarketplaceService;
   healthService: HealthService;
   mcpService: McpService;
@@ -90,9 +86,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     credentialStore,
     skillService,
     agentService,
-    commandService,
     hookService,
-    globalInstructionService,
+    instructionService,
     marketplaceService,
     healthService,
     mcpService,
@@ -117,10 +112,10 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
 
       const settings = await settingsService.merge({ language });
 
-      const gi = await globalInstructionService.get(globalInstructionId('default'));
-      const newBody = updateLanguageSection(gi.body, language);
-      const { syncReport } = await globalInstructionService.save({
-        globalInstruction: { ...gi, body: newBody },
+      const instruction = await instructionService.get('default');
+      const newContent = updateLanguageSection(instruction.content, language);
+      const { syncReport } = await instructionService.save({
+        instruction: { ...instruction, content: newContent },
       });
 
       return { settings, syncReport };
@@ -252,9 +247,8 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     ...buildCredentialsHandlers(credentialStore),
     ...buildSkillHandlers(skillService),
     ...buildAgentHandlers(agentService),
-    ...buildCommandHandlers(commandService),
     ...buildHookHandlers(hookService),
-    ...buildGlobalInstructionHandlers(globalInstructionService),
+    ...buildInstructionHandlers(instructionService),
     ...buildMarketplaceHandlers(marketplaceService),
     ...buildHealthHandlers(healthService, notificationPort),
     ...buildMcpHandlers(mcpService),

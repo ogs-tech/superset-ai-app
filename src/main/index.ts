@@ -7,18 +7,18 @@ import { SettingsService } from './application/services/settings-service.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
 import { WorkspaceTeardownService } from './application/services/workspace-teardown.js';
-import { CustomizationService } from './application/services/customization-service.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
-import { FsCustomizationRepository } from './infrastructure/customization/fs-customization-repository.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
-import { SchemaValidator } from './application/services/schema-validator.js';
+import { EntityService } from './application/services/entity-service.js';
+import { EntityValidator } from './application/services/entity-validator.js';
+import { FsEntityRepository } from './infrastructure/entity/fs-entity-repository.js';
 import type { Adapter } from './application/ports/adapter.js';
 import type { CredentialStorePort } from './application/ports/credential-store-port.js';
 import { SafeStorageCredentials } from './infrastructure/credentials/safe-storage-credentials.js';
@@ -36,9 +36,8 @@ import { PluginProvenanceService } from './application/services/plugin-provenanc
 import { ClaudeCodePluginReader } from './infrastructure/plugins/claude-code-plugin-reader.js';
 import { SkillService } from './application/services/skill-service.js';
 import { AgentService } from './application/services/agent-service.js';
-import { CommandService } from './application/services/command-service.js';
 import { HookService } from './application/services/hook-service.js';
-import { GlobalInstructionService } from './application/services/global-instruction-service.js';
+import { InstructionService } from './application/services/instruction-service.js';
 import { MarketplaceService } from './application/services/marketplace-service.js';
 import { MarketplaceSeeder } from './application/services/marketplace-seeder.js';
 import { SettingsMarketplaceRepository } from './infrastructure/marketplace/settings-marketplace-repository.js';
@@ -88,22 +87,23 @@ async function wireIpc(): Promise<void> {
   const dialogPort = new ElectronDialogAdapter();
 
   const clock = new SystemClock();
-  const customizationRepo = new FsCustomizationRepository(workspacePath);
 
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
+  const entityRepository = new FsEntityRepository(workspacePath);
   const adapterManager = new AdapterManager({
     settingsService,
-    customizationRepository: customizationRepo,
+    entityRepository,
     symlinkManager,
     workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
     ]),
   });
-  const schemaValidator = new SchemaValidator();
-  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
+
+  const entityValidator = new EntityValidator();
+  const entityService = new EntityService(entityRepository, clock, adapterManager, entityValidator);
 
   const credentialStore: CredentialStorePort = new SafeStorageCredentials(app.getPath('userData'));
 
@@ -177,15 +177,11 @@ async function wireIpc(): Promise<void> {
     fs: nodeFsAdapter,
     claudeCodeRegistry: claudeCodePluginReader,
   });
-  const skillService = new SkillService(customizationService, {
+  const skillService = new SkillService(entityService, {
     provenance: pluginProvenance,
     fs: nodeFsAdapter,
   });
-  const agentService = new AgentService(customizationService, {
-    provenance: pluginProvenance,
-    fs: nodeFsAdapter,
-  });
-  const commandService = new CommandService(customizationService, {
+  const agentService = new AgentService(entityService, {
     provenance: pluginProvenance,
     fs: nodeFsAdapter,
   });
@@ -193,7 +189,7 @@ async function wireIpc(): Promise<void> {
     cache: pluginCache,
     fs: nodeFsAdapter,
   });
-  const globalInstructionService = new GlobalInstructionService(customizationService);
+  const instructionService = new InstructionService(entityService);
   const marketplacesCacheRoot = (scope: 'personal' | 'project'): string =>
     scope === 'personal'
       ? join(workspacePath, 'marketplaces-cache')
@@ -259,9 +255,8 @@ async function wireIpc(): Promise<void> {
     credentialStore,
     skillService,
     agentService,
-    commandService,
     hookService,
-    globalInstructionService,
+    instructionService,
     marketplaceService,
     healthService,
     mcpService,

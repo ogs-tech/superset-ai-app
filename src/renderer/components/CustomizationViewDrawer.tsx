@@ -6,12 +6,13 @@ import ReactMarkdown from 'react-markdown';
 import { DetailDrawer } from './DetailDrawer.js';
 import { ReadOnlyNotice } from './ReadOnlyNotice.js';
 import { PluginOriginBadge } from './PluginOriginBadge.js';
-import type { CustomizationListItem } from '../hooks/use-customization-list.js';
+import type { Entity } from '../../shared/entity.js';
+import { entityBody } from '../lib/entity-body.js';
 
 interface CustomizationViewDrawerProps {
-  entity: CustomizationListItem | null;
+  entity: Entity | null;
   onClose: () => void;
-  onEdit: (entity: CustomizationListItem) => void;
+  onEdit: (entity: Entity) => void;
 }
 
 export function CustomizationViewDrawer({
@@ -26,12 +27,8 @@ export function CustomizationViewDrawer({
     <DetailDrawer
       open={entity !== null}
       onClose={onClose}
-      title={entity?.frontmatter.name ?? ''}
-      subtitle={
-        typeof entity?.frontmatter.description === 'string'
-          ? entity.frontmatter.description
-          : undefined
-      }
+      title={entity?.name ?? ''}
+      subtitle={entity?.description ? entity.description : undefined}
       badges={
         pluginSource ? (
           <PluginOriginBadge
@@ -60,7 +57,7 @@ export function CustomizationViewDrawer({
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Kicker>Body</Kicker>
             <Box sx={{ mt: 1, '& p': { my: 0.5 } }}>
-              <ReactMarkdown>{entity.body}</ReactMarkdown>
+              <ReactMarkdown>{entityBody(entity)}</ReactMarkdown>
             </Box>
           </Paper>
         </Stack>

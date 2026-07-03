@@ -1,36 +1,22 @@
 import { useMemo, useState } from 'react';
-import {
-  Box,
-  ButtonBase,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, ButtonBase, Paper, Stack, Typography } from '@mui/material';
 import { CustomizationViewDrawer } from './CustomizationViewDrawer.js';
-import {
-  useCustomizationList,
-  type CustomizationListItem,
-  type CustomizationScope,
-} from '../hooks/use-customization-list.js';
+import { useCustomizationList } from '../hooks/use-customization-list.js';
+import type { Entity, Scope } from '../../shared/entity.js';
 
 interface PluginRelatedEntitiesProps {
   pluginId: string;
-  scope?: CustomizationScope;
+  scope?: Scope;
 }
 
 interface Group {
-  key: 'skills' | 'agents' | 'commands';
+  key: 'skills' | 'agents';
   label: string;
-  items: CustomizationListItem[];
+  items: Entity[];
 }
 
-function filterByPlugin(
-  items: CustomizationListItem[] | undefined,
-  pluginId: string,
-): CustomizationListItem[] {
-  return (items ?? []).filter(
-    (i) => i.source.kind === 'plugin' && i.source.pluginId === pluginId,
-  );
+function filterByPlugin(items: Entity[] | undefined, pluginId: string): Entity[] {
+  return (items ?? []).filter((i) => i.source.kind === 'plugin' && i.source.pluginId === pluginId);
 }
 
 export function PluginRelatedEntities({
@@ -39,16 +25,14 @@ export function PluginRelatedEntities({
 }: PluginRelatedEntitiesProps): React.ReactElement {
   const skills = useCustomizationList('skill', 'skill.list', scope);
   const agents = useCustomizationList('agent', 'agent.list', scope);
-  const commands = useCustomizationList('command', 'command.list', scope);
-  const [viewing, setViewing] = useState<CustomizationListItem | null>(null);
+  const [viewing, setViewing] = useState<Entity | null>(null);
 
   const groups = useMemo<Group[]>(
     () => [
       { key: 'skills', label: 'Skills', items: filterByPlugin(skills.data, pluginId) },
       { key: 'agents', label: 'Agents', items: filterByPlugin(agents.data, pluginId) },
-      { key: 'commands', label: 'Commands', items: filterByPlugin(commands.data, pluginId) },
     ],
-    [skills.data, agents.data, commands.data, pluginId],
+    [skills.data, agents.data, pluginId],
   );
 
   const total = groups.reduce((n, g) => n + g.items.length, 0);
@@ -68,37 +52,23 @@ export function PluginRelatedEntities({
             .filter((g) => g.items.length > 0)
             .map((g) => (
               <Box key={g.key} data-testid={`plugin-related-group-${g.key}`}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mb: 0.5 }}
-                >
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                   {g.label} ({g.items.length})
                 </Typography>
                 <Stack spacing={0.5}>
                   {g.items.map((item) => (
                     <ButtonBase
-                      key={item.id}
+                      key={item.urn}
                       onClick={() => setViewing(item)}
-                      sx={{
-                        justifyContent: 'flex-start',
-                        textAlign: 'left',
-                        p: 1,
-                        borderRadius: 1,
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
+                      sx={{ justifyContent: 'flex-start', textAlign: 'left', p: 1, borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}
                     >
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {item.frontmatter.name}
+                          {item.name}
                         </Typography>
-                        {typeof item.frontmatter.description === 'string' && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: 'block' }}
-                          >
-                            {item.frontmatter.description}
+                        {item.description && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {item.description}
                           </Typography>
                         )}
                       </Box>
@@ -109,11 +79,7 @@ export function PluginRelatedEntities({
             ))}
         </Stack>
       )}
-      <CustomizationViewDrawer
-        entity={viewing}
-        onClose={() => setViewing(null)}
-        onEdit={() => setViewing(null)}
-      />
+      <CustomizationViewDrawer entity={viewing} onClose={() => setViewing(null)} onEdit={() => setViewing(null)} />
     </Paper>
   );
 }

@@ -3,7 +3,6 @@ import { AppShell } from '../components/shell/AppShell.js';
 import { defaultNav, type Nav } from '../components/shell/nav.js';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
-import { CommandList } from './commands/CommandList.js';
 import { HookList } from './hooks/HookList.js';
 import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
 import { McpList } from './mcps/McpList.js';
@@ -32,11 +31,9 @@ function screenFor(nav: Nav, navigate: (n: Nav) => void): React.ReactElement {
           return <SkillList />;
         case 'agents':
           return <AgentList />;
-        case 'commands':
-          return <CommandList />;
         case 'hooks':
           return <HookList />;
-        case 'global-instructions':
+        case 'instructions':
           return <GlobalInstructionScreen />;
         case 'mcps':
           return <McpList />;

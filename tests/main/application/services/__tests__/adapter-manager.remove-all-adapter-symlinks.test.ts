@@ -1,30 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { setupAdapterManager } from './adapter-manager.helpers.js';
-import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../../../src/shared/entity.js';
 
-const baseCustomization = (overrides: Partial<Customization['frontmatter']> = {}): Customization => ({
-  id: `${overrides.type ?? 'skill'}/${overrides.name ?? 'foo'}`,
-  frontmatter: {
-    name: 'foo',
-    type: 'skill',
-    description: 'desc',
-    scopes: ['personal'],
-    version: '1.0.0',
-    createdAt: '',
-    updatedAt: '',
-    ...overrides,
-  },
-  body: '# foo',
+const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
+
+const skillEntity = (name: string): Skill => ({
+  urn: `urn:skill:${name}`,
+  kind: 'skill',
+  name,
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: `# ${name}`,
 });
 
 describe('AdapterManager.removeAllAdapterSymlinks', () => {
   it('removes workspace-pointing symlinks across every registered adapter and aggregates the result', async () => {
     const claude = new FakeAdapter('claude', '/personal/claude/skills/alpha');
     const other = new FakeAdapter('other', '/personal/other/skills/alpha');
-    const { manager, registerCustomization, fs } = await setupAdapterManager([claude, other]);
+    const { manager, registerEntity, fs } = await setupAdapterManager([claude, other]);
 
-    await registerCustomization(baseCustomization({ name: 'alpha', type: 'skill' }));
+    await registerEntity(skillEntity('alpha'));
     await fs.symlink({ target: '/workspace/skills/alpha', path: '/personal/claude/skills/alpha' });
     await fs.symlink({ target: '/workspace/skills/alpha', path: '/personal/other/skills/alpha' });
 
@@ -37,9 +35,9 @@ describe('AdapterManager.removeAllAdapterSymlinks', () => {
 
   it('leaves symlinks that point outside the workspace untouched (counts them as skipped)', async () => {
     const claude = new FakeAdapter('claude', '/personal/claude/skills/alpha');
-    const { manager, registerCustomization, fs } = await setupAdapterManager([claude]);
+    const { manager, registerEntity, fs } = await setupAdapterManager([claude]);
 
-    await registerCustomization(baseCustomization({ name: 'alpha', type: 'skill' }));
+    await registerEntity(skillEntity('alpha'));
     // A symlink the user created by hand, pointing elsewhere — restore must not touch it.
     await fs.symlink({ target: '/somewhere/else/alpha', path: '/personal/claude/skills/alpha' });
 

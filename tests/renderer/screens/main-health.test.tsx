@@ -29,7 +29,7 @@ const report = (worst: HealthReport['worst']): HealthReport => ({
 const setupRoute = (worst: HealthReport['worst']) => {
   call.mockImplementation((method: string) => {
     if (method === 'health.getReport') return Promise.resolve(ok(report(worst)));
-    if (method === 'global-instruction.get') {
+    if (method === 'instruction.get') {
       return Promise.resolve(fail('not_found', 'none'));
     }
     return Promise.resolve(ok([]));

@@ -1,4 +1,4 @@
-import type { SyncResult } from './customization.js';
+import type { SyncResult } from './sync-result.js';
 
 export type IpcErrorKind =
   | 'validation'

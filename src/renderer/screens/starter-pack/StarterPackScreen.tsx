@@ -180,7 +180,7 @@ export function StarterPackScreen({ onNavigate }: StarterPackScreenProps): React
             variant="outlined"
             size="small"
             endIcon={<Icon glyph={ArrowRight} size={16} />}
-            onClick={() => onNavigate({ area: 'biblioteca', sub: 'global-instructions' })}
+            onClick={() => onNavigate({ area: 'biblioteca', sub: 'instructions' })}
           >
             Configurar
           </Button>

@@ -7,8 +7,8 @@ describe('nav model', () => {
   it('exposes the four primary areas in order', () => {
     expect(NAV_AREAS.map((a) => a.area)).toEqual(['inicio','biblioteca','plugins','diagnostico']);
   });
-  it('lists the six library subs and two plugins subs', () => {
-    expect(LIBRARY_SUBS.map((s) => s.sub)).toEqual(['skills','agents','commands','hooks','global-instructions','mcps']);
+  it('lists the five library subs and two plugins subs', () => {
+    expect(LIBRARY_SUBS.map((s) => s.sub)).toEqual(['skills','agents','hooks','instructions','mcps']);
     expect(PLUGINS_SUBS.map((s) => s.sub)).toEqual(['plugins','marketplaces']);
   });
   it('builds nav-* testids', () => {
