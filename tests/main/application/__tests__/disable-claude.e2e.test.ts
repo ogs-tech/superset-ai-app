@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { InMemoryCustomizationRepository } from '../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryEntityRepository } from '../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
@@ -73,7 +72,6 @@ describe('disable-claude e2e (AC#10)', () => {
     const settingsRepo = new InMemorySettingsRepository();
     await settingsRepo.save(baseSettings);
     const settingsService = new SettingsService(settingsRepo);
-    const customizationRepo = new InMemoryCustomizationRepository();
     const entityRepository = new InMemoryEntityRepository();
     await entityRepository.save(skillPersonal);
     await entityRepository.save(agentPersonal);
@@ -95,7 +93,6 @@ describe('disable-claude e2e (AC#10)', () => {
     const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const manager = new AdapterManager({
       settingsService,
-      customizationRepository: customizationRepo,
       entityRepository,
       symlinkManager: sm,
       workspacePath: WORKSPACE,

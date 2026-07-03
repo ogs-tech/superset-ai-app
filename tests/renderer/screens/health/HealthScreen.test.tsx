@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HealthScreen } from '../../../../src/renderer/screens/health/HealthScreen.js';
 import type { HealthReport } from '../../../../src/shared/health.js';
-import type { SyncResult } from '../../../../src/shared/customization.js';
+import type { SyncResult } from '../../../../src/shared/sync-result.js';
 import { mockApi, ok, fail, renderWithQuery, type CallSpy } from '../../test-utils.js';
 
 let call: CallSpy;

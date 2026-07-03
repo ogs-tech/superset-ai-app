@@ -1,46 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
-import { CustomizationService } from '../../../../../src/main/application/services/customization-service.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
-import type { Customization } from '../../../../../src/shared/customization.js';
+import { WORKSPACE_SOURCE, type Agent, type Skill } from '../../../../../src/shared/entity.js';
 import type { LinkedRepo, Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
 
-const skillPersonal: Customization = {
-  id: 'skill/review',
-  frontmatter: {
-    name: 'review',
-    type: 'skill',
-    description: 'desc',
-    scopes: ['personal'],
-    version: '1.0.0',
-    createdAt: '',
-    updatedAt: '',
-  },
-  body: '# review',
+const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
+
+const skillPersonal: Skill = {
+  urn: 'urn:skill:review',
+  kind: 'skill',
+  name: 'review',
+  description: 'desc',
+  scopes: ['personal'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  content: '# review',
 };
 
-const agentProject: Customization = {
-  id: 'agent/triage',
-  frontmatter: {
-    name: 'triage',
-    type: 'agent',
-    description: 'desc',
-    scopes: ['project'],
-    version: '1.0.0',
-    createdAt: '',
-    updatedAt: '',
-  },
-  body: '# triage',
+const agentProject: Agent = {
+  urn: 'urn:agent:triage',
+  kind: 'agent',
+  name: 'triage',
+  description: 'desc',
+  scopes: ['project'],
+  metadata: meta,
+  source: WORKSPACE_SOURCE,
+  systemPrompt: '# triage',
 };
 
 const buildSettings = (linkedRepos: LinkedRepo[] = []): Settings => ({
@@ -56,31 +50,30 @@ const setup = async (settings: Settings) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
-  const customizationRepo = new InMemoryCustomizationRepository();
+  const entityRepository = new InMemoryEntityRepository();
   const fs = new InMemoryFileSystem();
   const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const symlinkManager = new SymlinkManager(fs, clock, WORKSPACE);
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const adapterManager = new AdapterManager({
     settingsService,
-    customizationRepository: customizationRepo,
-    entityRepository: new InMemoryEntityRepository(),
+    entityRepository,
     symlinkManager,
     workspacePath: WORKSPACE,
     adapters: new Map([[claudeAdapter.adapterId, claudeAdapter]]),
   });
-  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
-  return { customizationService, fs, settingsService };
+  return { adapterManager, entityRepository, fs, settingsService };
 };
 
-describe('ClaudeAdapter — end-to-end via CustomizationService', () => {
-  it('save(skill, scope=personal) creates symlink at <homedir>/.claude/skills/<slug> resolving to <workspace>/skills/<slug>', async () => {
-    const { customizationService, fs } = await setup(buildSettings());
+describe('ClaudeAdapter — end-to-end via AdapterManager.syncEntity', () => {
+  it('syncEntity(skill, scope=personal) creates symlink at <homedir>/.claude/skills/<slug> resolving to <workspace>/skills/<slug>', async () => {
+    const { adapterManager, entityRepository, fs } = await setup(buildSettings());
+    await entityRepository.save(skillPersonal);
 
-    const result = await customizationService.save({ customization: skillPersonal, isCreate: true });
+    const syncReport = await adapterManager.syncEntity({ entity: skillPersonal });
 
-    expect(result.syncReport).toHaveLength(1);
-    expect(result.syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });
+    expect(syncReport).toHaveLength(1);
+    expect(syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });
 
     const destination = '/Users/alice/.claude/skills/review';
     const stat = await fs.lstat(destination);
@@ -89,16 +82,17 @@ describe('ClaudeAdapter — end-to-end via CustomizationService', () => {
     expect(target).toBe('/workspace/skills/review');
   });
 
-  it('save(agent, scope=project) with 2 linkedRepos creates 2 symlinks resolving to <workspace>/agents/<slug>.md', async () => {
+  it('syncEntity(agent, scope=project) with 2 linkedRepos creates 2 symlinks resolving to <workspace>/agents/<slug>.md', async () => {
     const repos: LinkedRepo[] = [
       { id: 'r1', name: 'r1', path: '/repos/r1' },
       { id: 'r2', name: 'r2', path: '/repos/r2' },
     ];
-    const { customizationService, fs } = await setup(buildSettings(repos));
+    const { adapterManager, entityRepository, fs } = await setup(buildSettings(repos));
+    await entityRepository.save(agentProject);
 
-    const result = await customizationService.save({ customization: agentProject, isCreate: true });
+    const syncReport = await adapterManager.syncEntity({ entity: agentProject });
 
-    const okResults = result.syncReport.filter((r) => r.adapter === 'claude' && r.status === 'ok');
+    const okResults = syncReport.filter((r) => r.adapter === 'claude' && r.status === 'ok');
     expect(okResults).toHaveLength(2);
 
     const expectedTarget = '/workspace/agents/triage.md';
@@ -111,19 +105,20 @@ describe('ClaudeAdapter — end-to-end via CustomizationService', () => {
     }
   });
 
-  it('re-save without changes is idempotent: no new backups, symlink target unchanged', async () => {
-    const { customizationService, fs } = await setup(buildSettings());
-    await customizationService.save({ customization: skillPersonal, isCreate: true });
+  it('re-sync without changes is idempotent: no new backups, symlink target unchanged', async () => {
+    const { adapterManager, entityRepository, fs } = await setup(buildSettings());
+    await entityRepository.save(skillPersonal);
+    await adapterManager.syncEntity({ entity: skillPersonal });
 
     const destination = '/Users/alice/.claude/skills/review';
     const targetBefore = await fs.readlink(destination);
     const backupsBefore = await fs.pathExists('/workspace/_backups');
 
-    const result = await customizationService.save({ customization: skillPersonal });
+    const syncReport = await adapterManager.syncEntity({ entity: skillPersonal });
 
-    expect(result.syncReport).toHaveLength(1);
-    expect(result.syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });
-    expect(result.syncReport[0]?.details).toBeUndefined();
+    expect(syncReport).toHaveLength(1);
+    expect(syncReport[0]).toMatchObject({ adapter: 'claude', status: 'ok' });
+    expect(syncReport[0]?.details).toBeUndefined();
 
     const targetAfter = await fs.readlink(destination);
     expect(targetAfter).toBe(targetBefore);

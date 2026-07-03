@@ -8,9 +8,9 @@ describe('ClaudeAdapter — Adapter port contract', () => {
     expect(adapter.adapterId).toBe('claude');
   });
 
-  it('exposes a resolveDestinations function', () => {
+  it('exposes a resolveEntityDestinations function', () => {
     const adapter = new ClaudeAdapter({ homedir: '/home/user' });
-    expect(typeof adapter.resolveDestinations).toBe('function');
+    expect(typeof adapter.resolveEntityDestinations).toBe('function');
   });
 
   it('throws DomainError(internal, missing-homedir) when homedir is undefined', () => {

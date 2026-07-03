@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildHandlers, type IpcDeps } from '../../../../src/main/ipc/registry.js';
 import { createDispatcher } from '../../../../src/main/ipc/dispatcher.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
-import type { SyncResult } from '../../../../src/shared/customization.js';
+import type { SyncResult } from '../../../../src/shared/sync-result.js';
 
 const stubResults: SyncResult[] = [
   { adapter: 'claude', destination: '/dest/claude', status: 'ok' },
@@ -12,7 +12,6 @@ const stubResults: SyncResult[] = [
 const buildDeps = (syncAll: ReturnType<typeof vi.fn>): IpcDeps => {
   const adapterManager = {
     syncAll,
-    syncOne: vi.fn().mockResolvedValue([]),
   } as unknown as AdapterManager;
   return {
     adapterManager,

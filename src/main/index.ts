@@ -7,18 +7,15 @@ import { SettingsService } from './application/services/settings-service.js';
 import { RepoService } from './application/services/repo-service.js';
 import { WorkspaceBootstrapService } from './application/services/workspace-bootstrap.js';
 import { WorkspaceTeardownService } from './application/services/workspace-teardown.js';
-import { CustomizationService } from './application/services/customization-service.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
-import { FsCustomizationRepository } from './infrastructure/customization/fs-customization-repository.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';
 import { ElectronDialogAdapter } from './infrastructure/dialog/electron-dialog-adapter.js';
 import { NodeFsAdapter } from './infrastructure/filesystem/node-fs-adapter.js';
 import { ClaudeAdapter } from './infrastructure/adapters/claude-adapter.js';
-import { SchemaValidator } from './application/services/schema-validator.js';
 import { EntityService } from './application/services/entity-service.js';
 import { EntityValidator } from './application/services/entity-validator.js';
 import { FsEntityRepository } from './infrastructure/entity/fs-entity-repository.js';
@@ -90,7 +87,6 @@ async function wireIpc(): Promise<void> {
   const dialogPort = new ElectronDialogAdapter();
 
   const clock = new SystemClock();
-  const customizationRepo = new FsCustomizationRepository(workspacePath);
 
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
@@ -98,7 +94,6 @@ async function wireIpc(): Promise<void> {
   const entityRepository = new FsEntityRepository(workspacePath);
   const adapterManager = new AdapterManager({
     settingsService,
-    customizationRepository: customizationRepo,
     entityRepository,
     symlinkManager,
     workspacePath,
@@ -106,9 +101,6 @@ async function wireIpc(): Promise<void> {
       [claudeAdapter.adapterId, claudeAdapter],
     ]),
   });
-  const schemaValidator = new SchemaValidator();
-  // Retained (unused past Task 12) until Task 15 deletes CustomizationService/SchemaValidator entirely.
-  const _customizationService = new CustomizationService(customizationRepo, clock, adapterManager, schemaValidator);
 
   const entityValidator = new EntityValidator();
   const entityService = new EntityService(entityRepository, clock, adapterManager, entityValidator);

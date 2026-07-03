@@ -2,9 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildHandlers } from '../../../src/main/ipc/registry.js';
 import { SettingsService } from '../../../src/main/application/services/settings-service.js';
 import { RepoService } from '../../../src/main/application/services/repo-service.js';
-import { CustomizationService } from '../../../src/main/application/services/customization-service.js';
-import { InMemoryCustomizationRepository } from '../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
-import { FixedClock } from '../../../src/main/infrastructure/clock/fixed-clock.js';
 import type { SettingsRepository } from '../../../src/main/application/ports/settings-repository.js';
 import type { RepoReader } from '../../../src/main/application/ports/repo-reader.js';
 import type { DialogPort } from '../../../src/main/application/ports/dialog-port.js';
@@ -36,7 +33,6 @@ const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
 interface Deps {
   settingsService: SettingsService;
   repoService: RepoService;
-  customizationService: CustomizationService;
   adapterManager: AdapterManager;
   dialogPort: DialogPort;
   pluginService: PluginService;
@@ -62,8 +58,6 @@ interface Deps {
   dialogSpy: {
     selectFolder: ReturnType<typeof vi.fn>;
   };
-  customizationRepo: InMemoryCustomizationRepository;
-  clock: FixedClock;
 }
 
 const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
@@ -92,17 +86,12 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     selectFolder: dialogSpy.selectFolder,
   };
 
-  const customizationRepo = new InMemoryCustomizationRepository();
-  const clock = new FixedClock(new Date('2026-04-26T10:00:00.000Z'));
   const adapterManager: AdapterManager = {
     syncAll: vi.fn().mockResolvedValue([]),
-    syncOne: vi.fn().mockResolvedValue([]),
-    removeOne: vi.fn().mockResolvedValue([]),
     removeAll: vi.fn().mockResolvedValue([]),
     removeAdapterSymlinks: vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] }),
     countDestinations: vi.fn().mockResolvedValue(0),
   } as unknown as AdapterManager;
-  const customizationService = new CustomizationService(customizationRepo, clock, adapterManager);
 
   const pluginService = null as unknown as PluginService;
   const skillService = null as unknown as SkillService;
@@ -126,7 +115,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
   return {
     settingsService: new SettingsService(repo),
     repoService: new RepoService(reader),
-    customizationService,
     adapterManager,
     dialogPort,
     pluginService,
@@ -144,8 +132,6 @@ const buildDeps = (initial: Settings | null = baseSettings()): Deps => {
     settingsRepoSpy,
     repoReaderSpy,
     dialogSpy,
-    customizationRepo,
-    clock,
   };
 };
 

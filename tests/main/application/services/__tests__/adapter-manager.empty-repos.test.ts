@@ -1,28 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
+import { WORKSPACE_SOURCE, type Agent } from '../../../../../src/shared/entity.js';
 
-describe('AdapterManager.syncOne with empty linkedRepos', () => {
-  it('returns a skipped SyncResult for project customizations when no linked repos exist', async () => {
+describe('AdapterManager.syncEntity with empty linkedRepos', () => {
+  it('returns a skipped SyncResult for project entities when no linked repos exist', async () => {
     const adapters = [new FakeAdapter('claude', '/workspace/personal/claude')];
     const settings = { ...defaultSettings, linkedRepos: [] };
-    const { manager, registerCustomization } = await setupAdapterManager(adapters, settings);
-    const customization = {
-      id: 'agent/empty',
-      frontmatter: {
-        name: 'empty',
-        type: 'agent' as const,
-        description: 'empty customization',
-        scopes: ['project' as const],
-        version: '1.0.0',
-        createdAt: '',
-        updatedAt: '',
-      },
-      body: '# empty',
+    const { manager, registerEntity } = await setupAdapterManager(adapters, settings);
+    const entity: Agent = {
+      urn: 'urn:agent:empty',
+      kind: 'agent',
+      name: 'empty',
+      description: 'empty entity',
+      scopes: ['project'],
+      metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
+      source: WORKSPACE_SOURCE,
+      systemPrompt: '# empty',
     };
-    await registerCustomization(customization);
+    await registerEntity(entity);
 
-    const result = await manager.syncOne({ customization });
+    const result = await manager.syncEntity({ entity });
 
     expect(result).toHaveLength(1);
     for (const item of result) {

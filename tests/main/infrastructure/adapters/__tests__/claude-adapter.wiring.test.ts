@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { InMemorySettingsRepository } from '../../../../../src/main/infrastructure/settings/in-memory-settings-repository.js';
@@ -38,7 +37,6 @@ const setup = async (settings: Settings) => {
   const settingsRepo = new InMemorySettingsRepository();
   await settingsRepo.save(settings);
   const settingsService = new SettingsService(settingsRepo);
-  const customizationRepo = new InMemoryCustomizationRepository();
   const entityRepository = new InMemoryEntityRepository();
   const fs = new InMemoryFileSystem();
   fs.createFile('/workspace/skills/review/SKILL.md', '# review');
@@ -50,7 +48,6 @@ const setup = async (settings: Settings) => {
   const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
   const manager = new AdapterManager({
     settingsService,
-    customizationRepository: customizationRepo,
     entityRepository,
     symlinkManager,
     workspacePath: WORKSPACE,

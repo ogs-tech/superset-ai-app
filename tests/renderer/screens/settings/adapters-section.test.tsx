@@ -6,7 +6,7 @@ import { mockApi, ok, renderWithTheme, type CallSpy } from '../../test-utils.js'
 
 const render = (ui: React.ReactElement) => renderWithTheme(ui);
 import type { Settings } from '../../../../src/shared/settings.js';
-import type { SyncResult } from '../../../../src/shared/customization.js';
+import type { SyncResult } from '../../../../src/shared/sync-result.js';
 
 const baseSettings: Settings = {
   adapters: { claude: { enabled: true } },

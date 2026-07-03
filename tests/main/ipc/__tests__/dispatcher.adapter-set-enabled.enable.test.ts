@@ -3,7 +3,7 @@ import { buildHandlers, type IpcDeps } from '../../../../src/main/ipc/registry.j
 import { createDispatcher } from '../../../../src/main/ipc/dispatcher.js';
 import type { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import type { SettingsService } from '../../../../src/main/application/services/settings-service.js';
-import type { SyncResult } from '../../../../src/shared/customization.js';
+import type { SyncResult } from '../../../../src/shared/sync-result.js';
 
 const stubSyncReport: SyncResult[] = [
   { adapter: 'claude', destination: '/dest/a', status: 'ok' },

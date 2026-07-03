@@ -1,29 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
+import { WORKSPACE_SOURCE, type Skill } from '../../../../../src/shared/entity.js';
 
-describe('AdapterManager.syncOne — multi-scope + empty linkedRepos', () => {
+describe('AdapterManager.syncEntity — multi-scope + empty linkedRepos', () => {
   it('still syncs personal destinations and emits skipped entry for project when scopes includes both', async () => {
     const claude = new FakeAdapter('claude', '/personal/claude/skills/multi');
     const settings = { ...defaultSettings, linkedRepos: [] };
-    const { manager, registerCustomization, fs } = await setupAdapterManager([claude], settings);
-    const customization = {
-      id: 'skill/multi',
-      frontmatter: {
-        name: 'multi',
-        type: 'skill' as const,
-        description: 'multi-scope customization',
-        scopes: ['personal', 'project'] as Array<'personal' | 'project'>,
-        version: '1.0.0',
-        createdAt: '',
-        updatedAt: '',
-      },
-      body: '# multi',
+    const { manager, registerEntity, fs } = await setupAdapterManager([claude], settings);
+    const entity: Skill = {
+      urn: 'urn:skill:multi',
+      kind: 'skill',
+      name: 'multi',
+      description: 'multi-scope entity',
+      scopes: ['personal', 'project'],
+      metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
+      source: WORKSPACE_SOURCE,
+      content: '# multi',
     };
-    await registerCustomization(customization);
+    await registerEntity(entity);
     fs.createFile('/workspace/skills/multi/SKILL.md', '# multi');
 
-    const results = await manager.syncOne({ customization });
+    const results = await manager.syncEntity({ entity });
 
     expect(results).toHaveLength(2);
     const personal = results.find((r) => r.destination === '/personal/claude/skills/multi');

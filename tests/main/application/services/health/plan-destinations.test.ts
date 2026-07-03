@@ -4,7 +4,6 @@ import type { SettingsService } from '../../../../../src/main/application/servic
 import type { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { InMemoryCustomizationRepository } from '../../../../../src/main/infrastructure/customization/in-memory-customization-repository.js';
 import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { getDefaults, type Settings } from '../../../../../src/shared/settings.js';
@@ -42,7 +41,6 @@ const settingsWith = (over: Partial<Settings> = {}): Settings => ({
 });
 
 const setup = async () => {
-  const repo = new InMemoryCustomizationRepository();
   const entityRepository = new InMemoryEntityRepository();
   await entityRepository.save(skill('alpha'));
 
@@ -56,7 +54,6 @@ const setup = async () => {
 
   const manager = new AdapterManager({
     settingsService,
-    customizationRepository: repo,
     entityRepository,
     symlinkManager: {} as SymlinkManager,
     adapters: new Map<string, Adapter>([['claude', adapter]]),
@@ -66,7 +63,6 @@ const setup = async () => {
 };
 
 const setupInstruction = async () => {
-  const repo = new InMemoryCustomizationRepository();
   const entityRepository = new InMemoryEntityRepository();
   await entityRepository.save(instruction());
 
@@ -80,7 +76,6 @@ const setupInstruction = async () => {
 
   const manager = new AdapterManager({
     settingsService,
-    customizationRepository: repo,
     entityRepository,
     symlinkManager: {} as SymlinkManager,
     adapters: new Map<string, Adapter>([['claude', adapter]]),

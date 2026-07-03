@@ -16,7 +16,7 @@ import { StatusPill } from '../../components/ds/StatusPill.js';
 import { useHealthReport } from '../../hooks/use-health-report.js';
 import { useSyncThenRefresh } from '../../hooks/use-sync-then-refresh.js';
 import type { HealthCategory, HealthCheck, Severity } from '../../../shared/health.js';
-import type { SyncResult } from '../../../shared/customization.js';
+import type { SyncResult } from '../../../shared/sync-result.js';
 
 const CATEGORY_LABEL: Record<HealthCategory, string> = {
   'mcp-auth': 'MCP Authentication',
