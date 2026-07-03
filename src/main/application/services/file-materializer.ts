@@ -33,6 +33,27 @@ export class FileMaterializer {
         await this.fs.writeFile(dest, args.content);
         return { status: 'ok' };
       }
+      if (stat.kind === 'symlink') {
+        // A symlink destination is never app-owned: never read/write through it.
+        // Back up the link's resolved target content when it can be read, then
+        // unlink the symlink itself (leaving its target untouched) and write a
+        // fresh regular file in its place.
+        let resolvedContent: string | undefined;
+        try {
+          const rawTarget = await this.fs.readlink(dest);
+          const resolvedTarget = resolve(dirname(dest), rawTarget);
+          resolvedContent = await this.fs.readFile(resolvedTarget);
+        } catch {
+          resolvedContent = undefined;
+        }
+        const details: { backupPath?: string; action: 'overwritten' } = { action: 'overwritten' };
+        if (resolvedContent !== undefined) {
+          details.backupPath = await this.backup(dest, resolvedContent);
+        }
+        await this.fs.unlink(dest);
+        await this.fs.writeFile(dest, args.content);
+        return { status: 'conflict', details };
+      }
       const existing = await this.fs.readFile(dest);
       if (this.isOwned(existing)) {
         await this.fs.writeFile(dest, args.content);
@@ -57,6 +78,7 @@ export class FileMaterializer {
     const dest = resolve(args.destination);
     const stat = await this.fs.lstat(dest);
     if (stat.kind === 'none') return { removed: false };
+    if (stat.kind === 'symlink') return { removed: false };
     const existing = await this.fs.readFile(dest);
     if (!this.isOwned(existing)) return { removed: false };
     await this.fs.unlink(dest);
@@ -67,6 +89,7 @@ export class FileMaterializer {
     const dest = resolve(args.destination);
     const stat = await this.fs.lstat(dest);
     if (stat.kind === 'none') return 'missing';
+    if (stat.kind === 'symlink') return 'foreign';
     const existing = await this.fs.readFile(dest);
     if (!this.isOwned(existing)) return 'foreign';
     return existing === args.content ? 'ok' : 'drift';
