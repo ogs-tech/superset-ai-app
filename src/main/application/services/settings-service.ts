@@ -96,6 +96,9 @@ function assertValidSettings(value: unknown): asserts value is Settings {
   if (!adapterKeys.includes('claude')) {
     invalid("'adapters' must contain the 'claude' adapter");
   }
+  if (!adapterKeys.includes('cursor')) {
+    invalid("'adapters' must contain the 'cursor' adapter");
+  }
   for (const key of adapterKeys) {
     if (!ALLOWED_ADAPTERS.has(key)) invalid(`Unknown adapter '${key}'`);
     const entry = asRecord(adapters[key], `'adapters.${key}' must be an object`);

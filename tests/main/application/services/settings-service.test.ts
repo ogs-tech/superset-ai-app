@@ -222,6 +222,18 @@ describe('SettingsService — cursor adapter', () => {
     await expect(service.save(bad)).rejects.toBeInstanceOf(DomainError);
   });
 
+  it('save rejects settings missing the cursor adapter', async () => {
+    const service = new SettingsService(stubRepo());
+    const bad = {
+      adapters: { claude: { enabled: true } },
+      linkedRepos: [],
+      ui: { theme: 'system' },
+      language: 'off',
+    } as unknown as Settings;
+
+    await expect(service.save(bad)).rejects.toBeInstanceOf(DomainError);
+  });
+
   it('load backfills a disabled cursor for pre-cursor settings files', async () => {
     const legacy = {
       adapters: { claude: { enabled: true } },
