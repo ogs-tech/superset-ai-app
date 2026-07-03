@@ -179,6 +179,7 @@ export class AdapterManager {
         linkedRepos: settings.linkedRepos,
       });
       for (const dest of destinations) {
+        if (dest.strategy !== 'symlink') continue;
         try {
           const result = await this.deps.symlinkManager.removeIfPointsToWorkspace(dest.destination, workspacePath);
           if (result === 'removed') {
@@ -215,6 +216,49 @@ export class AdapterManager {
     return aggregate;
   }
 
+  /** Marker-guarded removal of every generated (write) file for one adapter. */
+  async removeAdapterGeneratedFiles(adapterId: string): Promise<RemoveAdapterResult> {
+    const adapter = this.deps.adapters.get(adapterId);
+    if (!adapter) return { removed: 0, skipped: 0, errors: [] };
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const entities = await this.deps.entityRepository.list();
+    let removed = 0;
+    let skipped = 0;
+    const errors: SymlinkError[] = [];
+
+    for (const entity of entities) {
+      const destinations = await adapter.resolveEntityDestinations({ entity, linkedRepos: settings.linkedRepos });
+      for (const dest of destinations) {
+        if (dest.strategy !== 'write') continue;
+        try {
+          const result = await this.deps.fileMaterializer.removeIfOwned({ destination: dest.destination });
+          if (result.removed) removed++;
+          else skipped++;
+        } catch (err) {
+          errors.push({
+            destination: dest.destination,
+            kind: err instanceof DomainError ? err.kind : 'internal',
+            message: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+    }
+    return { removed, skipped, errors };
+  }
+
+  /** Removes every app-generated file across all adapters (factory reset). */
+  async removeAllGeneratedFiles(): Promise<RemoveAdapterResult> {
+    const aggregate: RemoveAdapterResult = { removed: 0, skipped: 0, errors: [] };
+    for (const adapterId of this.deps.adapters.keys()) {
+      const result = await this.removeAdapterGeneratedFiles(adapterId);
+      aggregate.removed += result.removed;
+      aggregate.skipped += result.skipped;
+      aggregate.errors.push(...result.errors);
+    }
+    return aggregate;
+  }
+
   async countDestinations(adapterId: string): Promise<number> {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return 0;
@@ -231,8 +275,13 @@ export class AdapterManager {
       });
       for (const dest of destinations) {
         try {
-          const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
-          if (isWorkspaceLink) count++;
+          if (dest.strategy === 'symlink') {
+            const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
+            if (isWorkspaceLink) count++;
+          } else {
+            const state = await this.deps.fileMaterializer.validate({ destination: dest.destination, content: dest.content });
+            if (state === 'ok' || state === 'drift') count++;
+          }
         } catch {
           // skip
         }

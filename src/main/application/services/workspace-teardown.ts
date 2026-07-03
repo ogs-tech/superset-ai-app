@@ -11,16 +11,18 @@ import type { ClaudeSettingsPort } from '../ports/claude-settings-port.js';
  */
 export class WorkspaceTeardownService {
   constructor(
-    private readonly adapterManager: Pick<AdapterManager, 'removeAllAdapterSymlinks'>,
+    private readonly adapterManager: Pick<AdapterManager, 'removeAllAdapterSymlinks' | 'removeAllGeneratedFiles'>,
     private readonly fs: Pick<WritableFileSystemPort, 'remove'>,
     private readonly workspacePath: string,
     private readonly settings: Pick<ClaudeSettingsPort, 'mutate'>,
   ) {}
 
   async restore(): Promise<void> {
-    // Order matters: symlink discovery reads the workspace (customization list),
-    // so the links must be removed before the workspace directory is deleted.
+    // Order matters: symlink/generated-file discovery reads the workspace
+    // (customization list), so both must be removed before the workspace
+    // directory is deleted.
     await this.adapterManager.removeAllAdapterSymlinks();
+    await this.adapterManager.removeAllGeneratedFiles();
     await this.fs.remove(this.workspacePath);
     // Clear the registry this app owns in settings.json. Deleting the workspace
     // (above) wipes the marketplace clone cache, so leaving these entries behind
