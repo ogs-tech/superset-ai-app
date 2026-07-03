@@ -8,19 +8,24 @@ import type { SettingsRepository } from '../ports/settings-repository.js';
 import { DomainError } from '../../domain/errors.js';
 
 const stripLegacyFields = (settings: Settings): Settings => {
-  // Drops fields from older on-disk shapes: a removed `copilot` adapter key and
-  // the legacy per-adapter `defaultScope`. Rebuilding `adapters` from scratch
-  // (rather than spreading) is what prunes the stale `copilot` entry on load.
-  const adapters = settings.adapters as unknown as { claude: Record<string, unknown> };
-  const cleanClaude = (entry: Record<string, unknown>): { enabled: boolean } => {
-    const rest = { ...entry };
-    delete rest.defaultScope;
-    return rest as { enabled: boolean };
+  // Drops fields from older on-disk shapes (a removed `copilot` adapter key, the
+  // legacy per-adapter `defaultScope`) by rebuilding `adapters` from scratch, and
+  // backfills a disabled `cursor` for settings files written before it existed.
+  const adapters = settings.adapters as unknown as {
+    claude?: Record<string, unknown>;
+    cursor?: Record<string, unknown>;
   };
+  const clean = (
+    entry: Record<string, unknown> | undefined,
+    fallbackEnabled: boolean,
+  ): { enabled: boolean } => ({
+    enabled: typeof entry?.['enabled'] === 'boolean' ? (entry['enabled'] as boolean) : fallbackEnabled,
+  });
   return {
     ...settings,
     adapters: {
-      claude: cleanClaude(adapters.claude),
+      claude: clean(adapters.claude, true),
+      cursor: clean(adapters.cursor, false),
     },
   };
 };
@@ -87,15 +92,22 @@ function assertValidSettings(value: unknown): asserts value is Settings {
 
   const adapters = asRecord(s['adapters'], "Missing or invalid 'adapters'");
   const adapterKeys = Object.keys(adapters);
-  if (adapterKeys.length !== 1 || adapterKeys[0] !== 'claude') {
-    invalid("'adapters' must contain exactly the 'claude' adapter");
+  const ALLOWED_ADAPTERS = new Set(['claude', 'cursor']);
+  if (!adapterKeys.includes('claude')) {
+    invalid("'adapters' must contain the 'claude' adapter");
   }
-  const claude = asRecord(adapters['claude'], "'adapters.claude' must be an object");
-  if (typeof claude['enabled'] !== 'boolean') {
-    invalid("'adapters.claude.enabled' must be a boolean");
+  if (!adapterKeys.includes('cursor')) {
+    invalid("'adapters' must contain the 'cursor' adapter");
   }
-  if (Object.keys(claude).some((k) => k !== 'enabled')) {
-    invalid("'adapters.claude' has unexpected fields");
+  for (const key of adapterKeys) {
+    if (!ALLOWED_ADAPTERS.has(key)) invalid(`Unknown adapter '${key}'`);
+    const entry = asRecord(adapters[key], `'adapters.${key}' must be an object`);
+    if (typeof entry['enabled'] !== 'boolean') {
+      invalid(`'adapters.${key}.enabled' must be a boolean`);
+    }
+    if (Object.keys(entry).some((k) => k !== 'enabled')) {
+      invalid(`'adapters.${key}' has unexpected fields`);
+    }
   }
 
   const linkedRepos = s['linkedRepos'];

@@ -23,6 +23,7 @@ const CATEGORY_LABEL: Record<HealthCategory, string> = {
   'mcp-runtime': 'MCP Runtime',
   'config-drift': 'Config Drift',
   symlink: 'Symlinks',
+  'generated-file': 'Generated Files',
 };
 
 const SEVERITY_PILL: Record<Severity, 'ok' | 'warning' | 'error'> = {
@@ -36,6 +37,7 @@ const CATEGORY_ORDER: readonly HealthCategory[] = [
   'mcp-runtime',
   'config-drift',
   'symlink',
+  'generated-file',
 ];
 
 function groupByCategory(checks: HealthCheck[]): Map<HealthCategory, HealthCheck[]> {

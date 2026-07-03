@@ -46,6 +46,10 @@ const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string }[] = [
   { value: 'es', label: 'Español' },
 ];
 
+const ADAPTER_KEYS = ['claude', 'cursor'] as const;
+type AdapterKey = (typeof ADAPTER_KEYS)[number];
+const ADAPTER_LABEL: Record<AdapterKey, string> = { claude: 'Claude', cursor: 'Cursor' };
+
 interface SelectFolderResult {
   canceled: boolean;
   path?: string;
@@ -64,7 +68,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   const [settings, setSettings] = useState<SettingsModel | null>(null);
   const [syncReport, setSyncReport] = useState<SyncResult[]>([]);
   const [disableModal, setDisableModal] = useState<{
-    key: 'claude';
+    key: AdapterKey;
     count: number;
   } | null>(null);
   const [disableToast, setDisableToast] = useState<string | null>(null);
@@ -122,7 +126,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
   }, []);
 
   const handleAdapterToggle = async (
-    key: 'claude',
+    key: AdapterKey,
     enabled: boolean,
   ): Promise<void> => {
     if (enabled) {
@@ -279,7 +283,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           Habilite assistentes para manter suas customizações sincronizadas.
         </Typography>
         <FormGroup>
-          {(['claude'] as const).map((key) => (
+          {ADAPTER_KEYS.map((key) => (
             <FormControlLabel
               key={key}
               control={
@@ -289,10 +293,31 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
                   onChange={(e) => void handleAdapterToggle(key, e.target.checked)}
                 />
               }
-              label="Claude"
+              label={ADAPTER_LABEL[key]}
             />
           ))}
         </FormGroup>
+        {settings.adapters.cursor.enabled && repos.length === 0 && (
+          <Alert
+            severity="info"
+            sx={{ mt: 1.5 }}
+            data-testid="cursor-no-repo-notice"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                data-testid="cursor-no-repo-link-button"
+                onClick={() => void handleAddRepo()}
+              >
+                Vincular repositório
+              </Button>
+            }
+          >
+            Sem um repositório vinculado, suas skills e agents pessoais chegam ao Cursor, mas a
+            instrução global e os itens com escopo de projeto não são sincronizados. Vincule um
+            repositório abaixo para incluí-los.
+          </Alert>
+        )}
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -485,7 +510,7 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
 
       {disableModal !== null && (
         <ConfirmDisableModal
-          adapterName="Claude"
+          adapterName={ADAPTER_LABEL[disableModal.key]}
           count={disableModal.count}
           onConfirmRemove={() => void handleDisableConfirm(true)}
           onConfirmNoRemove={() => void handleDisableConfirm(false)}

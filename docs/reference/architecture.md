@@ -63,12 +63,13 @@ Plugin lifecycle:
 - `plugin-installer`, `plugin-author-service`, `plugin-publisher`, `plugin-manifest-parser`, `marketplace-parser`.
 
 Cross-cutting:
-- `adapter-manager` — orchestrates the Claude adapter.
+- `adapter-manager` — orchestrates all adapters (Claude, Cursor).
 - `symlink-manager` — creates and reconciles symlinks.
+- `file-materializer` — write-side twin of `symlink-manager` for **generated** files (e.g. Cursor's per-repo `AGENTS.md`): ownership is signalled by a marker comment on the file's first line (`GENERATED_FILE_MARKER`), so the app only overwrites/removes files it owns; a foreign file (no marker) is backed up before overwrite and never deleted. Backup scheme mirrors `symlink-manager`'s (`<workspace>/_backups/<ts>/<rel-path>`).
 - `repo-service` — operations on linked repositories.
 - `settings-service` — load/merge/persist settings.
 - `workspace-bootstrap` — creates the `~/.superset-ai-app/` directory tree on first run (called at startup, not via IPC).
-- `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink) into a `HealthReport`; exposed via the `health.*` IPC namespace.
+- `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink, generated-file) into a `HealthReport`; exposed via the `health.*` IPC namespace.
 - **MCP (live-config broker):** `mcp-service` is NOT an `Entity`-backed facade. It reads/writes MCP
   servers directly in the real Claude files (`~/.claude.json` `mcpServers` and
   `projects[path].mcpServers`, `<repo>/.mcp.json`) via `FsMcpConfigStore`, reads plugin
@@ -80,11 +81,12 @@ The polymorphic `Customization` model and its `customization-service` umbrella a
 
 ### Tool adapters
 
-The adapter implementation lives under `src/main/infrastructure/adapters/`:
+The adapter implementations live under `src/main/infrastructure/adapters/`:
 
-- `claude-adapter.ts` — resolves sync destinations per entity kind via `resolveEntityDestinations`: `skill` → `~/.claude/skills/<name>` (dir), `agent` → `~/.claude/agents/<name>.md`, `instruction` → **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (personal scope only — instructions don't fan out per linked repo). `project`-scoped skills/agents additionally resolve to `<repo>/.claude/{skills,agents}/…` for each linked repo.
+- `claude-adapter.ts` — resolves sync destinations per entity kind via `resolveEntityDestinations`: `skill` → `~/.claude/skills/<name>` (dir), `agent` → `~/.claude/agents/<name>.md`, `instruction` → **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (personal scope only — instructions don't fan out per linked repo). `project`-scoped skills/agents additionally resolve to `<repo>/.claude/{skills,agents}/…` for each linked repo. All destinations use `strategy: 'symlink'`.
+- `cursor-adapter.ts` — publishes into Cursor's native file surface, toggled by `settings.adapters.cursor` (default **off**): `skill` → `~/.cursor/skills/<name>/` (dir, symlink), `agent` → `~/.cursor/agents/<name>.md` (symlink); `project`-scoped skills/agents additionally resolve to `<repo>/.cursor/{skills,agents}/…` for each linked repo. `instruction` has no Cursor home-level target, so it materializes as a **generated** `<repo>/AGENTS.md` per linked repo via `strategy: 'write'` (content = marker + body); with zero linked repos it resolves to `[]`.
 
-It implements the `Adapter` port at `src/main/application/ports/adapter.ts`.
+Both implement the `Adapter` port at `src/main/application/ports/adapter.ts`. `AdapterDestination` is a discriminated union on `strategy`: `{ scope, destination, strategy: 'symlink' }` for symlink targets, or `{ scope, destination, strategy: 'write', content }` for generated files. `AdapterManager` branches on `strategy` when syncing: `symlink` destinations go through `SymlinkManager`; `write` destinations go through `FileMaterializer` (see above).
 
 ## Renderer structure
 
@@ -123,7 +125,7 @@ I/O failures bubble up to the `IoError` screen, which retries the failing step.
 
 - **Entities** — `skill`/`agent`/`instruction` are `.md` files under the user's chosen workspace folder (`skills/<name>/SKILL.md`, `agents/<name>.md`, `instructions/<name>.md`); `skill`/`agent` keep YAML frontmatter, `instruction` is frontmatter-free (whole file is the body).
 - **Settings** — JSON file managed by `settings-service`.
-- **Sync** — symbolic links from each adapter target into the workspace files, except `instruction`, which fans out to **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (personal scope).
+- **Sync** — symbolic links from each adapter target into the workspace files, except: `instruction` on the Claude adapter, which fans out to **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (personal scope); and `instruction` on the Cursor adapter, which materializes as a generated, marker-owned `<repo>/AGENTS.md` per linked repo (`strategy: 'write'`, via `FileMaterializer` — see "Tool adapters" above).
 
 No database, no API, no telemetry.
 

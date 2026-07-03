@@ -7,8 +7,9 @@ import type { SettingsService } from '../../../../src/main/application/services/
 const buildDeps = () => {
   const errors: SymlinkError[] = [{ destination: '/dest/x', kind: 'io', message: 'FS error' }];
   const removeAdapterSymlinks = vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors });
+  const removeAdapterGeneratedFiles = vi.fn().mockResolvedValue({ removed: 0, skipped: 0, errors: [] });
   const merge = vi.fn().mockResolvedValue({});
-  const adapterManager = { removeAdapterSymlinks } as unknown as AdapterManager;
+  const adapterManager = { removeAdapterSymlinks, removeAdapterGeneratedFiles } as unknown as AdapterManager;
   const settingsService = { merge, load: vi.fn().mockResolvedValue(null), getDefaults: vi.fn().mockReturnValue({}) } as unknown as SettingsService;
   return { adapterManager, settingsService, merge, errors };
 };

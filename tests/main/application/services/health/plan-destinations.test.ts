@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import type { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
+import type { FileMaterializer } from '../../../../../src/main/application/services/file-materializer.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
 import { InMemoryEntityRepository } from '../../../../../src/main/infrastructure/entity/in-memory-entity-repository.js';
@@ -36,7 +37,7 @@ const instruction = (): Instruction => ({
 
 const settingsWith = (over: Partial<Settings> = {}): Settings => ({
   ...getDefaults(),
-  adapters: { claude: { enabled: true } },
+  adapters: { claude: { enabled: true }, cursor: { enabled: false } },
   ...over,
 });
 
@@ -56,6 +57,7 @@ const setup = async () => {
     settingsService,
     entityRepository,
     symlinkManager: {} as SymlinkManager,
+    fileMaterializer: {} as FileMaterializer,
     adapters: new Map<string, Adapter>([['claude', adapter]]),
     workspacePath: '/ws',
   });
@@ -78,6 +80,7 @@ const setupInstruction = async () => {
     settingsService,
     entityRepository,
     symlinkManager: {} as SymlinkManager,
+    fileMaterializer: {} as FileMaterializer,
     adapters: new Map<string, Adapter>([['claude', adapter]]),
     workspacePath: '/ws',
   });

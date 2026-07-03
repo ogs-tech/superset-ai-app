@@ -23,6 +23,7 @@ import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
 const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

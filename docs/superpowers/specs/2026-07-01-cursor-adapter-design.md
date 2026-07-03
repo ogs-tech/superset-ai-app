@@ -113,6 +113,13 @@ type AdapterDestination =
 - `CursorAdapter.resolveDestinations` returns `symlink` for skills/agents and `write` (with a
   `render` closure) for commands and the global instruction.
 
+**Superseded (2026-07-03):** §5.2-5.3 as written propose a `generated-files.json` manifest as the
+ownership source of truth. The implementation replaced this with **in-file marker ownership**
+instead (Plan B): each generated file's first line carries the verbatim marker comment
+`<!-- Managed by Superset AI — edits will be overwritten -->`; `FileMaterializer` checks for that
+marker to decide whether a file is app-owned before overwriting it. No separate manifest file
+exists. See `docs/reference/architecture.md` for the shipped design.
+
 ### 5.2 New `FileMaterializer` (infrastructure)
 
 Mirrors `SymlinkManager`'s conflict/backup discipline for **generated** files:

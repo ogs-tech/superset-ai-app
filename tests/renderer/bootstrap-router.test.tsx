@@ -8,6 +8,7 @@ import type { Settings } from '../../src/shared/settings.js';
 const validSettings: Settings = {
   adapters: {
     claude: { enabled: true },
+    cursor: { enabled: false },
   },
   linkedRepos: [],
   ui: { theme: 'system' },

@@ -3,8 +3,9 @@ import type { SyncResult, SyncResultDetails } from '../../../shared/sync-result.
 import type { Entity } from '../../../shared/entity.js';
 import type { SettingsService } from './settings-service.js';
 import type { EntityRepository } from '../ports/entity-repository.js';
-import type { Adapter } from '../ports/adapter.js';
+import type { Adapter, AdapterDestination } from '../ports/adapter.js';
 import type { SymlinkManager } from './symlink-manager.js';
+import type { FileMaterializer } from './file-materializer.js';
 import { DomainError } from '../../domain/errors.js';
 
 export interface SymlinkError {
@@ -23,6 +24,7 @@ export interface AdapterManagerDeps {
   settingsService: SettingsService;
   entityRepository: EntityRepository;
   symlinkManager: SymlinkManager;
+  fileMaterializer: FileMaterializer;
   adapters: Map<string, Adapter>;
   workspacePath: string;
 }
@@ -32,6 +34,12 @@ export interface SymlinkPlanEntry {
   source: string;
   destination: string;
   scope: 'personal' | 'project';
+}
+
+export interface GeneratedFilePlanEntry {
+  adapterId: string;
+  destination: string;
+  content: string;
 }
 
 export interface SyncAllCommand {
@@ -71,7 +79,11 @@ export class AdapterManager {
 
         for (const destination of destinations) {
           results.push(
-            await this.syncDestination(adapter.adapterId, this.entitySourcePath(entity, this.deps.workspacePath), destination.destination),
+            await this.syncDestination(
+              adapter.adapterId,
+              this.entitySourcePath(entity, this.deps.workspacePath),
+              destination,
+            ),
           );
         }
 
@@ -101,7 +113,7 @@ export class AdapterManager {
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
-        results.push(await this.syncDestination(adapter.adapterId, source, destination.destination));
+        results.push(await this.syncDestination(adapter.adapterId, source, destination));
       }
       if (includesProject && settings.linkedRepos.length === 0) {
         results.push({
@@ -124,7 +136,7 @@ export class AdapterManager {
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
-        results.push(await this.removeDestination(adapter.adapterId, destination.destination));
+        results.push(await this.removeDestination(adapter.adapterId, destination));
       }
     }
     return results;
@@ -144,7 +156,7 @@ export class AdapterManager {
         linkedRepos: settings.linkedRepos,
       });
       for (const destination of destinations) {
-        results.push(await this.removeDestination(adapter.adapterId, destination.destination));
+        results.push(await this.removeDestination(adapter.adapterId, destination));
       }
     }
     return results;
@@ -167,6 +179,7 @@ export class AdapterManager {
         linkedRepos: settings.linkedRepos,
       });
       for (const dest of destinations) {
+        if (dest.strategy !== 'symlink') continue;
         try {
           const result = await this.deps.symlinkManager.removeIfPointsToWorkspace(dest.destination, workspacePath);
           if (result === 'removed') {
@@ -203,6 +216,49 @@ export class AdapterManager {
     return aggregate;
   }
 
+  /** Marker-guarded removal of every generated (write) file for one adapter. */
+  async removeAdapterGeneratedFiles(adapterId: string): Promise<RemoveAdapterResult> {
+    const adapter = this.deps.adapters.get(adapterId);
+    if (!adapter) return { removed: 0, skipped: 0, errors: [] };
+
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const entities = await this.deps.entityRepository.list();
+    let removed = 0;
+    let skipped = 0;
+    const errors: SymlinkError[] = [];
+
+    for (const entity of entities) {
+      const destinations = await adapter.resolveEntityDestinations({ entity, linkedRepos: settings.linkedRepos });
+      for (const dest of destinations) {
+        if (dest.strategy !== 'write') continue;
+        try {
+          const result = await this.deps.fileMaterializer.removeIfOwned({ destination: dest.destination });
+          if (result.removed) removed++;
+          else skipped++;
+        } catch (err) {
+          errors.push({
+            destination: dest.destination,
+            kind: err instanceof DomainError ? err.kind : 'internal',
+            message: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+    }
+    return { removed, skipped, errors };
+  }
+
+  /** Removes every app-generated file across all adapters (factory reset). */
+  async removeAllGeneratedFiles(): Promise<RemoveAdapterResult> {
+    const aggregate: RemoveAdapterResult = { removed: 0, skipped: 0, errors: [] };
+    for (const adapterId of this.deps.adapters.keys()) {
+      const result = await this.removeAdapterGeneratedFiles(adapterId);
+      aggregate.removed += result.removed;
+      aggregate.skipped += result.skipped;
+      aggregate.errors.push(...result.errors);
+    }
+    return aggregate;
+  }
+
   async countDestinations(adapterId: string): Promise<number> {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return 0;
@@ -219,8 +275,13 @@ export class AdapterManager {
       });
       for (const dest of destinations) {
         try {
-          const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
-          if (isWorkspaceLink) count++;
+          if (dest.strategy === 'symlink') {
+            const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
+            if (isWorkspaceLink) count++;
+          } else {
+            const state = await this.deps.fileMaterializer.validate({ destination: dest.destination, content: dest.content });
+            if (state === 'ok' || state === 'drift') count++;
+          }
         } catch {
           // skip
         }
@@ -249,6 +310,7 @@ export class AdapterManager {
           linkedRepos: settings.linkedRepos,
         });
         for (const dest of destinations) {
+          if (dest.strategy !== 'symlink') continue;
           entries.push({
             adapterId: adapter.adapterId,
             source,
@@ -261,37 +323,35 @@ export class AdapterManager {
     return entries;
   }
 
-  private async removeDestination(adapterId: string, destination: string): Promise<SyncResult> {
-    try {
-      const result = await this.deps.symlinkManager.removeIfExists({ destination });
-      const payload: SyncResult = {
-        adapter: adapterId,
-        destination,
-        status: 'ok',
-      };
-      if (!result.removed) {
-        payload.details = { skipped: 'not-found' };
+  /** Read-only plan of every generated (write) destination across enabled adapters. */
+  async planGeneratedFiles(): Promise<GeneratedFilePlanEntry[]> {
+    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
+    const enabledAdapters = this.enabledAdapters(settings);
+    const entities = await this.deps.entityRepository.list();
+    const entries: GeneratedFilePlanEntry[] = [];
+    for (const entity of entities) {
+      for (const adapter of enabledAdapters) {
+        const destinations = await adapter.resolveEntityDestinations({ entity, linkedRepos: settings.linkedRepos });
+        for (const dest of destinations) {
+          if (dest.strategy !== 'write') continue;
+          entries.push({ adapterId: adapter.adapterId, destination: dest.destination, content: dest.content });
+        }
       }
+    }
+    return entries;
+  }
+
+  private async removeDestination(adapterId: string, dest: AdapterDestination): Promise<SyncResult> {
+    try {
+      const result =
+        dest.strategy === 'write'
+          ? await this.deps.fileMaterializer.removeIfOwned({ destination: dest.destination })
+          : await this.deps.symlinkManager.removeIfExists({ destination: dest.destination });
+      const payload: SyncResult = { adapter: adapterId, destination: dest.destination, status: 'ok' };
+      if (!result.removed) payload.details = { skipped: 'not-found' };
       return payload;
     } catch (err) {
-      if (err instanceof DomainError) {
-        const payload: SyncResult = {
-          adapter: adapterId,
-          destination,
-          status: 'error',
-          message: err.message,
-        };
-        if (err.details !== undefined) {
-          payload.details = err.details as SyncResultDetails;
-        }
-        return payload;
-      }
-      return {
-        adapter: adapterId,
-        destination,
-        status: 'error',
-        message: err instanceof Error ? err.message : 'Unknown error',
-      };
+      return this.symlinkError(adapterId, dest.destination, err);
     }
   }
 
@@ -316,50 +376,45 @@ export class AdapterManager {
   private async syncDestination(
     adapterId: string,
     source: string,
-    destination: string,
+    dest: AdapterDestination,
   ): Promise<SyncResult> {
+    if (dest.strategy === 'write') {
+      return this.writeDestination(adapterId, dest);
+    }
     try {
-      const result = await this.deps.symlinkManager.create({ source, destination });
-      const payload: SyncResult = {
-        adapter: adapterId,
-        destination,
-        status: result.status,
-      };
+      const result = await this.deps.symlinkManager.create({ source, destination: dest.destination });
+      const payload: SyncResult = { adapter: adapterId, destination: dest.destination, status: result.status };
       if (result.status === 'conflict') {
         payload.message = 'Overwrote existing destination and created a backup';
       }
-      if (result.details !== undefined) {
-        payload.details = result.details;
-      }
+      if (result.details !== undefined) payload.details = result.details;
       return payload;
     } catch (err) {
-      if (err instanceof DomainError && err.kind === 'symlink_conflict') {
-        return {
-          adapter: adapterId,
-          destination,
-          status: 'conflict',
-          message: err.message,
-          details: err.details as SyncResultDetails,
-        };
-      }
-      if (err instanceof DomainError) {
-        const payload: SyncResult = {
-          adapter: adapterId,
-          destination,
-          status: 'error',
-          message: err.message,
-        };
-        if (err.details !== undefined) {
-          payload.details = err.details as SyncResultDetails;
-        }
-        return payload;
-      }
-      return {
-        adapter: adapterId,
-        destination,
-        status: 'error',
-        message: err instanceof Error ? err.message : 'Unknown error',
-      };
+      return this.symlinkError(adapterId, dest.destination, err);
     }
+  }
+
+  private async writeDestination(adapterId: string, dest: Extract<AdapterDestination, { strategy: 'write' }>): Promise<SyncResult> {
+    try {
+      const result = await this.deps.fileMaterializer.write({ destination: dest.destination, content: dest.content });
+      const payload: SyncResult = { adapter: adapterId, destination: dest.destination, status: result.status };
+      if (result.status === 'conflict') payload.message = 'Overwrote an existing file and created a backup';
+      if (result.details !== undefined) payload.details = result.details as SyncResultDetails;
+      return payload;
+    } catch (err) {
+      return this.symlinkError(adapterId, dest.destination, err);
+    }
+  }
+
+  private symlinkError(adapterId: string, destination: string, err: unknown): SyncResult {
+    if (err instanceof DomainError && err.kind === 'symlink_conflict') {
+      return { adapter: adapterId, destination, status: 'conflict', message: err.message, details: err.details as SyncResultDetails };
+    }
+    if (err instanceof DomainError) {
+      const payload: SyncResult = { adapter: adapterId, destination, status: 'error', message: err.message };
+      if (err.details !== undefined) payload.details = err.details as SyncResultDetails;
+      return payload;
+    }
+    return { adapter: adapterId, destination, status: 'error', message: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
