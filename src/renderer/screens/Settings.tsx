@@ -297,6 +297,13 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             />
           ))}
         </FormGroup>
+        {settings.adapters.cursor.enabled && repos.length === 0 && (
+          <Alert severity="info" sx={{ mt: 1.5 }} data-testid="cursor-no-repo-notice">
+            Sem um repositório vinculado, suas skills e agents pessoais chegam ao Cursor, mas a
+            instrução global e os itens com escopo de projeto não são sincronizados. Vincule um
+            repositório abaixo para incluí-los.
+          </Alert>
+        )}
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
