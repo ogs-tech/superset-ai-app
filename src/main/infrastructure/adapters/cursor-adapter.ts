@@ -16,8 +16,8 @@ export interface CursorAdapterDeps {
  * whole directories; agents as single `.md` files. Cursor ignores the extra
  * Claude-style frontmatter keys, reading only `name`/`description`.
  *
- * `instruction` has no home-level file in Cursor; its per-repo AGENTS.md is a
- * generated-file (`write`) case handled by Plan B, so it resolves to [] here.
+ * `instruction` is materialized as a generated `AGENTS.md` file (`strategy: 'write'`)
+ * in each linked repo; with no linked repos, it resolves to `[]`.
  */
 export class CursorAdapter implements Adapter {
   readonly adapterId = 'cursor';
