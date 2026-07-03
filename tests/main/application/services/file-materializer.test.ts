@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FileMaterializer } from '../../../../src/main/application/services/file-materializer.js';
 import { GENERATED_FILE_MARKER } from '../../../../src/main/application/entity/agents-file.js';
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
@@ -45,6 +45,9 @@ describe('FileMaterializer.write', () => {
     fs.createFile('/workspace/instructions/default.md', 'canonical body\n');
     await fs.symlink({ target: '/workspace/instructions/default.md', path: '/repos/app/AGENTS.md' });
 
+    const unlinkSpy = vi.spyOn(fs, 'unlink');
+    const writeSpy = vi.spyOn(fs, 'writeFile');
+
     const result = await materializer.write({ destination: '/repos/app/AGENTS.md', content: owned('new') });
 
     expect(result.status).toBe('conflict');
@@ -55,11 +58,28 @@ describe('FileMaterializer.write', () => {
     expect(await fs.readFile('/repos/app/AGENTS.md')).toBe(owned('new'));
     // The link's original target is untouched — no write-through.
     expect(await fs.readFile('/workspace/instructions/default.md')).toBe('canonical body\n');
+
+    // Verify that the symlink was unlinked before writing the destination.
+    expect(unlinkSpy).toHaveBeenCalledWith('/repos/app/AGENTS.md');
+    const unlinkCallOrder = unlinkSpy.mock.invocationCallOrder[0];
+    // Find the writeFile call that targets the destination (not the backup).
+    let destinationWriteCallOrder: number | undefined;
+    for (let i = 0; i < writeSpy.mock.calls.length; i += 1) {
+      const call = writeSpy.mock.calls[i];
+      if (call !== undefined && call[0] === '/repos/app/AGENTS.md') {
+        destinationWriteCallOrder = writeSpy.mock.invocationCallOrder[i];
+        break;
+      }
+    }
+    expect(unlinkCallOrder).toBeLessThan(destinationWriteCallOrder ?? Number.MAX_SAFE_INTEGER);
   });
 
   it('replaces a broken symlink with a regular file, producing no backup', async () => {
     const { fs, materializer } = make();
     await fs.symlink({ target: '/workspace/instructions/missing.md', path: '/repos/app/AGENTS.md' });
+
+    const unlinkSpy = vi.spyOn(fs, 'unlink');
+    const writeSpy = vi.spyOn(fs, 'writeFile');
 
     const result = await materializer.write({ destination: '/repos/app/AGENTS.md', content: owned('new') });
 
@@ -67,6 +87,20 @@ describe('FileMaterializer.write', () => {
     expect(result.details?.backupPath).toBeUndefined();
     expect((await fs.lstat('/repos/app/AGENTS.md')).kind).toBe('file');
     expect(await fs.readFile('/repos/app/AGENTS.md')).toBe(owned('new'));
+
+    // Verify that the broken symlink was unlinked before writing the destination.
+    expect(unlinkSpy).toHaveBeenCalledWith('/repos/app/AGENTS.md');
+    const unlinkCallOrder = unlinkSpy.mock.invocationCallOrder[0];
+    // Find the writeFile call that targets the destination.
+    let destinationWriteCallOrder: number | undefined;
+    for (let i = 0; i < writeSpy.mock.calls.length; i += 1) {
+      const call = writeSpy.mock.calls[i];
+      if (call !== undefined && call[0] === '/repos/app/AGENTS.md') {
+        destinationWriteCallOrder = writeSpy.mock.invocationCallOrder[i];
+        break;
+      }
+    }
+    expect(unlinkCallOrder).toBeLessThan(destinationWriteCallOrder ?? Number.MAX_SAFE_INTEGER);
   });
 });
 
