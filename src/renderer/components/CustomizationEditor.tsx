@@ -47,7 +47,11 @@ export function CustomizationEditor({
   const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
-      const toSave = withEntityBody({ ...entity, urn: entityUrn(entity.kind, entity.name) }, body);
+      // Preserve the original URN on edit so EntityService detects a name change
+      // as a rename (old previousUrn !== new urn) instead of writing a duplicate.
+      // On create the entity carries urn '' (from blankCustomization), so derive it.
+      const urn = entity.urn || entityUrn(entity.kind, entity.name);
+      const toSave = withEntityBody({ ...entity, urn }, body);
       const { method, payloadKey, resultKey } = SAVE_BY_KIND[toSave.kind];
       const result = await callIpc<Record<string, unknown>>(method, { [payloadKey]: toSave, isCreate });
       const saved = result[resultKey] as EditableEntity;

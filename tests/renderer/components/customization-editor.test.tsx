@@ -131,6 +131,35 @@ describe('<CustomizationEditor>', () => {
     );
   });
 
+  it('editing the name in edit mode still sends the original urn (so the service detects a rename)', async () => {
+    const user = userEvent.setup();
+    const initial = baseCustomization(); // urn 'urn:skill:foo', name 'foo'
+    call.mockResolvedValue(ok({ skill: { ...initial, name: 'bar' }, syncReport: [] }));
+
+    renderWithTheme(
+      <CustomizationEditor
+        initial={initial}
+        isCreate={false}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const nameField = screen.getByLabelText('Name');
+    await user.clear(nameField);
+    await user.type(nameField, 'bar');
+    await user.click(screen.getByRole('button', { name: /salvar/i }));
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'skill.save',
+        expect.objectContaining({
+          skill: expect.objectContaining({ urn: 'urn:skill:foo', name: 'bar' }),
+        }),
+      ),
+    );
+  });
+
   it('unchecking the only selected scope leaves scopes empty (validation handled by service)', async () => {
     const user = userEvent.setup();
     const initial = baseCustomization();
