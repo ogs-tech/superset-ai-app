@@ -31,8 +31,8 @@ export class ClaudeAdapter implements Adapter {
 
     if (kind === 'instruction') {
       return [
-        { scope: 'personal', destination: join(this.homedir, '.claude/CLAUDE.md') },
-        { scope: 'personal', destination: join(this.homedir, 'AGENTS.md') },
+        { scope: 'personal', destination: join(this.homedir, '.claude/CLAUDE.md'), strategy: 'symlink' },
+        { scope: 'personal', destination: join(this.homedir, 'AGENTS.md'), strategy: 'symlink' },
       ];
     }
 
@@ -45,11 +45,11 @@ export class ClaudeAdapter implements Adapter {
     const out: AdapterDestination[] = [];
 
     if (scopes.includes('personal')) {
-      out.push({ scope: 'personal', destination: join(this.homedir, subfolder, fileName) });
+      out.push({ scope: 'personal', destination: join(this.homedir, subfolder, fileName), strategy: 'symlink' });
     }
     if (scopes.includes('project')) {
       for (const repo of args.linkedRepos) {
-        out.push({ scope: 'project', destination: join(repo.path, subfolder, fileName) });
+        out.push({ scope: 'project', destination: join(repo.path, subfolder, fileName), strategy: 'symlink' });
       }
     }
     return out;

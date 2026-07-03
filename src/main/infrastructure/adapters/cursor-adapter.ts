@@ -46,11 +46,11 @@ export class CursorAdapter implements Adapter {
     const out: AdapterDestination[] = [];
 
     if (scopes.includes('personal')) {
-      out.push({ scope: 'personal', destination: join(this.homedir, subfolder, fileName) });
+      out.push({ scope: 'personal', destination: join(this.homedir, subfolder, fileName), strategy: 'symlink' });
     }
     if (scopes.includes('project')) {
       for (const repo of args.linkedRepos) {
-        out.push({ scope: 'project', destination: join(repo.path, subfolder, fileName) });
+        out.push({ scope: 'project', destination: join(repo.path, subfolder, fileName), strategy: 'symlink' });
       }
     }
     return out;

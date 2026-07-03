@@ -17,7 +17,7 @@ export class FakeAdapter implements Adapter {
     const out: AdapterDestination[] = [];
 
     if (scopes.includes('personal')) {
-      out.push({ scope: 'personal', destination: this.personalDestination });
+      out.push({ scope: 'personal', destination: this.personalDestination, strategy: 'symlink' });
     }
 
     if (scopes.includes('project')) {
@@ -25,6 +25,7 @@ export class FakeAdapter implements Adapter {
         out.push({
           scope: 'project',
           destination: this.projectDestinationTemplate(repo.path),
+          strategy: 'symlink',
         });
       }
     }

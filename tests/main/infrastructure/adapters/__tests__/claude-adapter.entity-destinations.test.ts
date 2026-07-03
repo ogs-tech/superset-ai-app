@@ -12,7 +12,7 @@ describe('ClaudeAdapter.resolveEntityDestinations', () => {
     const skill: Skill = { urn: 'urn:skill:demo', kind: 'skill', name: 'demo', description: 'd',
       scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'b' };
     expect(adapter.resolveEntityDestinations({ entity: skill, linkedRepos: [] })).toEqual([
-      { scope: 'personal', destination: '/home/u/.claude/skills/demo' },
+      { scope: 'personal', destination: '/home/u/.claude/skills/demo', strategy: 'symlink' },
     ]);
   });
 
@@ -20,8 +20,8 @@ describe('ClaudeAdapter.resolveEntityDestinations', () => {
     const ins: Instruction = { urn: 'urn:instruction:default', kind: 'instruction', name: 'default',
       description: '', scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'b', activation: 'always' };
     expect(adapter.resolveEntityDestinations({ entity: ins, linkedRepos: [] })).toEqual([
-      { scope: 'personal', destination: '/home/u/.claude/CLAUDE.md' },
-      { scope: 'personal', destination: '/home/u/AGENTS.md' },
+      { scope: 'personal', destination: '/home/u/.claude/CLAUDE.md', strategy: 'symlink' },
+      { scope: 'personal', destination: '/home/u/AGENTS.md', strategy: 'symlink' },
     ]);
   });
 
@@ -33,9 +33,9 @@ describe('ClaudeAdapter.resolveEntityDestinations', () => {
       { id: 'r2', name: 'lib', path: '/repos/lib' },
     ];
     expect(adapter.resolveEntityDestinations({ entity: skill, linkedRepos })).toEqual([
-      { scope: 'personal', destination: '/home/u/.claude/skills/multi' },
-      { scope: 'project', destination: '/repos/app/.claude/skills/multi' },
-      { scope: 'project', destination: '/repos/lib/.claude/skills/multi' },
+      { scope: 'personal', destination: '/home/u/.claude/skills/multi', strategy: 'symlink' },
+      { scope: 'project', destination: '/repos/app/.claude/skills/multi', strategy: 'symlink' },
+      { scope: 'project', destination: '/repos/lib/.claude/skills/multi', strategy: 'symlink' },
     ]);
   });
 
@@ -44,7 +44,7 @@ describe('ClaudeAdapter.resolveEntityDestinations', () => {
       scopes: ['project'], metadata: meta, source: WORKSPACE_SOURCE, systemPrompt: 'b' };
     const linkedRepos: LinkedRepo[] = [{ id: 'r', name: 'app', path: '/repos/app' }];
     expect(adapter.resolveEntityDestinations({ entity: agent, linkedRepos })).toEqual([
-      { scope: 'project', destination: '/repos/app/.claude/agents/triage.md' },
+      { scope: 'project', destination: '/repos/app/.claude/agents/triage.md', strategy: 'symlink' },
     ]);
   });
 

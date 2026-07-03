@@ -4,6 +4,7 @@ import { InMemorySettingsRepository } from '../../../../../src/main/infrastructu
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../../src/main/application/services/symlink-manager.js';
+import { FileMaterializer } from '../../../../../src/main/application/services/file-materializer.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
@@ -22,10 +23,12 @@ const setup = async () => {
   const entityRepository = new InMemoryEntityRepository();
   const fs = new InMemoryFileSystem();
   const sm = new SymlinkManager(fs, new FixedClock(new Date()), '/workspace');
+  const fileMaterializer = new FileMaterializer(fs, new FixedClock(new Date()), '/workspace');
   const manager = new AdapterManager({
     settingsService,
     entityRepository,
     symlinkManager: sm,
+    fileMaterializer,
     workspacePath: '/workspace',
     adapters: new Map(),
   });

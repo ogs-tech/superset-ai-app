@@ -16,7 +16,7 @@ describe('CursorAdapter.resolveEntityDestinations', () => {
     const skill: Skill = { urn: 'urn:skill:demo', kind: 'skill', name: 'demo', description: 'd',
       scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'b' };
     expect(adapter.resolveEntityDestinations({ entity: skill, linkedRepos: [] })).toEqual([
-      { scope: 'personal', destination: '/home/u/.cursor/skills/demo' },
+      { scope: 'personal', destination: '/home/u/.cursor/skills/demo', strategy: 'symlink' },
     ]);
   });
 
@@ -24,7 +24,7 @@ describe('CursorAdapter.resolveEntityDestinations', () => {
     const command: Skill = { urn: 'urn:skill:deploy', kind: 'skill', name: 'deploy', description: 'd',
       scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'b', explicitOnly: true };
     expect(adapter.resolveEntityDestinations({ entity: command, linkedRepos: [] })).toEqual([
-      { scope: 'personal', destination: '/home/u/.cursor/skills/deploy' },
+      { scope: 'personal', destination: '/home/u/.cursor/skills/deploy', strategy: 'symlink' },
     ]);
   });
 
@@ -36,9 +36,9 @@ describe('CursorAdapter.resolveEntityDestinations', () => {
       { id: 'r2', name: 'lib', path: '/repos/lib' },
     ];
     expect(adapter.resolveEntityDestinations({ entity: skill, linkedRepos })).toEqual([
-      { scope: 'personal', destination: '/home/u/.cursor/skills/multi' },
-      { scope: 'project', destination: '/repos/app/.cursor/skills/multi' },
-      { scope: 'project', destination: '/repos/lib/.cursor/skills/multi' },
+      { scope: 'personal', destination: '/home/u/.cursor/skills/multi', strategy: 'symlink' },
+      { scope: 'project', destination: '/repos/app/.cursor/skills/multi', strategy: 'symlink' },
+      { scope: 'project', destination: '/repos/lib/.cursor/skills/multi', strategy: 'symlink' },
     ]);
   });
 
@@ -47,7 +47,7 @@ describe('CursorAdapter.resolveEntityDestinations', () => {
       scopes: ['project'], metadata: meta, source: WORKSPACE_SOURCE, systemPrompt: 'b' };
     const linkedRepos: LinkedRepo[] = [{ id: 'r', name: 'app', path: '/repos/app' }];
     expect(adapter.resolveEntityDestinations({ entity: agent, linkedRepos })).toEqual([
-      { scope: 'project', destination: '/repos/app/.cursor/agents/triage.md' },
+      { scope: 'project', destination: '/repos/app/.cursor/agents/triage.md', strategy: 'symlink' },
     ]);
   });
 

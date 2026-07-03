@@ -5,6 +5,7 @@ import { InMemorySettingsRepository } from '../../../../src/main/infrastructure/
 import { InMemoryFileSystem } from '../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { SymlinkManager } from '../../../../src/main/application/services/symlink-manager.js';
+import { FileMaterializer } from '../../../../src/main/application/services/file-materializer.js';
 import { AdapterManager } from '../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../src/main/application/services/settings-service.js';
 import { ClaudeAdapter } from '../../../../src/main/infrastructure/adapters/claude-adapter.js';
@@ -90,11 +91,13 @@ describe('disable-claude e2e (AC#10)', () => {
     fs.createFile(realFile, 'real content');
 
     const sm = new SymlinkManager(fs, new FixedClock(new Date()), WORKSPACE);
+    const fileMaterializer = new FileMaterializer(fs, new FixedClock(new Date()), WORKSPACE);
     const claudeAdapter = new ClaudeAdapter({ homedir: HOMEDIR });
     const manager = new AdapterManager({
       settingsService,
       entityRepository,
       symlinkManager: sm,
+      fileMaterializer,
       workspacePath: WORKSPACE,
       adapters: new Map([['claude', claudeAdapter]]),
     });

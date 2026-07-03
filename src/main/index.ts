@@ -9,6 +9,7 @@ import { WorkspaceBootstrapService } from './application/services/workspace-boot
 import { WorkspaceTeardownService } from './application/services/workspace-teardown.js';
 import { AdapterManager } from './application/services/adapter-manager.js';
 import { SymlinkManager } from './application/services/symlink-manager.js';
+import { FileMaterializer } from './application/services/file-materializer.js';
 import { FsSettingsRepository } from './infrastructure/settings/fs-settings-repository.js';
 import { FsRepoReader } from './infrastructure/repo/fs-repo-reader.js';
 import { FsWorkspaceBootstrap } from './infrastructure/workspace/fs-workspace-bootstrap.js';
@@ -91,6 +92,7 @@ async function wireIpc(): Promise<void> {
 
   const symlinkManager = new SymlinkManager(new NodeFsAdapter(), clock, workspacePath);
   const nodeFsAdapter = new NodeFsAdapter();
+  const fileMaterializer = new FileMaterializer(nodeFsAdapter, clock, workspacePath);
   const claudeAdapter = new ClaudeAdapter({ homedir: homedir() });
   const cursorAdapter = new CursorAdapter({ homedir: homedir() });
   const entityRepository = new FsEntityRepository(workspacePath);
@@ -98,6 +100,7 @@ async function wireIpc(): Promise<void> {
     settingsService,
     entityRepository,
     symlinkManager,
+    fileMaterializer,
     workspacePath,
     adapters: new Map<string, Adapter>([
       [claudeAdapter.adapterId, claudeAdapter],
