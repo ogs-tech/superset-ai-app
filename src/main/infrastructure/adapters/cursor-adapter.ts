@@ -1,8 +1,9 @@
 import { join } from 'node:path';
 import type { Adapter, AdapterDestination } from '../../application/ports/adapter.js';
 import type { LinkedRepo } from '../../../shared/settings.js';
-import type { Entity } from '../../../shared/entity.js';
+import type { Entity, Instruction } from '../../../shared/entity.js';
 import { DomainError } from '../../domain/errors.js';
+import { renderAgentsFile } from '../../application/entity/agents-file.js';
 
 export interface CursorAdapterDeps {
   homedir: string;
@@ -36,6 +37,18 @@ export class CursorAdapter implements Adapter {
     linkedRepos: LinkedRepo[];
   }): AdapterDestination[] {
     const { kind, name, scopes } = args.entity;
+
+    if (kind === 'instruction') {
+      // Cursor has no home-level instruction file; the global instruction (scope
+      // personal) is materialized as <repo>/AGENTS.md in every linked repo.
+      const content = renderAgentsFile(args.entity as Instruction);
+      return args.linkedRepos.map((repo) => ({
+        scope: 'project' as const,
+        destination: join(repo.path, 'AGENTS.md'),
+        strategy: 'write' as const,
+        content,
+      }));
+    }
 
     if (kind !== 'skill' && kind !== 'agent') {
       return [];

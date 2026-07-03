@@ -7,6 +7,7 @@ import {
   type Skill,
 } from '../../../../../src/shared/entity.js';
 import type { LinkedRepo } from '../../../../../src/shared/settings.js';
+import { GENERATED_FILE_MARKER } from '../../../../../src/main/application/entity/agents-file.js';
 
 const meta = { version: '0.1.0', createdAt: '', updatedAt: '' };
 const adapter = new CursorAdapter({ homedir: '/home/u' });
@@ -51,9 +52,23 @@ describe('CursorAdapter.resolveEntityDestinations', () => {
     ]);
   });
 
-  it('returns [] for an instruction (deferred to Plan B — AGENTS.md write)', () => {
+  it('routes an instruction to a generated AGENTS.md in each linked repo', () => {
     const ins: Instruction = { urn: 'urn:instruction:default', kind: 'instruction', name: 'default',
-      description: '', scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'b', activation: 'always' };
+      description: '', scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'Reply in pt-BR.', activation: 'always' };
+    const linkedRepos: LinkedRepo[] = [
+      { id: 'r1', name: 'app', path: '/repos/app' },
+      { id: 'r2', name: 'lib', path: '/repos/lib' },
+    ];
+    const out = adapter.resolveEntityDestinations({ entity: ins, linkedRepos });
+    expect(out).toEqual([
+      { scope: 'project', destination: '/repos/app/AGENTS.md', strategy: 'write', content: `${GENERATED_FILE_MARKER}\n\nReply in pt-BR.\n` },
+      { scope: 'project', destination: '/repos/lib/AGENTS.md', strategy: 'write', content: `${GENERATED_FILE_MARKER}\n\nReply in pt-BR.\n` },
+    ]);
+  });
+
+  it('returns [] for an instruction when no repo is linked', () => {
+    const ins: Instruction = { urn: 'urn:instruction:default', kind: 'instruction', name: 'default',
+      description: '', scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: 'x', activation: 'always' };
     expect(adapter.resolveEntityDestinations({ entity: ins, linkedRepos: [] })).toEqual([]);
   });
 });
