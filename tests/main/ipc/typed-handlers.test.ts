@@ -64,7 +64,6 @@ const instruction = (): Instruction => ({
   metadata: { version: '0.0.0', createdAt: '', updatedAt: '' },
   source: WORKSPACE_SOURCE,
   content: '# Instructions\n',
-  activation: 'always',
 });
 
 const setupInstructionService = () => {
@@ -155,12 +154,10 @@ describe('agent-handlers', () => {
 });
 
 describe('instruction-handlers', () => {
-  it('instruction.get rejects non-default slug', async () => {
+  it('instruction.get returns not_found for a non-existent slug (project slots may exist for any slug)', async () => {
     const svc = setupInstructionService();
     const h = buildInstructionHandlers(svc);
-    await expect(h['instruction.get']!({ id: 'other' })).rejects.toThrow(
-      /must be one of/,
-    );
+    await expect(h['instruction.get']!({ id: 'other' })).rejects.toThrow(/not found/i);
   });
 
   it('instruction.get returns the saved default instruction', async () => {

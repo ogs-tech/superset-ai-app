@@ -35,7 +35,7 @@ Intro line for the test profile.
 `;
 
 const SEED_SETTINGS = JSON.stringify(
-  { adapters: { claude: { enabled: true } }, linkedRepos: [], ui: { theme: 'system' }, language: 'off' },
+  { adapters: { claude: { enabled: true } }, ui: { theme: 'system' }, language: 'off' },
   null,
   2,
 );

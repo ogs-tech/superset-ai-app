@@ -96,11 +96,8 @@ Grouped by namespace. Source: [`src/main/ipc/registry.ts`](../../src/main/ipc/re
 |---|---|---|
 | `repo.detectGit` | `{ path: string }` | `boolean` |
 | `repo.getCurrentBranch` | `{ path: string }` | `string` |
-| `repo.link` | `{ path: string; name?: string }` | `LinkedRepoView` |
-| `repo.unlink` | `{ id: string }` | `void` |
-| `repo.list` | — | `LinkedRepoView[]` |
 
-`repo.link` rejects with `{ kind: 'validation' }` if `path` is not a git repository.
+Small helpers used by the InstructionsScreen folder picker. The old `repo.link` / `repo.unlink` / `repo.list` methods and their `LinkedRepoView` type were **removed** with `settings.linkedRepos` — project scope now lives on each entity's own `repoPath` (see the `instruction` namespace below).
 
 ### `workspace`
 
@@ -140,10 +137,12 @@ Saving or deleting a plugin-provided skill (`source.kind === 'plugin'`) raises `
 
 | Method | Params | Result |
 |---|---|---|
-| `instruction.get` | `{ id: string }` (only `'default'` is valid) | `Instruction` |
+| `instruction.list` | `{}` | `Instruction[]` (personal singleton first when present, then every project instruction) |
+| `instruction.get` | `{ id: string }` (`'default'` for personal; slug otherwise) | `Instruction` |
 | `instruction.save` | `{ instruction: Instruction; isCreate?: boolean }` | `{ instruction: Instruction; syncReport: SyncResult[] }` |
+| `instruction.delete` | `{ name: string; removeSymlinks?: boolean }` | `{ ok: true; syncReport?: SyncResult[] }` |
 
-Renamed from `global-instruction.*` — same singleton semantics (`name` fixed to `'default'`, `scopes` fixed to `['personal']`), enforced by `globalInstructionId()` and `instructionEntitySchema`. `Instruction` adds `activation: 'always' | 'glob' | 'agent-requested' | 'manual'` and an optional `globs` array over the base `Entity` shape, but storage is **frontmatter-free** — `FsEntityRepository`/`EntitySerializer` only persist `content`; `activation`/`globs` are typed but not yet round-tripped through disk (a fresh read always yields `activation: 'always'`). `EntityService.save`'s sync report fans out to **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (see [Architecture](architecture.md#persistence)).
+`Instruction` is a discriminated union: `PersonalInstruction` (`name === 'default'`, `scopes === ['personal']`) or `ProjectInstruction` (any slug except `'default'`, `scopes === ['project']`, absolute `repoPath: string`). Enforced by `personalInstructionId` / `projectInstructionSlug` (`src/main/domain/instruction-id.ts`) and by `instructionEntitySchema` (branch via `superRefine`). Storage is **frontmatter-free**; the personal singleton lives at `instructions/default.md`, project instructions at `instructions/project/<slug>/{INSTRUCTION.md,meta.json}` — see [Entity schema](customization-schema.md#instruction). `save`'s sync report fans out to Claude (`~/.claude/CLAUDE.md` + `~/AGENTS.md` for personal, `<repoPath>/.claude/CLAUDE.md` + `<repoPath>/AGENTS.md` for project) and — when Cursor is enabled — either the Cursor plugin files (personal) or `<repoPath>/AGENTS.md` (project). `delete` removes the entity plus its symlinks / generated files by default; pass `removeSymlinks: false` to keep the sync artefacts.
 
 ### `command` *(removed)*
 

@@ -4,7 +4,7 @@ import { defaultNav, type Nav } from '../components/shell/nav.js';
 import { SkillList } from './skills/SkillList.js';
 import { AgentList } from './agents/AgentList.js';
 import { HookList } from './hooks/HookList.js';
-import { GlobalInstructionScreen } from './global-instructions/GlobalInstructionScreen.js';
+import { InstructionsScreen } from './instructions/InstructionsScreen.js';
 import { McpList } from './mcps/McpList.js';
 import { MarketplaceList } from './marketplaces/MarketplaceList.js';
 import { PluginList } from './plugins/PluginList.js';
@@ -34,7 +34,7 @@ function screenFor(nav: Nav, navigate: (n: Nav) => void): React.ReactElement {
         case 'hooks':
           return <HookList />;
         case 'instructions':
-          return <GlobalInstructionScreen />;
+          return <InstructionsScreen />;
         case 'mcps':
           return <McpList />;
       }

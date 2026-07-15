@@ -24,9 +24,7 @@ class WriteOnlyAdapter implements Adapter {
 }
 
 const settings: Settings = {
-  adapters: { claude: { enabled: true }, cursor: { enabled: true } },
-  linkedRepos: [{ id: 'r', name: 'app', path: '/repos/app' }],
-  ui: { theme: 'system' }, language: 'off',
+  adapters: { claude: { enabled: true }, cursor: { enabled: true } },  ui: { theme: 'system' }, language: 'off',
 };
 
 const skill: Skill = {

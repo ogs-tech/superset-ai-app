@@ -31,7 +31,7 @@ describe('FsEntityRepository — instruction', () => {
     const repo = new FsEntityRepository(ws);
     const ins: Instruction = {
       urn: 'urn:instruction:default', kind: 'instruction', name: 'default', description: '',
-      scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: '# Hi\n', activation: 'always',
+      scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: '# Hi\n',
     };
     await repo.save(ins);
     const onDisk = await readFile(join(ws, 'instructions', 'default.md'), 'utf8');
@@ -69,5 +69,110 @@ describe('FsEntityRepository — list & delete', () => {
   it('rejects delete of a missing skill with not_found', async () => {
     const repo = new FsEntityRepository(ws);
     await expect(repo.delete('urn:skill:missing')).rejects.toMatchObject({ kind: 'not_found' });
+  });
+});
+
+describe('FsEntityRepository — project instruction storage', () => {
+  const projectInstruction = (name = 'acme', repoPath = '/repos/acme'): Instruction => ({
+    urn: `urn:instruction:${name}`,
+    kind: 'instruction',
+    name,
+    description: `${name} rules`,
+    scopes: ['project'],
+    metadata: meta,
+    source: WORKSPACE_SOURCE,
+    content: `# ${name}\n\nProject-only rules.\n`,
+    repoPath,
+  } as Instruction);
+
+  it('save writes body under project/<slug>/INSTRUCTION.md and meta.json alongside it', async () => {
+    const repo = new FsEntityRepository(ws);
+    await repo.save(projectInstruction('acme', '/repos/acme'));
+
+    const body = await readFile(join(ws, 'instructions', 'project', 'acme', 'INSTRUCTION.md'), 'utf8');
+    expect(body.startsWith('---')).toBe(false);
+    expect(body).toContain('Project-only rules.');
+
+    const metaJson = JSON.parse(
+      await readFile(join(ws, 'instructions', 'project', 'acme', 'meta.json'), 'utf8'),
+    );
+    expect(metaJson).toMatchObject({
+      description: 'acme rules',
+      version: '0.1.0',
+      repoPath: '/repos/acme',
+    });
+  });
+
+  it('get rehydrates repoPath, description and version from meta.json', async () => {
+    const repo = new FsEntityRepository(ws);
+    await repo.save(projectInstruction('bravo', '/repos/bravo'));
+    const back = (await repo.get('urn:instruction:bravo')) as Extract<Instruction, { scopes: ['project'] }>;
+    expect(back.name).toBe('bravo');
+    expect(back.repoPath).toBe('/repos/bravo');
+    expect(back.description).toBe('bravo rules');
+    expect(back.metadata.version).toBe('0.1.0');
+    expect(back.content).toContain('Project-only rules.');
+  });
+
+  it('get rejects with not_found when the body is present but meta.json is missing', async () => {
+    await mkdir(join(ws, 'instructions', 'project', 'ghost'), { recursive: true });
+    await writeFile(join(ws, 'instructions', 'project', 'ghost', 'INSTRUCTION.md'), '# body\n', 'utf8');
+    const repo = new FsEntityRepository(ws);
+    await expect(repo.get('urn:instruction:ghost')).rejects.toMatchObject({ kind: 'not_found' });
+  });
+
+  it('get rejects with validation when meta.json is malformed', async () => {
+    await mkdir(join(ws, 'instructions', 'project', 'malformed'), { recursive: true });
+    await writeFile(
+      join(ws, 'instructions', 'project', 'malformed', 'INSTRUCTION.md'),
+      '# body\n',
+      'utf8',
+    );
+    await writeFile(
+      join(ws, 'instructions', 'project', 'malformed', 'meta.json'),
+      '{not json',
+      'utf8',
+    );
+    const repo = new FsEntityRepository(ws);
+    await expect(repo.get('urn:instruction:malformed')).rejects.toMatchObject({ kind: 'validation' });
+  });
+
+  it('list returns personal singleton followed by every project instruction (skipping malformed ones)', async () => {
+    const repo = new FsEntityRepository(ws);
+    await repo.save({
+      urn: 'urn:instruction:default', kind: 'instruction', name: 'default', description: '',
+      scopes: ['personal'], metadata: meta, source: WORKSPACE_SOURCE, content: '# personal\n',
+    } as Instruction);
+    await repo.save(projectInstruction('acme', '/repos/acme'));
+    await repo.save(projectInstruction('bravo', '/repos/bravo'));
+
+    // Malformed project instruction (body but no meta.json) must be tolerated:
+    // list should skip it instead of throwing.
+    await mkdir(join(ws, 'instructions', 'project', 'ghost'), { recursive: true });
+    await writeFile(join(ws, 'instructions', 'project', 'ghost', 'INSTRUCTION.md'), '# ghost\n', 'utf8');
+
+    const list = await repo.list({ kind: 'instruction' });
+    const names = list.map((i) => i.name).sort();
+    expect(names).toEqual(['acme', 'bravo', 'default']);
+  });
+
+  it('delete removes the entire project slug directory', async () => {
+    const repo = new FsEntityRepository(ws);
+    await repo.save(projectInstruction('acme', '/repos/acme'));
+    await repo.delete('urn:instruction:acme');
+    await expect(repo.get('urn:instruction:acme')).rejects.toMatchObject({ kind: 'not_found' });
+    await expect(repo.exists('urn:instruction:acme')).resolves.toBe(false);
+  });
+
+  it('delete of a missing project instruction rejects with not_found', async () => {
+    const repo = new FsEntityRepository(ws);
+    await expect(repo.delete('urn:instruction:ghost')).rejects.toMatchObject({ kind: 'not_found' });
+  });
+
+  it('exists returns true for a saved project instruction and false otherwise', async () => {
+    const repo = new FsEntityRepository(ws);
+    await repo.save(projectInstruction('acme', '/repos/acme'));
+    expect(await repo.exists('urn:instruction:acme')).toBe(true);
+    expect(await repo.exists('urn:instruction:ghost')).toBe(false);
   });
 });

@@ -22,11 +22,32 @@ const SAVE_BY_KIND: Record<EditableEntity['kind'], { method: string; payloadKey:
   instruction: { method: 'instruction.save', payloadKey: 'instruction', resultKey: 'instruction' },
 };
 
+// TODO(follow-up): reintroduce 'project' for skill/agent once each carries its
+// own repoPath (mirroring ProjectInstruction). Blocked at the schema level
+// today after settings.linkedRepos was removed.
+const scopeOptionsFor = (kind: EditableEntity['kind']): readonly Scope[] =>
+  kind === 'instruction' ? (['personal', 'project'] as const) : (['personal'] as const);
+
+export type EditorHiddenField = 'name' | 'scope' | 'description' | 'version';
+
 interface CustomizationEditorProps {
   initial: EditableEntity;
   isCreate: boolean;
   onSaved: (saved: EditableEntity) => void | Promise<void>;
   onCancel: () => void;
+  /**
+   * Fields the parent screen doesn't want the user to see. Instructions use
+   * this heavily: the personal singleton hides `name` and `scope` (they're
+   * fixed at `default` / `personal`), and both instruction kinds may hide
+   * description/version depending on the screen's info density.
+   */
+  hiddenFields?: ReadonlySet<EditorHiddenField>;
+  /**
+   * Optional heading override used by the instruction screens ("Editar
+   * instrução pessoal", "Editar acme"). Defaults to the generic
+   * "Nova customização" / "Editar <name>".
+   */
+  titleOverride?: { create: string; edit: string };
 }
 
 type BodyView = 'edit' | 'preview' | 'split';
@@ -36,6 +57,8 @@ export function CustomizationEditor({
   isCreate,
   onSaved,
   onCancel,
+  hiddenFields,
+  titleOverride,
 }: CustomizationEditorProps): React.ReactElement {
   const [entity, setEntity] = useState<EditableEntity>(initial);
   const [body, setBody] = useState(entityBody(initial));
@@ -73,11 +96,18 @@ export function CustomizationEditor({
     }
   };
 
+  const isHidden = (field: EditorHiddenField): boolean => hiddenFields?.has(field) ?? false;
+  const title = titleOverride
+    ? (isCreate ? titleOverride.create : titleOverride.edit)
+    : (isCreate ? 'Nova customização' : `Editar ${initial.name}`);
+  const showFrontmatter =
+    !isHidden('name') || !isHidden('description') || !isHidden('version') || !isHidden('scope');
+
   return (
     <Container component="main" data-testid="customization-editor" maxWidth="lg" sx={{ py: 4 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography variant="h4" component="h1">
-          {isCreate ? 'Nova customização' : `Editar ${initial.name}`}
+          {title}
         </Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={onCancel}>Cancelar</Button>
@@ -88,54 +118,65 @@ export function CustomizationEditor({
         </Stack>
       </Stack>
 
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ mb: 2 }}><Kicker>Frontmatter</Kicker></Box>
-        <Stack spacing={2}>
-          <TextField
-            label="Name"
-            value={entity.name}
-            onChange={(e) => setEntity((prev) => ({ ...prev, name: e.target.value }))}
-            slotProps={{ htmlInput: { pattern: '^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$', title: 'lowercase letters, digits and hyphens only (1-64 chars, no leading/trailing hyphen)' } }}
-            fullWidth
-          />
-          <TextField
-            label="Description"
-            value={entity.description}
-            onChange={(e) => setEntity((prev) => ({ ...prev, description: e.target.value }))}
-            slotProps={{ htmlInput: { maxLength: 200 } }}
-            helperText={`${entity.description.length}/200`}
-            fullWidth
-          />
-          <TextField
-            label="Version"
-            value={entity.metadata.version}
-            onChange={(e) => setEntity((prev) => ({ ...prev, metadata: { ...prev.metadata, version: e.target.value } }))}
-            sx={{ maxWidth: 200 }}
-          />
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>Scope</Typography>
-            <FormGroup row>
-              {(['personal', 'project'] as const).map((value) => (
-                <FormControlLabel
-                  key={value}
-                  control={
-                    <Checkbox
-                      checked={entity.scopes.includes(value)}
-                      onChange={(e) => {
-                        const next: Scope[] = e.target.checked
-                          ? Array.from(new Set([...entity.scopes, value]))
-                          : entity.scopes.filter((s) => s !== value);
-                        setEntity((prev) => ({ ...prev, scopes: next }));
-                      }}
+      {showFrontmatter && (
+        <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+          <Box sx={{ mb: 2 }}><Kicker>Frontmatter</Kicker></Box>
+          <Stack spacing={2}>
+            {!isHidden('name') && (
+              <TextField
+                label="Name"
+                value={entity.name}
+                onChange={(e) => setEntity((prev) => ({ ...prev, name: e.target.value } as EditableEntity))}
+                slotProps={{ htmlInput: { pattern: '^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$', title: 'lowercase letters, digits and hyphens only (1-64 chars, no leading/trailing hyphen)' } }}
+                fullWidth
+              />
+            )}
+            {!isHidden('description') && (
+              <TextField
+                label="Description"
+                value={entity.description}
+                onChange={(e) => setEntity((prev) => ({ ...prev, description: e.target.value }))}
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+                helperText={`${entity.description.length}/200`}
+                fullWidth
+              />
+            )}
+            {!isHidden('version') && (
+              <TextField
+                label="Version"
+                value={entity.metadata.version}
+                onChange={(e) => setEntity((prev) => ({ ...prev, metadata: { ...prev.metadata, version: e.target.value } }))}
+                sx={{ maxWidth: 200 }}
+              />
+            )}
+            {!isHidden('scope') && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>Scope</Typography>
+                <FormGroup row>
+                  {(scopeOptionsFor(entity.kind)).map((value) => (
+                    <FormControlLabel
+                      key={value}
+                      control={
+                        <Checkbox
+                          checked={(entity.scopes as Scope[]).includes(value)}
+                          onChange={(e) => {
+                            const scopesArr = entity.scopes as Scope[];
+                            const next: Scope[] = e.target.checked
+                              ? Array.from(new Set([...scopesArr, value]))
+                              : scopesArr.filter((s) => s !== value);
+                            setEntity((prev) => ({ ...prev, scopes: next } as unknown as EditableEntity));
+                          }}
+                        />
+                      }
+                      label={value}
                     />
-                  }
-                  label={value}
-                />
-              ))}
-            </FormGroup>
-          </Box>
-        </Stack>
-      </Paper>
+                  ))}
+                </FormGroup>
+              </Box>
+            )}
+          </Stack>
+        </Paper>
+      )}
 
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

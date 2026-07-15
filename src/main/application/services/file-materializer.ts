@@ -1,6 +1,7 @@
 import { dirname, relative, resolve } from 'node:path';
 import type { WritableFileSystemPort } from '../ports/writable-filesystem-port.js';
 import type { ClockPort } from '../ports/clock-port.js';
+import type { OwnershipCheck } from '../ports/adapter.js';
 import { GENERATED_FILE_MARKER } from '../entity/agents-file.js';
 import { DomainError, ioError } from '../../domain/errors.js';
 
@@ -9,6 +10,11 @@ export type GeneratedFileState = 'ok' | 'missing' | 'drift' | 'foreign';
 export interface FileMaterializeResult {
   status: 'ok' | 'conflict';
   details?: { backupPath?: string; action?: 'overwritten' };
+}
+
+interface Ownership {
+  marker: string;
+  check: OwnershipCheck;
 }
 
 /**
@@ -24,8 +30,14 @@ export class FileMaterializer {
     private readonly workspacePath: string,
   ) {}
 
-  async write(args: { destination: string; content: string }): Promise<FileMaterializeResult> {
+  async write(args: {
+    destination: string;
+    content: string;
+    ownershipMarker?: string;
+    ownershipCheck?: OwnershipCheck;
+  }): Promise<FileMaterializeResult> {
     const dest = resolve(args.destination);
+    const ownership = ownershipOf(args);
     try {
       await this.fs.mkdir(dirname(dest), { recursive: true });
       const stat = await this.fs.lstat(dest);
@@ -55,7 +67,7 @@ export class FileMaterializer {
         return { status: 'conflict', details };
       }
       const existing = await this.fs.readFile(dest);
-      if (this.isOwned(existing)) {
+      if (isOwned(existing, ownership)) {
         await this.fs.writeFile(dest, args.content);
         return { status: 'ok' };
       }
@@ -74,29 +86,36 @@ export class FileMaterializer {
     }
   }
 
-  async removeIfOwned(args: { destination: string }): Promise<{ removed: boolean }> {
+  async removeIfOwned(args: {
+    destination: string;
+    ownershipMarker?: string;
+    ownershipCheck?: OwnershipCheck;
+  }): Promise<{ removed: boolean }> {
     const dest = resolve(args.destination);
+    const ownership = ownershipOf(args);
     const stat = await this.fs.lstat(dest);
     if (stat.kind === 'none') return { removed: false };
     if (stat.kind === 'symlink') return { removed: false };
     const existing = await this.fs.readFile(dest);
-    if (!this.isOwned(existing)) return { removed: false };
+    if (!isOwned(existing, ownership)) return { removed: false };
     await this.fs.unlink(dest);
     return { removed: true };
   }
 
-  async validate(args: { destination: string; content: string }): Promise<GeneratedFileState> {
+  async validate(args: {
+    destination: string;
+    content: string;
+    ownershipMarker?: string;
+    ownershipCheck?: OwnershipCheck;
+  }): Promise<GeneratedFileState> {
     const dest = resolve(args.destination);
+    const ownership = ownershipOf(args);
     const stat = await this.fs.lstat(dest);
     if (stat.kind === 'none') return 'missing';
     if (stat.kind === 'symlink') return 'foreign';
     const existing = await this.fs.readFile(dest);
-    if (!this.isOwned(existing)) return 'foreign';
+    if (!isOwned(existing, ownership)) return 'foreign';
     return existing === args.content ? 'ok' : 'drift';
-  }
-
-  private isOwned(content: string): boolean {
-    return content.startsWith(GENERATED_FILE_MARKER);
   }
 
   private async backup(destinationPath: string, content: string): Promise<string> {
@@ -134,4 +153,16 @@ export class FileMaterializer {
       attempt += 1;
     }
   }
+}
+
+function ownershipOf(args: { ownershipMarker?: string; ownershipCheck?: OwnershipCheck }): Ownership {
+  return {
+    marker: args.ownershipMarker ?? GENERATED_FILE_MARKER,
+    check: args.ownershipCheck ?? 'startsWith',
+  };
+}
+
+function isOwned(content: string, ownership: Ownership): boolean {
+  if (ownership.check === 'startsWith') return content.startsWith(ownership.marker);
+  return content.includes(ownership.marker);
 }

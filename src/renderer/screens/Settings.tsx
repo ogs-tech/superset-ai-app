@@ -6,28 +6,18 @@ import {
   Checkbox,
   CircularProgress,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   FormControl,
   FormControlLabel,
   FormGroup,
-  IconButton,
   InputLabel,
-  List,
-  ListItem,
-  ListItemText,
   MenuItem,
   Paper,
   Select,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, Unlink, Plus, Info } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { Icon } from '../components/ds/Icon.js';
 import { Kicker } from '../components/ds/Kicker.js';
 import { ScreenHeader } from '../components/ds/ScreenHeader.js';
@@ -36,7 +26,7 @@ import { SyncReportModal } from '../components/SyncReportModal.js';
 import { ConfirmDisableModal } from './settings/ConfirmDisableModal.js';
 import { RestoreConfirmDialog } from './settings/RestoreConfirmDialog.js';
 import type { SyncResult } from '../../shared/sync-result.js';
-import type { LanguagePreference, LinkedRepoView, Settings as SettingsModel } from '../../shared/settings.js';
+import type { LanguagePreference, Settings as SettingsModel } from '../../shared/settings.js';
 
 const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string }[] = [
   { value: 'off', label: 'Off' },
@@ -50,16 +40,6 @@ const ADAPTER_KEYS = ['claude', 'cursor'] as const;
 type AdapterKey = (typeof ADAPTER_KEYS)[number];
 const ADAPTER_LABEL: Record<AdapterKey, string> = { claude: 'Claude', cursor: 'Cursor' };
 
-interface SelectFolderResult {
-  canceled: boolean;
-  path?: string;
-}
-
-interface PendingLink {
-  path: string;
-  branch: string | null;
-}
-
 interface SettingsProps {
   onBack?: () => void;
 }
@@ -72,9 +52,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     count: number;
   } | null>(null);
   const [disableToast, setDisableToast] = useState<string | null>(null);
-  const [repos, setRepos] = useState<LinkedRepoView[]>([]);
-  const [repoError, setRepoError] = useState<string | null>(null);
-  const [pending, setPending] = useState<PendingLink | null>(null);
   const [patValue, setPatValue] = useState('');
   const [patHasToken, setPatHasToken] = useState(false);
   const [patLoading, setPatLoading] = useState(false);
@@ -102,18 +79,11 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
     }
   };
 
-  const refreshRepos = async (): Promise<void> => {
-    const list = await callIpc<LinkedRepoView[]>('repo.list', {});
-    setRepos(list);
-  };
-
   useEffect(() => {
     void (async () => {
       const current = await callIpc<SettingsModel | null>('settings.get', {});
       if (current !== null) setSettings(current);
-      await refreshRepos();
 
-      // Check PAT status
       try {
         const result = await callIpc<{ hasToken: boolean }>('credentials.hasGithubToken', {});
         setPatHasToken(result.hasToken);
@@ -161,50 +131,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
       setDisableToast(`${result.removed} removidos, ${result.skipped} ignorados`);
       setTimeout(() => setDisableToast(null), 4000);
     }
-  };
-
-  const handleAddRepo = async (): Promise<void> => {
-    setRepoError(null);
-    try {
-      const picked = await callIpc<SelectFolderResult>('dialog.selectFolder', {});
-      if (picked.canceled || !picked.path) return;
-      const path = picked.path;
-
-      if (repos.some((r) => r.path === path)) {
-        setPending({ path, branch: null });
-        return;
-      }
-
-      const isGit = await callIpc<boolean>('repo.detectGit', { path });
-      if (!isGit) {
-        setRepoError(`Não é um repositório git: ${path}`);
-        return;
-      }
-
-      const branch = await callIpc<string | null>('repo.getCurrentBranch', { path });
-      setPending({ path, branch });
-    } catch (err) {
-      setRepoError(err instanceof Error ? err.message : 'Erro de I/O');
-    }
-  };
-
-  const handleConfirmLink = async (): Promise<void> => {
-    if (pending === null) return;
-    try {
-      await callIpc<LinkedRepoView>('repo.link', { path: pending.path });
-      setPending(null);
-      await refreshRepos();
-    } catch (err) {
-      setRepoError(err instanceof Error ? err.message : 'Erro de I/O');
-      setPending(null);
-    }
-  };
-
-  const handleCancelLink = (): void => setPending(null);
-
-  const handleUnlink = async (id: string): Promise<void> => {
-    await callIpc('repo.unlink', { id });
-    await refreshRepos();
   };
 
   const handleSavePat = async (): Promise<void> => {
@@ -297,27 +223,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
             />
           ))}
         </FormGroup>
-        {settings.adapters.cursor.enabled && repos.length === 0 && (
-          <Alert
-            severity="info"
-            sx={{ mt: 1.5 }}
-            data-testid="cursor-no-repo-notice"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                data-testid="cursor-no-repo-link-button"
-                onClick={() => void handleAddRepo()}
-              >
-                Vincular repositório
-              </Button>
-            }
-          >
-            Sem um repositório vinculado, suas skills e agents pessoais chegam ao Cursor, mas a
-            instrução global e os itens com escopo de projeto não são sincronizados. Vincule um
-            repositório abaixo para incluí-los.
-          </Alert>
-        )}
       </Paper>
 
       <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -348,77 +253,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
               Code, comments, and test descriptions are always written in English.
             </Typography>
           </Stack>
-        )}
-      </Paper>
-
-      <Paper component="section" variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Stack
-          direction="row"
-          sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}
-        >
-          <Kicker component="h2">Linked repos</Kicker>
-          <Button variant="contained" startIcon={<Icon glyph={Plus} size={16} />} onClick={() => void handleAddRepo()}>
-            Adicionar repo
-          </Button>
-        </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Repositórios onde as customizações com escopo de projeto serão sincronizadas.
-        </Typography>
-        {repoError !== null ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {repoError}
-          </Alert>
-        ) : null}
-        {repos.length === 0 ? (
-          <Box
-            sx={{
-              border: 1,
-              borderStyle: 'dashed',
-              borderColor: 'divider',
-              borderRadius: 1,
-              p: 3,
-              textAlign: 'center',
-              color: 'text.secondary',
-            }}
-          >
-            <Typography variant="body2">Nenhum repositório vinculado ainda.</Typography>
-          </Box>
-        ) : (
-          <List dense disablePadding>
-            {repos.map((repo) => (
-              <ListItem
-                key={repo.id}
-                data-testid="linked-repo-item"
-                divider
-                secondaryAction={
-                  <Tooltip title="Desvincular">
-                    <IconButton
-                      edge="end"
-                      onClick={() => void handleUnlink(repo.id)}
-                      aria-label="Desvincular"
-                    >
-                      <Icon glyph={Unlink} size={16} />
-                    </IconButton>
-                  </Tooltip>
-                }
-              >
-                <ListItemText
-                  primary={<Box component="strong">{repo.name}</Box>}
-                  secondary={
-                    <>
-                      <Box
-                        component="code"
-                        sx={{ fontFamily: 'monospace', color: 'text.secondary' }}
-                      >
-                        {repo.path}
-                      </Box>
-                      {repo.branch !== null ? ` (${repo.branch})` : ' (sem branch)'}
-                    </>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
         )}
       </Paper>
 
@@ -474,39 +308,6 @@ export function Settings({ onBack }: SettingsProps = {}): React.ReactElement {
           </Button>
         </Stack>
       </Paper>
-
-      <Dialog
-        open={pending !== null}
-        onClose={handleCancelLink}
-        aria-labelledby="link-confirm-title"
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle id="link-confirm-title">Confirmar vínculo de repo</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Vincular{' '}
-            <Box component="code" sx={{ fontFamily: 'monospace' }}>
-              {pending?.path}
-            </Box>{' '}
-            permite que o app crie <strong>symlinks</strong> em{' '}
-            <Box component="code" sx={{ fontFamily: 'monospace' }}>
-              .claude/
-            </Box>{' '}
-            dentro do repositório. Essas mudanças podem ser <strong>committed</strong> a menos que você as ignore via{' '}
-            <Box component="code" sx={{ fontFamily: 'monospace' }}>
-              .gitignore
-            </Box>
-            .
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelLink}>Cancelar</Button>
-          <Button variant="contained" onClick={() => void handleConfirmLink()}>
-            Confirmar
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {disableModal !== null && (
         <ConfirmDisableModal

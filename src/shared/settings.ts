@@ -6,19 +6,6 @@ export interface AdapterSettings {
   enabled: boolean;
 }
 
-export interface LinkedRepo {
-  id: string;
-  name: string;
-  path: string;
-}
-
-export interface LinkedRepoView {
-  id: string;
-  name: string;
-  path: string;
-  branch: string | null;
-}
-
 export interface UiSettings {
   theme: ThemeMode;
 }
@@ -28,7 +15,6 @@ export interface Settings {
     claude: AdapterSettings;
     cursor: AdapterSettings;
   };
-  linkedRepos: LinkedRepo[];
   ui: UiSettings;
   language: LanguagePreference;
 }
@@ -47,7 +33,6 @@ export function getDefaults(): Settings {
       claude: { enabled: true },
       cursor: { enabled: false },
     },
-    linkedRepos: [],
     ui: { theme: 'system' },
     language: 'off',
   };

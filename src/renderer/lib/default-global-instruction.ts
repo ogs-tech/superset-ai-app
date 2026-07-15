@@ -1,4 +1,4 @@
-import type { Instruction } from '../../shared/entity.js';
+import type { PersonalInstruction } from '../../shared/entity.js';
 import { WORKSPACE_SOURCE } from '../../shared/entity.js';
 
 /**
@@ -52,7 +52,7 @@ Personal preferences and conventions that apply across every workspace and every
  * pre-filled with the OGS template. The schema pins `name` to `default` and
  * `scopes` to `['personal']`; timestamps are stamped server-side on save.
  */
-export function defaultGlobalInstruction(): Instruction {
+export function defaultGlobalInstruction(): PersonalInstruction {
   return {
     urn: '',
     kind: 'instruction',
@@ -62,6 +62,5 @@ export function defaultGlobalInstruction(): Instruction {
     metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
     source: WORKSPACE_SOURCE,
     content: DEFAULT_GI_BODY,
-    activation: 'always',
   };
 }

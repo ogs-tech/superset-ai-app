@@ -8,8 +8,12 @@ import { SymlinkManager } from '../../../../../src/main/application/services/sym
 import { FileMaterializer } from '../../../../../src/main/application/services/file-materializer.js';
 import { AdapterManager } from '../../../../../src/main/application/services/adapter-manager.js';
 import { SettingsService } from '../../../../../src/main/application/services/settings-service.js';
-import { WORKSPACE_SOURCE, type Agent, type Skill } from '../../../../../src/shared/entity.js';
-import type { LinkedRepo, Settings } from '../../../../../src/shared/settings.js';
+import {
+  WORKSPACE_SOURCE,
+  type ProjectInstruction,
+  type Skill,
+} from '../../../../../src/shared/entity.js';
+import type { Settings } from '../../../../../src/shared/settings.js';
 
 const HOMEDIR = '/Users/alice';
 const WORKSPACE = '/workspace';
@@ -27,23 +31,23 @@ const skillPersonal: Skill = {
   content: '# review',
 };
 
-const agentProject: Agent = {
-  urn: 'urn:agent:triage',
-  kind: 'agent',
-  name: 'triage',
-  description: 'desc',
+const projectInstruction: ProjectInstruction = {
+  urn: 'urn:instruction:acme',
+  kind: 'instruction',
+  name: 'acme',
+  description: 'acme rules',
   scopes: ['project'],
   metadata: meta,
   source: WORKSPACE_SOURCE,
-  systemPrompt: '# triage',
+  content: '# acme',
+  repoPath: '/repos/acme',
 };
 
-const buildSettings = (linkedRepos: LinkedRepo[] = []): Settings => ({
+const buildSettings = (): Settings => ({
   adapters: {
     claude: { enabled: true },
     cursor: { enabled: false },
   },
-  linkedRepos,
   ui: { theme: 'system' },
   language: 'off',
 });
@@ -86,22 +90,20 @@ describe('ClaudeAdapter — end-to-end via AdapterManager.syncEntity', () => {
     expect(target).toBe('/workspace/skills/review');
   });
 
-  it('syncEntity(agent, scope=project) with 2 linkedRepos creates 2 symlinks resolving to <workspace>/agents/<slug>.md', async () => {
-    const repos: LinkedRepo[] = [
-      { id: 'r1', name: 'r1', path: '/repos/r1' },
-      { id: 'r2', name: 'r2', path: '/repos/r2' },
-    ];
-    const { adapterManager, entityRepository, fs } = await setup(buildSettings(repos));
-    await entityRepository.save(agentProject);
+  it('syncEntity(project instruction) creates 2 symlinks under entity.repoPath resolving to the workspace body', async () => {
+    const { adapterManager, entityRepository, fs } = await setup(buildSettings());
+    await entityRepository.save(projectInstruction);
 
-    const syncReport = await adapterManager.syncEntity({ entity: agentProject });
+    const syncReport = await adapterManager.syncEntity({ entity: projectInstruction });
 
     const okResults = syncReport.filter((r) => r.adapter === 'claude' && r.status === 'ok');
     expect(okResults).toHaveLength(2);
 
-    const expectedTarget = '/workspace/agents/triage.md';
-    for (const repoPath of ['/repos/r1', '/repos/r2']) {
-      const dest = `${repoPath}/.claude/agents/triage.md`;
+    const expectedTarget = '/workspace/instructions/project/acme/INSTRUCTION.md';
+    for (const dest of [
+      '/repos/acme/.claude/CLAUDE.md',
+      '/repos/acme/AGENTS.md',
+    ]) {
       const stat = await fs.lstat(dest);
       expect(stat.kind).toBe('symlink');
       const target = await fs.readlink(dest);

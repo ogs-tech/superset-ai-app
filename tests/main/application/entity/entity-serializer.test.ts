@@ -68,18 +68,57 @@ describe('instruction — frontmatter-free', () => {
     const ins: Instruction = {
       urn: 'urn:instruction:default', kind: 'instruction', name: 'default', description: '',
       scopes: ['personal'], metadata: baseMeta, source: WORKSPACE_SOURCE,
-      content: '# Global instructions\nReply in pt-BR.\n', activation: 'always',
+      content: '# Global instructions\nReply in pt-BR.\n',
     };
     const raw = renderEntityFile(ins);
     expect(raw.startsWith('---')).toBe(false);
     expect(raw).toContain('# Global instructions');
   });
 
-  it('parses a legacy file by stripping any frontmatter, synthesizing metadata', () => {
+  it('parses a legacy file by stripping any frontmatter, defaulting sidecar', () => {
     const legacy = ['---', 'name: default', 'type: global-instruction', '---', '# Hi', ''].join('\n');
     const ins = parseEntityFile({ kind: 'instruction', name: 'default', raw: legacy, source: WORKSPACE_SOURCE }) as Instruction;
     expect(ins.content.trim()).toBe('# Hi');
-    expect(ins.activation).toBe('always');
+    expect(ins.scopes).toEqual(['personal']);
+    expect(ins.name).toBe('default');
     expect(ins.metadata.version).toBe('0.0.0');
+  });
+
+  it('uses instructionSidecar when provided (personal)', () => {
+    const raw = '# Body\n';
+    const ins = parseEntityFile({
+      kind: 'instruction', name: 'default', raw, source: WORKSPACE_SOURCE,
+      instructionSidecar: {
+        description: 'Personal profile', version: '1.2.3',
+        createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z',
+      },
+    }) as Instruction;
+    expect(ins.name).toBe('default');
+    expect(ins.scopes).toEqual(['personal']);
+    expect(ins.description).toBe('Personal profile');
+    expect(ins.metadata.version).toBe('1.2.3');
+  });
+
+  it('emits a project instruction when name != default and sidecar.repoPath is present', () => {
+    const raw = '# Body\n';
+    const ins = parseEntityFile({
+      kind: 'instruction', name: 'acme', raw, source: WORKSPACE_SOURCE,
+      instructionSidecar: {
+        description: 'Acme rules', version: '0.1.0', createdAt: '', updatedAt: '',
+        repoPath: '/Users/me/projects/acme',
+      },
+    }) as Instruction;
+    expect(ins.name).toBe('acme');
+    expect(ins.scopes).toEqual(['project']);
+    if (ins.scopes[0] !== 'project') throw new Error('narrow');
+    // Narrowing to ProjectInstruction gives access to repoPath.
+    const project = ins as Extract<Instruction, { scopes: ['project'] }>;
+    expect(project.repoPath).toBe('/Users/me/projects/acme');
+  });
+
+  it('throws when a project instruction is parsed without sidecar.repoPath', () => {
+    expect(() =>
+      parseEntityFile({ kind: 'instruction', name: 'acme', raw: 'x', source: WORKSPACE_SOURCE }),
+    ).toThrow(/repoPath/);
   });
 });

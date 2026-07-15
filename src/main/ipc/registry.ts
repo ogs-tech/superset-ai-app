@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-import { basename } from 'node:path';
 import type { SettingsService } from '../application/services/settings-service.js';
 import type { RepoService } from '../application/services/repo-service.js';
 import type { AdapterManager } from '../application/services/adapter-manager.js';
@@ -12,7 +10,7 @@ import type { HookService } from '../application/services/hook-service.js';
 import type { MarketplaceService } from '../application/services/marketplace-service.js';
 import type { CredentialStorePort } from '../application/ports/credential-store-port.js';
 import { DomainError } from '../domain/errors.js';
-import { getDefaults, type LinkedRepo, type LinkedRepoView, type Settings } from '../../shared/settings.js';
+import type { Settings } from '../../shared/settings.js';
 import type { IpcHandlers } from './dispatcher.js';
 import { buildPluginHandlers } from './plugin-handlers.js';
 import { buildCredentialsHandlers } from './credentials-handlers.js';
@@ -47,15 +45,6 @@ export interface IpcDeps {
   notificationPort: NotificationPort;
   workspaceTeardownService: WorkspaceTeardownService;
   appQuit: () => void;
-}
-
-interface RepoLinkParams {
-  path: string;
-  name?: string;
-}
-
-interface RepoUnlinkParams {
-  id: string;
 }
 
 interface RepoPathParams {
@@ -129,54 +118,6 @@ export function buildHandlers(deps: IpcDeps): IpcHandlers {
     'repo.getCurrentBranch': (params) => {
       const { path } = params as RepoPathParams;
       return repoService.getCurrentBranch(asString(path, 'path'));
-    },
-
-    'repo.link': async (params): Promise<LinkedRepoView> => {
-      const { path, name } = params as RepoLinkParams;
-      const repoPath = asString(path, 'path');
-
-      const isGit = await repoService.detectGit(repoPath);
-      if (!isGit) {
-        throw new DomainError('validation', `Not a git repository: ${repoPath}`, {
-          path: repoPath,
-        });
-      }
-
-      const current = (await settingsService.load()) ?? getDefaults();
-      const existing = current.linkedRepos.find((repo) => repo.path === repoPath);
-
-      const entry: LinkedRepo = existing ?? {
-        id: randomUUID(),
-        name: name ?? basename(repoPath),
-        path: repoPath,
-      };
-
-      const nextRepos = existing
-        ? current.linkedRepos
-        : [...current.linkedRepos, entry];
-      await settingsService.merge({ linkedRepos: nextRepos });
-
-      const branch = await repoService.getCurrentBranch(repoPath);
-      return { id: entry.id, name: entry.name, path: entry.path, branch };
-    },
-
-    'repo.unlink': async (params) => {
-      const { id } = params as RepoUnlinkParams;
-      const repoId = asString(id, 'id');
-      const current = (await settingsService.load()) ?? getDefaults();
-      await settingsService.merge({
-        linkedRepos: current.linkedRepos.filter((repo) => repo.id !== repoId),
-      });
-    },
-
-    'repo.list': async (): Promise<LinkedRepoView[]> => {
-      const current = (await settingsService.load()) ?? getDefaults();
-      const views: LinkedRepoView[] = [];
-      for (const repo of current.linkedRepos) {
-        const branch = await repoService.getCurrentBranch(repo.path);
-        views.push({ id: repo.id, name: repo.name, path: repo.path, branch });
-      }
-      return views;
     },
 
     'dialog.selectFolder': (params) => {

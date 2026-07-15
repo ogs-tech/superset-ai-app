@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { ClaudeAdapter } from '../../../../../src/main/infrastructure/adapters/claude-adapter.js';
-import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
+import { setupAdapterManager } from './adapter-manager.helpers.js';
 import { WORKSPACE_SOURCE, type Agent, type Instruction, type Scope, type Skill } from '../../../../../src/shared/entity.js';
 
 const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
@@ -37,7 +37,6 @@ const instructionEntity = (): Instruction => ({
   metadata: meta,
   source: WORKSPACE_SOURCE,
   content: '# instructions',
-  activation: 'always',
 });
 
 describe('AdapterManager.syncAll', () => {
@@ -66,23 +65,6 @@ describe('AdapterManager.syncAll', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0]?.adapter).toBe('claude');
-  });
-
-  it('returns skipped result for project customizations when no linkedRepos', async () => {
-    const adapter = new FakeAdapter('claude', '/personal/claude');
-    const settings = { ...defaultSettings, linkedRepos: [] };
-    const { manager, registerEntity } = await setupAdapterManager([adapter], settings);
-    await registerEntity(agentEntity('gamma', ['project']));
-
-    const results = await manager.syncAll({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({
-      adapter: 'claude',
-      destination: null,
-      status: 'ok',
-      details: { skipped: 'no-linked-repos' },
-    });
   });
 
   it('falls back to defaults when SettingsService.load returns null', async () => {

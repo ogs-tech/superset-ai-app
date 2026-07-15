@@ -230,10 +230,10 @@ async function wireIpc(): Promise<void> {
     config: mcpConfigStore,
     plugins: pluginMcpReader,
     runtime: claudeRuntimeReader,
-    linkedRepoPaths: async () => {
-      const settings = await settingsService.load();
-      return (settings?.linkedRepos ?? []).map((r) => r.path);
-    },
+    // Project-scoped MCP config used to be read from every linked repo. That
+    // list is gone with linkedRepos; project MCPs will come from the per-entity
+    // repoPath in a follow-up iteration. For now, only personal + plugin MCPs.
+    linkedRepoPaths: async () => [],
     disabledStash: mcpDisabledStash,
     shell: new ElectronShell(),
   });

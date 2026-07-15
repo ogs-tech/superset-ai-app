@@ -1,6 +1,5 @@
 import type { Adapter, AdapterDestination } from '../../ports/adapter.js';
-import type { Entity } from '../../../../shared/entity.js';
-import type { LinkedRepo } from '../../../../shared/settings.js';
+import type { Entity, ProjectInstruction } from '../../../../shared/entity.js';
 
 export class FakeAdapter implements Adapter {
   constructor(
@@ -9,10 +8,7 @@ export class FakeAdapter implements Adapter {
     private readonly projectDestinationTemplate: (repoPath: string) => string = (repoPath) => `${repoPath}/.fake-adapter`,
   ) {}
 
-  resolveEntityDestinations(args: {
-    entity: Entity;
-    linkedRepos: LinkedRepo[];
-  }): AdapterDestination[] {
+  resolveEntityDestinations(args: { entity: Entity }): AdapterDestination[] {
     const { scopes } = args.entity;
     const out: AdapterDestination[] = [];
 
@@ -20,14 +16,16 @@ export class FakeAdapter implements Adapter {
       out.push({ scope: 'personal', destination: this.personalDestination, strategy: 'symlink' });
     }
 
-    if (scopes.includes('project')) {
-      for (const repo of args.linkedRepos) {
-        out.push({
-          scope: 'project',
-          destination: this.projectDestinationTemplate(repo.path),
-          strategy: 'symlink',
-        });
-      }
+    // Since linkedRepos was removed, only project *instructions* carry their
+    // own repoPath. Everything else (skill/agent 'project' scope) is a no-op
+    // until per-entity repoPath lands for those kinds too.
+    if (scopes.includes('project') && args.entity.kind === 'instruction') {
+      const project = args.entity as ProjectInstruction;
+      out.push({
+        scope: 'project',
+        destination: this.projectDestinationTemplate(project.repoPath),
+        strategy: 'symlink',
+      });
     }
 
     return out;

@@ -7,9 +7,7 @@ import type { Settings } from '../../../../../src/shared/settings.js';
 
 const clock = new FixedClock(new Date('2026-07-02T10:00:00.000Z'));
 const settings = (over: Partial<Settings>): Settings => ({
-  adapters: { claude: { enabled: true }, cursor: { enabled: false } },
-  linkedRepos: [{ id: 'r', name: 'app', path: '/repos/app' }],
-  ui: { theme: 'system' }, language: 'off', ...over,
+  adapters: { claude: { enabled: true }, cursor: { enabled: false } },  ui: { theme: 'system' }, language: 'off', ...over,
 });
 
 const make = (opts: {
@@ -48,22 +46,20 @@ describe('GeneratedFileCollector', () => {
     }
   });
 
-  it('warns when cursor is enabled but no repo is linked', async () => {
+  it('emits no notice when cursor is disabled and there are no planned files', async () => {
     const collector = make({
       plan: [],
       state: 'ok',
-      settings: settings({ adapters: { claude: { enabled: true }, cursor: { enabled: true } }, linkedRepos: [] }),
+      settings: settings({ adapters: { claude: { enabled: true }, cursor: { enabled: false } } }),
     });
-    const checks = await collector.collect('personal');
-    expect(checks).toHaveLength(1);
-    expect(checks[0]).toMatchObject({ severity: 'warning', id: 'generated-file:cursor:no-linked-repos' });
+    expect(await collector.collect('personal')).toEqual([]);
   });
 
-  it('emits no notice when cursor is disabled', async () => {
+  it('emits no notice when cursor is enabled and there are no planned files (linkedRepos gone)', async () => {
     const collector = make({
       plan: [],
       state: 'ok',
-      settings: settings({ adapters: { claude: { enabled: true }, cursor: { enabled: false } }, linkedRepos: [] }),
+      settings: settings({ adapters: { claude: { enabled: true }, cursor: { enabled: true } } }),
     });
     expect(await collector.collect('personal')).toEqual([]);
   });

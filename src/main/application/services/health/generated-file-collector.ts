@@ -55,7 +55,10 @@ export class GeneratedFileCollector implements HealthCollector {
   constructor(
     private readonly planner: GeneratedFilePlanner,
     private readonly validator: GeneratedFileValidator,
-    private readonly settings: SettingsReader,
+    // Kept in the constructor signature for backward-compatible wiring — the
+    // pre-linkedRepos-removal "no linked repos" warning was retired here.
+    // TODO: drop this parameter once every caller stops passing it.
+    _settings: SettingsReader,
     private readonly clock: ClockPort,
   ) {}
 
@@ -80,19 +83,6 @@ export class GeneratedFileCollector implements HealthCollector {
       });
     }
 
-    const settings = (await this.settings.load()) ?? this.settings.getDefaults();
-    if (settings.adapters.cursor.enabled && settings.linkedRepos.length === 0) {
-      checks.push({
-        id: 'generated-file:cursor:no-linked-repos',
-        category: 'generated-file',
-        severity: 'warning',
-        title: 'Cursor: no linked repository',
-        detail:
-          'Your personal skills and agents reach Cursor, but the global instruction and project-scoped items are not synced until you link a repository.',
-        remediation: 'Link a repository in Settings to sync the global instruction and project-scoped customizations to Cursor.',
-        observedAt,
-      });
-    }
     return checks;
   }
 }

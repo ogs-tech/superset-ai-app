@@ -70,13 +70,8 @@ export class AdapterManager {
     const entities = await this.deps.entityRepository.list();
     const results: SyncResult[] = [];
     for (const entity of entities) {
-      const includesProject = entity.scopes.includes('project');
       for (const adapter of enabledAdapters) {
-        const destinations = await adapter.resolveEntityDestinations({
-          entity,
-          linkedRepos: settings.linkedRepos,
-        });
-
+        const destinations = await adapter.resolveEntityDestinations({ entity });
         for (const destination of destinations) {
           results.push(
             await this.syncDestination(
@@ -85,15 +80,6 @@ export class AdapterManager {
               destination,
             ),
           );
-        }
-
-        if (includesProject && settings.linkedRepos.length === 0) {
-          results.push({
-            adapter: adapter.adapterId,
-            destination: null,
-            status: 'ok',
-            details: { skipped: 'no-linked-repos' },
-          });
         }
       }
     }
@@ -106,35 +92,19 @@ export class AdapterManager {
     const results: SyncResult[] = [];
 
     const source = this.entitySourcePath(command.entity, this.deps.workspacePath);
-    const includesProject = command.entity.scopes.includes('project');
     for (const adapter of enabledAdapters) {
-      const destinations = await adapter.resolveEntityDestinations({
-        entity: command.entity,
-        linkedRepos: settings.linkedRepos,
-      });
+      const destinations = await adapter.resolveEntityDestinations({ entity: command.entity });
       for (const destination of destinations) {
         results.push(await this.syncDestination(adapter.adapterId, source, destination));
-      }
-      if (includesProject && settings.linkedRepos.length === 0) {
-        results.push({
-          adapter: adapter.adapterId,
-          destination: null,
-          status: 'ok',
-          details: { skipped: 'no-linked-repos' },
-        });
       }
     }
     return results;
   }
 
   async removeEntity(command: RemoveEntityCommand): Promise<SyncResult[]> {
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const results: SyncResult[] = [];
     for (const adapter of this.deps.adapters.values()) {
-      const destinations = await adapter.resolveEntityDestinations({
-        entity: command.entity,
-        linkedRepos: settings.linkedRepos,
-      });
+      const destinations = await adapter.resolveEntityDestinations({ entity: command.entity });
       for (const destination of destinations) {
         results.push(await this.removeDestination(adapter.adapterId, destination));
       }
@@ -146,15 +116,11 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(command.adapterId);
     if (!adapter) return [];
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const entities = await this.deps.entityRepository.list();
     const results: SyncResult[] = [];
 
     for (const entity of entities) {
-      const destinations = await adapter.resolveEntityDestinations({
-        entity,
-        linkedRepos: settings.linkedRepos,
-      });
+      const destinations = await adapter.resolveEntityDestinations({ entity });
       for (const destination of destinations) {
         results.push(await this.removeDestination(adapter.adapterId, destination));
       }
@@ -166,7 +132,6 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return { removed: 0, skipped: 0, errors: [] };
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const workspacePath = this.deps.workspacePath;
     const entities = await this.deps.entityRepository.list();
     let removed = 0;
@@ -174,10 +139,7 @@ export class AdapterManager {
     const errors: SymlinkError[] = [];
 
     for (const entity of entities) {
-      const destinations = await adapter.resolveEntityDestinations({
-        entity,
-        linkedRepos: settings.linkedRepos,
-      });
+      const destinations = await adapter.resolveEntityDestinations({ entity });
       for (const dest of destinations) {
         if (dest.strategy !== 'symlink') continue;
         try {
@@ -221,18 +183,22 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return { removed: 0, skipped: 0, errors: [] };
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const entities = await this.deps.entityRepository.list();
     let removed = 0;
     let skipped = 0;
     const errors: SymlinkError[] = [];
 
     for (const entity of entities) {
-      const destinations = await adapter.resolveEntityDestinations({ entity, linkedRepos: settings.linkedRepos });
+      const destinations = await adapter.resolveEntityDestinations({ entity });
       for (const dest of destinations) {
         if (dest.strategy !== 'write') continue;
         try {
-          const result = await this.deps.fileMaterializer.removeIfOwned({ destination: dest.destination });
+          const removeArgs: Parameters<typeof this.deps.fileMaterializer.removeIfOwned>[0] = {
+            destination: dest.destination,
+          };
+          if (dest.ownershipMarker !== undefined) removeArgs.ownershipMarker = dest.ownershipMarker;
+          if (dest.ownershipCheck !== undefined) removeArgs.ownershipCheck = dest.ownershipCheck;
+          const result = await this.deps.fileMaterializer.removeIfOwned(removeArgs);
           if (result.removed) removed++;
           else skipped++;
         } catch (err) {
@@ -263,23 +229,25 @@ export class AdapterManager {
     const adapter = this.deps.adapters.get(adapterId);
     if (!adapter) return 0;
 
-    const settings = (await this.deps.settingsService.load()) ?? this.deps.settingsService.getDefaults();
     const workspacePath = this.deps.workspacePath;
     const entities = await this.deps.entityRepository.list();
     let count = 0;
 
     for (const entity of entities) {
-      const destinations = await adapter.resolveEntityDestinations({
-        entity,
-        linkedRepos: settings.linkedRepos,
-      });
+      const destinations = await adapter.resolveEntityDestinations({ entity });
       for (const dest of destinations) {
         try {
           if (dest.strategy === 'symlink') {
             const isWorkspaceLink = await this.deps.symlinkManager.isSymlinkToWorkspace(dest.destination, workspacePath);
             if (isWorkspaceLink) count++;
           } else {
-            const state = await this.deps.fileMaterializer.validate({ destination: dest.destination, content: dest.content });
+            const validateArgs: Parameters<typeof this.deps.fileMaterializer.validate>[0] = {
+              destination: dest.destination,
+              content: dest.content,
+            };
+            if (dest.ownershipMarker !== undefined) validateArgs.ownershipMarker = dest.ownershipMarker;
+            if (dest.ownershipCheck !== undefined) validateArgs.ownershipCheck = dest.ownershipCheck;
+            const state = await this.deps.fileMaterializer.validate(validateArgs);
             if (state === 'ok' || state === 'drift') count++;
           }
         } catch {
@@ -305,10 +273,7 @@ export class AdapterManager {
     for (const entity of entities) {
       const source = this.entitySourcePath(entity, this.deps.workspacePath);
       for (const adapter of enabledAdapters) {
-        const destinations = await adapter.resolveEntityDestinations({
-          entity,
-          linkedRepos: settings.linkedRepos,
-        });
+        const destinations = await adapter.resolveEntityDestinations({ entity });
         for (const dest of destinations) {
           if (dest.strategy !== 'symlink') continue;
           entries.push({
@@ -331,7 +296,7 @@ export class AdapterManager {
     const entries: GeneratedFilePlanEntry[] = [];
     for (const entity of entities) {
       for (const adapter of enabledAdapters) {
-        const destinations = await adapter.resolveEntityDestinations({ entity, linkedRepos: settings.linkedRepos });
+        const destinations = await adapter.resolveEntityDestinations({ entity });
         for (const dest of destinations) {
           if (dest.strategy !== 'write') continue;
           entries.push({ adapterId: adapter.adapterId, destination: dest.destination, content: dest.content });
@@ -343,10 +308,17 @@ export class AdapterManager {
 
   private async removeDestination(adapterId: string, dest: AdapterDestination): Promise<SyncResult> {
     try {
-      const result =
-        dest.strategy === 'write'
-          ? await this.deps.fileMaterializer.removeIfOwned({ destination: dest.destination })
-          : await this.deps.symlinkManager.removeIfExists({ destination: dest.destination });
+      let result: { removed: boolean };
+      if (dest.strategy === 'write') {
+        const removeArgs: Parameters<typeof this.deps.fileMaterializer.removeIfOwned>[0] = {
+          destination: dest.destination,
+        };
+        if (dest.ownershipMarker !== undefined) removeArgs.ownershipMarker = dest.ownershipMarker;
+        if (dest.ownershipCheck !== undefined) removeArgs.ownershipCheck = dest.ownershipCheck;
+        result = await this.deps.fileMaterializer.removeIfOwned(removeArgs);
+      } else {
+        result = await this.deps.symlinkManager.removeIfExists({ destination: dest.destination });
+      }
       const payload: SyncResult = { adapter: adapterId, destination: dest.destination, status: 'ok' };
       if (!result.removed) payload.details = { skipped: 'not-found' };
       return payload;
@@ -369,7 +341,14 @@ export class AdapterManager {
   private entitySourcePath(entity: Entity, workspacePath: string): string {
     if (entity.kind === 'skill') return join(workspacePath, 'skills', entity.name);
     if (entity.kind === 'agent') return join(workspacePath, 'agents', `${entity.name}.md`);
-    if (entity.kind === 'instruction') return join(workspacePath, 'instructions', `${entity.name}.md`);
+    if (entity.kind === 'instruction') {
+      // Personal singleton lives at instructions/default.md; project instructions
+      // live at instructions/project/<slug>/INSTRUCTION.md (see FsEntityRepository).
+      if (entity.name === 'default' && entity.scopes[0] === 'personal') {
+        return join(workspacePath, 'instructions', 'default.md');
+      }
+      return join(workspacePath, 'instructions', 'project', entity.name, 'INSTRUCTION.md');
+    }
     throw new DomainError('validation', `Unsupported entity kind for sync: ${entity.kind}`);
   }
 
@@ -396,7 +375,13 @@ export class AdapterManager {
 
   private async writeDestination(adapterId: string, dest: Extract<AdapterDestination, { strategy: 'write' }>): Promise<SyncResult> {
     try {
-      const result = await this.deps.fileMaterializer.write({ destination: dest.destination, content: dest.content });
+      const writeArgs: Parameters<typeof this.deps.fileMaterializer.write>[0] = {
+        destination: dest.destination,
+        content: dest.content,
+      };
+      if (dest.ownershipMarker !== undefined) writeArgs.ownershipMarker = dest.ownershipMarker;
+      if (dest.ownershipCheck !== undefined) writeArgs.ownershipCheck = dest.ownershipCheck;
+      const result = await this.deps.fileMaterializer.write(writeArgs);
       const payload: SyncResult = { adapter: adapterId, destination: dest.destination, status: result.status };
       if (result.status === 'conflict') payload.message = 'Overwrote an existing file and created a backup';
       if (result.details !== undefined) payload.details = result.details as SyncResultDetails;

@@ -5,7 +5,7 @@ import {
   AgentIdInvalidError,
   CommandIdInvalidError,
   HookIdInvalidError,
-  GlobalInstructionIdInvalidError,
+  InstructionIdInvalidError,
   MarketplaceIdInvalidError,
 } from '../../../src/main/domain/customization-errors.js';
 
@@ -14,7 +14,7 @@ const CASES = [
   ['AgentIdInvalidError', AgentIdInvalidError],
   ['CommandIdInvalidError', CommandIdInvalidError],
   ['HookIdInvalidError', HookIdInvalidError],
-  ['GlobalInstructionIdInvalidError', GlobalInstructionIdInvalidError],
+  ['InstructionIdInvalidError', InstructionIdInvalidError],
   ['MarketplaceIdInvalidError', MarketplaceIdInvalidError],
 ] as const;
 

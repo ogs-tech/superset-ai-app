@@ -8,9 +8,7 @@ const baseSettings = (): Settings => ({
   adapters: {
     claude: { enabled: true },
     cursor: { enabled: false },
-  },
-  linkedRepos: [{ id: 'r1', name: 'repo', path: '/repos/r1' }],
-  ui: { theme: 'system' },
+  },  ui: { theme: 'system' },
   language: 'off',
 });
 
@@ -64,7 +62,8 @@ describe('SettingsService.merge', () => {
 
     expect(result.adapters.claude).toEqual({ enabled: false });
     expect(result.ui.theme).toBe('dark');
-    expect(result.linkedRepos).toEqual(persisted.linkedRepos);
+    // adapters is deep-merged; cursor should be preserved
+    expect(result.adapters.cursor).toEqual(persisted.adapters.cursor);
   });
 
   it('persists the consolidated object via repository.save', async () => {
@@ -93,16 +92,18 @@ describe('SettingsService.merge', () => {
     expect(save).toHaveBeenCalledWith(result);
   });
 
-  it('replaces array fields wholesale (no element-wise merge)', async () => {
+  it('preserves nested objects when merging partials', async () => {
     const persisted = baseSettings();
     const save = vi.fn().mockResolvedValue(undefined);
     const service = new SettingsService(
       stubRepo({ load: () => Promise.resolve(persisted), save }),
     );
 
-    const result = await service.merge({ linkedRepos: [] });
+    // A partial ui patch should not clobber unrelated fields.
+    const result = await service.merge({ ui: { theme: 'light' } });
 
-    expect(result.linkedRepos).toEqual([]);
+    expect(result.adapters).toEqual(persisted.adapters);
+    expect(result.language).toBe(persisted.language);
   });
 });
 
@@ -199,9 +200,7 @@ describe('SettingsService — cursor adapter', () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const service = new SettingsService(stubRepo({ save }));
     const withCursor: Settings = {
-      adapters: { claude: { enabled: true }, cursor: { enabled: true } },
-      linkedRepos: [],
-      ui: { theme: 'system' },
+      adapters: { claude: { enabled: true }, cursor: { enabled: true } },      ui: { theme: 'system' },
       language: 'off',
     };
 
@@ -213,9 +212,7 @@ describe('SettingsService — cursor adapter', () => {
   it('save rejects an unknown adapter key', async () => {
     const service = new SettingsService(stubRepo());
     const bad = {
-      adapters: { claude: { enabled: true }, copilot: { enabled: true } },
-      linkedRepos: [],
-      ui: { theme: 'system' },
+      adapters: { claude: { enabled: true }, copilot: { enabled: true } },      ui: { theme: 'system' },
       language: 'off',
     } as unknown as Settings;
 
@@ -225,9 +222,7 @@ describe('SettingsService — cursor adapter', () => {
   it('save rejects settings missing the cursor adapter', async () => {
     const service = new SettingsService(stubRepo());
     const bad = {
-      adapters: { claude: { enabled: true } },
-      linkedRepos: [],
-      ui: { theme: 'system' },
+      adapters: { claude: { enabled: true } },      ui: { theme: 'system' },
       language: 'off',
     } as unknown as Settings;
 
@@ -236,9 +231,7 @@ describe('SettingsService — cursor adapter', () => {
 
   it('load backfills a disabled cursor for pre-cursor settings files', async () => {
     const legacy = {
-      adapters: { claude: { enabled: true } },
-      linkedRepos: [],
-      ui: { theme: 'system' },
+      adapters: { claude: { enabled: true } },      ui: { theme: 'system' },
       language: 'off',
     } as unknown as Settings;
     const service = new SettingsService(stubRepo({ load: () => Promise.resolve(legacy) }));

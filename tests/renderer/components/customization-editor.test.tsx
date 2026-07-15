@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CustomizationEditor } from '../../../src/renderer/components/CustomizationEditor.js';
 import { mockApi, ok, fail, renderWithTheme, type CallSpy } from '../test-utils.js';
-import { WORKSPACE_SOURCE, type Skill } from '../../../src/shared/entity.js';
+import { WORKSPACE_SOURCE, type PersonalInstruction, type Skill } from '../../../src/shared/entity.js';
 
 const baseCustomization = (): Skill => ({
   urn: 'urn:skill:foo',
@@ -14,6 +14,17 @@ const baseCustomization = (): Skill => ({
   metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
   source: WORKSPACE_SOURCE,
   content: '# Title\n\nSome **markdown** body.',
+});
+
+const basePersonalInstruction = (): PersonalInstruction => ({
+  urn: 'urn:instruction:default',
+  kind: 'instruction',
+  name: 'default',
+  description: 'ignored on save (frontmatter-free storage)',
+  scopes: ['personal'],
+  metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE,
+  content: '# Personal profile\n',
 });
 
 let call: CallSpy;
@@ -82,9 +93,9 @@ describe('<CustomizationEditor>', () => {
     expect(onSaved).toHaveBeenCalledTimes(1);
   });
 
-  it('renders two checkboxes (personal, project) reflecting scopes', () => {
+  it('renders the personal scope checkbox reflecting scopes (project temporarily hidden for skill)', () => {
     const initial = baseCustomization();
-    initial.scopes = ['personal', 'project'];
+    initial.scopes = ['personal'];
     renderWithTheme(
       <CustomizationEditor
         initial={initial}
@@ -94,17 +105,16 @@ describe('<CustomizationEditor>', () => {
       />,
     );
     const personal = screen.getByRole('checkbox', { name: /personal/i });
-    const project = screen.getByRole('checkbox', { name: /project/i });
     expect(personal).toBeChecked();
-    expect(project).toBeChecked();
+    expect(screen.queryByRole('checkbox', { name: /project/i })).toBeNull();
   });
 
-  it('toggling a checkbox updates scopes sent on save', async () => {
+  it('toggling the personal checkbox off leaves scopes empty on save', async () => {
     const user = userEvent.setup();
     const initial = baseCustomization();
     call.mockResolvedValue(
       ok({
-        skill: { ...initial, scopes: ['personal', 'project'] },
+        skill: { ...initial, scopes: [] },
         syncReport: [],
       }),
     );
@@ -118,14 +128,14 @@ describe('<CustomizationEditor>', () => {
       />,
     );
 
-    await user.click(screen.getByRole('checkbox', { name: /project/i }));
+    await user.click(screen.getByRole('checkbox', { name: /personal/i }));
     await user.click(screen.getByRole('button', { name: /salvar/i }));
 
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
         'skill.save',
         expect.objectContaining({
-          skill: expect.objectContaining({ scopes: ['personal', 'project'] }),
+          skill: expect.objectContaining({ scopes: [] }),
         }),
       ),
     );
@@ -175,7 +185,43 @@ describe('<CustomizationEditor>', () => {
 
     await user.click(screen.getByRole('checkbox', { name: /personal/i }));
     expect(screen.getByRole('checkbox', { name: /personal/i })).not.toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /project/i })).not.toBeChecked();
+  });
+
+  // TODO(follow-up): remove when skill/agent regain a per-entity repoPath and
+  // 'project' scope is unblocked in the schema.
+  it('does not render the project scope toggle for skill/agent (temporary block)', () => {
+    renderWithTheme(
+      <CustomizationEditor
+        initial={baseCustomization()}
+        isCreate={true}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('checkbox', { name: /project/i })).toBeNull();
+  });
+
+  // Personal instruction: name/scope are fixed AND description/version aren't
+  // persisted (frontmatter-free storage). Hiding all four fields must fully
+  // suppress the Frontmatter panel — otherwise the user sees empty widgets that
+  // do nothing on save.
+  it('hides the entire Frontmatter section when all frontmatter fields are hidden', () => {
+    renderWithTheme(
+      <CustomizationEditor
+        initial={basePersonalInstruction()}
+        isCreate={false}
+        hiddenFields={new Set(['name', 'scope', 'description', 'version'])}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText('Description')).toBeNull();
+    expect(screen.queryByLabelText('Version')).toBeNull();
+    expect(screen.queryByLabelText('Name')).toBeNull();
+    // No scope checkboxes either.
+    expect(screen.queryByRole('checkbox', { name: /personal/i })).toBeNull();
+    // Body panel must still be there.
+    expect(screen.getByTestId('body-textarea')).toBeInTheDocument();
   });
 
   it('shows error toast with the validation message when save fails', async () => {

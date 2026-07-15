@@ -23,7 +23,12 @@ interface Entity {
 
 interface Skill extends Entity { kind: 'skill'; content: string; explicitOnly?: boolean; }
 interface Agent extends Entity { kind: 'agent'; systemPrompt: string; model?: string; tools?: string[]; deniedTools?: string[]; }
-interface Instruction extends Entity { kind: 'instruction'; content: string; activation: InstructionActivation; globs?: string[]; }
+
+// Instruction is a discriminated union by scope. Personal is the singleton
+// (name === 'default'); Project is per-repo and carries the repoPath directly.
+type Instruction = PersonalInstruction | ProjectInstruction;
+interface PersonalInstruction extends Entity { kind: 'instruction'; name: 'default'; scopes: ['personal']; content: string; }
+interface ProjectInstruction  extends Entity { kind: 'instruction'; scopes: ['project'];  content: string; repoPath: string; }
 ```
 
 `skill` and `agent` are still stored as a Markdown file with a YAML frontmatter block followed by a body — `EntitySerializer` (`src/main/application/entity/entity-serializer.ts`) maps the flat fields to/from frontmatter:
@@ -48,7 +53,12 @@ tags:
 Free Markdown — this becomes `content` (skill) or `systemPrompt` (agent).
 ```
 
-`instruction` is stored **frontmatter-free**: the entire file is the body (`content`), written/read verbatim by `renderEntityFile`/`parseEntityFile`. There is no on-disk representation for `description`, `scopes`, `metadata`, or `activation`/`globs` today — a freshly-read instruction always gets `description: ''`, `scopes: ['personal']`, `metadata: { version: '0.0.0', createdAt: '', updatedAt: '' }`, and `activation: 'always'` regardless of what was set in memory before the last save. Any legacy frontmatter present in `global-instructions/<name>.md` (the read-only fallback path) is stripped, not parsed.
+`instruction` is stored **frontmatter-free**: the file is the body (`content`) verbatim so the assistant-facing target (`AGENTS.md`, `CLAUDE.md`) never has to strip YAML. The storage layout differs by scope:
+
+- **Personal** singleton → `instructions/default.md` (body only). Metadata (`description`, `metadata.*`) is defaulted on read; the legacy fallback `global-instructions/default.md` is still tolerated for backwards compatibility on `get`/`exists`.
+- **Project** → `instructions/project/<slug>/INSTRUCTION.md` for the body, `instructions/project/<slug>/meta.json` for the sidecar (`description`, `version`, `createdAt`, `updatedAt`, `repoPath`, `tags?`). Both files are written atomically; a slug dir with a body but no `meta.json` is treated as "not found" so partial writes don't poison the list.
+
+The old dead fields (`activation`, `globs`) were removed; the on-disk model is exactly what's described above.
 
 Entities are validated by `EntityValidator` (`src/main/application/services/entity-validator.ts`) against the Zod schemas in [`src/main/application/schemas/entity-schema.ts`](../../src/main/application/schemas/entity-schema.ts) — one schema per kind (`skillEntitySchema`, `agentEntitySchema`, `instructionEntitySchema`). This replaced the old, since-removed `schema-validator.ts`/`SchemaValidator`.
 
@@ -61,7 +71,7 @@ All three kinds share these fields (defined once in `entity-schema.ts`'s `entity
 | `name` | string | yes | Slug — must match `^[a-z0-9][a-z0-9-]*$` (lowercase, digits, hyphens; no leading hyphen). |
 | `kind` (frontmatter `type`) | enum | yes | One of `skill` · `agent` · `instruction`. |
 | `description` | string | yes for skill/agent | 1–1024 characters for `skill`/`agent` (empty string rejected); always `''` for `instruction` (frontmatter-free, see above). |
-| `scopes` | array | yes | At least 1 entry, no duplicates, each `personal` or `project` — except `instruction`, pinned to exactly `['personal']`. |
+| `scopes` | array | yes | At least 1 entry, no duplicates, each `personal` or `project`. Per-kind: `instruction` is a discriminated union (exactly `['personal']` **or** exactly `['project']`); `skill`/`agent` are temporarily restricted to `['personal']` after `settings.linkedRepos` was removed — see the TODO block in `entity-schema.ts`. |
 | `metadata.version` | string | yes | Semver `^\d+\.\d+\.\d+(-[\w.-]+)?$` (e.g. `1.2.3`, `1.2.3-rc.1`). |
 | `metadata.createdAt` | string | yes | ISO 8601 datetime (e.g. `2026-05-04T12:00:00.000Z`). |
 | `metadata.updatedAt` | string | yes | ISO 8601 datetime. |
@@ -88,15 +98,16 @@ Each kind's schema extends the common base. Only the differences are listed.
 
 ### `instruction`
 
-Renamed from `global-instruction`; stricter than the other kinds — there is exactly **one** instruction per machine, and it is the only kind stored frontmatter-free.
+Discriminated union over `scopes`: **Personal** is the machine-wide singleton, **Project** is per-repo. Both are stored frontmatter-free.
 
-| Field | Constraint |
-|---|---|
-| `kind` (frontmatter `type`, when present) | must be the literal `instruction`. |
-| `name` | must be the literal string `default`. Any other value is rejected (enforced by both `instructionEntitySchema` and the `globalInstructionId()` domain guard). |
-| `scopes` | must be exactly `["personal"]` (tuple of length 1). `project` is not allowed. |
-| `activation` | one of `always` \| `glob` \| `agent-requested` \| `manual`. **Not persisted** — see below. |
-| `globs` | optional `string[]`, used with `activation: 'glob'`. **Not persisted** — see below. |
+| Variant | `name` | `scopes` | `repoPath` |
+|---|---|---|---|
+| Personal (singleton) | must be the literal `default` | must be exactly `["personal"]` | must be absent |
+| Project (one per repo) | any slug except `default` | must be exactly `["project"]` | required, must be an absolute path |
+
+Both variants have `kind: 'instruction'` and reject the reserved-name / missing-repoPath / non-absolute-repoPath cases. Enforced by `instructionEntitySchema` in `entity-schema.ts` (branch via `superRefine`) and by the domain guards `personalInstructionId()` and `projectInstructionSlug()` in `src/main/domain/instruction-id.ts`.
+
+The old `global-instruction` kind was renamed. The dead `activation` and `globs` fields have been removed — Cursor's native "rules" activation modes are hacked around today by materializing a plugin (see [Architecture](architecture.md)).
 
 ## Body
 
@@ -106,10 +117,8 @@ The Markdown body is unconstrained at the schema layer — `content: string` (sk
 
 | Scope | Meaning | Adapter target (typical) |
 |---|---|---|
-| `personal` | Applies machine-wide for the author. | `~/.claude/` (instruction: **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md`) |
-| `project` | Applies to repos linked in Settings. | `<repo>/.claude/` |
-
-A skill or agent can declare both scopes; the adapter publishes it to each enabled target. `instruction` is pinned to `personal` only.
+| `personal` | Applies machine-wide for the author. | `~/.claude/` (personal instruction: **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md`; and — when Cursor is enabled — the plugin under `~/.cursor/plugins/superset-ai/`). |
+| `project` | Applies to the specific repo the entity carries. | For a project instruction: `<entity.repoPath>/.claude/CLAUDE.md` + `<entity.repoPath>/AGENTS.md`. Skill/agent `project` scope is currently disallowed — the previous global `settings.linkedRepos` fan-out was removed; a per-entity `repoPath` for skill/agent is a follow-up. |
 
 ## Validation result
 

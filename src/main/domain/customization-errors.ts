@@ -28,8 +28,8 @@ export class HookIdInvalidError extends DomainError {
   }
 }
 
-export class GlobalInstructionIdInvalidError extends DomainError {
-  override readonly name = 'GlobalInstructionIdInvalidError';
+export class InstructionIdInvalidError extends DomainError {
+  override readonly name = 'InstructionIdInvalidError';
   constructor(message: string, details?: { raw?: string }) {
     super('validation', message, details);
   }

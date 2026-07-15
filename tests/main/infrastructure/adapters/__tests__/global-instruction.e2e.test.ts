@@ -25,7 +25,6 @@ const globalInstruction = (): Instruction => ({
   metadata: { version: '0.1.0', createdAt: '', updatedAt: '' },
   source: WORKSPACE_SOURCE,
   content: `# default\n`,
-  activation: 'always',
 });
 
 const baseSettings = (
@@ -35,9 +34,7 @@ const baseSettings = (
     claude: { enabled: true },
     cursor: { enabled: false },
     ...overrides,
-  },
-  linkedRepos: [],
-  ui: { theme: 'system' },
+  },  ui: { theme: 'system' },
   language: 'off',
 });
 

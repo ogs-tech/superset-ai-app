@@ -1,7 +1,6 @@
 import { join } from 'node:path';
 import type { Adapter, AdapterDestination } from '../../application/ports/adapter.js';
-import type { LinkedRepo } from '../../../shared/settings.js';
-import type { Entity } from '../../../shared/entity.js';
+import type { Entity, Instruction, ProjectInstruction } from '../../../shared/entity.js';
 import { DomainError } from '../../domain/errors.js';
 
 export interface ClaudeAdapterDeps {
@@ -23,16 +22,21 @@ export class ClaudeAdapter implements Adapter {
     this.homedir = deps.homedir;
   }
 
-  resolveEntityDestinations(args: {
-    entity: Entity;
-    linkedRepos: LinkedRepo[];
-  }): AdapterDestination[] {
+  resolveEntityDestinations(args: { entity: Entity }): AdapterDestination[] {
     const { kind, name, scopes } = args.entity;
 
     if (kind === 'instruction') {
+      const instruction = args.entity as Instruction;
+      if (instruction.scopes[0] === 'personal') {
+        return [
+          { scope: 'personal', destination: join(this.homedir, '.claude/CLAUDE.md'), strategy: 'symlink' },
+          { scope: 'personal', destination: join(this.homedir, 'AGENTS.md'), strategy: 'symlink' },
+        ];
+      }
+      const project = instruction as ProjectInstruction;
       return [
-        { scope: 'personal', destination: join(this.homedir, '.claude/CLAUDE.md'), strategy: 'symlink' },
-        { scope: 'personal', destination: join(this.homedir, 'AGENTS.md'), strategy: 'symlink' },
+        { scope: 'project', destination: join(project.repoPath, '.claude/CLAUDE.md'), strategy: 'symlink' },
+        { scope: 'project', destination: join(project.repoPath, 'AGENTS.md'), strategy: 'symlink' },
       ];
     }
 
@@ -40,17 +44,15 @@ export class ClaudeAdapter implements Adapter {
       return [];
     }
 
+    // TODO(follow-up): skill/agent scope 'project' is temporarily blocked at
+    // the schema level while linkedRepos is removed. When we introduce a
+    // per-entity repoPath for skill/agent, re-add project destinations here.
     const subfolder = kind === 'skill' ? '.claude/skills' : '.claude/agents';
     const fileName = kind === 'skill' ? name : `${name}.md`;
     const out: AdapterDestination[] = [];
 
     if (scopes.includes('personal')) {
       out.push({ scope: 'personal', destination: join(this.homedir, subfolder, fileName), strategy: 'symlink' });
-    }
-    if (scopes.includes('project')) {
-      for (const repo of args.linkedRepos) {
-        out.push({ scope: 'project', destination: join(repo.path, subfolder, fileName), strategy: 'symlink' });
-      }
     }
     return out;
   }

@@ -37,9 +37,9 @@ src/main/
 └── ipc/             # IPC handlers — wire services to renderer requests
 ```
 
-The canonical `Entity` contract (`src/shared/entity.ts`) replaced the old polymorphic `Customization`/`CustomizationFrontmatter` model. Every entity has a `urn` (`urn:{kind}:{name}`), flat scalar fields (`name`, `description`, `scopes`, …) instead of a nested `frontmatter`/`body` pair, an `EntityMetadata` block (`version`, `tags?`, `createdAt`, `updatedAt`), and an `EntitySource` (`{ kind: 'workspace' }` or `{ kind: 'plugin'; pluginId; provenance }`). Three kinds are implemented today — `Skill` (`content`, `explicitOnly?`), `Agent` (`systemPrompt`, `model?`, `tools?`, `deniedTools?`), `Instruction` (`content`, `activation`, `globs?`). `EntityKind` also reserves `'mcp'` and `'hook'` for a future unification (Phase 1) — `hook-service` and `mcp-service` do **not** implement `EntityRepository` yet and are documented separately below. The old `command` kind is gone: a slash-command is now a `Skill` with `explicitOnly: true` (↔ frontmatter `disable-model-invocation: true`).
+The canonical `Entity` contract (`src/shared/entity.ts`) replaced the old polymorphic `Customization`/`CustomizationFrontmatter` model. Every entity has a `urn` (`urn:{kind}:{name}`), flat scalar fields (`name`, `description`, `scopes`, …) instead of a nested `frontmatter`/`body` pair, an `EntityMetadata` block (`version`, `tags?`, `createdAt`, `updatedAt`), and an `EntitySource` (`{ kind: 'workspace' }` or `{ kind: 'plugin'; pluginId; provenance }`). Three kinds are implemented today — `Skill` (`content`, `explicitOnly?`), `Agent` (`systemPrompt`, `model?`, `tools?`, `deniedTools?`), and `Instruction` — the last modelled as a **discriminated union** on `scopes`: `PersonalInstruction` (singleton, `name === 'default'`, `scopes === ['personal']`) or `ProjectInstruction` (per-repo, `scopes === ['project']`, `repoPath: string`). `EntityKind` also reserves `'mcp'` and `'hook'` for a future unification (Phase 1) — `hook-service` and `mcp-service` do **not** implement `EntityRepository` yet and are documented separately below. The old `command` kind is gone: a slash-command is now a `Skill` with `explicitOnly: true` (↔ frontmatter `disable-model-invocation: true`).
 
-`EntitySerializer` (`application/entity/entity-serializer.ts`) renders/parses the Markdown ↔ `Entity` boundary: `renderEntityFile`/`parseEntityFile` handle flat frontmatter for `skill`/`agent`; `instruction` is **frontmatter-free** — the whole file is the body, and `activation`/`globs` are not yet persisted (a fresh parse always yields `activation: 'always'`). `FsEntityRepository` (`infrastructure/entity/fs-entity-repository.ts`) implements the `EntityRepository` port (`list`/`get`/`save`/`delete`/`exists`) against `skills/<name>/SKILL.md`, `agents/<name>.md`, `instructions/<name>.md` — with a read-only legacy fallback to `global-instructions/<name>.md` for `instruction.get`/`exists` when the new path is missing.
+`EntitySerializer` (`application/entity/entity-serializer.ts`) renders/parses the Markdown ↔ `Entity` boundary: `renderEntityFile`/`parseEntityFile` handle flat frontmatter for `skill`/`agent`; `instruction` is **frontmatter-free** — the whole file is the body. For project instructions the sidecar metadata (`description`, `version`, timestamps, `repoPath`) travels through a separate `meta.json` handed to `parseEntityFile` via `instructionSidecar`. `FsEntityRepository` (`infrastructure/entity/fs-entity-repository.ts`) implements the `EntityRepository` port (`list`/`get`/`save`/`delete`/`exists`) against `skills/<name>/SKILL.md`, `agents/<name>.md`, `instructions/default.md` (personal singleton), and `instructions/project/<slug>/{INSTRUCTION.md,meta.json}` (per project); the legacy `global-instructions/default.md` path is still tolerated on `get`/`exists` for backwards compatibility.
 
 ### Application services
 
@@ -53,7 +53,7 @@ Located at `src/main/application/services/`:
 Per-entity facades (thin wrappers around `EntityService`, 1ª class):
 - `skill-service` — CRUD over skills + provenance merge with installed plugins. A slash-command is now just a skill with `explicitOnly: true`; there is no separate command facade.
 - `agent-service` — CRUD over agents + provenance merge.
-- `instruction-service` — single-slot (`default`) instruction; renamed from `global-instruction-service`.
+- `instruction-service` — CRUD over the personal singleton plus every project instruction; `list`/`get`/`save`/`delete` all live here. Domain slugs are validated by `personalInstructionId` and `projectInstructionSlug` (`src/main/domain/instruction-id.ts`).
 - `hook-service` — CRUD over hooks stored in `.claude/settings.json`. **Not** Entity-backed yet (Phase 1 target).
 - `marketplace-service` — list/add/remove/refresh marketplaces (`extraKnownMarketplaces`).
 - `plugin-provenance` — scans `_meta.json` and plugin dirs to map skills/agents to their providing plugin.
@@ -66,7 +66,7 @@ Cross-cutting:
 - `adapter-manager` — orchestrates all adapters (Claude, Cursor).
 - `symlink-manager` — creates and reconciles symlinks.
 - `file-materializer` — write-side twin of `symlink-manager` for **generated** files (e.g. Cursor's per-repo `AGENTS.md`): ownership is signalled by a marker comment on the file's first line (`GENERATED_FILE_MARKER`), so the app only overwrites/removes files it owns; a foreign file (no marker) is backed up before overwrite and never deleted. Backup scheme mirrors `symlink-manager`'s (`<workspace>/_backups/<ts>/<rel-path>`).
-- `repo-service` — operations on linked repositories.
+- `repo-service` — small git helpers (`detectGit`, `getCurrentBranch`) used when creating a new project instruction. The old global `settings.linkedRepos` list is gone, and the `repo.link` / `repo.unlink` / `repo.list` IPC methods were removed with it — a project entity now carries its own `repoPath` directly.
 - `settings-service` — load/merge/persist settings.
 - `workspace-bootstrap` — creates the `~/.superset-ai-app/` directory tree on first run (called at startup, not via IPC).
 - `health-service` — aggregates `HealthCheck` results from collectors (MCP auth, MCP runtime, config-drift, symlink, generated-file) into a `HealthReport`; exposed via the `health.*` IPC namespace.
@@ -83,8 +83,8 @@ The polymorphic `Customization` model and its `customization-service` umbrella a
 
 The adapter implementations live under `src/main/infrastructure/adapters/`:
 
-- `claude-adapter.ts` — resolves sync destinations per entity kind via `resolveEntityDestinations`: `skill` → `~/.claude/skills/<name>` (dir), `agent` → `~/.claude/agents/<name>.md`, `instruction` → **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (personal scope only — instructions don't fan out per linked repo). `project`-scoped skills/agents additionally resolve to `<repo>/.claude/{skills,agents}/…` for each linked repo. All destinations use `strategy: 'symlink'`.
-- `cursor-adapter.ts` — publishes into Cursor's native file surface, toggled by `settings.adapters.cursor` (default **off**): `skill` → `~/.cursor/skills/<name>/` (dir, symlink), `agent` → `~/.cursor/agents/<name>.md` (symlink); `project`-scoped skills/agents additionally resolve to `<repo>/.cursor/{skills,agents}/…` for each linked repo. `instruction` has no Cursor home-level target, so it materializes as a **generated** `<repo>/AGENTS.md` per linked repo via `strategy: 'write'` (content = marker + body); with zero linked repos it resolves to `[]`.
+- `claude-adapter.ts` — resolves sync destinations per entity kind via `resolveEntityDestinations`: `skill` → `~/.claude/skills/<name>` (dir), `agent` → `~/.claude/agents/<name>.md`, `PersonalInstruction` → **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md`, `ProjectInstruction` → `<entity.repoPath>/.claude/CLAUDE.md` and `<entity.repoPath>/AGENTS.md`. All destinations use `strategy: 'symlink'`. Skill/agent `project` scope is a temporary no-op (see the schema TODO block); once each carries its own `repoPath`, the adapter will resolve `<repoPath>/.claude/{skills,agents}/…` for them too.
+- `cursor-adapter.ts` — publishes into Cursor's native file surface, toggled by `settings.adapters.cursor` (default **off**): `skill` → `~/.cursor/skills/<name>/` (dir, symlink), `agent` → `~/.cursor/agents/<name>.md` (symlink). `PersonalInstruction` is materialized as a Cursor local plugin under `~/.cursor/plugins/superset-ai/` — a `.cursor-plugin/plugin.json` manifest and a `rules/personal-default.mdc` rule with `alwaysApply: true` — because Cursor loads plugin rules at startup and applies them to every conversation, which is the closest analogue today to Claude's home-level `CLAUDE.md`. `ProjectInstruction` is written to `<entity.repoPath>/AGENTS.md`. Both `write` destinations carry a custom `ownershipMarker` (JSON key for the plugin manifest, YAML key for the rule) and matching `ownershipCheck: 'includes'`, so `FileMaterializer` refuses to touch foreign files. Skill/agent `project` scope is a no-op here for the same reason as the Claude adapter.
 
 Both implement the `Adapter` port at `src/main/application/ports/adapter.ts`. `AdapterDestination` is a discriminated union on `strategy`: `{ scope, destination, strategy: 'symlink' }` for symlink targets, or `{ scope, destination, strategy: 'write', content }` for generated files. `AdapterManager` branches on `strategy` when syncing: `symlink` destinations go through `SymlinkManager`; `write` destinations go through `FileMaterializer` (see above).
 
@@ -95,7 +95,7 @@ src/renderer/
 ├── App.tsx                 # View union: loading | main | settings | io-error
 ├── main.tsx
 ├── screens/                # Main.tsx routes by Nav; per-entity dirs:
-│   ├── skills/ agents/ global-instructions/ hooks/ mcps/
+│   ├── skills/ agents/ instructions/ hooks/ mcps/
 │   ├── plugins/ marketplaces/ health/ starter-pack/ settings/
 │   ├── Main.tsx            # root screen — maps Nav state to a screen component
 │   ├── Settings.tsx
@@ -105,7 +105,7 @@ src/renderer/
 └── lib/                    # ipc.ts, query-client.ts, theme-mode-context.tsx
 ```
 
-The `global-instructions/` screen directory name predates the `instruction` entity kind rename and has not been renamed to match (renderer-only naming lag; the IPC namespace and storage folder are `instruction`/`instructions`). There is no `commands/` screen — the `command` entity kind was removed.
+The `instructions/` screen is the unified Personal + Project entry point — a single top card for the personal singleton (with the OGS-template CTA and a dynamic "Synced to" panel that grows to include the Cursor plugin paths when the Cursor adapter is enabled) and a list of project instructions below (each row shows the repo path; the New button opens a folder picker that seeds the editor with `repoPath` + the folder basename as the slug). The old `global-instructions/` directory and its screen were removed with this refactor. There is no `commands/` screen — the `command` entity kind was removed too.
 
 Navigation is state-driven via a `Nav` discriminated union in `components/shell/nav.ts` (areas: `inicio`, `biblioteca`, `plugins`, `diagnostico`); `Main.tsx` maps `Nav` to a screen. No `react-router`.
 
@@ -123,9 +123,12 @@ I/O failures bubble up to the `IoError` screen, which retries the failing step.
 
 ## Persistence
 
-- **Entities** — `skill`/`agent`/`instruction` are `.md` files under the user's chosen workspace folder (`skills/<name>/SKILL.md`, `agents/<name>.md`, `instructions/<name>.md`); `skill`/`agent` keep YAML frontmatter, `instruction` is frontmatter-free (whole file is the body).
-- **Settings** — JSON file managed by `settings-service`.
-- **Sync** — symbolic links from each adapter target into the workspace files, except: `instruction` on the Claude adapter, which fans out to **both** `~/.claude/CLAUDE.md` and `~/AGENTS.md` (personal scope); and `instruction` on the Cursor adapter, which materializes as a generated, marker-owned `<repo>/AGENTS.md` per linked repo (`strategy: 'write'`, via `FileMaterializer` — see "Tool adapters" above).
+- **Entities** — `.md` files under the workspace folder. Skills at `skills/<name>/SKILL.md` and agents at `agents/<name>.md` keep YAML frontmatter. Instructions are frontmatter-free: the personal singleton at `instructions/default.md`, project instructions at `instructions/project/<slug>/INSTRUCTION.md` plus a sidecar `meta.json` (description, version, timestamps, `repoPath`).
+- **Settings** — JSON file managed by `settings-service`. The old global `linkedRepos` array was retired — project scope now lives on the entity itself (`ProjectInstruction.repoPath`).
+- **Sync** — symbolic links from each adapter target into the workspace files, with two `write`-strategy exceptions:
+  1. `PersonalInstruction` on the Cursor adapter materializes a small local plugin under `~/.cursor/plugins/superset-ai/` (a `plugin.json` manifest and an `alwaysApply: true` rule .mdc), marker-owned via `FileMaterializer` so foreign files stay untouched.
+  2. `ProjectInstruction` on the Cursor adapter materializes a generated `<entity.repoPath>/AGENTS.md`, also marker-owned.
+  Everything else is a symlink; the Claude adapter never uses `write`.
 
 No database, no API, no telemetry.
 

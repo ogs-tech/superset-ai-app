@@ -22,13 +22,13 @@ function Probe(): React.ReactElement {
 
 describe('ThemeModeProvider', () => {
   it('reads the persisted theme on mount', async () => {
-    call.mockResolvedValue(ok({ ui: { theme: 'dark' }, adapters: { claude: { enabled: true } }, linkedRepos: [], language: 'off' }));
+    call.mockResolvedValue(ok({ ui: { theme: 'dark' }, adapters: { claude: { enabled: true } }, language: 'off' }));
     render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
     await waitFor(() => expect(screen.getByTestId('setting')).toHaveTextContent('dark'));
   });
 
   it('persists a toggle via settings.merge', async () => {
-    call.mockResolvedValue(ok({ ui: { theme: 'system' }, adapters: { claude: { enabled: true } }, linkedRepos: [], language: 'off' }));
+    call.mockResolvedValue(ok({ ui: { theme: 'system' }, adapters: { claude: { enabled: true } }, language: 'off' }));
     render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
     await userEvent.click(screen.getByRole('button', { name: 'go dark' }));
     expect(call).toHaveBeenCalledWith('settings.merge', { ui: { theme: 'dark' } });

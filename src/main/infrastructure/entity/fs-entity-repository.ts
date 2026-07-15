@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, unlink, writeFile, access } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
-import type { Entity, EntityKind } from '../../../shared/entity.js';
+import type { Entity, EntityKind, Instruction, InstructionSidecar } from '../../../shared/entity.js';
 import { WORKSPACE_SOURCE, parseUrn } from '../../../shared/entity.js';
 import type { EntityListQuery, EntityRepository } from '../../application/ports/entity-repository.js';
 import { renderEntityFile, parseEntityFile } from '../../application/entity/entity-serializer.js';
@@ -15,9 +15,17 @@ const FOLDER: Record<'skill' | 'agent' | 'instruction', string> = {
   agent: 'agents',
   instruction: 'instructions',
 };
+const PERSONAL_INSTRUCTION_NAME = 'default';
+const PROJECT_INSTRUCTIONS_SUBDIR = 'project';
+const PROJECT_INSTRUCTION_BODY_FILE = 'INSTRUCTION.md';
+const PROJECT_INSTRUCTION_META_FILE = 'meta.json';
 
 function isEnoent(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'ENOENT';
+}
+
+function isPersonalName(name: string): boolean {
+  return name === PERSONAL_INSTRUCTION_NAME;
 }
 
 export class FsEntityRepository implements EntityRepository {
@@ -27,11 +35,31 @@ export class FsEntityRepository implements EntityRepository {
     return typeof this.workspace === 'string' ? this.workspace : this.workspace();
   }
 
+  private async personalInstructionFile(): Promise<string> {
+    return join(await this.root(), FOLDER.instruction, `${PERSONAL_INSTRUCTION_NAME}.md`);
+  }
+
+  private async projectInstructionDir(slug: string): Promise<string> {
+    return join(await this.root(), FOLDER.instruction, PROJECT_INSTRUCTIONS_SUBDIR, slug);
+  }
+
+  private async projectInstructionPaths(slug: string): Promise<{ dir: string; body: string; meta: string }> {
+    const dir = await this.projectInstructionDir(slug);
+    return {
+      dir,
+      body: join(dir, PROJECT_INSTRUCTION_BODY_FILE),
+      meta: join(dir, PROJECT_INSTRUCTION_META_FILE),
+    };
+  }
+
   private async fileFor(kind: EntityKind, name: string): Promise<string> {
     const root = await this.root();
     if (kind === 'skill') return join(root, FOLDER.skill, name, 'SKILL.md');
     if (kind === 'agent') return join(root, FOLDER.agent, `${name}.md`);
-    if (kind === 'instruction') return join(root, FOLDER.instruction, `${name}.md`);
+    if (kind === 'instruction') {
+      if (isPersonalName(name)) return this.personalInstructionFile();
+      return (await this.projectInstructionPaths(name)).body;
+    }
     throw new DomainError('validation', `Unsupported entity kind for storage: ${kind}`);
   }
 
@@ -50,6 +78,7 @@ export class FsEntityRepository implements EntityRepository {
   }
 
   private async listByKind(kind: 'skill' | 'agent' | 'instruction'): Promise<Entity[]> {
+    if (kind === 'instruction') return this.listInstructions();
     const dir = join(await this.root(), FOLDER[kind]);
     let entries: import('node:fs').Dirent[];
     try {
@@ -74,40 +103,133 @@ export class FsEntityRepository implements EntityRepository {
     return out;
   }
 
+  private async listInstructions(): Promise<Entity[]> {
+    const out: Entity[] = [];
+    // Personal singleton (with legacy fallback).
+    try {
+      const personal = await this.get(`urn:instruction:${PERSONAL_INSTRUCTION_NAME}`);
+      out.push(personal);
+    } catch (err) {
+      if (!(err instanceof DomainError) || err.kind !== 'not_found') throw err;
+    }
+    // Project instructions live under instructions/project/<slug>/.
+    const projectRoot = join(await this.root(), FOLDER.instruction, PROJECT_INSTRUCTIONS_SUBDIR);
+    let entries: import('node:fs').Dirent[];
+    try {
+      entries = await readdir(projectRoot, { withFileTypes: true });
+    } catch (err) {
+      if (isEnoent(err)) return out;
+      throw err;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const slug = entry.name;
+      try {
+        const project = await this.get(`urn:instruction:${slug}`);
+        out.push(project);
+      } catch (err) {
+        // Skip malformed project instruction dirs (missing body or meta.json)
+        // rather than failing the whole list. Health checks surface these.
+        if (err instanceof DomainError && err.kind === 'not_found') continue;
+        if (isEnoent(err)) continue;
+        throw err;
+      }
+    }
+    return out;
+  }
+
   async get(urn: string): Promise<Entity> {
     const { kind, name } = parseUrn(urn);
+    if (kind === 'instruction') return this.getInstruction(name, urn);
     const path = await this.fileFor(kind, name);
     try {
       const raw = await readFile(path, 'utf8');
       return parseEntityFile({ kind, name, raw, source: WORKSPACE_SOURCE });
     } catch (err) {
-      if (isEnoent(err) && kind === 'instruction') {
-        try {
-          const raw = await readFile(await this.legacyInstructionFile(name), 'utf8');
-          return parseEntityFile({ kind, name, raw, source: WORKSPACE_SOURCE });
-        } catch (legacyErr) {
-          if (isEnoent(legacyErr)) throw new DomainError('not_found', `Entity not found: ${urn}`);
-          throw legacyErr;
-        }
-      }
       if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
       throw err;
     }
   }
 
+  private async getInstruction(name: string, urn: string): Promise<Entity> {
+    if (isPersonalName(name)) {
+      const path = await this.personalInstructionFile();
+      try {
+        const raw = await readFile(path, 'utf8');
+        return parseEntityFile({ kind: 'instruction', name, raw, source: WORKSPACE_SOURCE });
+      } catch (err) {
+        if (!isEnoent(err)) throw err;
+      }
+      // Legacy fallback: global-instructions/default.md
+      try {
+        const raw = await readFile(await this.legacyInstructionFile(name), 'utf8');
+        return parseEntityFile({ kind: 'instruction', name, raw, source: WORKSPACE_SOURCE });
+      } catch (err) {
+        if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
+        throw err;
+      }
+    }
+    // Project instruction: read both body and meta.json.
+    const paths = await this.projectInstructionPaths(name);
+    let raw: string;
+    let sidecarRaw: string;
+    try {
+      raw = await readFile(paths.body, 'utf8');
+    } catch (err) {
+      if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
+      throw err;
+    }
+    try {
+      sidecarRaw = await readFile(paths.meta, 'utf8');
+    } catch (err) {
+      if (isEnoent(err)) {
+        throw new DomainError('not_found', `Project instruction meta.json missing for ${urn}`);
+      }
+      throw err;
+    }
+    const sidecar = parseSidecar(sidecarRaw, urn);
+    return parseEntityFile({
+      kind: 'instruction',
+      name,
+      raw,
+      source: WORKSPACE_SOURCE,
+      instructionSidecar: sidecar,
+    });
+  }
+
   async save(entity: Entity): Promise<Entity> {
+    if (entity.kind === 'instruction') return this.saveInstruction(entity as Instruction);
     const path = await this.fileFor(entity.kind, entity.name);
     const dir = dirname(path);
     await mkdir(dir, { recursive: true });
     const content = renderEntityFile(entity);
-    const tmp = join(dir, `.${basename(path)}.${randomBytes(8).toString('hex')}.tmp`);
-    await writeFile(tmp, content, 'utf8');
-    try {
-      await rename(tmp, path);
-    } catch (err) {
-      await unlink(tmp).catch(() => undefined);
-      throw err;
+    await writeFileAtomic(path, content);
+    return entity;
+  }
+
+  private async saveInstruction(entity: Instruction): Promise<Instruction> {
+    const isPersonal = entity.scopes[0] === 'personal';
+    if (isPersonal) {
+      const path = await this.personalInstructionFile();
+      await mkdir(dirname(path), { recursive: true });
+      const body = renderEntityFile(entity);
+      await writeFileAtomic(path, body);
+      return entity;
     }
+    // Project: write body + meta.json atomically-per-file.
+    const paths = await this.projectInstructionPaths(entity.name);
+    await mkdir(paths.dir, { recursive: true });
+    const body = renderEntityFile(entity);
+    const sidecar: InstructionSidecar = {
+      description: entity.description,
+      version: entity.metadata.version,
+      ...(entity.metadata.tags !== undefined ? { tags: entity.metadata.tags } : {}),
+      createdAt: entity.metadata.createdAt,
+      updatedAt: entity.metadata.updatedAt,
+      repoPath: (entity as Extract<Instruction, { scopes: ['project'] }>).repoPath,
+    };
+    await writeFileAtomic(paths.body, body);
+    await writeFileAtomic(paths.meta, `${JSON.stringify(sidecar, null, 2)}\n`);
     return entity;
   }
 
@@ -125,6 +247,26 @@ export class FsEntityRepository implements EntityRepository {
       await rm(dir, { recursive: true, force: true });
       return;
     }
+    if (kind === 'instruction') {
+      if (isPersonalName(name)) {
+        try {
+          await unlink(await this.personalInstructionFile());
+        } catch (err) {
+          if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
+          throw err;
+        }
+        return;
+      }
+      const paths = await this.projectInstructionPaths(name);
+      try {
+        await access(paths.dir);
+      } catch (err) {
+        if (isEnoent(err)) throw new DomainError('not_found', `Entity not found: ${urn}`);
+        throw err;
+      }
+      await rm(paths.dir, { recursive: true, force: true });
+      return;
+    }
     try {
       await unlink(await this.fileFor(kind, name));
     } catch (err) {
@@ -135,21 +277,72 @@ export class FsEntityRepository implements EntityRepository {
 
   async exists(urn: string): Promise<boolean> {
     const { kind, name } = parseUrn(urn);
+    if (kind === 'instruction') {
+      if (isPersonalName(name)) {
+        try {
+          await access(await this.personalInstructionFile());
+          return true;
+        } catch (err) {
+          if (!isEnoent(err)) throw err;
+        }
+        try {
+          await access(await this.legacyInstructionFile(name));
+          return true;
+        } catch (err) {
+          if (!isEnoent(err)) throw err;
+          return false;
+        }
+      }
+      const paths = await this.projectInstructionPaths(name);
+      try {
+        await access(paths.body);
+        return true;
+      } catch (err) {
+        if (!isEnoent(err)) throw err;
+        return false;
+      }
+    }
     try {
       await access(await this.fileFor(kind, name));
       return true;
     } catch (err) {
       if (!isEnoent(err)) throw err;
-      if (kind === 'instruction') {
-        try {
-          await access(await this.legacyInstructionFile(name));
-          return true;
-        } catch (legacyErr) {
-          if (!isEnoent(legacyErr)) throw legacyErr;
-          return false;
-        }
-      }
       return false;
     }
   }
+}
+
+async function writeFileAtomic(path: string, content: string): Promise<void> {
+  const tmp = join(dirname(path), `.${basename(path)}.${randomBytes(8).toString('hex')}.tmp`);
+  await writeFile(tmp, content, 'utf8');
+  try {
+    await rename(tmp, path);
+  } catch (err) {
+    await unlink(tmp).catch(() => undefined);
+    throw err;
+  }
+}
+
+function parseSidecar(raw: string, urn: string): InstructionSidecar {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new DomainError('validation', `Invalid meta.json for ${urn}: not valid JSON`);
+  }
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new DomainError('validation', `Invalid meta.json for ${urn}: expected object`);
+  }
+  const obj = parsed as Record<string, unknown>;
+  const str = (key: string, def = ''): string =>
+    typeof obj[key] === 'string' ? (obj[key] as string) : def;
+  const sidecar: InstructionSidecar = {
+    description: str('description'),
+    version: str('version', '0.0.0'),
+    createdAt: str('createdAt'),
+    updatedAt: str('updatedAt'),
+    ...(Array.isArray(obj['tags']) ? { tags: obj['tags'] as string[] } : {}),
+    ...(typeof obj['repoPath'] === 'string' ? { repoPath: obj['repoPath'] } : {}),
+  };
+  return sidecar;
 }

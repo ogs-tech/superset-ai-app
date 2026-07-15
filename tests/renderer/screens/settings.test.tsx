@@ -11,9 +11,7 @@ const baseSettings: Settings = {
   adapters: {
     claude: { enabled: true },
     cursor: { enabled: false },
-  },
-  linkedRepos: [],
-  ui: { theme: 'system' },
+  },  ui: { theme: 'system' },
   language: 'off',
 };
 

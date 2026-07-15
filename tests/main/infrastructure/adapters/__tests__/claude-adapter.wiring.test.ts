@@ -29,9 +29,7 @@ const buildSettings = (claudeEnabled: boolean): Settings => ({
   adapters: {
     claude: { enabled: claudeEnabled },
     cursor: { enabled: false },
-  },
-  linkedRepos: [],
-  ui: { theme: 'system' },
+  },  ui: { theme: 'system' },
   language: 'off',
 });
 

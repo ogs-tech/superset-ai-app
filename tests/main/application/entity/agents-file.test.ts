@@ -5,7 +5,7 @@ import { WORKSPACE_SOURCE, type Instruction } from '../../../../src/shared/entit
 const instruction = (content: string): Instruction => ({
   urn: 'urn:instruction:default', kind: 'instruction', name: 'default', description: '',
   scopes: ['personal'], metadata: { version: '0.0.0', createdAt: '', updatedAt: '' },
-  source: WORKSPACE_SOURCE, content, activation: 'always',
+  source: WORKSPACE_SOURCE, content,
 });
 
 describe('renderAgentsFile', () => {

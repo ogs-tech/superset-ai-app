@@ -16,9 +16,7 @@ const HOMEDIR = '/home/alice';
 const WORKSPACE = '/workspace';
 
 const baseSettings: Settings = {
-  adapters: { claude: { enabled: true }, cursor: { enabled: false } },
-  linkedRepos: [{ id: 'r1', name: 'r1', path: '/repos/r1' }],
-  ui: { theme: 'system' },
+  adapters: { claude: { enabled: true }, cursor: { enabled: false } },  ui: { theme: 'system' },
   language: 'off',
 };
 
@@ -46,17 +44,6 @@ const agentPersonal: Agent = {
   systemPrompt: '# agent',
 };
 
-const skillProject: Skill = {
-  urn: 'urn:skill:proj-skill',
-  kind: 'skill',
-  name: 'proj-skill',
-  description: 'desc',
-  scopes: ['project'],
-  metadata: meta,
-  source: WORKSPACE_SOURCE,
-  content: '# proj skill',
-};
-
 const skillRealFile: Skill = {
   urn: 'urn:skill:real-skill',
   kind: 'skill',
@@ -76,18 +63,15 @@ describe('disable-claude e2e (AC#10)', () => {
     const entityRepository = new InMemoryEntityRepository();
     await entityRepository.save(skillPersonal);
     await entityRepository.save(agentPersonal);
-    await entityRepository.save(skillProject);
     await entityRepository.save(skillRealFile);
 
     const fs = new InMemoryFileSystem();
     const symlinkPersonalSkill = join(HOMEDIR, '.claude/skills/my-skill');
     const symlinkPersonalAgent = join(HOMEDIR, '.claude/agents/my-agent.md');
-    const symlinkProjectSkill = join('/repos/r1', '.claude/skills/proj-skill');
     const realFile = join(HOMEDIR, '.claude/skills/real-skill');
 
     await fs.symlink({ target: join(WORKSPACE, 'skills/my-skill'), path: symlinkPersonalSkill });
     await fs.symlink({ target: join(WORKSPACE, 'agents/my-agent.md'), path: symlinkPersonalAgent });
-    await fs.symlink({ target: join(WORKSPACE, 'skills/proj-skill'), path: symlinkProjectSkill });
     fs.createFile(realFile, 'real content');
 
     const sm = new SymlinkManager(fs, new FixedClock(new Date()), WORKSPACE);
@@ -104,7 +88,7 @@ describe('disable-claude e2e (AC#10)', () => {
 
     const result = await manager.removeAdapterSymlinks('claude');
 
-    expect(result.removed).toBe(3);
+    expect(result.removed).toBe(2);
     expect(result.skipped).toBe(1);
     expect(result.errors).toHaveLength(0);
 

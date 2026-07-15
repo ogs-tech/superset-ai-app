@@ -14,9 +14,7 @@ const legacyPersisted = (): Settings =>
     adapters: {
       claude: { enabled: true, defaultScope: 'personal' },
       copilot: { enabled: false, defaultScope: 'project' },
-    },
-    linkedRepos: [],
-    ui: { theme: 'system' },
+    },    ui: { theme: 'system' },
     language: 'off',
   }) as unknown as Settings;
 

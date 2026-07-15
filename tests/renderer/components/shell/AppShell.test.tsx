@@ -7,7 +7,7 @@ import { mockApi, ok, renderWithShell, type CallSpy } from '../../test-utils.js'
 let call: CallSpy;
 beforeEach(() => {
   call = mockApi();
-  call.mockResolvedValue(ok({ ui: { theme: 'light' }, adapters: { claude: { enabled: true } }, linkedRepos: [], language: 'off' }));
+  call.mockResolvedValue(ok({ ui: { theme: 'light' }, adapters: { claude: { enabled: true } }, language: 'off' }));
 });
 
 describe('AppShell', () => {

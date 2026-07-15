@@ -32,7 +32,6 @@ const instruction = (): Instruction => ({
   metadata: { version: '1.0.0', createdAt: FROZEN, updatedAt: FROZEN },
   source: WORKSPACE_SOURCE,
   content: 'body',
-  activation: 'always',
 });
 
 const settingsWith = (over: Partial<Settings> = {}): Settings => ({

@@ -1,40 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { FakeAdapter } from '../../../../../src/main/application/services/__fixtures__/fake-adapter.js';
 import { setupAdapterManager, defaultSettings } from './adapter-manager.helpers.js';
-import { WORKSPACE_SOURCE, type Agent, type Skill } from '../../../../../src/shared/entity.js';
+import {
+  WORKSPACE_SOURCE,
+  type ProjectInstruction,
+  type Skill,
+} from '../../../../../src/shared/entity.js';
 
 const meta = { version: '1.0.0', createdAt: '', updatedAt: '' };
 
-const settings = {
-  ...defaultSettings,
-  linkedRepos: [
-    { id: 'a', name: 'A', path: '/repo/a' },
-    { id: 'b', name: 'B', path: '/repo/b' },
-    { id: 'c', name: 'C', path: '/repo/c' },
-  ],
-};
-
 describe('AdapterManager.syncEntity counts destinations by scope', () => {
-  it('returns 3 results for project scope with 1 adapter and 3 repos', async () => {
+  it('returns 1 result per project instruction (destination follows entity.repoPath)', async () => {
     const adapters = [new FakeAdapter('claude', '/workspace/personal/claude')];
-    const { manager, fs, registerEntity } = await setupAdapterManager(adapters, settings);
-    const entity: Agent = {
-      urn: 'urn:agent:foo',
-      kind: 'agent',
-      name: 'foo',
-      description: 'desc',
+    const { manager, fs, registerEntity } = await setupAdapterManager(adapters, defaultSettings);
+    const entity: ProjectInstruction = {
+      urn: 'urn:instruction:acme',
+      kind: 'instruction',
+      name: 'acme',
+      description: 'acme rules',
       scopes: ['project'],
       metadata: meta,
       source: WORKSPACE_SOURCE,
-      systemPrompt: '# foo',
+      content: 'body',
+      repoPath: '/repos/acme',
     };
     await registerEntity(entity);
-    fs.createFile('/workspace/agents/foo.md', '# foo');
+    fs.createFile('/workspace/instructions/project/acme/INSTRUCTION.md', 'body');
 
     const result = await manager.syncEntity({ entity });
 
-    expect(result).toHaveLength(3);
-    expect(result.filter((item) => item.adapter === 'claude')).toHaveLength(3);
+    expect(result).toHaveLength(1);
+    expect(result.filter((item) => item.adapter === 'claude')).toHaveLength(1);
   });
 
   it('returns 1 result for personal scope with 1 adapter', async () => {

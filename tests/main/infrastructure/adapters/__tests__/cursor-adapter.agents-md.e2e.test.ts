@@ -10,46 +10,92 @@ import { InMemorySettingsRepository } from '../../../../../src/main/infrastructu
 import { InMemoryFileSystem } from '../../../../../src/main/infrastructure/filesystem/in-memory-filesystem.js';
 import { FixedClock } from '../../../../../src/main/infrastructure/clock/fixed-clock.js';
 import { GENERATED_FILE_MARKER } from '../../../../../src/main/application/entity/agents-file.js';
+import {
+  CURSOR_PLUGIN_ID,
+  CURSOR_PLUGIN_JSON_MARKER,
+  CURSOR_PLUGIN_MANIFEST_SUBPATH,
+  CURSOR_PLUGIN_PERSONAL_RULE_FILE,
+  CURSOR_PLUGIN_RULES_SUBPATH,
+} from '../../../../../src/main/application/entity/cursor-plugin-manifest.js';
 import type { Adapter } from '../../../../../src/main/application/ports/adapter.js';
 import type { Settings } from '../../../../../src/shared/settings.js';
-import { WORKSPACE_SOURCE, type Entity, type Instruction } from '../../../../../src/shared/entity.js';
+import { join } from 'node:path';
+import {
+  WORKSPACE_SOURCE,
+  type Entity,
+  type PersonalInstruction,
+  type ProjectInstruction,
+} from '../../../../../src/shared/entity.js';
 
-const instruction: Instruction = {
-  urn: 'urn:instruction:default', kind: 'instruction', name: 'default', description: '',
-  scopes: ['personal'], metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
-  source: WORKSPACE_SOURCE, content: 'Reply in pt-BR.', activation: 'always',
+const personal: PersonalInstruction = {
+  urn: 'urn:instruction:default', kind: 'instruction', name: 'default',
+  description: 'Global rules', scopes: ['personal'],
+  metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE, content: 'Reply in pt-BR.',
+};
+
+const project: ProjectInstruction = {
+  urn: 'urn:instruction:acme', kind: 'instruction', name: 'acme',
+  description: 'Acme project rules', scopes: ['project'],
+  metadata: { version: '1.0.0', createdAt: '', updatedAt: '' },
+  source: WORKSPACE_SOURCE, content: 'Only in acme.',
+  repoPath: '/repos/acme',
 };
 
 const settings: Settings = {
-  adapters: { claude: { enabled: true }, cursor: { enabled: true } },
-  linkedRepos: [{ id: 'r', name: 'app', path: '/repos/app' }],
-  ui: { theme: 'system' }, language: 'off',
+  adapters: { claude: { enabled: true }, cursor: { enabled: true } },  ui: { theme: 'system' }, language: 'off',
 };
 
-describe('Cursor instruction → AGENTS.md (e2e)', () => {
-  it('materializes AGENTS.md on syncAll and removes it on removeAll', async () => {
-    const settingsRepo = new InMemorySettingsRepository();
-    await settingsRepo.save(settings);
-    const settingsService = new SettingsService(settingsRepo);
-    const entityRepository = new InMemoryEntityRepository();
-    await entityRepository.save(instruction as Entity);
+const pluginRoot = join('/home/u', '.cursor', 'plugins', CURSOR_PLUGIN_ID);
+const manifestPath = join(pluginRoot, CURSOR_PLUGIN_MANIFEST_SUBPATH);
+const rulePath = join(pluginRoot, CURSOR_PLUGIN_RULES_SUBPATH, CURSOR_PLUGIN_PERSONAL_RULE_FILE);
+
+function makeManager(fs: InMemoryFileSystem, entities: Entity[]): AdapterManager {
+  const clock = new FixedClock(new Date('2026-07-02T10:00:00.000Z'));
+  const settingsRepo = new InMemorySettingsRepository();
+  const settingsService = new SettingsService(settingsRepo);
+  void settingsRepo.save(settings);
+  const entityRepository = new InMemoryEntityRepository();
+  for (const e of entities) void entityRepository.save(e);
+  return new AdapterManager({
+    settingsService, entityRepository,
+    symlinkManager: new SymlinkManager(fs, clock, '/workspace'),
+    fileMaterializer: new FileMaterializer(fs, clock, '/workspace'),
+    workspacePath: '/workspace',
+    adapters: new Map<string, Adapter>([
+      ['claude', new ClaudeAdapter({ homedir: '/home/u' })],
+      ['cursor', new CursorAdapter({ homedir: '/home/u' })],
+    ]),
+  });
+}
+
+describe('Cursor instruction sync (e2e)', () => {
+  it('materializes the personal instruction as a plugin (manifest + rule) on syncAll', async () => {
     const fs = new InMemoryFileSystem();
-    const clock = new FixedClock(new Date('2026-07-02T10:00:00.000Z'));
-    const manager = new AdapterManager({
-      settingsService, entityRepository,
-      symlinkManager: new SymlinkManager(fs, clock, '/workspace'),
-      fileMaterializer: new FileMaterializer(fs, clock, '/workspace'),
-      workspacePath: '/workspace',
-      adapters: new Map<string, Adapter>([
-        ['claude', new ClaudeAdapter({ homedir: '/home/u' })],
-        ['cursor', new CursorAdapter({ homedir: '/home/u' })],
-      ]),
-    });
+    const manager = makeManager(fs, [personal]);
 
     await manager.syncAll({ adapterId: 'cursor' });
-    expect(await fs.readFile('/repos/app/AGENTS.md')).toBe(`${GENERATED_FILE_MARKER}\n\nReply in pt-BR.\n`);
+    const manifest = await fs.readFile(manifestPath);
+    const rule = await fs.readFile(rulePath);
+    expect(manifest).toContain(CURSOR_PLUGIN_JSON_MARKER);
+    expect(manifest).toContain(`"name": "${CURSOR_PLUGIN_ID}"`);
+    expect(rule.startsWith('---\n')).toBe(true);
+    expect(rule).toContain('alwaysApply: true');
+    expect(rule).toContain('Reply in pt-BR.');
 
     await manager.removeAll({ adapterId: 'cursor' });
-    expect(await fs.pathExists('/repos/app/AGENTS.md')).toBe(false);
+    expect(await fs.pathExists(manifestPath)).toBe(false);
+    expect(await fs.pathExists(rulePath)).toBe(false);
+  });
+
+  it('materializes a project instruction as <repoPath>/AGENTS.md and removes it on removeAll', async () => {
+    const fs = new InMemoryFileSystem();
+    const manager = makeManager(fs, [project]);
+
+    await manager.syncAll({ adapterId: 'cursor' });
+    expect(await fs.readFile('/repos/acme/AGENTS.md')).toBe(`${GENERATED_FILE_MARKER}\n\nOnly in acme.\n`);
+
+    await manager.removeAll({ adapterId: 'cursor' });
+    expect(await fs.pathExists('/repos/acme/AGENTS.md')).toBe(false);
   });
 });

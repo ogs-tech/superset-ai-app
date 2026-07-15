@@ -52,13 +52,47 @@ export interface Agent extends Entity {
   deniedTools?: string[];
 }
 
-export type InstructionActivation = 'always' | 'glob' | 'agent-requested' | 'manual';
-
-export interface Instruction extends Entity {
+// The Personal instruction is a singleton (name === 'default', scopes === ['personal']).
+// A Project instruction is created per-repo — the entity itself carries the
+// absolute path of the repo it belongs to via `repoPath`.
+export interface PersonalInstruction extends Entity {
   kind: 'instruction';
+  name: 'default';
+  scopes: ['personal'];
   content: string;
-  activation: InstructionActivation;
-  globs?: string[];
+}
+
+export interface ProjectInstruction extends Entity {
+  kind: 'instruction';
+  scopes: ['project'];
+  content: string;
+  repoPath: string;
+}
+
+export type Instruction = PersonalInstruction | ProjectInstruction;
+
+export function isPersonalInstruction(entity: Instruction): entity is PersonalInstruction {
+  return entity.scopes[0] === 'personal';
+}
+
+export function isProjectInstruction(entity: Instruction): entity is ProjectInstruction {
+  return entity.scopes[0] === 'project';
+}
+
+/**
+ * Sidecar metadata for instructions. Instructions are stored frontmatter-free
+ * on disk so the sync target (AGENTS.md, CLAUDE.md) is a clean body — this
+ * struct captures everything else (description, version, timestamps, and the
+ * per-project repoPath) and lives in a separate `meta.json` for project
+ * instructions. Personal instructions default this struct in memory.
+ */
+export interface InstructionSidecar {
+  description: string;
+  version: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+  repoPath?: string;
 }
 
 export function entityUrn(kind: EntityKind, name: string): string {

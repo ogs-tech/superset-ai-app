@@ -7,11 +7,13 @@ import type {
   EntityMetadata,
   EntitySource,
   Instruction,
+  InstructionSidecar,
+  PersonalInstruction,
+  ProjectInstruction,
   Scope,
   Skill,
 } from '../../../shared/entity.js';
 
-// Frontmatter keys the serializer maps to typed fields; everything else is `ext` passthrough.
 const COMMON_KEYS = ['name', 'type', 'description', 'scopes', 'version', 'tags', 'createdAt', 'updatedAt'];
 const SKILL_KEYS = [...COMMON_KEYS, 'disable-model-invocation'];
 const AGENT_KEYS = [...COMMON_KEYS, 'model', 'tools', 'deniedTools'];
@@ -54,7 +56,8 @@ function readScopes(fm: Record<string, unknown>): Scope[] {
 
 export function renderEntityFile(entity: Entity): string {
   if (entity.kind === 'instruction') {
-    // Frontmatter-free: the body is the whole file.
+    // Frontmatter-free: the body is the whole file. Repo/description/metadata
+    // for project instructions lives in a sidecar meta.json (not this file).
     const content = (entity as Instruction).content;
     return content.endsWith('\n') ? content : `${content}\n`;
   }
@@ -78,17 +81,25 @@ export function renderEntityFile(entity: Entity): string {
     };
     return serializeMarkdown(fm, agent.systemPrompt);
   }
-  // mcp / hook are not .md-backed; Phase 1.
   throw new Error(`renderEntityFile: unsupported kind '${entity.kind}'`);
 }
 
-export function parseEntityFile(args: {
+export interface ParseEntityFileArgs {
   kind: EntityKind;
   name: string;
   raw: string;
   source: EntitySource;
-}): Entity {
-  const { kind, name, raw, source } = args;
+  /**
+   * Only used when `kind === 'instruction'`. When present, carries the
+   * repoPath (project only), description, version and timestamps that would
+   * otherwise be lost to the frontmatter-free storage. Personal instructions
+   * default this to zeroed values when omitted.
+   */
+  instructionSidecar?: InstructionSidecar;
+}
+
+export function parseEntityFile(args: ParseEntityFileArgs): Entity {
+  const { kind, name, raw, source, instructionSidecar } = args;
   const { frontmatter, body } = parseMarkdown<Record<string, unknown>>(raw);
 
   const base = {
@@ -126,17 +137,48 @@ export function parseEntityFile(args: {
     return agent;
   }
   if (kind === 'instruction') {
-    // Frontmatter-free store; parseMarkdown strips any legacy frontmatter, keeping the body.
-    const instruction: Instruction = {
-      ...base,
-      kind: 'instruction',
+    // Instruction is frontmatter-free on disk — sidecar carries the rest.
+    // parseMarkdown strips any legacy frontmatter and returns just the body.
+    const sidecar: InstructionSidecar = instructionSidecar ?? {
       description: '',
-      scopes: ['personal'],
-      metadata: { version: '0.0.0', createdAt: '', updatedAt: '' },
-      content: body,
-      activation: 'always',
+      version: '0.0.0',
+      createdAt: '',
+      updatedAt: '',
     };
-    return instruction;
+    const meta: EntityMetadata = {
+      version: sidecar.version,
+      ...(sidecar.tags !== undefined ? { tags: sidecar.tags } : {}),
+      createdAt: sidecar.createdAt,
+      updatedAt: sidecar.updatedAt,
+    };
+    if (name === 'default') {
+      const personal: PersonalInstruction = {
+        urn: entityUrn('instruction', name),
+        kind: 'instruction',
+        name: 'default',
+        description: sidecar.description,
+        scopes: ['personal'],
+        metadata: meta,
+        source,
+        content: body,
+      };
+      return personal;
+    }
+    if (sidecar.repoPath === undefined || sidecar.repoPath === '') {
+      throw new Error(`parseEntityFile: project instruction '${name}' requires sidecar.repoPath`);
+    }
+    const project: ProjectInstruction = {
+      urn: entityUrn('instruction', name),
+      kind: 'instruction',
+      name,
+      description: sidecar.description,
+      scopes: ['project'],
+      metadata: meta,
+      source,
+      content: body,
+      repoPath: sidecar.repoPath,
+    };
+    return project;
   }
   throw new Error(`parseEntityFile: unsupported kind '${kind}'`);
 }

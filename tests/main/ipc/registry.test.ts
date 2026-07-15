@@ -17,16 +17,13 @@ import type { HealthService } from '../../../src/main/application/services/healt
 import type { NotificationPort } from '../../../src/main/application/ports/notification-port.js';
 import type { WorkspaceTeardownService } from '../../../src/main/application/services/workspace-teardown.js';
 import type { McpService } from '../../../src/main/application/services/mcp-service.js';
-import { DomainError } from '../../../src/main/domain/errors.js';
-import type { LinkedRepo, Settings } from '../../../src/shared/settings.js';
+import type { Settings } from '../../../src/shared/settings.js';
 
 const baseSettings = (overrides: Partial<Settings> = {}): Settings => ({
   adapters: {
     claude: { enabled: true },
     cursor: { enabled: false },
-  },
-  linkedRepos: [],
-  ui: { theme: 'system' },
+  },  ui: { theme: 'system' },
   language: 'off',
   ...overrides,
 });
@@ -195,89 +192,12 @@ describe('buildHandlers', () => {
     expect(result).toBe('main');
   });
 
-  it('repo.link rejects with validation DomainError when .git/ is absent', async () => {
+  it('repo.link is no longer registered (linkedRepos removed)', () => {
     const deps = buildDeps();
-    deps.repoReaderSpy.exists.mockResolvedValue(false);
     const handlers = buildHandlers(deps);
-
-    await expect(
-      handlers['repo.link']?.({ path: '/not-a-repo' }),
-    ).rejects.toBeInstanceOf(DomainError);
-    expect(deps.settingsRepoSpy.save).not.toHaveBeenCalled();
-  });
-
-  it('repo.link persists a new entry, returning a LinkedRepoView with branch', async () => {
-    const deps = buildDeps(baseSettings());
-    deps.repoReaderSpy.exists.mockResolvedValue(true);
-    deps.repoReaderSpy.readFile.mockResolvedValue('ref: refs/heads/main\n');
-    const handlers = buildHandlers(deps);
-
-    const view = (await handlers['repo.link']?.({
-      path: '/repos/foo',
-      name: 'Foo',
-    })) as { id: string; name: string; path: string; branch: string | null };
-
-    expect(view.path).toBe('/repos/foo');
-    expect(view.name).toBe('Foo');
-    expect(view.branch).toBe('main');
-    expect(view.id).toEqual(expect.any(String));
-
-    const saved = deps.settingsRepoSpy.save.mock.calls[0]?.[0] as Settings;
-    expect(saved.linkedRepos).toHaveLength(1);
-    expect(saved.linkedRepos[0]).toEqual({
-      id: view.id,
-      name: 'Foo',
-      path: '/repos/foo',
-    });
-  });
-
-  it('repo.link deduplicates by path: linking the same path twice keeps a single entry', async () => {
-    const existing: LinkedRepo = { id: 'abc', name: 'foo', path: '/repos/foo' };
-    const deps = buildDeps(baseSettings({ linkedRepos: [existing] }));
-    deps.repoReaderSpy.exists.mockResolvedValue(true);
-    deps.repoReaderSpy.readFile.mockResolvedValue('ref: refs/heads/main\n');
-    const handlers = buildHandlers(deps);
-
-    await handlers['repo.link']?.({ path: '/repos/foo', name: 'foo' });
-
-    const saved = deps.settingsRepoSpy.save.mock.calls[0]?.[0] as Settings;
-    expect(saved.linkedRepos).toHaveLength(1);
-    expect(saved.linkedRepos[0]).toEqual(existing);
-  });
-
-  it('repo.unlink removes the entry by id and persists', async () => {
-    const a: LinkedRepo = { id: 'a', name: 'a', path: '/a' };
-    const b: LinkedRepo = { id: 'b', name: 'b', path: '/b' };
-    const deps = buildDeps(baseSettings({ linkedRepos: [a, b] }));
-    const handlers = buildHandlers(deps);
-
-    await handlers['repo.unlink']?.({ id: 'a' });
-
-    const saved = deps.settingsRepoSpy.save.mock.calls[0]?.[0] as Settings;
-    expect(saved.linkedRepos).toEqual([b]);
-  });
-
-  it('repo.list returns LinkedRepoView[] with branches recomputed via RepoService', async () => {
-    const a: LinkedRepo = { id: 'a', name: 'a', path: '/a' };
-    const b: LinkedRepo = { id: 'b', name: 'b', path: '/b' };
-    const deps = buildDeps(baseSettings({ linkedRepos: [a, b] }));
-    deps.repoReaderSpy.exists.mockResolvedValue(true);
-    deps.repoReaderSpy.readFile
-      .mockResolvedValueOnce('ref: refs/heads/main\n')
-      .mockResolvedValueOnce('ref: refs/heads/dev\n');
-    const handlers = buildHandlers(deps);
-
-    const result = (await handlers['repo.list']?.({})) as Array<{
-      id: string;
-      name: string;
-      path: string;
-      branch: string | null;
-    }>;
-
-    expect(result).toEqual([
-      { id: 'a', name: 'a', path: '/a', branch: 'main' },
-      { id: 'b', name: 'b', path: '/b', branch: 'dev' },
-    ]);
+    expect(handlers['repo.link']).toBeUndefined();
+    expect(handlers['repo.unlink']).toBeUndefined();
+    expect(handlers['repo.list']).toBeUndefined();
   });
 
   it('dialog.selectFolder delegates to DialogPort.selectFolder', async () => {

@@ -8,9 +8,10 @@ import type { SettingsRepository } from '../ports/settings-repository.js';
 import { DomainError } from '../../domain/errors.js';
 
 const stripLegacyFields = (settings: Settings): Settings => {
-  // Drops fields from older on-disk shapes (a removed `copilot` adapter key, the
-  // legacy per-adapter `defaultScope`) by rebuilding `adapters` from scratch, and
-  // backfills a disabled `cursor` for settings files written before it existed.
+  // Drops fields from older on-disk shapes (removed `copilot` adapter key, legacy
+  // per-adapter `defaultScope`, the retired global `linkedRepos` array) by rebuilding
+  // the object from scratch, and backfills a disabled `cursor` for settings files
+  // written before it existed.
   const adapters = settings.adapters as unknown as {
     claude?: Record<string, unknown>;
     cursor?: Record<string, unknown>;
@@ -21,8 +22,10 @@ const stripLegacyFields = (settings: Settings): Settings => {
   ): { enabled: boolean } => ({
     enabled: typeof entry?.['enabled'] === 'boolean' ? (entry['enabled'] as boolean) : fallbackEnabled,
   });
+  const { linkedRepos: _unused, ...rest } = settings as Settings & { linkedRepos?: unknown };
+  void _unused;
   return {
-    ...settings,
+    ...rest,
     adapters: {
       claude: clean(adapters.claude, true),
       cursor: clean(adapters.cursor, false),
@@ -69,7 +72,7 @@ const LANGUAGE_PREFERENCES: readonly LanguagePreference[] = [
   'en',
   'es',
 ];
-const SETTINGS_FIELDS: readonly string[] = ['adapters', 'linkedRepos', 'ui', 'language'];
+const SETTINGS_FIELDS: readonly string[] = ['adapters', 'ui', 'language'];
 
 const invalid = (message: string): never => {
   throw new DomainError('validation', message);
@@ -107,19 +110,6 @@ function assertValidSettings(value: unknown): asserts value is Settings {
     }
     if (Object.keys(entry).some((k) => k !== 'enabled')) {
       invalid(`'adapters.${key}' has unexpected fields`);
-    }
-  }
-
-  const linkedRepos = s['linkedRepos'];
-  if (!Array.isArray(linkedRepos)) invalid("'linkedRepos' must be an array");
-  for (const repo of linkedRepos as unknown[]) {
-    const entry = asRecord(repo, 'each linkedRepo must be an object');
-    if (
-      typeof entry['id'] !== 'string' ||
-      typeof entry['name'] !== 'string' ||
-      typeof entry['path'] !== 'string'
-    ) {
-      invalid("each linkedRepo needs string 'id', 'name' and 'path'");
     }
   }
 
